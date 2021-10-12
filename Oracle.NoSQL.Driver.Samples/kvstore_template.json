@@ -1,0 +1,15 @@
+{
+    "ServiceType": "KVSTORE",
+    "Endpoint": "",
+    "AuthorizationProvider": {
+        "AuthorizationType": "KVStore",
+		"CredentialsFile": "",
+		"Credentials": {
+			"UserName": "",
+			"Password": ""
+		}
+    },
+	"ConnectionOptions" : {
+		"TrustedRootCertificateFile": ""
+	}
+}

@@ -1,0 +1,398 @@
+<!--
+Copyright (c) 2020, 2021 Oracle and/or its affiliates.  All rights reserved.
+
+Licensed under the Universal Permissive License v 1.0 as shown at
+https://oss.oracle.com/licenses/upl/
+-->
+
+<IAMAuthorizationProvider>
+    <summary>
+        Authorization provider for the Oracle NoSQL Database Cloud Service.
+    </summary>
+    <remarks>
+        <para>
+            This provider class is used to authorize operations using Oracle
+            Cloud Infrastructure Identity and Access Management (IAM).   The
+            instance of this class should be set as
+            <see cref="NoSQLConfig.AuthorizationProvider"/> in the initial
+            configuration.
+        </para>
+        <para>
+            See
+            <see href="https://docs.cloud.oracle.com/iaas/Content/Identity/Concepts/overview.htm">
+                Overview of Oracle Cloud Infrastructure Identity and Access
+                Management
+            </see>
+            for information on IAM components and how they work together to
+            provide security for Oracle Cloud services.
+        </para>
+        <para>
+            All operations require a request signature that is used by the
+            system to authorize the operation.  The request signature may be
+            created using one of the following:
+            <list type="bullet">
+                <item>
+                    <description>
+                        Specific user's identity.<br/>
+                        See the information below on what credentials are
+                        required and how to obtain them, as well how these
+                        credentials may be provided to
+                        <see cref="IAMAuthorizationProvider"/>.
+                    </description>
+                </item>
+                <item>
+                    <description>
+                        Instance Principal.<br/>
+                        You may use Instance Principal when calling Oracle
+                        NoSQL Database Cloud Service from a compute instance
+                        in the Oracle Cloud Infrastructure (OCI). See
+                        <see href="https://docs.cloud.oracle.com/en-us/iaas/Content/Identity/Tasks/callingservicesfrominstances.htm">
+                        Calling Services from an Instance
+                        </see>
+                        for more information.  The driver authenticates with
+                        the instance principal and obtains a security token
+                        issued by IAM to create the request signature.  Use
+                        Instance Principal by setting
+                        <see cref="UseInstancePrincipal"/> to <c>true</c> or
+                        calling <see cref="CreateWithInstancePrincipal"/> or
+                        <see cref="CreateWithInstancePrincipalForDelegation"/>.
+                    </description>
+                </item>
+                <item>
+                    <description>
+                        Resource Principal.<br/>
+                        You may use Resource Principal when calling Oracle
+                        NoSQL Database Cloud Service from other Oracle Cloud
+                        service resource such as
+                        <see href="https://docs.cloud.oracle.com/en-us/iaas/Content/Functions/Concepts/functionsoverview.htm">
+                            Functions
+                        </see>
+                        .  See
+                        <see href="https://docs.cloud.oracle.com/en-us/iaas/Content/Functions/Tasks/functionsaccessingociresources.htm">
+                            Accessing Other Oracle Cloud Infrastructure Resources
+                            from Running Functions
+                        </see>
+                        for more information.  The driver obtains a resource
+                        provider session token (RPST) that enables the
+                        resource such as function to authenticate itself.
+                        The RPST is used to create the request signature.  Use
+                        Resource Principal by setting
+                        <see cref="UseResourcePrincipal"/> to <c>true</c> or
+                        calling <see cref="CreateWithResourcePrincipal"/>.
+                    </description>
+                </item>
+            </list>
+        </para>
+        <para>
+            Note that when using Instance Principal or Resource Principal you
+            must specify the compartment id (OCID), either as
+            <see cref="NoSQLConfig.Compartment"/> or in the operation options.
+            You must use compartment id (OCID) and not the compartment name.
+            This also means that you may not prefix the table name with the
+            compartment name when passing the table name to the
+            <see cref="NoSQLClient"/> APIs or in queries.  These restrictions
+            do not apply when using the specific user identity, which is best
+            for naming flexibility, allowing both compartment names and OCIDs.
+        </para>
+        <para>
+            The driver caches the request signature for a configurable
+            duration <see cref="CacheDuration"/> with a maximum of 5 minutes.
+            In addition, the driver can optionally renew the request signature
+            in the background ahead of its expiration.  The automatic renewal
+            is controlled by <see cref="RefreshAhead"/> property.
+        </para>
+        <para>
+            The information that follows describes the steps to use the
+            specific user identity and does not apply to using instance
+            principal or resource principal.
+        </para>
+        <para>
+            To use the specific user's identity, you must provide the
+            following credentials:
+            <list type="bullet">
+                <item>
+                    <description>
+                        Tenancy OCID.  This is Oracle Cloud ID (OCID) for your
+                        tenancy.  See
+                        <see href="https://docs.cloud.oracle.com/iaas/Content/General/Concepts/identifiers.htm">
+                            Resource Identifiers
+                        </see>
+                        for information on OCIDs.
+                    </description>
+                </item>
+                <item>
+                    <description>
+                        User's OCID.  This is Oracle Cloud ID (OCID) for the
+                        user in your tenancy.  See
+                        <see href="https://docs.cloud.oracle.com/iaas/Content/General/Concepts/identifiers.htm">
+                            Resource Identifiers
+                        </see>
+                        for information on OCIDs.
+                    </description>
+                </item>
+                <item>
+                    <description>
+                        API Signing Key.  This is public-private key pair used
+                        to sign the API requests.  See
+                        <see href="https://docs.cloud.oracle.com/iaas/Content/API/Concepts/apisigningkey.htm">
+                            Required Keys and OCIDs
+                        </see>
+                        for details.  In particular, the private key is needed
+                        to generate the request signature.
+                    </description>
+                </item>
+                <item>
+                    <description>
+                        Public Key Fingerprint.  This is an identifier of the
+                        public key of the API Signing Key pair.
+                    </description>
+                </item>
+                <item>
+                    <description>
+                        Passphrase for the private key of API Signing Key pair
+                        if the private key is encrypted.
+                    </description>
+                </item>
+            </list>
+        </para>
+        <para>
+            To enable signing of API requests, perform the following steps:
+            <list type="number">
+                <item>
+                    <description>
+                        Generate the key pair described above.
+                    </description>
+                </item>
+                <item>
+                    <description>
+                        Upload the public key.
+                    </description>
+                </item>
+                <item>
+                    <description>
+                        Obtain the tenancy and user OCIDs and the public key
+                        fingerprint.
+                    </description>
+                </item>
+            </list>
+            <see href="https://docs.cloud.oracle.com/iaas/Content/API/Concepts/apisigningkey.htm">
+                Required Keys and OCIDs
+            </see>
+            describes these steps in detail.
+        </para>
+        <para>
+            You may set the credentials using one of the following, in order
+            of increasing security:
+            <list type="number">
+                <item>
+                    <description>
+                        As <see cref="IAMCredentials"/> object set as
+                        <see cref="IAMAuthorizationProvider.Credentials"/> or
+                        using
+                        <see cref="IAMAuthorizationProvider(IAMCredentials)"/>
+                        constructor.  You must set the properties
+                        <see cref="IAMCredentials.TenantId"/>,
+                        <see cref="IAMCredentials.UserId"/>,
+                        <see cref="IAMCredentials.Fingerprint"/> and one of
+                        <see cref="IAMCredentials.PrivateKey"/>,
+                        <see cref="IAMCredentials.PrivateKeyPEM"/> or
+                        <see cref="IAMCredentials.PrivateKeyFile"/>.  In
+                        addition, you must set
+                        <see cref="IAMCredentials.Passphrase"/> if the private
+                        key is encrypted.
+                    </description>
+                </item>
+                <item>
+                    <description>
+                        As part of the OCI configuration file.  See
+                        <see href="https://docs.cloud.oracle.com/iaas/Content/API/Concepts/sdkconfig.htm">
+                            SDK and CLI Configuration File
+                        </see>
+                        for information on the OCI configuration file format.
+                        Set properties <see cref="ConfigFile"/> and
+                        <see cref="ProfileName"/> or use
+                        <see cref="IAMAuthorizationProvider(string, string)"/>
+                        constructor.  Because both of these properties have
+                        default values, the default instance of
+                        <see cref="IAMAuthorizationProvider"/> is configured
+                        to use credentials from the default OCI configuration
+                        file with the default profile name. In fact, the
+                        driver will create this default instance if you don't
+                        set <see cref="NoSQLConfig.AuthorizationProvider"/>.
+                        Note that the driver will load the credentials from
+                        the OCI configuration file only once.
+                    </description>
+                </item>
+                <item>
+                    <description>
+                        Specify your own credentials provider delegate as
+                        <see cref="CredentialsProvider"/> or use
+                        <see cref="IAMAuthorizationProvider(Func{CancellationToken,Task{IAMCredentials}})"/>
+                        constructor.  This is the most secure option because
+                        you can choose where the credentials are stored and
+                        how they are accessed.  The credentials provider
+                        delegate will be called every time the credentials are
+                        needed (when the request signature is renewed).
+                    </description>
+                </item>
+            </list>
+        </para>
+        <para>
+            The private key, if provided in a file or as a string, must be in
+            PEM format.  If the private key is not encrypted, it can be either
+            in PKCS#1 or PKCS#8 format.  However, for encrypted private keys,
+            only PKCS#8 format is supported.  Using PKCS#1 encrypted private
+            keys with <em>Proc-Type</em> and <em>DEK-Info</em> headers is not
+            currently supported.  If you have an encrypted private key in
+            PKCS#1 format, you can convert it to PKCS#8 using openssl:
+            <!-- ReSharper disable MarkupTextTypo -->
+            <em>openssl pkcs8 -topk8 -inform PEM -outform PEM -in encrypted_pkcs1_key.pem -out encrypted_pkcs8_key.pem</em>
+            <!-- ReSharper restore MarkupTextTypo -->
+        </para>
+        <para>
+            The examples show the ways to instantiate
+            <see cref="IAMAuthorizationProvider"/> for different authorization
+            scenarios outlined above.
+        </para>
+    </remarks>
+    <example>
+        Instantiating <see cref="IAMAuthorizationProvider"/> with specified
+        credentials.
+        <code>
+            var config = new NoSQLConfig
+            {
+            Region = Region.AP_SYDNEY_1,
+            AuthorizationProvider = new IAMAuthorizationProvider(
+                new IAMCredentials
+                {
+                    TenantId = "ocid1.tenancy.oc...................",
+                    UserId = "ocid1.user.oc........................",
+                    Fingerprint = "aa:aa:aa:aa:....................",
+                    PrivateKeyFile = "~/my_app/security/oci_api_key.pem",
+                    Passphrase = "................................."
+                }
+            };
+        </code>
+    </example>
+    <example>
+        Specifying <see cref="IAMAuthorizationProvider"/> with specified
+        credentials in JSON configuration file (note that storing the
+        passphrase in the configuration file is not secure, use this for
+        development/testing only).
+        <code>
+        {
+            "Region": "ap-sydney-1",
+            "AuthorizationProvider": {
+                "AuthorizationType": "IAM",
+                "Credentials": {
+                    "TenantId": "ocid1.tenancy.oc...................",
+                    "UserId": "ocid1.user.oc........................",
+                    "Fingerprint": "aa:aa:aa:aa:....................",
+                    "PrivateKeyFile": "~/my_app/security/oci_api_key.pem",
+                    "Passphrase": "................................."
+                }
+            }
+        }
+        </code>
+    </example>
+    <example>
+        Instantiating <see cref="IAMAuthorizationProvider"/> using the
+        credentials in the OCI configuration file
+        <code>
+            var config = new NoSQLConfig
+            {
+                Region = Region.AP_TOKYO_1,
+                AuthorizationProvider = new IAMAuthorizationProvider(
+                    "~/my_app/.oci/config", "Jane")
+            };
+        </code>
+    </example>
+    <example>
+        Specifying <see cref="IAMAuthorizationProvider"/> in JSON
+        configuration file using the credentials in OCI configuration file.
+        <code>
+        {
+            "Region": "ap-tokyo-1",
+            "AuthorizationProvider": {
+                "AuthorizationType": "IAM",
+                "ConfigFile": "~/my_app/.oci/config",
+                "ProfileName": "Jane"
+            }
+        }
+        </code>
+    </example>
+    <example>
+        Instantiating <see cref="IAMAuthorizationProvider"/> using credentials
+        supplied by the credentials provider delegate.
+        <code>
+            ...
+            public static async Task&lt;IAMCredentials&gt; LoadCredentialsAsync(
+            CancellationToken cancellationToken)
+            {
+                // Load the credentials from a secure location.
+                return new IAMCredentials
+                {
+                    TenantId = "...",
+                    UserId = "...",
+                    ...
+                };
+            }
+            ...
+            var config = new NoSQLConfig
+            {
+                Region = Region.US_SANJOSE_1,
+                AuthorizationProvider = new IAMAuthorizationProvider(
+                    LoadCredentialsAsync)
+            };
+        </code>
+    </example>
+    <example>
+        Instantiating <see cref="IAMAuthorizationProvider"/> using
+        instance principal.
+        <code>
+            var config = new NoSQLConfig
+            {
+                Region = Region.SA_SAOPAULO_1,
+                AuthorizationProvider =
+                    IAMAuthorizationProvider.CreateWithInstancePrincipal()
+            }
+        </code>
+    </example>
+    <example>
+        Specifying <see cref="IAMAuthorizationProvider"/> using instance
+        principal in JSON configuration file.
+        <code>
+        {
+            "Region": "sa-saopaulo-1",
+            "AuthorizationProvider": {
+                "AuthorizationType": "IAM",
+                "UseInstancePrincipal": true
+        }
+        </code>
+    </example>
+    <example>
+        Instantiating <see cref="IAMAuthorizationProvider"/> using
+        resource principal.
+        <code>
+            var config = new NoSQLConfig
+            {
+                Region = Region.SA_SAOPAULO_1,
+                AuthorizationProvider =
+                    IAMAuthorizationProvider.CreateWithResourcePrincipal()
+            }
+        </code>
+    </example>
+    <example>
+        Specifying <see cref="IAMAuthorizationProvider"/> using instance
+        principal in JSON configuration file.
+        <code>
+        {
+            "Region": "sa-saopaulo-1",
+            "AuthorizationProvider": {
+                "AuthorizationType": "IAM",
+                "UseResourcePrincipal": true
+            }
+        }
+        </code>
+    </example>
+</IAMAuthorizationProvider>

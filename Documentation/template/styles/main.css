@@ -1,0 +1,12 @@
+pre code {
+    word-break: break-word;
+}
+
+nav a {
+    word-wrap: break-word;
+    word-break: break-all;
+}
+
+.text-break {
+    word-break: keep-all;
+}
