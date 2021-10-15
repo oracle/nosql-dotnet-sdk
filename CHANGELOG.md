@@ -7,4 +7,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
-- Oracle NoSQL SDK for .NET
+- Oracle NoSQL SDK for .NET.
+
+### Fixed
+- Fixed unit test failure in query test.

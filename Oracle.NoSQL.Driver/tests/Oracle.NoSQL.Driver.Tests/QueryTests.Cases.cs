@@ -324,8 +324,9 @@ namespace Oracle.NoSQL.Driver.Tests
 
                 yield return new QTest("delete with bindings",
                     "DECLARE $fldDouble DOUBLE; $fldDate TIMESTAMP; DELETE " +
-                    $"FROM {Fixture.Table.Name} WHERE colDouble = $fldDouble " +
-                    "AND colArray[] >ANY $fldDate RETURNING colFixedBinary",
+                    $"FROM {Fixture.Table.Name} t WHERE " +
+                    "t.colDouble = $fldDouble AND " +
+                    "t.colArray[] >ANY $fldDate RETURNING colFixedBinary",
                     new[] {new TableField("colFixedBinary", DataType.Binary)},
                     new[]
                     {
