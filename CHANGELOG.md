@@ -9,5 +9,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 ### Added
 - Oracle NoSQL SDK for .NET.
 
+### Changed
+- Switched to use DeepEqual library in unit tests for deep comparisons.
+
 ### Fixed
 - Fixed unit test failure in query test.

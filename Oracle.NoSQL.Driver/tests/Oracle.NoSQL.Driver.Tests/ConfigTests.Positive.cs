@@ -397,14 +397,7 @@ namespace Oracle.NoSQL.Driver.Tests
             var clientConfigCopy = DeepCopy(client.Config);
             ClearConfigObj(configCopy);
 
-            // TODO:
-            // CompareNetObjects crashes here with stack overflow if
-            // comparePrivate is set to true.  It seems one of the problems is
-            // comparing of the internals of
-            // IAMAuthorizationProvider.CredentialsProvider delegate.  Need
-            // find out how to disable this or find a different deep
-            // comparison library.
-            AssertDeepEqual(clientConfigCopy, client.Config);
+            AssertDeepEqual(clientConfigCopy, client.Config, true);
         }
 
     }

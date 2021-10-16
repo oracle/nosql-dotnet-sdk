@@ -16,8 +16,9 @@ namespace Oracle.NoSQL.Driver.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using KellermanSoftware.CompareNetObjects;
     using Force.DeepCloner;
+    using DeepEqual;
+    using DeepEqual.Syntax;
 
     internal sealed class TempFileCache : IDisposable
     {
@@ -71,34 +72,6 @@ namespace Oracle.NoSQL.Driver.Tests
 
     internal static class Utils
     {
-        private static readonly List<Type> CompareTypesToIgnore =
-            new List<Type>
-            {
-                typeof(IntPtr),
-                typeof(SemaphoreSlim),
-                typeof(Func<>)
-            };
-
-        private static readonly CompareLogic CompareLogicPublic =
-            new CompareLogic(new ComparisonConfig
-            {
-                TypesToIgnore = CompareTypesToIgnore
-            });
-
-        private static readonly CompareLogic CompareLogicAll =
-            new CompareLogic(new ComparisonConfig
-            {
-                ComparePrivateFields = true,
-                ComparePrivateProperties = true,
-                TypesToIgnore = CompareTypesToIgnore
-            });
-
-        static Utils()
-        {
-            CompareExtensions.Config.ComparePrivateFields = true;
-            CompareExtensions.Config.ComparePrivateProperties = true;
-        }
-
         // Source should be an anonymous object that has some of the same
         // properties as target.
         internal static T AssignProperties<T>(T target, object source)
@@ -149,12 +122,20 @@ namespace Oracle.NoSQL.Driver.Tests
                 return;
             }
 
-            var compareLogic =
-                comparePrivate ? CompareLogicAll : CompareLogicPublic;
+            var compareSyntax = expected.WithDeepEqual(actual);
+            if (comparePrivate)
+            {
+                compareSyntax = compareSyntax.ExposeInternalsOf<T>();
+            }
 
-            var result = compareLogic.Compare(expected, actual);
-            Assert.IsTrue(result.AreEqual,
-                $"Values are not deep equal: {result.DifferencesString}");
+            try
+            {
+                compareSyntax.Assert();
+            }
+            catch (Exception ex)
+            {
+                Assert.Fail($"Values are not deep equal: {ex}");
+            }
         }
 
         internal static void AssertNotDeepEqual<T>(T expected, T actual,
@@ -166,11 +147,14 @@ namespace Oracle.NoSQL.Driver.Tests
                 return;
             }
 
-            var compareLogic =
-                comparePrivate ? CompareLogicAll : CompareLogicPublic;
+            var compareSyntax = expected.WithDeepEqual(actual);
+            if (comparePrivate)
+            {
+                compareSyntax = compareSyntax.ExposeInternalsOf<T>();
+            }
 
-            var result = compareLogic.Compare(expected, actual);
-            Assert.IsFalse(result.AreEqual);
+            Assert.IsFalse(compareSyntax.Compare(),
+                "Values are not supposed to be equal");
         }
 
         internal static void AssertThrowsDerived<T>(Action action)
