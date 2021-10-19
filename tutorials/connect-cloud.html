@@ -1,0 +1,735 @@
+﻿<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+  
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Prerequisites | NoSQL SDK for .NET </title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="title" content="Prerequisites | NoSQL SDK for .NET ">
+    <meta name="generator" content="docfx 2.58.0.0">
+    
+    <link rel="shortcut icon" href="../../favicon.ico">
+    <link rel="stylesheet" href="../styles/docfx.vendor.css">
+    <link rel="stylesheet" href="../styles/docfx.css">
+    <link rel="stylesheet" href="../styles/main.css">
+    <meta property="docfx:navrel" content="../toc">
+    <meta property="docfx:tocrel" content="toc">
+    
+    <meta property="docfx:rel" content="../">
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix" data-offset="120">
+    <div id="wrapper">
+      <header>
+        
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+              
+              <a class="navbar-brand" href="../index.html">
+                <img id="logo" class="svg" src="../../Logo.png" alt="">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+                
+                <ul class="nav level1 navbar-nav">
+                      <li>
+                          <a href="../index.html" title="Home">Home</a>
+                      </li>
+                      <li>
+                          <a href="../tutorials/intro.html" title="Tutorials">Tutorials</a>
+                      </li>
+                      <li>
+                          <a href="../api/Oracle.NoSQL.Driver.html" title="API Documentation">API Documentation</a>
+                      </li>
+                </ul>    </div>
+          </div>
+        </nav>
+        
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div class="container body-content">
+        
+        <div id="search-results">
+          <div class="search-list">Search Results for <span></span></div>
+          <div class="sr-items">
+            <p><i class="glyphicon glyphicon-refresh index-loading"></i></p>
+          </div>
+          <ul id="pagination" data-first="First" data-prev="Previous" data-next="Next" data-last="Last"></ul>
+        </div>
+      </div>
+      <div role="main" class="container body-content hide-when-search">
+        <div class="sidenav hide-when-search">
+          <a class="btn toc-toggle collapse" data-toggle="collapse" href="#sidetoggle" aria-expanded="false" aria-controls="sidetoggle">Show / Hide Table of Contents</a>
+          <div class="sidetoggle collapse" id="sidetoggle">
+            <div>
+              <div class="sidefilter">
+                <form class="toc-filter">
+                  <span class="glyphicon glyphicon-filter filter-icon"></span>
+                  <input type="text" id="toc_filter_input" placeholder="Enter here to filter..." onkeypress="if(event.keyCode==13) {return false;}">
+                </form>
+              </div>
+              <div class="sidetoc">
+                <div class="toc" id="toc">
+                  
+                  <ul class="nav level1">
+                    <li class="">
+                      <a href="intro.html" title="Introduction" class="">Introduction</a>
+                    </li>
+                    <li class="active">
+                      <a href="connect-cloud.html" title="Connecting an Application to Oracle NoSQL Database Cloud Service" class="active">Connecting an Application to Oracle NoSQL Database Cloud Service</a>
+                    </li>
+                    <li class="">
+                      <a href="connect-on-prem.html" title="Connecting an Application to On-Premise Oracle NoSQL Database" class="">Connecting an Application to On-Premise Oracle NoSQL Database</a>
+                    </li>
+                    <li class="">
+                      <a href="tables.html" title="Working With Tables" class="">Working With Tables</a>
+                    </li>
+                  </ul>        </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="article row grid-right">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="">
+
+<p>This guide describes how to install, configure, and use the Oracle NoSQL
+Database .NET SDK with the Oracle NoSQL Database Cloud Service.</p>
+<h2 id="prerequisites">Prerequisites</h2>
+<p>The SDK requires:</p>
+<ul>
+<li>An Oracle Cloud Infrastructure account</li>
+<li>A user created in that account, in a group with a policy that grants the
+desired permissions.</li>
+<li><a href="https://dotnet.microsoft.com/download">.NET Core</a> 3.1 or later, including
+<a href="https://dotnet.microsoft.com/download/dotnet/5.0">.NET 5.0</a> or later version
+running on Windows, Linux, or Mac.</li>
+<li><a href="https://docs.microsoft.com/en-us/nuget/consume-packages/install-use-packages-nuget-cli">Nuget Package Manager</a>
+if you wish to install the SDK independently of your project.</li>
+</ul>
+<h2 id="downloading-and-installing-the-sdk">Downloading and Installing the SDK</h2>
+<p>You can install the SDK from <a href="https://www.nuget.org/">NuGet Package Manager</a>
+either by adding it as a reference to your project or independently.</p>
+<h3 id="add-the-sdk-as-a-project-reference">Add the SDK as a Project Reference</h3>
+<p>You may add the SDK <a href="https://www.nuget.org/packages/Oracle.NoSQL.Driver/">NuGet Package</a>
+as a reference to your project by using .Net CLI:</p>
+<pre><code class="lang-bash">cd &lt;your-project-directory&gt;
+dotnet add package Oracle.NoSQL.Driver
+</code></pre>
+<p>Alternatively, you may perform the same using
+<a href="https://docs.microsoft.com/en-us/nuget/consume-packages/install-use-packages-visual-studio">NuGet Package Manager</a>
+in <a href="https://visualstudio.microsoft.com/">Visual Studio</a>.</p>
+<h3 id="independent-install">Independent Install</h3>
+<p>You may install the SDK independently into a directory of your choice by using
+<a href="https://docs.microsoft.com/en-us/nuget/install-nuget-client-tools#cli-tools">nuget.exe CLI</a>:</p>
+<pre><code class="lang-bash">nuget.exe install Oracle.NoSQL.Driver -OutputDirectory &lt;your-packages-directory&gt;
+</code></pre>
+<h2 id="configure_cloud">Configuring the SDK</h2>
+<p>The SDK requires an Oracle Cloud account and a subscription to the Oracle
+NoSQL Database Cloud Service. If you do not already have an Oracle Cloud
+account you can start <a href="https://docs.cloud.oracle.com/en-us/iaas/Content/GSG/Concepts/baremetalintro.htm">here</a>.</p>
+<p>The SDK is using Oracle Cloud Infrastructure Identity and Access Management
+(IAM) to authorize database operations.  For more information on IAM see
+<a href="https://docs.cloud.oracle.com/iaas/Content/Identity/Concepts/overview.htm">Overview of Oracle Cloud Infrastructure Identity and Access Management</a></p>
+<p>To use the SDK, you need to configure it for use with IAM.  The best way to
+get started with the service is to use your Oracle Cloud user's identity to
+obtain required credentials and provide them to the application.  This is
+applicable in most use cases and described below in section
+<a href="#user">Authorize with Oracle Cloud User's Identity</a>.</p>
+<p>A different configuration that does not require user's credentials may be used
+in a couple of special use cases:</p>
+<ul>
+<li><p>To access Oracle NoSQL Database Cloud Service from a compute instance in the
+Oracle Cloud Infrastructure (OCI), use Instance Principal.  See
+<a href="#instance_principal">Authorizing with Instance Principal</a>.</p>
+</li>
+<li><p>To access Oracle NoSQL Database Cloud Service from other Oracle Cloud
+service resource such as
+<a href="https://docs.cloud.oracle.com/en-us/iaas/Content/Functions/Concepts/functionsoverview.htm">Functions</a>,
+use Resource Principal.
+See <a href="#resource_principal">Authorizing with Resource Principal</a>.</p>
+</li>
+</ul>
+<h3 id="user">Authorize with Oracle Cloud User's Identity</h3>
+<p>See sections below on how to <a href="#creds">acquire credentials</a> and
+<a href="#supply">configure the application</a> to connect to Oracle NoSQL Database Cloud
+Service.  You may also need to perform <a href="#connecting">additional configuration</a>
+such as choosing your region, specifying compartment and other configuration
+options.</p>
+<p>See <a href="#quickstart">Example Quick Start</a> for the quickest way to get an
+example running.</p>
+<h4 id="creds">Acquire Credentials for the Oracle NoSQL Database Cloud Service</h4>
+<p>See
+<a href="https://www.oracle.com/pls/topic/lookup?ctx=en/cloud/paas/nosql-cloud/csnsd&amp;id=acquire-creds">Acquiring Credentials</a>
+for details of credentials you will need to configure an application.</p>
+<p>These steps only need to be performed one time for a user. If they have already
+been done they can be skipped. You need to obtain the following credentials:</p>
+<ul>
+<li>Tenancy ID</li>
+<li>User ID</li>
+<li>API signing key (private key file in PEM format)</li>
+<li>Fingerprint for the public key uploaded to the user's account</li>
+<li>Private key pass phrase, needed only if the private key is encrypted</li>
+</ul>
+<h4 id="supply">Supply Credentials to the Application</h4>
+<p>Credentials are used to authorize your application to use the service.
+There are 3 ways to supply credentials:</p>
+<ol>
+<li>Store credentials in an <a href="#config_file">OCI configuration file</a>.</li>
+<li><a href="#config_api">Supply credentials directly</a> as
+<a class="xref" href="../api/Oracle.NoSQL.Driver.IAMCredentials.html">IAMCredentials</a>.</li>
+<li><a href="#config_obj">Create your own credentials provider</a> to load credentials on
+demand from the location of your choice (e.g. keystore, keychain, encrypted
+file, etc.).</li>
+</ol>
+<p>You supply the credentials to the SDK when you create
+<a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLClient.html">NoSQLClient</a> instance that is used to
+perform the database operations.  The IAM configuration is represented by
+<a class="xref" href="../api/Oracle.NoSQL.Driver.IAMAuthorizationProvider.html">IAMAuthorizationProvider</a>
+instance and it indicates how the credentials are supplied.
+<a class="xref" href="../api/Oracle.NoSQL.Driver.IAMAuthorizationProvider.html">IAMAuthorizationProvider</a>
+is in turn a part of <a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLConfig.html">NoSQLConfig</a>
+configuration that is passed to create
+<a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLClient.html">NoSQLClient</a> (see
+<a href="#connecting">Connecting an Application</a>).</p>
+<p><a href="#config_obj">Creating your own credentials provider</a> is the most secure
+option, because you are in control of how credentials are stored and loaded
+by the driver.  Otherwise, the recommended option is to use an
+<a href="#config_file">Oracle Cloud Infrastructure configuration file</a>.  Supplying
+credentials directly is the least secure option because sensitive information
+such as private key will be kept in memory for the lifetime of
+<a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLClient.html">NoSQLClient</a> instance.</p>
+<h5 id="config_file">Using an OCI Configuration File</h5>
+<p>You can store the credentials in an
+<a href="https://docs.oracle.com/en-us/iaas/Content/API/Concepts/sdkconfig.htm">Oracle Cloud Infrastructure Configuration File</a>.</p>
+<p>The default path for the configuration file is <em>~/.oci/config</em>, where <em>~</em>
+stands for user's home directory.  On Windows, <em>~</em> is a value of <em>USERPROFILE</em>
+environment variable.</p>
+<p>The file may contain multiple profiles.  By default, the SDK uses profile
+named <strong>DEFAULT</strong> to store the credentials.</p>
+<p>To use these default values, create file named <em>config</em> in <em>~/.oci</em> directory
+with the following contents:</p>
+<pre><code class="lang-ini">[DEFAULT]
+tenancy=&lt;your-tenancy-ocid&gt;
+user=&lt;your-user-ocid&gt;
+fingerprint=&lt;fingerprint-of-your-public-key&gt;
+key_file=&lt;path-to-your-private-key-file&gt;
+pass_phrase=&lt;your-private-key-passphrase&gt;
+region=&lt;your-region-identifier&gt;
+</code></pre>
+<p>Note that you may also specify your region identifier together with
+credentials in the OCI configuration file.  By default, the driver will look
+for credentials and a region in the OCI configuration file at the default path
+and in the default profile.  Thus, if you provide region together with
+credentials as shown above, you can create
+<a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLClient.html">NoSQLClient</a> instance without passing
+any configuration:</p>
+<pre><code class="lang-csharp">var client = new NoSQLClient();
+</code></pre>
+<p>Alternatively, you may specify the region (as well as other properties) in
+<a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLConfig.html">NoSQLConfig</a>:</p>
+<pre><code class="lang-csharp">var client = new NoSQLClient(
+    new NoSQLConfig(
+    {
+        Region = Region.US_ASHBURN_1,
+        Timeout = TimeSpan.FromSeconds(10),
+        ..........
+    });
+</code></pre>
+<p>As in the previous example, default OCI configuration file with default
+profile will be used unless specified otherwise.  The region in
+<a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLConfig.html">NoSQLConfig</a> will take
+precendence over the region in OCI configuration file if both are set.</p>
+<p>You may choose to use different path for OCI configuration file as well as
+different profile within the configuration file.  In this case, specify these
+when creating
+<a class="xref" href="../api/Oracle.NoSQL.Driver.IAMAuthorizationProvider.html">IAMAuthorizationProvider</a>.
+For example, if your OCI configuration file path is <em>~/myapp/.oci/config</em> and
+you store your credentials under profile <strong>Jane</strong>:</p>
+<pre><code class="lang-ini">...............
+...............
+[Jane]
+tenancy=.......
+user=..........
+...............
+[John]
+tenancy=.......
+user=..........
+...............
+</code></pre>
+<p>Then create <a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLClient.html">NoSQLClient</a> instance as
+follows:</p>
+<pre><code class="lang-csharp">var client = new NoSQLClient(
+    new NoSQLConfig
+    {
+        Region = Region.US_ASHBURN_1,
+        AuthorizationProvider = new IAMAuthorizationProvider(
+            &quot;~/myapp/.oci/config&quot;, &quot;Jane&quot;)
+    });
+</code></pre>
+<p>(Note that you don't have to specify the service type if you set
+<a class="xref" href="../api/Oracle.NoSQL.Driver.IAMAuthorizationProvider.html">IAMAuthorizationProvider</a>,
+see section <a href="#service_type">Specifying Service Type</a>)</p>
+<h5 id="config_api">Specifying Credentials Directly</h5>
+<p>You may specify credentials directly as
+<a class="xref" href="../api/Oracle.NoSQL.Driver.IAMCredentials.html">IAMCredentials</a> when creating
+<a class="xref" href="../api/Oracle.NoSQL.Driver.IAMAuthorizationProvider.html">IAMAuthorizationProvider</a>.
+Create <a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLClient.html">NoSQLClient</a> as follows:</p>
+<pre><code class="lang-csharp">var client = new NoSQLClient(
+    new NoSQLConfig
+    {
+        Region = &lt;your-service-region&gt;,
+        AuthorizationProvider = new IAMAuthorizationProvider(
+            new IAMCredentials
+            {
+                TenantId = myTenancyOCID,
+                UserId = myUserOCID,
+                Fingerprint = myPublicKeyFingerprint,
+                PrivateKeyFile = myPrivateKeyFile
+            })
+    });
+</code></pre>
+<h5 id="config_obj">Creating Your Own Credentials Provider</h5>
+<p>You may specify your custom credentials provider when creating
+<a class="xref" href="../api/Oracle.NoSQL.Driver.IAMAuthorizationProvider.html">IAMAuthorizationProvider</a>.
+The credentials provider is a delegate function that returns
+Task&lt;<a class="xref" href="../api/Oracle.NoSQL.Driver.IAMCredentials.html">IAMCredentials</a>&gt; and thus may
+be implemented asynchronously:</p>
+<pre><code class="lang-csharp">var client = new NoSQLClient(
+    new NoSQLConfig
+    {
+        Region = &lt;your-service-region&gt;,
+        AuthorizationProvider = new IAMAuthorizationProvider(
+           async (CancellationToken) =&gt; {
+                // Retrieve the credentials in a preferred manner.
+                await..........
+                return new IAMCredentials
+                {
+                    TenantId = myTenancyOCID,
+                    UserId = myUserOCID,
+                    Fingerprint = myPublicKeyFingerprint,
+                    PrivateKey = myPrivateKeyFile,
+                    Passphrase = myPassphrase
+                }
+           })
+    });
+</code></pre>
+<h3 id="instance_principal">Authorizing with Instance Principal</h3>
+<p><em>Instance Principal</em> is an IAM service feature that enables instances to be
+authorized actors (or principals) to perform actions on service resources.
+Each compute instance has its own identity, and it authenticates using the
+certificates that are added to it.  See
+<a href="https://docs.cloud.oracle.com/en-us/iaas/Content/Identity/Tasks/callingservicesfrominstances.htm">Calling Services from an Instance</a> for prerequisite steps to set up Instance
+Principal.</p>
+<p>Once set up, create <a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLClient.html">NoSQLClient</a>
+instance as follows:</p>
+<pre><code class="lang-csharp">var client = new NoSQLClient(
+    new NoSQLConfig
+    {
+        Region = &lt;your-service-region&gt;,
+        Compartment =
+            &quot;ocid1.compartment.oc1.............................&quot;,
+        AuthorizationProvider =
+            IAMAuthorizationProvider.CreateWithInstancePrincipal()
+    });
+</code></pre>
+<p>You may also represent the same configuration in JSON as follows:</p>
+<pre><code class="lang-json">{
+    &quot;Region&quot;: &quot;&lt;your-service-region&gt;&quot;,
+    &quot;AuthorizationProvider&quot;:
+    {
+        &quot;AuthorizationType&quot;: &quot;IAM&quot;,
+        &quot;UseInstancePrincipal&quot;: true
+    },
+    &quot;Compartment&quot;: &quot;ocid1.compartment.oc1.............................&quot;,
+}
+</code></pre>
+<p>For more details, see <a href="#connecting">Connecting an Application</a>.</p>
+<p>Note that when using Instance Principal you must specify compartment id
+(OCID) as <em>compartment</em> property (see
+<a href="#compartment">Specifying a Compartment</a>).  This is required even if you wish
+to use default compartment.  Note that you must use compartment id and not
+compartment name or path.  In addition, when using Instance Principal, you may
+not prefix table name with compartment name or path when calling
+<a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLClient.html">NoSQLClient</a> APIs.</p>
+<h3 id="resource_principal">Authorizing with Resource Principal</h3>
+<p><em>Resource Principal</em> is an IAM service feature that enables the resources to
+be authorized actors (or principals) to perform actions on service resources.
+You may use Resource Principal when calling Oracle NoSQL Database Cloud
+Service from other Oracle Cloud service resource such as
+<a href="https://docs.cloud.oracle.com/en-us/iaas/Content/Functions/Concepts/functionsoverview.htm">Functions</a>.
+See <a href="https://docs.cloud.oracle.com/en-us/iaas/Content/Functions/Tasks/functionsaccessingociresources.htm">Accessing Other Oracle Cloud Infrastructure Resources from Running Functions</a>
+for how to set up Resource Principal.</p>
+<p>Once set up, create <a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLClient.html">NoSQLClient</a>
+instance as follows:</p>
+<pre><code class="lang-csharp">var client = new NoSQLClient(
+    new NoSQLConfig
+    {
+        Region = &lt;your-service-region&gt;,
+        Compartment =
+            &quot;ocid1.compartment.oc1.............................&quot;,
+        AuthorizationProvider =
+            IAMAuthorizationProvider.CreateWithResourcePrincipal()
+    });
+</code></pre>
+<p>You may also represent the same configuration in JSON as follows:</p>
+<pre><code class="lang-json">{
+    &quot;Region&quot;: &quot;&lt;your-service-region&gt;&quot;,
+    &quot;AuthorizationProvider&quot;:
+    {
+        &quot;AuthorizationType&quot;: &quot;IAM&quot;,
+        &quot;UseResourcePrincipal&quot;: true
+    },
+    &quot;Compartment&quot;: &quot;ocid1.compartment.oc1.............................&quot;,
+}
+</code></pre>
+<p>For more details, see <a href="#connecting">Connecting an Application</a>.</p>
+<p>Note that when using Resource Principal you must specify compartment id
+(OCID) as <em>compartment</em> property (see
+<a href="#compartment">Specifying a Compartment</a>).  This is required even if you wish
+to use default compartment.  Note that you must use compartment id and not
+compartment name or path.  In addition, when using Resource Principal, you may
+not prefix table name with compartment name or path when calling
+<a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLClient.html">NoSQLClient</a> APIs.</p>
+<h2 id="connecting">Connecting an Application</h2>
+<p>To use the SDK in your code, add
+<a class="xref" href="../api/Oracle.NoSQL.Driver.html">Oracle.NoSQL.Driver</a> namespace:</p>
+<pre><code class="lang-csharp">using Oracle.NoSQL.Driver;
+</code></pre>
+<p>The first step in your Oracle NoSQL Database Cloud Service application is to
+create an instance of <a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLClient.html">NoSQLClient</a>
+class which is the main point of access to the service.  To create
+<a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLClient.html">NoSQLClient</a> instance, you need to
+supply an instance of <a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLConfig.html">NoSQLConfig</a>
+class containing the information needed to access the service.  Alternatively,
+you may choose to supply a path (absolute or relative to current directory) to
+a JSON file that contains the same configuration information as in
+<a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLConfig.html">NoSQLConfig</a>.</p>
+<p>The required information consists of the communication region or endpoint and
+authorization information described in section
+<a href="#creds">Acquire Credentials for the Oracle NoSQL Database Cloud Service</a>
+(also see
+<a class="xref" href="../api/Oracle.NoSQL.Driver.IAMAuthorizationProvider.html">IAMAuthorizationProvider</a>).</p>
+<p>It is possible to specify a
+<a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLConfig.Region.html#Oracle_NoSQL_Driver_NoSQLConfig_Region">Region</a> or an
+<a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLConfig.Endpoint.html#Oracle_NoSQL_Driver_NoSQLConfig_Endpoint">Endpoint</a>, but not both. If
+you use a region the endpoint of that region is inferred. If an endpoint is
+used, it needs to be either the endpoint of a Region or a reference to a host
+and port.  For example when using the Cloud Simulator you would use an
+endpoint string like <strong>http://localhost:8080</strong>.</p>
+<p>Other, optional parameters may also be specified in
+<a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLConfig.html">NoSQLConfig</a>. See API documentation for
+<a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLConfig.html">NoSQLConfig</a> for more information.</p>
+<p>For example:</p>
+<pre><code class="lang-csharp">var client = new NoSQLClient(
+    new NoSQLConfig
+    {
+        Region = Region.US_ASHBURN_1,
+        AuthorizationProvider = new IAMAuthorizationProvider(
+            &quot;~/myapp/.oci/config&quot;, &quot;Jane&quot;),
+        Compartment =
+            &quot;ocid1.compartment.oc1.............................&quot;,
+        Timeout = TimeSpan.FromSeconds(10)
+    });
+</code></pre>
+<p>In addition to providing an instance of
+<a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLConfig.html">NoSQLConfig</a>, you may store the initial
+configuration in a JSON file and provide a path to that file when creating
+<a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLClient.html">NoSQLClient</a> instance.</p>
+<p>For example, you may provide the same configuration as in above example using
+the JSON file.  Create file <strong>config.json</strong> with following contents:</p>
+<pre><code class="lang-json">{
+    &quot;Region&quot;: &quot;us-ashburn-1&quot;,
+    &quot;AuthorizationProvider&quot;:
+    {
+        &quot;AuthorizationType&quot;: &quot;IAM&quot;,
+        &quot;ConfigFile&quot;: &quot;~/myapp/.oci/config&quot;,
+        &quot;ProfileName&quot;: &quot;Jane&quot;
+    },
+    &quot;Compartment&quot;: &quot;ocid1.compartment.oc1.............................&quot;,
+    &quot;Timeout&quot;: 10000
+}
+</code></pre>
+<p>Then you may create {@link NoSQLClient} instance as follows:</p>
+<pre><code class="lang-csharp">var client = new NoSQLClient(&quot;/path/to/config.json&quot;);
+</code></pre>
+<p>In general, the JSON representation is very similar to the
+<a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLConfig.html">NoSQLConfig</a> instance, together with
+certain rules for values that cannot be directly represented in JSON.  For
+example, you may see the following from the above representation:</p>
+<ul>
+<li><a class="xref" href="../api/Oracle.NoSQL.Driver.Region.html">Region</a> values are represented as
+corresponding region identifiers.</li>
+<li>Authorization provider is represented as JSON object with the properties</li>
+<li>for a given provider class and an additional <em>AuthorizationType</em> property
+indicating the type of the authorization provider.</li>
+<li>Timeout values are represented as their number of milliseconds.</li>
+</ul>
+<p>These rules are described in detail in
+<a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLConfig.html">NoSQLConfig</a>.</p>
+<p>In the <em>Oracle.NoSQL.Driver.Samples</em> directory, you will see JSON
+configuration files that are used to create a
+<a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLClient.html">NoSQLClient</a> instance as shown above:</p>
+<ul>
+<li>Use <em>cloud_template.json</em> for the cloud service to create a configuration of
+your choice as described in <a href="#supply">Supply Credentials to the Application</a>.
+Fill in appropriate values for properties needed and remove the rest.</li>
+<li>Use <em>cloudsim.json</em> for the Cloud Simulator.</li>
+</ul>
+<p>As metioned in section <a href="#config_file">Using a Configuration File</a>, you may
+also create <a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLClient.html">NoSQLClient</a> instance for
+the cloud service with no-argument constructor (without any configuration
+provided) if you are using a default configuration file with default profile
+containing both the credentials and the service region.</p>
+<h3 id="service_type">Specifying Service Type</h3>
+<p>Because this SDK is used both for the Oracle NoSQL Cloud Service and the
+On-Premise Oracle NoSQL Database,
+<a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLConfig.html">NoSQLConfig</a> instance can specify
+that we are connecting to the cloud service by setting its
+<a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLConfig.ServiceType.html#Oracle_NoSQL_Driver_NoSQLConfig_ServiceType">ServiceType</a> property to
+<a class="xref" href="../api/Oracle.NoSQL.Driver.ServiceType.Cloud.html#Oracle_NoSQL_Driver_ServiceType_Cloud">ServiceType.Cloud</a>.</p>
+<p>You can always explicitly specify the
+<a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLConfig.ServiceType.html#Oracle_NoSQL_Driver_NoSQLConfig_ServiceType">ServiceType</a> property in
+<a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLConfig.html">NoSQLConfig</a>, but in many cases such as
+in the examples above, it may be determined automatically.  In particular, the
+driver will assume the cloud service if any of the following is true:</p>
+<ul>
+<li><a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLConfig.html">NoSQLConfig</a> has
+<a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLConfig.Region.html#Oracle_NoSQL_Driver_NoSQLConfig_Region">Region</a> property set (as opposed
+to <a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLConfig.Endpoint.html#Oracle_NoSQL_Driver_NoSQLConfig_Endpoint">Endpoint</a> property).  It is
+recommended to use region instead of endpoint for the cloud service.</li>
+<li>The value of
+<a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLConfig.AuthorizationProvider.html#Oracle_NoSQL_Driver_NoSQLConfig_AuthorizationProvider">AuthorizationProvider</a>
+is an instance of
+<a class="xref" href="../api/Oracle.NoSQL.Driver.IAMAuthorizationProvider.html">IAMAuthorizationProvider</a>)</li>
+<li>No configuration is provided, with both the region and the credentials
+stored in OCI configuration file in default location as described in section
+<a href="#config_file">Using a Configuration File</a>.</li>
+</ul>
+<p>On the other hand, for the configuration that specifies neither service type
+nor authorization provider but that specifies the endpoint (and not region),
+the service type will default to
+<a class="xref" href="../api/Oracle.NoSQL.Driver.ServiceType.CloudSim.html#Oracle_NoSQL_Driver_ServiceType_CloudSim">ServiceType.CloudSim</a> (see
+<a href="#cloudsim">Using the Cloud Simulator</a>).</p>
+<p>For more details, see <a class="xref" href="../api/Oracle.NoSQL.Driver.ServiceType.html">ServiceType</a>
+enumeration.</p>
+<p>You may also specify the service type in a JSON configuration file as
+string value of the <a class="xref" href="../api/Oracle.NoSQL.Driver.ServiceType.html">ServiceType</a>
+enumeration constant.  For example:</p>
+<pre><code class="lang-json">{
+    &quot;ServiceType&quot;: &quot;Cloud&quot;,
+    &quot;Region&quot;: &quot;us-ashburn-1&quot;
+}
+</code></pre>
+<h3 id="compartment">Specifying a Compartment</h3>
+<p>In the Oracle NoSQL Cloud Service environment tables are always created in an
+Oracle Cloud Infrastructure <em>compartment</em> (see
+<a href="https://docs.cloud.oracle.com/en-us/iaas/Content/Identity/Tasks/managingcompartments.htm">Managing Compartments</a>).
+It is recommended that compartments be created for tables to better organize
+them and control security, which is a feature of compartments. The default
+compartment for tables is the root compartment of the user's tenancy. A
+default compartment for all operations can be specified by setting the
+<a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLConfig.Compartment.html#Oracle_NoSQL_Driver_NoSQLConfig_Compartment">Compartment</a> property of
+<a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLConfig.html">NoSQLConfig</a>.  For example:</p>
+<pre><code class="lang-csharp">var client = new NoSQLClient(
+    new NoSQLConfig
+    {
+        Region = Region.US_ASHBURN_1,
+        Compartment = &quot;&lt;compartment_ocid_or_name&gt;&quot;
+    });
+</code></pre>
+<p>The string value may be either a compartment OCID or a compartment name or
+path.  If it is a simple name it must specify a top-level compartment. If it
+is a path to a nested compartment, the top-level compartment must be excluded
+as it is inferred from the tenancy.</p>
+<p>In addition, all operation options classes have <em>Comparment</em> property, such as
+<a class="xref" href="../api/Oracle.NoSQL.Driver.TableDDLOptions.Compartment.html#Oracle_NoSQL_Driver_TableDDLOptions_Compartment">TableDDLOptions.Compartment</a>,
+<a class="xref" href="../api/Oracle.NoSQL.Driver.GetOptions.Compartment.html#Oracle_NoSQL_Driver_GetOptions_Compartment">GetOptions.Compartment</a>,
+<a class="xref" href="../api/Oracle.NoSQL.Driver.PutOptions.Compartment.html#Oracle_NoSQL_Driver_PutOptions_Compartment">PutOptions.Compartment</a>,
+etc.  Thus you may also specify comparment separately for any operation.
+This value, if set, will override the compartment value in
+<a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLConfig.html">NoSQLConfig</a>, if any.</p>
+<p>If compartment is not supplied, the tenancy OCID will be used as default. Note
+this only applies if you are <a href="#user">authorizing with user's identity</a>. When
+using <a href="#instance_principal">instance principal</a> or
+<a href="#resource_principal">resouce principal</a>, compartment id must be specified.</p>
+<h2 id="quickstart">Example Quick Start</h2>
+<p>The examples in the SDK are configured to make it simple to connect and run
+against the Oracle NoSQL Database Cloud Service. Follow these steps:</p>
+<ol>
+<li>Acquire credentials. See <a href="#creds">Acquire Credentials</a>. You will need these:</li>
+</ol>
+<ul>
+<li>Tenancy ID</li>
+<li>User ID</li>
+<li>API signing key (private key file in PEM format</li>
+<li>Fingerprint for the public key uploaded to the user's account</li>
+<li>Private key pass phrase, needed only if the private key is encrypted</li>
+</ul>
+<ol start="2">
+<li>Put the information in a configuration file, ~/.oci/config, based on
+the format described in <a href="#config_file">Using a Configuration File</a>. It should
+look like this:</li>
+</ol>
+<pre><code class="lang-ini">[DEFAULT]
+tenancy=&lt;your-tenancy-ocid&gt;
+user=&lt;your-user-ocid&gt;
+fingerprint=&lt;fingerprint-of-your-public-key&gt;
+key_file=&lt;path-to-your-private-key-file&gt;
+pass_phrase=&lt;your-private-key-passphrase&gt;
+region=&lt;your-region-identifier&gt;
+</code></pre>
+<p>Instead of using a configuration file it is possible to modify the example code
+to directly provide your credentials as described in
+<a href="#config_api">Specifying Credentials Directly</a>.</p>
+<ol start="3">
+<li>Use git to clone the Oracle NoSQL Database .NET SDK:</li>
+</ol>
+<pre><code class="lang-bash">git clone https://github.com/oracle/nosql-dotnet-sdk
+</code></pre>
+<p>Alternatively you may download the zip file or a tarball containing the SDK
+source from the
+<a href="https://github.com/oracle/nosql-dotnet-sdk/releases">GitHub Releases</a> page.</p>
+<ol start="4">
+<li>The examples are located under <em>Oracle.NoSQL.Driver.Samples</em> directory.
+Go to the <em>BasicExample</em>:</li>
+</ol>
+<pre><code class="lang-bash">cd  Oracle.NoSQL.Driver.Samples/BasicExample
+</code></pre>
+<p>Under this directory, you will see the example source code <em>Program.cs</em> and
+the project <em>BasicExample.csproj</em>.</p>
+<ol start="5">
+<li>Build and run the project:</li>
+</ol>
+<pre><code class="lang-bash">dotnet run -f &lt;your_target_framework&gt;
+</code></pre>
+<p>The project supports multiple
+<a href="https://docs.microsoft.com/en-us/dotnet/standard/frameworks">target frameworks</a>
+which currently are .NET Core 3.1 and .NET 5.0, so you must specify the target
+framework to use.</p>
+<p>For .NET 5.0, specify <em>net5.0</em>:</p>
+<pre><code class="lang-bash">dotnet run -f net5.0
+</code></pre>
+<p>For .NET Core 3.1, specify <em>netcoreapp3.1</em>:</p>
+<pre><code class="lang-bash">dotnet run -f netcoreapp3.1
+</code></pre>
+<p>Note that the commands above will automatically download and install Oracle
+NoSQL Database SDK package as a dependency of the example project.</p>
+<p>Alternatively, you may build and run the example project in
+<a href="https://visualstudio.microsoft.com/">Visual Studio</a>.  In Visual Studio, open
+the Samples solution located at
+<em>Oracle.NoSQL.Driver.Samples/Oracle.NoSQL.Driver.Samples.sln</em>.</p>
+<h2 id="cloudsim">Using the Cloud Simulator</h2>
+<p>The configuration instructions above are for getting connected to the actual
+Oracle NoSQL Database Cloud Service.</p>
+<p>You may first get familiar with Oracle NoSQL Database .NET SDK and its
+interfaces by using the
+<a href="https://docs.oracle.com/en/cloud/paas/nosql-cloud/csnsd/develop-oracle-nosql-cloud-simulator.html">Oracle NoSQL Cloud Simulator</a>.</p>
+<p>The Cloud Simulator simulates the cloud service and lets you write and test
+applications locally without accessing Oracle NoSQL Database Cloud Service.</p>
+<p>You can start developing your application with the Oracle NoSQL Cloud
+Simulator, using and understanding the basic examples, before you get
+started with the Oracle NoSQL Database Cloud Service. After building,
+debugging and testing your application with the Oracle NoSQL Cloud
+Simulator, move your application to the Oracle NoSQL Database Cloud Service.</p>
+<p>Note that the Cloud Simulator does not require authorization information and
+credentials described above that are required by Oracle NoSQL Database
+Cloud Service.  Only the endpoint is required and is by default <em>localhost:8080</em>.</p>
+<p>Follow these instructions to run an example program against the Cloud
+Simulator:</p>
+<ol>
+<li><p><a href="https://docs.oracle.com/pls/topic/lookup?ctx=en/cloud/paas/nosql-cloud&amp;id=CSNSD-GUID-3E11C056-B144-4EEA-8224-37F4C3CB83F6">Download</a>
+and start the Cloud Simulator.</p>
+</li>
+<li><p>Follow step 3. of <a href="#quickstart">Example Quick Start</a> to obtain the SDK
+source.</p>
+</li>
+<li><p>In <em>Oracle.NoSQL.Driver.Samples</em> directory you will find the file
+<em>cloudsim.json</em> containging default configuration for the Cloud Simulator.
+It should look like this:</p>
+</li>
+</ol>
+<pre><code class="lang-json">{
+    &quot;Endpoint&quot;: &quot;http://localhost:8080&quot;
+}
+</code></pre>
+<p>Copy/edit this file to modify the endpoint if you are running the Cloud
+Simulator on a different port or another machine.  You may also add other
+configuration properties described in
+<a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLConfig.html">NoSQLConfig</a> if needed.  Note that
+<a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLConfig.AuthorizationProvider.html#Oracle_NoSQL_Driver_NoSQLConfig_AuthorizationProvider">AuthorizationProvider</a>
+property should not be set for the Cloud Simulator.</p>
+<ol start="4">
+<li>Build and run examples as described in steps 4. and 5. of the
+<a href="#quickstart">Example Quick Start</a>.  Each example takes the path to the
+JSON configuration file as an optional command line parameter, which you can
+provide to the <em>dotnet run</em> command.  For example:</li>
+</ol>
+<pre><code class="lang-bash">cd Oracle.NoSQL.Driver.Samples/BasicExample
+dotnet run -f net5.0 -- ../cloudsim.json
+</code></pre>
+<p>As described in section <a href="#service_type">Specifying Service Type</a>, for the
+configuration above, you do not need to specify
+<a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLConfig.ServiceType.html#Oracle_NoSQL_Driver_NoSQLConfig_ServiceType">ServiceType</a> property which
+will default to
+<a class="xref" href="../api/Oracle.NoSQL.Driver.ServiceType.CloudSim.html#Oracle_NoSQL_Driver_ServiceType_CloudSim">ServiceType.CloudSim</a>.</p>
+</article>
+          </div>
+          
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                  <li>
+                    <a href="https://github.com/oracle/nosql-dotnet-sdk/blob/main/Documentation/tutorials/connect-cloud.md/#L1" class="contribution-link">Improve this Doc</a>
+                  </li>
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+                <h5>In This Article</h5>
+                <div></div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+            <span>Copyright © 2020, 2021 Oracle and/or its affiliates. All rights reserved.</span>
+            
+          </div>
+        </div>
+      </footer>
+    </div>
+    
+    <script type="text/javascript" src="../styles/docfx.vendor.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>

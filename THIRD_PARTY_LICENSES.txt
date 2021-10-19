@@ -1,14 +1,5 @@
 This THIRDPARTY.txt file contains the licenses and notices that are required for
-distribution.
-
-Copyright Notices section for SDK
-
-This driver uses APIs from .NET Core SDK 3.1 and 5.0
-Copyright (c) .NET Foundation and contributors. All rights reserved.
-Licensed under MIT license.
-
-
-Copyright Notices section for associated documentation
+distribution of the documentation.
 
 Copyright Notices section
 docfx.js. main.js
@@ -22,7 +13,6 @@ Licensed under the MIT license.
 lunr
 Copyright (C) 2017 Oliver Nightingale
 Licensed under the MIT license.
-
 
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
