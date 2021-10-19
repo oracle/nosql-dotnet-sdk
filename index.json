@@ -3647,7 +3647,7 @@
   "index.html": {
     "href": "index.html",
     "title": "Oracle NoSQL Database .NET SDK | NoSQL SDK for .NET",
-    "keywords": "Oracle NoSQL Database .NET SDK This is version 21.3.1 of Oracle NoSQL Database .NET SDK for Oracle NoSQL Database. It supports both the Oracle NoSQL Database Cloud Service and the on-premise product, Oracle NoSQL Database . Supported plagforms are .NET 5.0 and .NET Core 3.1 . To get started, see tutorials and API reference ."
+    "keywords": "Oracle NoSQL Database .NET SDK This is version 5.1.0 of Oracle NoSQL Database .NET SDK for Oracle NoSQL Database. It supports both the Oracle NoSQL Database Cloud Service and the on-premise product, Oracle NoSQL Database . Supported platforms are .NET 5.0 and .NET Core 3.1 . To get started, see tutorials and API reference ."
   },
   "tutorials/connect-cloud.html": {
     "href": "tutorials/connect-cloud.html",
