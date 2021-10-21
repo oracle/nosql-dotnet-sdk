@@ -79,8 +79,15 @@ namespace Oracle.NoSQL.Driver.Tests
                 PrivateKeyPEM = "private_key_pem"
             });
 
-        // The contents of the key will not be used during initialization.
-        private protected static readonly RSA CloudPrivateKey = RSA.Create();
+        // RSA generates key pair on the first use (export), so we make sure
+        // the key pair is generated here.  This ensures that this object can
+        // be cloned and compared correctly.
+        private protected static readonly RSA CloudPrivateKey = new Func<RSA>(
+            () => {
+                var rsa = RSA.Create();
+                rsa.ExportParameters(true);
+                return rsa;
+            })();
 
         private protected const string OCIConfigProfile = "my_profile";
 

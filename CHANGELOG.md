@@ -14,3 +14,6 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 ### Fixed
 - Fixed unit test failure in query test.
+- Fix and workaround for an issue with DeepEqual library for comparison of
+RSA objects within Config unit tests.
+

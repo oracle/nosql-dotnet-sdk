@@ -13,12 +13,12 @@ namespace Oracle.NoSQL.Driver.Tests
     using System.IO;
     using System.Linq;
     using System.Reflection;
-    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Force.DeepCloner;
     using DeepEqual;
     using DeepEqual.Syntax;
+    using System.Security.Cryptography;
 
     internal sealed class TempFileCache : IDisposable
     {
@@ -112,6 +112,50 @@ namespace Oracle.NoSQL.Driver.Tests
             value = DeepCopy(value);
             return AssignProperties(value, properties);
         }
+        
+        private class CustomComparison<T> : IComparison
+        {
+            private Func<T,T,bool> comparator;
+
+            internal CustomComparison(Func<T,T,bool> comparator)
+            {
+                this.comparator = comparator;
+            }
+
+            public bool CanCompare(Type type1, Type type2) =>
+                typeof(T).IsAssignableFrom(type1) &&
+                typeof(T).IsAssignableFrom(type2);
+
+            public (ComparisonResult result, IComparisonContext context)
+                Compare(IComparisonContext context, object value1, object value2)
+            {
+                var result = Object.ReferenceEquals(value1, value2) ||
+                    (value1 != null && value2 != null &&
+                    comparator((T)value1, (T)value2));
+                return (result
+                    ? ComparisonResult.Pass : ComparisonResult.Fail,
+                    context);
+            }
+        }
+
+        // Workaround for a bug in DeepEqual where it throws on RSA type.
+        // Other types may be added for custom comparison if needed.
+        private static readonly IComparison customCompare1 =
+            new CustomComparison<RSA>((value1, value2) =>
+            value1.ToXmlString(true) == value2.ToXmlString(true));
+
+        private static CompareSyntax<T,T> CreateCompareSyntax<T>(T expected,
+            T actual, bool comparePrivate)
+        {
+            var compareSyntax = expected.WithDeepEqual(actual)
+                .WithCustomComparison(customCompare1);
+
+            if (comparePrivate)
+            {
+                compareSyntax = compareSyntax.ExposeInternalsOf<T>();
+            }
+            return compareSyntax;
+        }
 
         internal static void AssertDeepEqual<T>(T expected, T actual,
             bool comparePrivate = false)
@@ -122,22 +166,16 @@ namespace Oracle.NoSQL.Driver.Tests
                 return;
             }
 
-            var compareSyntax = expected.WithDeepEqual(actual);
-            if (comparePrivate)
-            {
-                compareSyntax = compareSyntax.ExposeInternalsOf<T>();
-            }
-
             try
             {
-                compareSyntax.Assert();
+                CreateCompareSyntax(expected, actual, comparePrivate)
+                    .Assert();
             }
             catch (Exception ex)
             {
                 Assert.Fail($"Values are not deep equal: {ex}");
             }
         }
-
         internal static void AssertNotDeepEqual<T>(T expected, T actual,
             bool comparePrivate = false)
         {
@@ -147,13 +185,8 @@ namespace Oracle.NoSQL.Driver.Tests
                 return;
             }
 
-            var compareSyntax = expected.WithDeepEqual(actual);
-            if (comparePrivate)
-            {
-                compareSyntax = compareSyntax.ExposeInternalsOf<T>();
-            }
-
-            Assert.IsFalse(compareSyntax.Compare(),
+            Assert.IsFalse(CreateCompareSyntax(expected, actual,
+                comparePrivate).Compare(),
                 "Values are not supposed to be equal");
         }
 
