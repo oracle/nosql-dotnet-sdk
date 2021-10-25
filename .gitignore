@@ -1,0 +1,5 @@
+Documentation/_site
+Documentation/obj
+**/bin/*
+**/obj/*
+*.diff
