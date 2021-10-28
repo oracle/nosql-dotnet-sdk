@@ -78,7 +78,7 @@ To perform database operations, you need to create an instance of
 #### Connecting to Oracle NoSQL Database Cloud Service
 
 Running against the Cloud Service requires an Oracle Cloud account. See
-[Configuring for the Cloud Service](https://oracle.github.io/nosql-dotnet-sdk/tutorial-connect-cloud.html#configure_cloud)
+[Configuring for the Cloud Service](https://oracle.github.io/nosql-dotnet-sdk/tutorials/connect-cloud.html#configure_cloud)
 for information on getting an account and acquiring required credentials.
 
 1. Collect the following information:
@@ -113,7 +113,7 @@ var client = new NoSQLClient(
 
 Alternatively, you may put the credentials into an OCI configuration file.
 See
-[Using a Configuration File](https://oracle.github.io/nosql-dotnet-sdk/tutorial-connect-cloud.html#config_file).
+[Using a Configuration File](https://oracle.github.io/nosql-dotnet-sdk/tutorials/connect-cloud.html#config_file).
 Put your credentials in a file *~/.oci/config* (on Windows ~ stands for
 %USERPROFILE%) under profile named *DEFAULT*.  Include your region together
 with the credentials.  Then create *NoSQLClient* as follows:
@@ -126,7 +126,7 @@ var client = new NoSQLClient();
 
 Running against the Oracle NoSQL Cloud Simulator requires a running Cloud
 Simulator instance. See
-[Using the Cloud Simulator](https://oracle.github.io/nosql-dotnet-sdk/tutorial-connect-cloud.html#cloudsim)
+[Using the Cloud Simulator](https://oracle.github.io/nosql-dotnet-sdk/tutorials/connect-cloud.html#cloudsim)
 for information on how to download and start the Cloud Simulator.
 
 By default, Cloud Simulator runs on *localhost* and uses HTTP port *8080*.
@@ -149,7 +149,7 @@ Oracle NoSQL Database instance as well as a running NoSQL Proxy server
 instance. Your application will connect to the proxy server.
 
 See
-[Connecting to an On-Premise Oracle NoSQL Database](https://oracle.github.io/nosql-dotnet-sdk/tutorial-connect-on-prem.html)
+[Connecting to an On-Premise Oracle NoSQL Database](https://oracle.github.io/nosql-dotnet-sdk/tutorials/connect-on-prem.html)
 for information on how to download and start the database instance and proxy
 server.
 
@@ -171,7 +171,7 @@ If the proxy was started on a different host or port, change *Endpoint*
 accordingly.
 
 A more complex setup is required to use the proxy in secure mode.  See
-[Configuring the SDK for a Secure Store](https://oracle.github.io/nosql-dotnet-sdk/tutorial-connect-on-prem.html#secure).
+[Configuring the SDK for a Secure Store](https://oracle.github.io/nosql-dotnet-sdk/tutorials/connect-on-prem.html#secure).
 
 ### Using Oracle NoSQL Database
 
@@ -260,7 +260,7 @@ JSON configuration file used to create *NoSQLClient* instance.
 
 Note: you may omit this command line argument if running against the cloud
 service and using default OCI configuration file.  See
-[Example Quick Start](https://oracle.github.io/nosql-dotnet-sdk/tutorial-connect-cloud.html#quickstart).
+[Example Quick Start](https://oracle.github.io/nosql-dotnet-sdk/tutorials/connect-cloud.html#quickstart).
 
 Use configuration file templates provided in *Oracle.NoSQL.Driver.Samples*
 directory.  Make a copy of the template, fill in the appropriate values and
@@ -269,17 +269,17 @@ remove unused properties.  The following templates are provided:
 * **cloud\_template.json** is used to access a cloud service instance and
 allows you to customize configuration. Copy that file and fill in appropriate
 values as described in
-[Supply Credentials to the Application](https://oracle.github.io/nosql-dotnet-sdk/tutorial-connect-cloud.html#supply).
+[Supply Credentials to the Application](https://oracle.github.io/nosql-dotnet-sdk/tutorials/connect-cloud.html#supply).
 * **cloudsim.json** is used if you are running against the cloud simulator.
 You may use this file directly as config file if you are running the cloud
 simulator on localhost on port 8080. If the cloud simulator has been started on
 a different host or port, change the endpoint. See
-[Using the Cloud Simulator](https://oracle.github.io/nosql-dotnet-sdk/tutorial-connect-cloud.html#cloudsim).
+[Using the Cloud Simulator](https://oracle.github.io/nosql-dotnet-sdk/tutorials/connect-cloud.html#cloudsim).
 * **kvstore\_template.json** is used to access on-premise NoSQL Database via
 the proxy.  Copy that file and fill in appropriate values as described in
-[Configuring the SDK](https://oracle.github.io/nosql-dotnet-sdk/tutorial-connect-on-prem.html#config).
+[Configuring the SDK](https://oracle.github.io/nosql-dotnet-sdk/tutorials/connect-on-prem.html#config).
 Also see
-[Example Quick Start](https://oracle.github.io/nosql-dotnet-sdk/tutorial-connect-on-prem.html#quickstart).
+[Example Quick Start](https://oracle.github.io/nosql-dotnet-sdk/tutorials/connect-on-prem.html#quickstart).
 
 To run an example, go to the example's directory and issue *dotnet run*
 command, providing JSON config file as the command line argument:
@@ -402,7 +402,7 @@ party notices and licenses.
 The [THIRD\_PARTY\_LICENSES\_DEV](THIRD_PARTY_LICENSES_DEV.txt) file contains third
 party notices and licenses for running the test programs.
 
-The *Documentation* directory contains the license files for the documentation.  
+The *Documentation* directory contains the license files for the documentation.
 If you build and distribute a documentation bundle, these should be included in
 that bundle.
 
