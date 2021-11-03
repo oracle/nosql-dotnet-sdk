@@ -1,48 +1,48 @@
 {
-  "metadata": [
-    {
-      "src": [
+    "metadata": [
         {
-		  "src": "../Oracle.NoSQL.SDK/src/bin",
-          "files": [ "**/Debug/netcoreapp3.1/*.dll" ]
+            "src": [
+                {
+	            "src": "../Oracle.NoSQL.SDK/src/bin",
+                    "files": [ "**/Debug/netcoreapp3.1/*.dll" ]
+                }
+            ],
+            "dest": "obj/api",
+            "shouldSkipMarkup": true,
+	    "properties": {
+	        "TargetFramework": "netcoreapp3.1"
+	    }
         }
-      ],
-      "dest": "obj/api",
-      "shouldSkipMarkup": true,
-	  "properties": {
-	      "TargetFramework": "netcoreapp3.1"
-	  }
+    ],
+    "build": {
+        "content": [
+            {
+                "files": [ "**/*.yml" ],
+                "src": "obj/api",
+                "dest": "api"
+            },
+            {
+                "files": [ "tutorials/*.md", "*.md", "toc.yml" ]
+            }
+        ],
+        "dest": "_site",
+        "globalMetadata": {
+            "_appTitle": "NoSQL SDK for .NET",
+            "_enableSearch": true,
+            "_appFooter": "<span>Copyright © 2020, 2021 Oracle and/or its affiliates. All rights reserved.</span>",
+	    "_appLogoPath": "Logo.png",
+	    "_appFaviconPath": "favicon.ico"
+        },
+        "markdownEngineName": "markdig",
+        "overwrite": "specs/*.md",
+        "postProcessors": [
+            "ExtractSearchIndex"
+        ],
+        "resource": [
+            {
+                "files": [ "Logo.png", "favicon.ico", "LICENSE.txt", "THIRD_PARTY_LICENSES.txt" ]
+            }
+        ],
+        "xrefService": [ "https://xref.docs.microsoft.com/query?uid={uid}" ]
     }
-  ],
-  "build": {
-    "content": [
-      {
-        "files": [ "**/*.yml" ],
-        "src": "obj/api",
-        "dest": "api"
-      },
-      {
-        "files": [ "tutorials/*.md", "*.md", "toc.yml" ]
-      }
-    ],
-    "dest": "_site",
-    "globalMetadata": {
-      "_appTitle": "NoSQL SDK for .NET",
-      "_enableSearch": true,
-      "_appFooter": "<span>Copyright © 2020, 2021 Oracle and/or its affiliates. All rights reserved.</span>",
-	  "_appLogoPath": "../Logo.png",
-	  "_appFaviconPath": "../favicon.ico"
-    },
-    "markdownEngineName": "markdig",
-    "overwrite": "specs/*.md",
-    "postProcessors": [
-      "ExtractSearchIndex"
-    ],
-    "resource": [
-      {
-        "files": [ "logo.svg", "LICENSE.txt", "THIRD_PARTY_LICENSES.txt" ]
-      }
-    ],
-    "xrefService": [ "https://xref.docs.microsoft.com/query?uid={uid}" ]
-  }
 }
