@@ -8,9 +8,9 @@
     <title>Prerequisites | NoSQL SDK for .NET </title>
     <meta name="viewport" content="width=device-width">
     <meta name="title" content="Prerequisites | NoSQL SDK for .NET ">
-    <meta name="generator" content="docfx 2.58.0.0">
+    <meta name="generator" content="docfx 2.58.8.0">
     
-    <link rel="shortcut icon" href="../../favicon.ico">
+    <link rel="shortcut icon" href="../favicon.ico">
     <link rel="stylesheet" href="../styles/docfx.vendor.css">
     <link rel="stylesheet" href="../styles/docfx.css">
     <link rel="stylesheet" href="../styles/main.css">
@@ -35,7 +35,7 @@
               </button>
               
               <a class="navbar-brand" href="../index.html">
-                <img id="logo" class="svg" src="../../Logo.png" alt="">
+                <img id="logo" class="svg" src="../Logo.png" alt="">
               </a>
             </div>
             <div class="collapse navbar-collapse" id="navbar">
@@ -53,7 +53,7 @@
                           <a href="../tutorials/intro.html" title="Tutorials">Tutorials</a>
                       </li>
                       <li>
-                          <a href="../api/Oracle.NoSQL.Driver.html" title="API Documentation">API Documentation</a>
+                          <a href="../api/Oracle.NoSQL.SDK.html" title="API Documentation">API Documentation</a>
                       </li>
                 </ul>    </div>
           </div>
@@ -137,10 +137,10 @@ if you wish to install the SDK independently of your project.</li>
 <p>You can install the SDK from <a href="https://www.nuget.org/">NuGet Package Manager</a>
 either by adding it as a reference to your project or independently.</p>
 <h3 id="add-the-sdk-as-a-project-reference">Add the SDK as a Project Reference</h3>
-<p>You may add the SDK <a href="https://www.nuget.org/packages/Oracle.NoSQL.Driver/">NuGet Package</a>
+<p>You may add the SDK <a href="https://www.nuget.org/packages/Oracle.NoSQL.SDK/">NuGet Package</a>
 as a reference to your project by using .Net CLI:</p>
 <pre><code class="lang-bash">cd &lt;your-project-directory&gt;
-dotnet add package Oracle.NoSQL.Driver
+dotnet add package Oracle.NoSQL.SDK
 </code></pre>
 <p>Alternatively, you may perform the same using
 <a href="https://docs.microsoft.com/en-us/nuget/consume-packages/install-use-packages-visual-studio">NuGet Package Manager</a>
@@ -148,7 +148,7 @@ in <a href="https://visualstudio.microsoft.com/">Visual Studio</a>.</p>
 <h3 id="independent-install">Independent Install</h3>
 <p>You may install the SDK independently into a directory of your choice by using
 <a href="https://docs.microsoft.com/en-us/nuget/install-nuget-client-tools#cli-tools">nuget.exe CLI</a>:</p>
-<pre><code class="lang-bash">nuget.exe install Oracle.NoSQL.Driver -OutputDirectory &lt;your-packages-directory&gt;
+<pre><code class="lang-bash">nuget.exe install Oracle.NoSQL.SDK -OutputDirectory &lt;your-packages-directory&gt;
 </code></pre>
 <h2 id="config">Configuring the SDK</h2>
 <p>To use the SDK with the On-Premise Oracle NoSQL Database you need the following
@@ -181,7 +181,7 @@ NoSQL Database, the endpoint specifies the url of the proxy, in the form
 <p>You may also omit the protocol portion:</p>
 <pre><code class="lang-csharp">    var endpoint = &quot;myhost:8080&quot;;
 </code></pre>
-<p>See <a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLConfig.Endpoint.html#Oracle_NoSQL_Driver_NoSQLConfig_Endpoint">NoSQLConfig.Endpoint</a> for
+<p>See <a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLConfig.Endpoint.html#Oracle_NoSQL_SDK_NoSQLConfig_Endpoint">NoSQLConfig.Endpoint</a> for
 more information on the endpoint.</p>
 <p>Also, see
 <a href="#connect_non_secure">Connecting to a Non-Secure Store</a> on how to connect to
@@ -199,7 +199,7 @@ The following information is required:</p>
 <pre><code class="lang-csharp">    var endpoint = &quot;https://localhost:8181&quot;;
 </code></pre>
 <p>Note that unless using port 443, the protocol portion of the url is required.</p>
-<p>See <a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLConfig.Endpoint.html#Oracle_NoSQL_Driver_NoSQLConfig_Endpoint">NoSQLConfig.Endpoint</a> for
+<p>See <a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLConfig.Endpoint.html#Oracle_NoSQL_SDK_NoSQLConfig_Endpoint">NoSQLConfig.Endpoint</a> for
 details.</p>
 <ol start="2">
 <li>User for the driver which is used by the application to access the kvstore
@@ -239,7 +239,7 @@ of the trusted root CAs, e.g. if you are using a self-signed certificate or a
 custom CA, the driver needs to trust that CA/certificate in order to connect
 to the proxy.  You can provide trusted root certificates to the driver by
 specifying
-<a class="xref" href="../api/Oracle.NoSQL.Driver.ConnectionOptions.TrustedRootCertificateFile.html#Oracle_NoSQL_Driver_ConnectionOptions_TrustedRootCertificateFile">TrustedRootCertificateFile</a>
+<a class="xref" href="../api/Oracle.NoSQL.SDK.ConnectionOptions.TrustedRootCertificateFile.html#Oracle_NoSQL_SDK_ConnectionOptions_TrustedRootCertificateFile">TrustedRootCertificateFile</a>
 property.</li>
 </ol>
 <p>See <a href="#connect_cert">Specifying Trusted Root Certificates</a> for details.</p>
@@ -254,43 +254,43 @@ CAs that you will find in your operating system trust store).</p>
 a secure store.</p>
 <h2 id="connecting">Connecting an Application</h2>
 <p>To use the SDK in your code, add
-<a class="xref" href="../api/Oracle.NoSQL.Driver.html">Oracle.NoSQL.Driver</a> namespace:</p>
-<pre><code class="lang-csharp">using Oracle.NoSQL.Driver;
+<a class="xref" href="../api/Oracle.NoSQL.SDK.html">Oracle.NoSQL.SDK</a> namespace:</p>
+<pre><code class="lang-csharp">using Oracle.NoSQL.SDK;
 </code></pre>
 <p>The first step in your Oracle NoSQL Database application is to
-create an instance of <a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLClient.html">NoSQLClient</a>
+create an instance of <a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLClient.html">NoSQLClient</a>
 class which is the main point of access to the service.  To create
-<a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLClient.html">NoSQLClient</a> instance, you need to
-supply an instance of <a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLConfig.html">NoSQLConfig</a>
+<a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLClient.html">NoSQLClient</a> instance, you need to
+supply an instance of <a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLConfig.html">NoSQLConfig</a>
 class containing information needed to access the service.  Alternatively, you
 may choose to supply a path (absolute or relative to current directory) to a
 JSON file that contains the same configuration information as in
-<a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLConfig.html">NoSQLConfig</a>.</p>
+<a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLConfig.html">NoSQLConfig</a>.</p>
 <h3 id="service_type">Specifying Service Type</h3>
 <p>Since Oracle Database NoSQL .NET SDK is used both for Oracle NoSQL Cloud
 Service and On-Premise Oracle NoSQL Database,
-<a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLConfig.html">NoSQLConfig</a> object may need to specify
+<a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLConfig.html">NoSQLConfig</a> object may need to specify
 that we are connecting to on-premise NoSQL Database by setting its
-<a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLConfig.ServiceType.html#Oracle_NoSQL_Driver_NoSQLConfig_ServiceType">ServiceType</a> property to
-<a class="xref" href="../api/Oracle.NoSQL.Driver.ServiceType.KVStore.html#Oracle_NoSQL_Driver_ServiceType_KVStore">ServiceType.KVStore</a>. You must
-specify <a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLConfig.ServiceType.html#Oracle_NoSQL_Driver_NoSQLConfig_ServiceType">ServiceType</a> to
+<a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLConfig.ServiceType.html#Oracle_NoSQL_SDK_NoSQLConfig_ServiceType">ServiceType</a> property to
+<a class="xref" href="../api/Oracle.NoSQL.SDK.ServiceType.KVStore.html#Oracle_NoSQL_SDK_ServiceType_KVStore">ServiceType.KVStore</a>. You must
+specify <a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLConfig.ServiceType.html#Oracle_NoSQL_SDK_NoSQLConfig_ServiceType">ServiceType</a> to
 connect to non-secure store.  For secure store, because the
-<a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLConfig.AuthorizationProvider.html#Oracle_NoSQL_Driver_NoSQLConfig_AuthorizationProvider">AuthorizationProvider</a>
+<a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLConfig.AuthorizationProvider.html#Oracle_NoSQL_SDK_NoSQLConfig_AuthorizationProvider">AuthorizationProvider</a>
 property will be set to an instance of
-<a class="xref" href="../api/Oracle.NoSQL.Driver.KVStoreAuthorizationProvider.html">KVStoreAuthorizationProvider</a>
+<a class="xref" href="../api/Oracle.NoSQL.SDK.KVStoreAuthorizationProvider.html">KVStoreAuthorizationProvider</a>
 the service type will default to
-<a class="xref" href="../api/Oracle.NoSQL.Driver.ServiceType.KVStore.html#Oracle_NoSQL_Driver_ServiceType_KVStore">ServiceType.KVStore</a>, thus you
+<a class="xref" href="../api/Oracle.NoSQL.SDK.ServiceType.KVStore.html#Oracle_NoSQL_SDK_ServiceType_KVStore">ServiceType.KVStore</a>, thus you
 do not need to set the service type explicitly.  See
-<a class="xref" href="../api/Oracle.NoSQL.Driver.ServiceType.html">ServiceType</a> for details.</p>
+<a class="xref" href="../api/Oracle.NoSQL.SDK.ServiceType.html">ServiceType</a> for details.</p>
 <p>Other required information has been described in section
 <a href="#config">Configuring the SDK</a> and is different for connections to non-secure
 and secure stores.</p>
 <h3 id="connect_non_secure">Connecting to a Non-Secure Store</h3>
 <p>To connect to the proxy in non-secure mode, you need to specify communication
 endpoint and the service type as
-<a class="xref" href="../api/Oracle.NoSQL.Driver.ServiceType.KVStore.html#Oracle_NoSQL_Driver_ServiceType_KVStore">ServiceType.KVStore</a>.</p>
+<a class="xref" href="../api/Oracle.NoSQL.SDK.ServiceType.KVStore.html#Oracle_NoSQL_SDK_ServiceType_KVStore">ServiceType.KVStore</a>.</p>
 <p>You can provide an instance of
-<a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLConfig.html">NoSQLConfig</a> either directly or in a
+<a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLConfig.html">NoSQLConfig</a> either directly or in a
 JSON configuration file.</p>
 <pre><code class="lang-csharp">var client = new NoSQLClient(
     new NoSQLConfig
@@ -307,18 +307,18 @@ file.  Create file <em>config.json</em> with following contents:</p>
 }
 </code></pre>
 <p>Then you may use this file to create
-<a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLClient.html">NoSQLClient</a> instance:</p>
+<a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLClient.html">NoSQLClient</a> instance:</p>
 <pre><code class="lang-csharp">var client = new NoSQLClient(&quot;/path/to/config.json&quot;);
 </code></pre>
 <p>As shown above, you specify the service type in a JSON configuration file as
-a string value of the <a class="xref" href="../api/Oracle.NoSQL.Driver.ServiceType.html">ServiceType</a>
-enumeration constant.  See <a class="xref" href="../api/Oracle.NoSQL.Driver.ServiceType.html">ServiceType</a>
+a string value of the <a class="xref" href="../api/Oracle.NoSQL.SDK.ServiceType.html">ServiceType</a>
+enumeration constant.  See <a class="xref" href="../api/Oracle.NoSQL.SDK.ServiceType.html">ServiceType</a>
 for more details.</p>
 <h3 id="connect_secure">Connecting to a Secure Store</h3>
 <p>To connect to the proxy in secure mode, in addition to communication endpoint,
 you need to specify user name and password of the driver user.  This
 information is passed in the instance of
-<a class="xref" href="../api/Oracle.NoSQL.Driver.KVStoreAuthorizationProvider.html">KVStoreAuthorizationProvider</a>
+<a class="xref" href="../api/Oracle.NoSQL.SDK.KVStoreAuthorizationProvider.html">KVStoreAuthorizationProvider</a>
 and can be specified in one of 3 ways as described below.</p>
 <p>As described in section <a href="#service_type">Specifying Service Type</a>, we can omit
 the service type from the configuration for secure store.</p>
@@ -334,10 +334,10 @@ the service type from the configuration for secure store.</p>
     });
 </code></pre>
 <p>This option is less secure because the password is stored in plain text in
-memory for the lifetime of <a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLClient.html">NoSQLClient</a>
+memory for the lifetime of <a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLClient.html">NoSQLClient</a>
 instance.  Note that the password is specified as <em>char[]</em> which allows you to
 erase it after you are finished using
-<a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLClient.html">NoSQLClient</a>.</p>
+<a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLClient.html">NoSQLClient</a>.</p>
 <h4 id="credentials_file">Storing credentials in a file</h4>
 <p>You may choose to store credentials in a separate file which is protected
 by file system permissions, thus making it more secure than the previous
@@ -359,7 +359,7 @@ accessed from this file only when the login to the store is required.</p>
     });
 </code></pre>
 <p>You may also reference <em>credentials.json</em> in the JSON configuration file used
-to create <a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLClient.html">NoSQLClient</a> instance:</p>
+to create <a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLClient.html">NoSQLClient</a> instance:</p>
 <p><em>config.json</em></p>
 <pre><code class="lang-json">{
     &quot;Endpoint&quot;: &quot;https://myhost:8081&quot;,
@@ -373,11 +373,11 @@ to create <a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLClient.html">NoS
 </code></pre>
 <p>Note that in <em>config.json</em> the authorization provider is represented as a JSON
 object with the properties for
-<a class="xref" href="../api/Oracle.NoSQL.Driver.KVStoreAuthorizationProvider.html">KVStoreAuthorizationProvider</a>
+<a class="xref" href="../api/Oracle.NoSQL.SDK.KVStoreAuthorizationProvider.html">KVStoreAuthorizationProvider</a>
 and an additional <em>AuthorizationType</em> property indicating the type of the
 authorization provider, which is <em>KVStore</em> for the secure on-premise store.</p>
 <p>For more details on the JSON representation, see
-<a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLConfig.html">NoSQLConfig</a>.</p>
+<a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLConfig.html">NoSQLConfig</a>.</p>
 <p>As an aside, it is also possible to specify credentials directly in the JSON
 configuration file using <em>Credentials</em> property:</p>
 <p><em>config.json</em></p>
@@ -398,9 +398,9 @@ configuration file using <em>Credentials</em> property:</p>
 retrieval of driver credentials.  This is the most secure option because
 you are in control of how the credentials are stored and loaded by the driver.
 The credentials provider is a delegate function that returns
-Task&lt;<a class="xref" href="../api/Oracle.NoSQL.Driver.KVStoreCredentials.html">KVStoreCredentials</a>&gt; and
+Task&lt;<a class="xref" href="../api/Oracle.NoSQL.SDK.KVStoreCredentials.html">KVStoreCredentials</a>&gt; and
 thus may be implemented asynchronously.</p>
-<p>(Note that <a class="xref" href="../api/Oracle.NoSQL.Driver.KVStoreCredentials.html">KVStoreCredentials</a>
+<p>(Note that <a class="xref" href="../api/Oracle.NoSQL.SDK.KVStoreCredentials.html">KVStoreCredentials</a>
 is a class that encapsulates the user name and password).</p>
 <p>For example:</p>
 <pre><code class="lang-csharp">var client = new NoSQLClient(
@@ -422,12 +422,12 @@ provide trusted root certificate to the driver if the certificate chain
 for your proxy certificate is not rooted in one of the well known CAs.  The
 provided certificate may be either your custom CA or self-signed proxy
 certificate.  It may be specified using
-<a class="xref" href="../api/Oracle.NoSQL.Driver.ConnectionOptions.TrustedRootCertificateFile.html#Oracle_NoSQL_Driver_ConnectionOptions_TrustedRootCertificateFile">TrustedRootCertificateFile</a>
+<a class="xref" href="../api/Oracle.NoSQL.SDK.ConnectionOptions.TrustedRootCertificateFile.html#Oracle_NoSQL_SDK_ConnectionOptions_TrustedRootCertificateFile">TrustedRootCertificateFile</a>
 property, which sets a file path (absolute or relative) to a PEM file
 containing one or more trusted root certificates (multiple roots are allowed
 in this file).  This property is specified as part of
-<a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLConfig.ConnectionOptions.html#Oracle_NoSQL_Driver_NoSQLConfig_ConnectionOptions">ConnectionOptions</a> in
-<a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLConfig.html">NoSQLConfig</a>:</p>
+<a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLConfig.ConnectionOptions.html#Oracle_NoSQL_SDK_NoSQLConfig_ConnectionOptions">ConnectionOptions</a> in
+<a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLConfig.html">NoSQLConfig</a>:</p>
 <pre><code class="lang-csharp">var client = new NoSQLClient(
     new NoSQLConfig
     {
@@ -452,7 +452,7 @@ in this file).  This property is specified as part of
 }
 </code></pre>
 <p>Alternatively you may use (in code only)
-<a class="xref" href="../api/Oracle.NoSQL.Driver.ConnectionOptions.TrustedRootCertificates.html#Oracle_NoSQL_Driver_ConnectionOptions_TrustedRootCertificates">TrustedRootCertificates</a>
+<a class="xref" href="../api/Oracle.NoSQL.SDK.ConnectionOptions.TrustedRootCertificates.html#Oracle_NoSQL_SDK_ConnectionOptions_TrustedRootCertificates">TrustedRootCertificates</a>
 property to explicitly specify
 <a class="xref" href="https://docs.microsoft.com/dotnet/api/system.security.cryptography.x509certificates.x509certificate2collection">X509Certificate2Collection</a>
 instance containing trusted root certificates:</p>
@@ -470,17 +470,17 @@ instance containing trusted root certificates:</p>
 <p>Note that in this case the application is responsible for
 <a class="xref" href="https://docs.microsoft.com/dotnet/api/system.security.cryptography.x509certificates.x509certificate.dispose#System_Security_Cryptography_X509Certificates_X509Certificate_Dispose">disposing</a>
 of each certificate in the collection after you have finished using
-<a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLClient.html">NoSQLClient</a> instance.</p>
+<a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLClient.html">NoSQLClient</a> instance.</p>
 <p>Also note that you may use only one of
-<a class="xref" href="../api/Oracle.NoSQL.Driver.ConnectionOptions.TrustedRootCertificates.html#Oracle_NoSQL_Driver_ConnectionOptions_TrustedRootCertificates">TrustedRootCertificates</a>
+<a class="xref" href="../api/Oracle.NoSQL.SDK.ConnectionOptions.TrustedRootCertificates.html#Oracle_NoSQL_SDK_ConnectionOptions_TrustedRootCertificates">TrustedRootCertificates</a>
 or
-<a class="xref" href="../api/Oracle.NoSQL.Driver.ConnectionOptions.TrustedRootCertificateFile.html#Oracle_NoSQL_Driver_ConnectionOptions_TrustedRootCertificateFile">TrustedRootCertificateFile</a>
+<a class="xref" href="../api/Oracle.NoSQL.SDK.ConnectionOptions.TrustedRootCertificateFile.html#Oracle_NoSQL_SDK_ConnectionOptions_TrustedRootCertificateFile">TrustedRootCertificateFile</a>
 properties.</p>
 <p>Alternatively to specifying trusted root certificates in the initial
 configuration, you may put your root certificate(s) to the
 trusted root certificate store on your machine for the operating system
 user which will run the application.  This is less secure option than using
-<a class="xref" href="../api/Oracle.NoSQL.Driver.ConnectionOptions.TrustedRootCertificateFile.html#Oracle_NoSQL_Driver_ConnectionOptions_TrustedRootCertificateFile">TrustedRootCertificateFile</a>
+<a class="xref" href="../api/Oracle.NoSQL.SDK.ConnectionOptions.TrustedRootCertificateFile.html#Oracle_NoSQL_SDK_ConnectionOptions_TrustedRootCertificateFile">TrustedRootCertificateFile</a>
 because it will make your certificate trusted for other applications running
 on behalf of your operating system user.  Here are some pointers on this
 procedure, which depends on the operating system:</p>
@@ -513,10 +513,10 @@ configure for <a href="#secure">secure</a> or <a href="#non_secure">non-secure</
 source from the
 <a href="https://github.com/oracle/nosql-dotnet-sdk/releases">GitHub Releases</a> page.</p>
 <ol start="3">
-<li>The examples are located under <em>Oracle.NoSQL.Driver.Samples</em> directory.
+<li>The examples are located under <em>Oracle.NoSQL.SDK.Samples</em> directory.
 In this directory you will find the file <em>kvstore_template.json</em>.  It is used
 as a JSON configuration file to create
-<a class="xref" href="../api/Oracle.NoSQL.Driver.NoSQLClient.html">NoSQLClient</a> instance. Make a copy of
+<a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLClient.html">NoSQLClient</a> instance. Make a copy of
 this file and fill in appropriate values depending on whether you are
 connecting to secure or non-secure store.</li>
 </ol>
@@ -557,7 +557,7 @@ the trusted root certificate file.  Otherwise, remove the entire
 <ol start="4">
 <li>Go to the <em>BasicExample</em>:</li>
 </ol>
-<pre><code class="lang-bash">cd  Oracle.NoSQL.Driver.Samples/BasicExample
+<pre><code class="lang-bash">cd  Oracle.NoSQL.SDK.Samples/BasicExample
 </code></pre>
 <p>Under this directory, you will see the example source code <em>Program.cs</em> and
 the project <em>BasicExample.csproj</em>.</p>
@@ -582,7 +582,7 @@ NoSQL Database SDK package as a dependency of the example project.</p>
 <p>Alternatively, you may build and run the example project in
 <a href="https://visualstudio.microsoft.com/">Visual Studio</a>.  In Visual Studio, open
 the Samples solution located at
-<em>Oracle.NoSQL.Driver.Samples/Oracle.NoSQL.Driver.Samples.sln</em>.</p>
+<em>Oracle.NoSQL.SDK.Samples/Oracle.NoSQL.SDK.Samples.sln</em>.</p>
 </article>
           </div>
           
