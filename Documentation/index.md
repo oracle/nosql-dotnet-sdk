@@ -11,4 +11,4 @@ Supported platforms are
 [.NET Core 3.1](https://dotnet.microsoft.com/download/dotnet/3.1).
 
 To get started, see [tutorials](tutorials/intro.md) and
-[API reference](xref:Oracle.NoSQL.Driver).
+[API reference](xref:Oracle.NoSQL.SDK).

@@ -3,7 +3,7 @@
     {
       "src": [
         {
-		  "src": "../Oracle.NoSQL.Driver/src/bin",
+		  "src": "../Oracle.NoSQL.SDK/src/bin",
           "files": [ "**/Debug/netcoreapp3.1/*.dll" ]
         }
       ],

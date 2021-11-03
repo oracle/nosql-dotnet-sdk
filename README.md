@@ -43,7 +43,7 @@ separate directory.  To install as a dependency of your project, cd to the
 directory containing your .Net project file and run:
 
 ```bash
-dotnet add package Oracle.NoSQL.Driver
+dotnet add package Oracle.NoSQL.SDK
 ```
 
 Alternatively, you may install the SDK independently into a directory of your
@@ -51,7 +51,7 @@ choice by using
 [nuget.exe CLI](https://docs.microsoft.com/en-us/nuget/install-nuget-client-tools#cli-tools):
 
 ```bash
-nuget.exe install Oracle.NoSQL.Driver -OutputDirectory <your-packages-directory>
+nuget.exe install Oracle.NoSQL.SDK -OutputDirectory <your-packages-directory>
 ```
 
 ## Documentation
@@ -64,16 +64,16 @@ See [Changelog](./CHANGELOG.md) for changes in each release.
 
 ## Getting Started
 
-The SDK API classes are in *Oracle.NoSQL.Driver* namespace.
+The SDK API classes are in *Oracle.NoSQL.SDK* namespace.
 
 ```csharp
-using Oracle.NoSQL.Driver;
+using Oracle.NoSQL.SDK;
 ```
 
 ### Connecting to Oracle NoSQL Database
 
 To perform database operations, you need to create an instance of
-[NoSQLClient](https://oracle.github.io/nosql-dotnet-sdk/api/Oracle.NoSQL.Driver.NoSQLClient.html).
+[NoSQLClient](https://oracle.github.io/nosql-dotnet-sdk/api/Oracle.NoSQL.SDK.NoSQLClient.html).
 
 #### Connecting to Oracle NoSQL Database Cloud Service
 
@@ -242,8 +242,8 @@ Console.WriteLine("Table {0} dropped, table state is {1}",
 
 ## <a name="examples"></a>Examples
 
-Examples are located under *Oracle.NoSQL.Driver.Samples* directory.  In Visual
-Studio, you can open the examples solution *Oracle.NoSQL.Driver.Samples.sln*.
+Examples are located under *Oracle.NoSQL.SDK.Samples* directory.  In Visual
+Studio, you can open the examples solution *Oracle.NoSQL.SDK.Samples.sln*.
 Each example is in its own sub-directory and has its project file and the main
 program *Program.cs*.
 
@@ -262,7 +262,7 @@ Note: you may omit this command line argument if running against the cloud
 service and using default OCI configuration file.  See
 [Example Quick Start](https://oracle.github.io/nosql-dotnet-sdk/tutorials/connect-cloud.html#quickstart).
 
-Use configuration file templates provided in *Oracle.NoSQL.Driver.Samples*
+Use configuration file templates provided in *Oracle.NoSQL.SDK.Samples*
 directory.  Make a copy of the template, fill in the appropriate values and
 remove unused properties.  The following templates are provided:
 
@@ -285,7 +285,7 @@ To run an example, go to the example's directory and issue *dotnet run*
 command, providing JSON config file as the command line argument:
 
 ```bash
-cd Oracle.NoSQL.Driver.Samples/<example>
+cd Oracle.NoSQL.SDK.Samples/<example>
 dotnet run -f <target-framework> [-- /path/to/config.json]
 ```
 
@@ -296,7 +296,7 @@ The command above will build and run the example.
 For example:
 
 ```bash
-cd Oracle.NoSQL.Driver.Samples/BasicExample
+cd Oracle.NoSQL.SDK.Samples/BasicExample
 dotnet run -f net5.0 -- my_config.json
 ```
 
@@ -314,7 +314,7 @@ are located under *Documentation/tutorials*.
 Before building documentation, make sure you have built the driver in Debug
 mode for .NET Core 3.1.  DocFX build uses this dll:
 
-*Oracle.NoSQL.Driver/src/bin/Debug/netcoreapp3.1/Oracle.NoSQL.Driver.dll*
+*Oracle.NoSQL.SDK/src/bin/Debug/netcoreapp3.1/Oracle.NoSQL.SDK.dll*
 
 Afterwards, follow these steps:
 
@@ -373,14 +373,14 @@ Use *docfx.exe help* for more details.
 To build the nuget package, use *dotnet pack* command:
 
 ```bash
-cd Oracle.NoSQL.Driver/src
+cd Oracle.NoSQL.SDK/src
 dotnet clean -c Release
 dotnet build -c Release
 dotnet pack -c Release
 ```
 
-This builds nuget package *Oracle.NoSQL.Driver.<version>.nupkg* in
-*Oracle.NoSQL.Driver/src/bin/Release* directory.
+This builds nuget package *Oracle.NoSQL.SDK.<version>.nupkg* in
+*Oracle.NoSQL.SDK/src/bin/Release* directory.
 
 ## Help
 

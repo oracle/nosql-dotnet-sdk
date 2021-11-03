@@ -1,0 +1,589 @@
+<!--
+Copyright (c) 2020, 2021 Oracle and/or its affiliates.  All rights reserved.
+
+Licensed under the Universal Permissive License v 1.0 as shown at
+https://oss.oracle.com/licenses/upl/
+-->
+
+<FieldValue>
+    <summary>
+        <see cref="FieldValue"/> is the base class for all data items in
+        Oracle NoSQL Database.
+    </summary>
+    <remarks>
+        <para>
+            Each data item is an instance of <see cref="FieldValue"/> and is
+            used to represent and manipulate data in Oracle NoSQL Database.
+            <see cref="FieldValue"/> instances are typed and different data
+            types are represented by different subclasses of
+            <see cref="FieldValue"/>.  The type system used here aims to
+            represent all Oracle NoSQL Database data types as well as values
+            of table rows and primary/index keys, although important
+            considerations apply:
+        </para>
+        <para>
+            A table is defined using a fixed schema that describes the data
+            that the table will hold.  The instances of
+            <see cref="FieldValue"/> do not have access to the table schema
+            and thus allow constructing values of fields or table rows that
+            do not conform to the given table schema.  This means the
+            applications must be written knowing the schema.  During
+            operations that take data (such as
+            <see cref="NoSQLClient.PutAsync"/>), the constructed
+            <see cref="FieldValue"/> instance is validated against the table
+            schema and if it does not conform the exception is thrown.  This
+            validation is not done by the driver, but by the service where
+            the operation is performed.  This applies both to the table
+            row as a whole as well as individual fields, as many of Oracle
+            NoSQL data types also specify a schema (e.g. the type of
+            values in an <em>Array</em> field, a sequence of field names and
+            their types in a <em>Record</em> field, a set of values for
+            <em>Enum</em> field, precision of <em>Fixed Binary</em> field,
+            etc.) and <see cref="FieldValue"/> instances themselves are not
+            aware of that schema.
+        </para>
+        <para>
+            For operations that return field value instances (such as
+            <see cref="NoSQLClient.GetAsync"/> and
+            <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.QueryAsync*"/> the
+            returned <see cref="FieldValue"/> instances always conform to a
+            table schema, or to the shape implied by a query projection.
+        </para>
+        <para>
+            <b>Data Type Mappings</b>
+        </para>
+        <para>
+            The following describes the mappings between Oracle NoSQL Database
+            types and corresponding subclasses of <see cref="FieldValue"/>:
+            <list type="table">
+                <listheader>
+                    <term>Database Type</term>
+                    <term>Class</term>
+                </listheader>
+                <item>
+                    <term>Array</term>
+                    <term><see cref="ArrayValue"/></term>
+                </item>
+                <item>
+                    <term>Binary</term>
+                    <term><see cref="BinaryValue"/></term>
+                </item>
+                <item>
+                    <term>Boolean</term>
+                    <term><see cref="BooleanValue"/></term>
+                </item>
+                <item>
+                    <term>Double</term>
+                    <term><see cref="DoubleValue"/></term>
+                </item>
+                <item>
+                    <term>Enum</term>
+                    <term><see cref="StringValue"/></term>
+                </item>
+                <item>
+                    <term>Fixed Binary</term>
+                    <term><see cref="BinaryValue"/></term>
+                </item>
+                <item>
+                    <term>Float</term>
+                    <term><see cref="DoubleValue"/></term>
+                </item>
+                <item>
+                    <term>Integer</term>
+                    <term><see cref="IntegerValue"/></term>
+                </item>
+                <item>
+                    <term>Long</term>
+                    <term><see cref="LongValue"/></term>
+                </item>
+                <item>
+                    <term>Number</term>
+                    <term><see cref="NumberValue"/></term>
+                </item>
+                <item>
+                    <term>Map</term>
+                    <term><see cref="MapValue"/></term>
+                </item>
+                <item>
+                    <term>Record</term>
+                    <term><see cref="RecordValue"/></term>
+                </item>
+                <item>
+                    <term>String</term>
+                    <term><see cref="StringValue"/></term>
+                </item>
+                <item>
+                    <term>Timestamp</term>
+                    <term><see cref="TimestampValue"/></term>
+                </item>
+            </list>
+            Please note that the above does not represent one-to-one mapping
+            between database types and subclasses of <see cref="FieldValue"/>.
+            Applications need to be aware of the table schema and ensure that
+            on input the values represented fit into corresponding table
+            field.  In particular:
+            <list type="number"/>
+            <item>
+                <description>
+                    Both data types <em>Double</em> and <em>Float</em> are
+                    represented by <see cref="DoubleValue"/>.
+                </description>
+            </item>
+            Both data types <em>Binary</em> and <em>Fixed Binary</em> are
+            represented by <see cref="BinaryValue"/>.
+            <item>
+                <description>
+                    Both data types <em>String</em> and <em>Enum</em> are
+                    represented by <see cref="StringValue"/>.  When using the
+                    <em>Enum</em> data type, make sure the value is one of the
+                    values defined for the enumeration.
+                </description>
+            </item>
+            <item>
+                <description>
+                    On input (for operations such as
+                    <see cref="NoSQLClient.PutAsync"/>), a Base64 encoded
+                    string is also accepted for fields of data types
+                    <em>Binary</em> and <em>Fixed Binary</em>.
+                </description>
+            </item>
+        </para>
+        <para><b>Table rows and primary keys</b></para>
+        <para>
+            Both <see cref="MapValue"/> and <see cref="RecordValue"/> classes
+            represent a dictionary with string keys and values of type
+            <see cref="FieldValue"/> (which can be any of its subclasses).
+            Thus they represent a collection of database field name-value
+            pairs. <see cref="MapValue"/> represents the dictionary with
+            unordered keys, whereas <see cref="RecordValue"/> represents an
+            order-preserving dictionary, with the keys preserving the same
+            order in which they were added to the dictionary and thus using
+            the same order when the dictionary is iterated over.  Note that
+            <see cref="RecordValue"/> is a subclass of <see cref="MapValue"/>
+            thus any <see cref="RecordValue"/> instance is also an instance
+            of <see cref="MapValue"/>.<br/>
+            Table rows are ordered collections of field values and thus are
+            represented by <see cref="RecordValue"/> class.  Any table
+            rows returned by the driver, such as from operations
+            <see cref="NoSQLClient.GetAsync"/>,
+            <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.QueryAsync*"/>, etc.
+            are represented by instances of <see cref="RecordValue"/>.
+            However, on input, when providing table rows to operations such as
+            <see cref="NoSQLClient.PutAsync"/> and
+            <see cref="NoSQLClient.WriteManyAsync"/> the field ordering is not
+            required, so you may use either <see cref="MapValue"/> or
+            <see cref="RecordValue"/> to provide table rows.  Primary key
+            values are only used as input to operations such as
+            <see cref="NoSQLClient.GetAsync"/>, thus they do not require field
+            order and can also be represented as either <see cref="MapValue"/>
+            or <see cref="RecordValue"/>.  Note that the ordered dictionary is
+            more memory and computation expensive then unordered one and thus
+            <see cref="MapValue"/> is preferred whenever the field ordering is
+            not required.<br/>
+            In addition to representing table rows and primary keys, these
+            classes also represent data types <em>Map</em>, <em>Record</em>
+            as well as <em>Json</em> objects.
+        </para>
+        <para><b>Special values</b></para>
+        <para>
+            Two of the <see cref="FieldValue"/> subclasses represent special
+            values used in Oracle NoSQL Database:
+            <list type="number">
+                <item>
+                    <description>
+                        <see cref="NullValue"/> represents <em>SQL NULL</em>
+                        which indicates that value is unknown or inapplicable.
+                    </description>
+                </item>
+                <item>
+                    <description>
+                        <see cref="JsonNullValue"/> represents
+                        <em>JSON NULL</em> which indicates null value inside
+                        field of type <em>Json</em>.
+                    </description>
+                </item>
+            </list>
+            Both of these classes are singletons and each represents a single
+            immutable value defined as <see cref="FieldValue.Null"/> and
+            <see cref="FieldValue.JsonNull"/> correspondingly.  You may use
+            comparisons like <c>value == FieldValue.Null</c> or
+            <c>value == FiledValue.JsonNull</c> or check by the field value
+            type as <c>value.DbType == DbType.Null</c> or
+            <c>value.DbType == DbType.JsonNull</c>.
+        </para>
+        <para><b>JSON Mappings</b></para>
+        <para>
+            Oracle NoSQL Database supports fields of data type <em>Json</em>
+			which can represent any valid JSON value.  JSON values may be
+			either atomic or complex and can be represented by instances
+			of <see cref="FieldValue"/>.  There are well-defined mappings
+			mappings between JSON types and <see cref="FieldValue"/>
+            subclasses.<br/>
+            Because the data model supported by <see cref="FieldValue"/> is
+            richer than JSON it is necessary to define potentially ambiguous
+            mappings as well as provide the ability to affect mappings that
+            are flexible. The following table defines the mappings from JSON
+            types to <see cref="FieldValue"/>subclasses:
+            <list type="table">
+			    <listheader>
+				    <term>JSON Type</term>
+				    <term>Class</term>
+			    </listheader>
+			    <item>
+				    <term>Array</term>
+				    <term>
+					    <see cref="ArrayValue"/>
+				    </term>
+			    </item>
+			    <item>
+				    <term>Boolean</term>
+				    <term>
+					    <see cref="BooleanValue"/>
+				    </term>
+			    </item>
+			    <item>
+				    <term>Number</term>
+				    <term>
+					    One of <see cref="IntegerValue"/>,
+					    <see cref="LongValue"/>, <see cref="DoubleValue"/>,
+					    <see cref="NumberValue"/>.
+				    </term>
+			    </item>
+			    <item>
+				    <term>Object</term>
+				    <term>
+					    <see cref="MapValue"/>
+				    </term>
+			    </item>
+			    <item>
+				    <term>String</term>
+				    <term>
+					    <see cref="StringValue"/>
+				    </term>
+			    </item>
+                <item>
+                    <term>Null</term>
+                    <term>
+                        <see cref="JsonNullValue"/>
+                    </term>
+                </item>
+		    </list>
+			Note that JSON only has a single numeric type <em>Number</em>, but
+            there are several numeric types supported in Oracle NoSQL
+            Database.  On input (for operations such as
+            <see cref="NoSQLClient.PutAsync"/>) you may use any of the numeric
+            <see cref="FieldValue"/> subclasses as listed above for JSON
+			numeric values.  For values returned from the database (such as by
+			operations <see cref="NoSQLClient.GetAsync"/> and
+            <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.QueryAsync*"/>) the
+            driver will use the most appropriate class among
+            <see cref="IntegerValue"/>,<see cref="LongValue"/>,
+            <see cref="DoubleValue"/>, <see cref="NumberValue"/>.  If the
+            number can be represented as
+            signed 32 bit integer, <see cref="IntegerValue"/> will be used. If
+			not, but the number can be represented as signed 64-bit integer,
+			<see cref="LongValue"/> will be used.  Floating point numbers are
+			mapped to <see cref="DoubleValue"/> if the number can be
+            represented as double precision floating point. Otherwise,
+			<see cref="NumberValue"/> will be used.  Note that currently there
+			are some limitations on values <see cref="NumberValue"/> can
+			represent, see <see cref="NumberValue"/> for more info.<br/>
+        </para>
+		<para><b>Corresponding language types</b></para>
+		<para>
+			Each subclass of <see cref="FieldValue"/> representing atomic
+			data type uses corresponding C# type representing its value as
+			follows:
+			<list type="table">
+				<listheader>
+					<term>Class</term>
+					<term>C# Type</term>
+				</listheader>
+				<item>
+					<term>BinaryValue</term>
+					<term>
+						<c>byte[]</c>
+					</term>
+				</item>
+				<item>
+					<term>BooleanValue</term>
+					<term>
+						<c>bool</c>
+					</term>
+				</item>
+				<item>
+					<term>DoubleValue</term>
+					<term>
+						<c>double</c>
+					</term>
+				</item>
+				<item>
+					<term>IntegerValue</term>
+					<term>
+						<c>int</c>
+					</term>
+				</item>
+				<item>
+					<term>LongValue</term>
+					<term>
+						<c>long</c>
+					</term>
+				</item>
+				<item>
+					<term>NumberValue</term>
+					<term>
+						<c>decimal</c>
+					</term>
+				</item>
+				<item>
+					<term>StringValue</term>
+					<term>
+						<c>string</c>
+					</term>
+				</item>
+				<item>
+					<term>TimestampValue</term>
+					<term>
+						<see cref="DateTime"/>
+					</term>
+				</item>
+			</list>
+			Note that the <see cref="TimestampValue"/> instances always
+            represent date and time in universal time (the <c>Kind</c>
+            property value of <see cref="DateTime"/> is always
+            <see cref="DateTimeKind.Utc"/>).<br/>
+			The casts between corresponding <see cref="FieldValue"/>
+			instances and their C# types will always succeed as described
+			below.<br/>.
+            There are no corresponding C# types for special values
+			such as <see cref="NullValue"/> or <see cref="JsonNullValue"/>
+			or complex values such as <see cref="ArrayValue"/>,
+			<see cref="MapValue"/> and <see cref="RecordValue"/> although
+			you can access atomic parts of the complex value via indexers
+			as described below.
+		</para>
+        <para>
+            <b><see cref="FieldValue"/></b> conversions.
+        </para>
+		<para>
+			In order to facilitate creation and using of
+            <see cref="FieldValue"/> instances by an application, the
+			following casts and conversions are defined:
+            <list type="number">
+				<item>
+                    <description>
+                        Implicit conversions from language types such as
+                        <c>int</c>, <c>long</c>, <c>double</c>, <c>string</c>,
+                        etc. representing atomic values to corresponding
+                        instances of
+                        <see cref="FieldValue"/> subclasses such as
+                        <see cref="IntegerValue"/>, <see cref="LongValue"/>,
+                        <see cref="DoubleValue"/>, <see cref="StringValue"/>,
+                        etc. This allows instantiation and assignment of field
+                        values that are part of a complex data type without
+                        explicitly instantiating corresponding
+                        <see cref="FieldValue"/> subclasses.
+                        For example:<br/>
+				        <code>
+                            var recordValue = new RecordValue();
+                            recordValue["id"] = 1000;
+                            recordValue["firstName"] = "John";
+                        </code>
+				        Using C# syntax for
+                        <see href="https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/classes-and-structs/object-and-collection-initializers">
+                            object  and collection initialization
+                        </see>
+                        the instantiation of field values can be made even
+                        more simple as shown in the example below.
+                    </description>
+                </item>
+				<item>
+                    <description>
+					    Explicit conversions from <see cref="FieldValue"/>
+					    instances representing atomic values to corresponding
+					    language types such as <c>int</c>, <c>long</c>,
+                        <c>double</c>, <c>string</c> etc. using properties
+                        such as
+					    <see cref="FieldValue.AsInt32"/>,
+					    <see cref="FieldValue.AsInt64"/>,
+					    <see cref="FieldValue.AsDouble"/>,
+					    <see cref="FieldValue.AsString"/> etc.  Note that
+                        these <c>As...</c> properties only perform conversions
+                        to their corresponding language data types and do not
+                        perform value conversions and do not perform value
+                        conversions from one type to another.  In case the
+                        target language type does not match the calling
+                        instance, <see cref="InvalidCastException"/> is
+                        thrown. For example, <see cref="FieldValue.AsInt32"/>
+                        will only succeed if the instance is
+                        <see cref="IntegerValue"/>.
+                    </description>
+                </item>
+                <item>
+                    <description>
+                        Explicit cast operators from <see cref="FieldValue"/>
+                        instances to language types representing atomic
+                        values. These are the same as <c>As...</c> properties
+                        described above and do not perform value conversions.
+                    </description>
+                </item>
+				<item>
+                    <description>
+					    Several <c>To...</c> methods provide limited ability
+                        for value conversion between different types.  E.g.
+					    <see cref="FieldValue.ToString()"/> will convert
+					    <see cref="FieldValue"/> instances to <c>string</c>
+                        using JSON conversion described below.  Instances of
+                        <see cref="StringValue"/> can use <c>To...</c> methods
+                        to convert to corresponding language type by parsing
+                        the string representation of value.<br/>
+                        Conversions between numeric <see cref="FieldValue"/>
+                        instances are allowed and follow the semantics of
+                        corresponding methods of the <see cref="Convert"/>
+                        class.  Numeric conversions may result in loss of
+                        precision, e.g. when calling
+					    <see cref="DoubleValue.ToInt32"/> or
+					    <see cref="NumberValue.ToDouble"/>.
+                        In a checked context, <see cref="OverflowException"/>
+                        will be thrown if the value represented by the
+                        instance is outside the range of the target type.<br/>
+                        In addition, <see cref="TimestampValue.ToInt64"/> will
+                        return number of milliseconds since Unix Epoch and
+					    <see cref="IntegerValue.ToDateTime"/> and
+                        <see cref="LongValue.ToDateTime"/> will do the reverse
+					    conversion.<br/>
+                        See documentation for the <c>To...</c> methods for
+                        details.
+                    </description>
+				</item>
+            </list>
+			To instantiate complex values from <c>string</c>, use
+			using <see cref="FieldValue.FromJsonString"/> as described below.
+        </para>
+		<para><b>JSON conversions.</b></para>
+		<para>
+			You can convert <see cref="FieldValue"/> instances, whether
+            atomic or complex, to JSON string using
+            <see cref="FieldValue.ToJsonString"/>.  Use
+            <see cref="JsonOutputOptions"/> to customize the result.  You may
+			also construct <see cref="FieldValue"/> instances from JSON
+			strings using <see cref="FieldValue.FromJsonString"/>.  Use
+			<see cref="JsonInputOptions"/> to customize the conversion.<br/>
+			This also allows you to create table rows from JSON by creating
+			<see cref="MapValue"/> instances from JSON input and using them
+			with operations like <see cref="NoSQLClient.PutAsync"/>.<br/>
+			Couple of cases require clarification:
+			<list type="number">
+				<item>
+                    <description>
+					    When creating <see cref="FieldValue"/> from JSON
+                        string, the driver will decide which numeric
+                        <see cref="FieldValue"/> subclass to use for JSON
+                        <em>Number</em> type.  This is similar to values in
+                        JSON fields returned from the database by operations
+                        such as <see cref="NoSQLClient.GetAsync"/> as
+                        described above. By default,
+                        <see cref="FieldValue.FromJsonString"/> will
+                        have the same semantics.  You may customize whether
+                        you prefer to store fractional numbers as
+                        <see cref="DoubleValue"/> or <see cref="NumberValue"/>
+                        by using <see cref="JsonInputOptions.PreferDecimal"/>.
+					    See <see cref="JsonInputOptions"/> for more details.
+                    </description>
+                </item>
+				<item>
+                    <description>
+					    Instances of <see cref="BinaryValue"/> are represented
+					    in Base64 when converted to JSON string.  Currently
+					    <see cref="FieldValue.FromJsonString"/> will not
+                        create <see cref="BinaryValue"/> instances because
+                        JSON <em>String</em> type maps to
+                        <see cref="StringValue"/>, but you can create them
+                        manually by using
+                        <see cref="Convert.FromBase64String"/> and
+                        constructing <see cref="BinaryValue"/> from the
+                        resulting byte array.
+                    </description>
+                </item>
+				<item>
+                    <description>
+					    Instances of both <see cref="NullValue"/> and
+                        <see cref="JsonNullValue"/> will map to JSON type
+                        <em>null</em>.  When reading JSON with
+                        <see cref="FieldValue.FromJsonString"/>, JSON
+                        <em>null</em> will be mapped to
+                        <see cref="JsonNullValue"/> (more specifically,
+                        singleton value <see cref="FieldValue.JsonNull"/>.
+                    </description>
+                </item>
+                <item>
+                    <description>
+                        Instances of <see cref="DoubleValue"/> that contain
+                        special values such as
+                        <see cref="Double.PositiveInfinity"/>,
+                        <see cref="Double.NegativeInfinity"/> and
+                        <see cref="Double.NaN"/> cannot be represented by JSON
+                        type <em>Number</em> and will be represented by
+                        strings "Infinity", "-Infinity" and "NaN" respectively
+                        when converted to JSON, thus they cannot be converted
+                        back from JSON to instances of
+                        <see cref="DoubleValue"/>.
+                    </description>
+                </item>
+			</list>
+            See <see cref="JsonOutputOptions"/> and
+            <see cref="JsonInputOptions"/> for more ways to customize JSON
+            conversion, such as representing <see cref="TimestampValue"/> as
+            number of milliseconds since Unix Epoch.
+        </para>
+		<para><b>Other operations.</b></para>
+		<para>
+			<see cref="FieldValue"/> also has indexers by <c>int</c> and
+            <c>string</c>.  <c>int</c> indexer allows accessing elements
+            of <see cref="ArrayValue"/> and <c>string</c> indexer allows
+            accessing values of <see cref="MapValue"/> and
+			<see cref="RecordValue"/> by key (see example below).  Exception
+			is thrown if an indexer is used on inappropriate subclass of
+			<see cref="FieldValue"/>.<br/>
+			In addition, <see cref="FieldValue"/> instances support
+            comparisons and equality checks through interfaces
+            <see cref="IEquatable{T}"/> and <see cref="IComparable{T}"/> and
+			overloaded operators <c>==</c>, <c>!=</c>, <c>&lt;</c>,
+            <c>&lt;=</c>, <c>&gt;</c> and <c>&gt;=</c>.  The semantics of the
+            comparisons and equality checks is the same as in SQL and is
+            described in <em>Value Comparison Operators</em> section of the
+            Oracle NoSQL Database SQL Reference Guide.
+			See <see cref="FieldValue.Equals(FieldValue)"/> and
+			<see cref="FieldValue.CompareTo(FieldValue)"/> for more details.
+        </para>
+		<para>
+            <see cref="FieldValue"/> instances are not thread-safe.  Mutable
+            instances such as <see cref="ArrayValue"/>, <see cref="MapValue"/>
+			and <see cref="RecordValue"/> should not be modified while being
+			used by database operations.
+        </para>
+    </remarks>
+	<example>
+		Initializing a <see cref="MapValue"/> instance representing a row in a
+		table that has fields
+        <em>
+            id LONG, name STRING, address RECORD(street STRING, city STRING),
+			dob TIMESTAMP(0), photo BINARY, friends ARRAY(INTEGER)
+        </em>
+		<code>
+			var row = new MapValue
+			{
+                id = 1001,
+			    name = "John Doe",
+			    address = new RecordValue
+			    {
+			        street = "10 1st Street",
+			        city = "Some City"
+			    },
+			    dob = new DateTime(1960, 3, 5),
+			    photo = File.ReadAllBytes("photo.jpg"),
+			    friends = new ArrayValue { 1002, 1003, 1004 }
+            };
+		</code>
+    </example>
+</FieldValue>

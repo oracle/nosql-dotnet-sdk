@@ -7,31 +7,31 @@ of the APIs and available options, see the API reference.
 ## Create a NoSQLClient Instance
 
 To use the SDK in your code, add
-[Oracle.NoSQL.Driver](xref:Oracle.NoSQL.Driver) namespace:
+[Oracle.NoSQL.SDK](xref:Oracle.NoSQL.SDK) namespace:
 
 ```csharp
-using Oracle.NoSQL.Driver;
+using Oracle.NoSQL.SDK;
 ```
 
-Class [NoSQLClient](xref:Oracle.NoSQL.Driver.NoSQLClient) represents the main
+Class [NoSQLClient](xref:Oracle.NoSQL.SDK.NoSQLClient) represents the main
 access point to the service.  To create an instance of
-[NoSQLClient](xref:Oracle.NoSQL.Driver.NoSQLClient) you need to provide
+[NoSQLClient](xref:Oracle.NoSQL.SDK.NoSQLClient) you need to provide
 appropriate configuration information.  This information is represented by
-[NoSQLConfig](xref:Oracle.NoSQL.Driver.NoSQLConfig) class which instance can
+[NoSQLConfig](xref:Oracle.NoSQL.SDK.NoSQLConfig) class which instance can
 be provided to the constructor of
-[NoSQLClient](xref:Oracle.NoSQL.Driver.NoSQLClient). Alternatively, you may
+[NoSQLClient](xref:Oracle.NoSQL.SDK.NoSQLClient). Alternatively, you may
 choose to store the configuration information in a JSON configuration file and
-use  the constructor of [NoSQLClient](xref:Oracle.NoSQL.Driver.NoSQLClient)
+use  the constructor of [NoSQLClient](xref:Oracle.NoSQL.SDK.NoSQLClient)
 that takes the path (absolute or relative to current directory) to that file.
 
 Required configuration properties are different depending on what
-[Service Type](xref:Oracle.NoSQL.Driver.ServiceType) is used by your
+[Service Type](xref:Oracle.NoSQL.SDK.ServiceType) is used by your
 application.  Supported service types are Oracle NoSQL Cloud Service
-([ServiceType.Cloud](xref:Oracle.NoSQL.Driver.ServiceType.Cloud)), Cloud
+([ServiceType.Cloud](xref:Oracle.NoSQL.SDK.ServiceType.Cloud)), Cloud
 Simulator
-([ServiceType.CloudSim](xref:Oracle.NoSQL.Driver.ServiceType.CloudSim))
+([ServiceType.CloudSim](xref:Oracle.NoSQL.SDK.ServiceType.CloudSim))
 and On-Premise Oracle NoSQL Database
-([ServiceType.KVStore](xref:Oracle.NoSQL.Driver.ServiceType.KVStore)). All
+([ServiceType.KVStore](xref:Oracle.NoSQL.SDK.ServiceType.KVStore)). All
 service types require service endpoint or region and some require
 authentication/authorization information.  Other properties are optional and
 default values will be used if not explicitly provided.
@@ -47,10 +47,10 @@ tutorial on how to configure and connect to the On-Premise Oracle NoSQL
 Database.
 
 The first example below creates instance of
-[NoSQLClient](xref:Oracle.NoSQL.Driver.NoSQLClient) for the Cloud Service
-using [NoSQLConfig](xref:Oracle.NoSQL.Driver.NoSQLConfig). It also adds a
+[NoSQLClient](xref:Oracle.NoSQL.SDK.NoSQLClient) for the Cloud Service
+using [NoSQLConfig](xref:Oracle.NoSQL.SDK.NoSQLConfig). It also adds a
 default compartment and overrides some default timeout values in
-[NoSQLConfig](xref:Oracle.NoSQL.Driver.NoSQLConfig):
+[NoSQLConfig](xref:Oracle.NoSQL.SDK.NoSQLConfig):
 
 ```csharp
 var client = new NoSQLClient(
@@ -66,7 +66,7 @@ var client = new NoSQLClient(
 ```
 
 The second example stores the same configuration in a JSON file *config.json*
-and uses it to create [NoSQLClient](xref:Oracle.NoSQL.Driver.NoSQLClient)
+and uses it to create [NoSQLClient](xref:Oracle.NoSQL.SDK.NoSQLClient)
 instance:
 
 *config.json*:
@@ -96,51 +96,51 @@ Note that it may not be possible to store the configuration in a file if
 it has property values that cannot be represented as JSON types.  These cases
 include custom retry handler, custom authoirzation provider, custom
 credentials provider, etc. (see
-[NoSQLConfig](xref:Oracle.NoSQL.Driver.NoSQLConfig) for details). In this
-case, use [NoSQLConfig](xref:Oracle.NoSQL.Driver.NoSQLConfig) instance as in
+[NoSQLConfig](xref:Oracle.NoSQL.SDK.NoSQLConfig) for details). In this
+case, use [NoSQLConfig](xref:Oracle.NoSQL.SDK.NoSQLConfig) instance as in
 the first example above.
 
 ### Using a NoSQLClient Instance
 
-Most of the methods of [NoSQLClient](xref:Oracle.NoSQL.Driver.NoSQLClient) are
+Most of the methods of [NoSQLClient](xref:Oracle.NoSQL.SDK.NoSQLClient) are
 asynchronous and return a *Task<TResult>* instance representing a result of
 a particular operation.  There are different classes for differnet operation
-results, such as [GetResult](xref:Oracle.NoSQL.Driver.GetResult`1),
-[PutResult](xref:Oracle.NoSQL.Driver.PutResult`1),
-[TableResult](xref:Oracle.NoSQL.Driver.TableResult), etc.
+results, such as [GetResult](xref:Oracle.NoSQL.SDK.GetResult`1),
+[PutResult](xref:Oracle.NoSQL.SDK.PutResult`1),
+[TableResult](xref:Oracle.NoSQL.SDK.TableResult), etc.
 
-Instances of [NoSQLClient](xref:Oracle.NoSQL.Driver.NoSQLClient) are
+Instances of [NoSQLClient](xref:Oracle.NoSQL.SDK.NoSQLClient) are
 thread-safe and async-safe and they are expected to be shared among threads.
 
-[NoSQLClient](xref:Oracle.NoSQL.Driver.NoSQLClient) has memory and network
+[NoSQLClient](xref:Oracle.NoSQL.SDK.NoSQLClient) has memory and network
 resources associated with it. It implements
 [IDisposable](xref:System.IDisposable) interface and must be disposed when
 the application is done using it via calling
-[Dispose](xref:Oracle.NoSQL.Driver.NoSQLClient.Dispose) method or via *using*
+[Dispose](xref:Oracle.NoSQL.SDK.NoSQLClient.Dispose) method or via *using*
 statement.  Failure to dispose of the instance may cause an application to
 hang on exit.
 
 In most cases, you only need once
-[NoSQLClient](xref:Oracle.NoSQL.Driver.NoSQLClient) instance for the lifetime
+[NoSQLClient](xref:Oracle.NoSQL.SDK.NoSQLClient) instance for the lifetime
 of your application.  The creation of multiple instances or repeatedly
 creating and disposing of the instance incurs additional resource overheads
 without providing any performance benefit.
 
 Note that the result objects returned by the methods of
-[NoSQLClient](xref:Oracle.NoSQL.Driver.NoSQLClient) are not thread-safe and
+[NoSQLClient](xref:Oracle.NoSQL.SDK.NoSQLClient) are not thread-safe and
 should only be used by one thread at a time unless synchronized externally.
 
-Most of the methods of [NoSQLClient](xref:Oracle.NoSQL.Driver.NoSQLClient)
+Most of the methods of [NoSQLClient](xref:Oracle.NoSQL.SDK.NoSQLClient)
 take options as an optional argument that allows you to customize the behavior
 of each operation.  Options for different operations are represented by
-different classes, such as [GetOptions](xref:Oracle.NoSQL.Driver.GetOptions),
-[PutOptions](xref:Oracle.NoSQL.Driver.PutOptions),
-[TableDDLOptions](xref:Oracle.NoSQL.Driver.TableDDLOptions), etc.  Their
+different classes, such as [GetOptions](xref:Oracle.NoSQL.SDK.GetOptions),
+[PutOptions](xref:Oracle.NoSQL.SDK.PutOptions),
+[TableDDLOptions](xref:Oracle.NoSQL.SDK.TableDDLOptions), etc.  Their
 properties may override the settings in
-[NoSQLConfig](xref:Oracle.NoSQL.Driver.NoSQLConfig) object used to create
-[NoSQLClient](xref:Oracle.NoSQL.Driver.NoSQLClient) instance.
+[NoSQLConfig](xref:Oracle.NoSQL.SDK.NoSQLConfig) object used to create
+[NoSQLClient](xref:Oracle.NoSQL.SDK.NoSQLClient) instance.
 
-Most of the methods of [NoSQLClient](xref:Oracle.NoSQL.Driver.NoSQLClient)
+Most of the methods of [NoSQLClient](xref:Oracle.NoSQL.SDK.NoSQLClient)
 also take [CancellationToken](xref:System.Threading.CancellationToken) as an
 optional last argument, which allows you to cancel an operation.  However,
 note that this is only a driver-side cancellation and provides no guarantees
@@ -154,9 +154,9 @@ Creating a table is the first step of developing your application.  To create
 tables and execute other Data Definition Language (DDL) statements, such as
 creating, modifying and dropping tables as well as creating and dropping
 indexes, use methods
-[ExecuteTableDDLAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.ExecuteTableDDLAsync*)
+[ExecuteTableDDLAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.ExecuteTableDDLAsync*)
 and
-[ExecuteTableDDLWithCompletionAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.ExecuteTableDDLWithCompletionAsync*).
+[ExecuteTableDDLWithCompletionAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.ExecuteTableDDLWithCompletionAsync*).
 
 Before creating a table, learn about:
 
@@ -181,68 +181,68 @@ Examples of DDL statements are:
 ```
 
 Methods
-[ExecuteTableDDLAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.ExecuteTableDDLAsync*)
+[ExecuteTableDDLAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.ExecuteTableDDLAsync*)
 and
-[ExecuteTableDDLWithCompletionAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.ExecuteTableDDLWithCompletionAsync*)
+[ExecuteTableDDLWithCompletionAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.ExecuteTableDDLWithCompletionAsync*)
 return
-*Task<[TableResult](xref:Oracle.NoSQL.Driver.TableResult)>*.
-[TableResult](xref:Oracle.NoSQL.Driver.TableResult) instance contains status
+*Task<[TableResult](xref:Oracle.NoSQL.SDK.TableResult)>*.
+[TableResult](xref:Oracle.NoSQL.SDK.TableResult) instance contains status
 of DDL operation such as
-[TableState](xref:Oracle.NoSQL.Driver.TableResult.TableState), table schema
-and [TableLimits](xref:Oracle.NoSQL.Driver.TableResult.TableLimits).
+[TableState](xref:Oracle.NoSQL.SDK.TableResult.TableState), table schema
+and [TableLimits](xref:Oracle.NoSQL.SDK.TableResult.TableLimits).
 
 Each of these methods comes with several overloads.  In particular, you may
 pass options for the DDL operation as
-[TableDDLOptions](xref:Oracle.NoSQL.Driver.TableDDLOptions).
+[TableDDLOptions](xref:Oracle.NoSQL.SDK.TableDDLOptions).
 
 When creating a table, you must specify its
-[TableLimits](xref:Oracle.NoSQL.Driver.TableLimits).  Table limits specify
+[TableLimits](xref:Oracle.NoSQL.SDK.TableLimits).  Table limits specify
 maximum throughput and storage capacity for the table as the amount of
 read units, write units and Gigabytes of storage.  You may use an overload
 that takes *tableLimits* parameter or pass table limits as
-[TableLimits](xref:Oracle.NoSQL.Driver.TableDDLOptions.TableLimits)
-property of [TableDDLOptions](xref:Oracle.NoSQL.Driver.TableDDLOptions).
+[TableLimits](xref:Oracle.NoSQL.SDK.TableDDLOptions.TableLimits)
+property of [TableDDLOptions](xref:Oracle.NoSQL.SDK.TableDDLOptions).
 
 Note that these are potentially long running operations.  The method
-[ExecuteTableDDLAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.ExecuteTableDDLAsync*)
+[ExecuteTableDDLAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.ExecuteTableDDLAsync*)
 only launches the specified DDL operation by the service and does not
 wait for its completion.  The resulting
-[TableResult](xref:Oracle.NoSQL.Driver.TableResult) will most likely have one
+[TableResult](xref:Oracle.NoSQL.SDK.TableResult) will most likely have one
 of intermediate table states such as
-[TableState.Creating](xref:Oracle.NoSQL.Driver.TableState.Creating),
-[TableState.Dropping](xref:Oracle.NoSQL.Driver.TableState.Dropping)
+[TableState.Creating](xref:Oracle.NoSQL.SDK.TableState.Creating),
+[TableState.Dropping](xref:Oracle.NoSQL.SDK.TableState.Dropping)
 or
-[TableState.Updating](xref:Oracle.NoSQL.Driver.TableState.Updating)
+[TableState.Updating](xref:Oracle.NoSQL.SDK.TableState.Updating)
 (the latter happens when table is in the process of being altered by
 *ALTER TABLE* statement, table limits are being changed or one of the table
 indexes is being created or dropped).
 
 When the underlying operation completes, the table state should change to
-[TableState.Active](xref:Oracle.NoSQL.Driver.TableState.Active) or
-[TableState.Dropped](xref:Oracle.NoSQL.Driver.TableState.Dropped)
+[TableState.Active](xref:Oracle.NoSQL.SDK.TableState.Active) or
+[TableState.Dropped](xref:Oracle.NoSQL.SDK.TableState.Dropped)
 (if the DDL operation was *DROP TABLE*).
 
 You may asynchronously wait for table DDL operation completion by calling
-[WaitForCompletionAsync](xref:Oracle.NoSQL.Driver.TableResult.WaitForCompletionAsync*)
-on the returned [TableResult](xref:Oracle.NoSQL.Driver.TableResult) instance.
+[WaitForCompletionAsync](xref:Oracle.NoSQL.SDK.TableResult.WaitForCompletionAsync*)
+on the returned [TableResult](xref:Oracle.NoSQL.SDK.TableResult) instance.
 
 You may also get current table status by calling one of overloads of
-[GetTableAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.GetTableAsync*) method and
+[GetTableAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.GetTableAsync*) method and
 passing a table name or
-[TableResult](xref:Oracle.NoSQL.Driver.TableResult) instance from
+[TableResult](xref:Oracle.NoSQL.SDK.TableResult) instance from
 the DDL operation (the latter will also provide information on any errors
 occured during the DDL operation).
 
 If you are only need to know the DDL operation completion and not any of its
 intermediate states, use
-[ExecuteTableDDLWithCompletionAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.ExecuteTableDDLWithCompletionAsync*)
+[ExecuteTableDDLWithCompletionAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.ExecuteTableDDLWithCompletionAsync*)
 methods.  These methods return only when the DDL operation is fully completed
 by the service or throw an exception if the execution of the DDL operation
 failed.  The resulting
-[TableResult](xref:Oracle.NoSQL.Driver.TableResult) instance will
+[TableResult](xref:Oracle.NoSQL.SDK.TableResult) instance will
 have table state 
-[TableState.Active](xref:Oracle.NoSQL.Driver.TableState.Active) or
-[TableState.Dropped](xref:Oracle.NoSQL.Driver.TableState.Dropped)
+[TableState.Active](xref:Oracle.NoSQL.SDK.TableState.Active) or
+[TableState.Dropped](xref:Oracle.NoSQL.SDK.TableState.Dropped)
 (if the DDL operation was *DROP TABLE*).
 
 ```csharp
@@ -268,13 +268,13 @@ catch(Exception ex)
 ```
 
 Note that
-[WaitForCompletionAsync](xref:Oracle.NoSQL.Driver.TableResult.WaitForCompletionAsync*)
+[WaitForCompletionAsync](xref:Oracle.NoSQL.SDK.TableResult.WaitForCompletionAsync*)
 will change the calling
-[TableResult](xref:Oracle.NoSQL.Driver.TableResult) instance to reflect the
+[TableResult](xref:Oracle.NoSQL.SDK.TableResult) instance to reflect the
 operation completion.
 
 Alternatively you may use
-[ExecuteTableDDLWithCompletionAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.ExecuteTableDDLWithCompletionAsync*).
+[ExecuteTableDDLWithCompletionAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.ExecuteTableDDLWithCompletionAsync*).
 Substitute the statements in the try-catch block with the following:
 
 ```csharp
@@ -288,82 +288,82 @@ Console.WriteLine("Table users created.");
 ```
 
 (Note that above we ignored the returned result from
-[ExecuteTableDDLWithCompletionAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.ExecuteTableDDLWithCompletionAsync*)).
+[ExecuteTableDDLWithCompletionAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.ExecuteTableDDLWithCompletionAsync*)).
 
 You need not specify
-[TableLimits](xref:Oracle.NoSQL.Driver.TableDDLOptions.TableLimits)
+[TableLimits](xref:Oracle.NoSQL.SDK.TableDDLOptions.TableLimits)
 for any DDL operation other than *CREATE TABLE*.  You may also change table
 limits of an existing table by calling
-[SetTableLimitsAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.SetTableLimitsAsync*)
+[SetTableLimitsAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.SetTableLimitsAsync*)
 or
-[SetTableLimitsWithCompletionAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.SetTableLimitsWithCompletionAsync*)
+[SetTableLimitsWithCompletionAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.SetTableLimitsWithCompletionAsync*)
 methods.  They have the same operation completion semantics as
-[ExecuteTableDDLAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.ExecuteTableDDLAsync*)
+[ExecuteTableDDLAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.ExecuteTableDDLAsync*)
 and
-[ExecuteTableDDLWithCompletionAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.ExecuteTableDDLWithCompletionAsync*).
+[ExecuteTableDDLWithCompletionAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.ExecuteTableDDLWithCompletionAsync*).
 
 ## Data Representation
 
 To represent data from Oracle NoSQL database tables, the driver uses
-[FieldValue](xref:Oracle.NoSQL.Driver.FieldValue) class which serves as a base
+[FieldValue](xref:Oracle.NoSQL.SDK.FieldValue) class which serves as a base
 class for a collection of classes representing instances of all supported
-data types.  Instances of [FieldValue](xref:Oracle.NoSQL.Driver.FieldValue)
+data types.  Instances of [FieldValue](xref:Oracle.NoSQL.SDK.FieldValue)
 are used to represent values of fields in table rows or query results as well
-as the rows themselves.  See [FieldValue](xref:Oracle.NoSQL.Driver.FieldValue)
+as the rows themselves.  See [FieldValue](xref:Oracle.NoSQL.SDK.FieldValue)
 for detailed description of these classes and how they are mapped to data
 types of Oracle NoSQL Database.
 
 Here we will note some important features:
 
 * There are subclasses representing atomic data types such as
-[IntegerValue](xref:Oracle.NoSQL.Driver.IntegerValue),
-[StringValue](xref:Oracle.NoSQL.Driver.StringValue),
-[TimestampValue](xref:Oracle.NoSQL.Driver.TimestampValue),
-[NullValue](xref:Oracle.NoSQL.Driver.NullValue), etc. as well as complex
-types such as [ArrayValue](xref:Oracle.NoSQL.Driver.ArrayValue),
-[MapValue](xref:Oracle.NoSQL.Driver.MapValue) and
-[RecordValue](xref:Oracle.NoSQL.Driver.RecordValue).
-* Both [MapValue](xref:Oracle.NoSQL.Driver.MapValue) and
-[RecordValue](xref:Oracle.NoSQL.Driver.RecordValue) represent dictionaries of
+[IntegerValue](xref:Oracle.NoSQL.SDK.IntegerValue),
+[StringValue](xref:Oracle.NoSQL.SDK.StringValue),
+[TimestampValue](xref:Oracle.NoSQL.SDK.TimestampValue),
+[NullValue](xref:Oracle.NoSQL.SDK.NullValue), etc. as well as complex
+types such as [ArrayValue](xref:Oracle.NoSQL.SDK.ArrayValue),
+[MapValue](xref:Oracle.NoSQL.SDK.MapValue) and
+[RecordValue](xref:Oracle.NoSQL.SDK.RecordValue).
+* Both [MapValue](xref:Oracle.NoSQL.SDK.MapValue) and
+[RecordValue](xref:Oracle.NoSQL.SDK.RecordValue) represent dictionaries of
 keys and values (with string keys and values of type
-[FieldValue](xref:Oracle.NoSQL.Driver.FieldValue)).  The keys of
-[MapValue](xref:Oracle.NoSQL.Driver.MapValue) are unordered but the keys of
-[RecordValue](xref:Oracle.NoSQL.Driver.RecordValue) preserve their original
+[FieldValue](xref:Oracle.NoSQL.SDK.FieldValue)).  The keys of
+[MapValue](xref:Oracle.NoSQL.SDK.MapValue) are unordered but the keys of
+[RecordValue](xref:Oracle.NoSQL.SDK.RecordValue) preserve their original
 insertion order (and thus iteration order over keys).  Thus table rows may be
-represented by either [MapValue](xref:Oracle.NoSQL.Driver.MapValue) or
-[RecordValue](xref:Oracle.NoSQL.Driver.RecordValue) depending on whether the
+represented by either [MapValue](xref:Oracle.NoSQL.SDK.MapValue) or
+[RecordValue](xref:Oracle.NoSQL.SDK.RecordValue) depending on whether the
 field order needs to be preserved.  Note that every
-[RecordValue](xref:Oracle.NoSQL.Driver.RecordValue) instance is also a
-[MapValue](xref:Oracle.NoSQL.Driver.MapValue).
+[RecordValue](xref:Oracle.NoSQL.SDK.RecordValue) instance is also a
+[MapValue](xref:Oracle.NoSQL.SDK.MapValue).
 * The field order is not important for values provided to the driver, such as
 for row values provided to *Put* operations or primary key values provided
 to *Get* operations, because the order of the table fields is already known
 on the back end.  Thus these operations take these values as
-[MapValue](xref:Oracle.NoSQL.Driver.MapValue) instances. On the other hand,
+[MapValue](xref:Oracle.NoSQL.SDK.MapValue) instances. On the other hand,
 values returned by the driver, such as rows returned by *Get* or *Query*
 operations have well-defined order of fields and thus are returned as
-[RecordValue](xref:Oracle.NoSQL.Driver.RecordValue) instances.
+[RecordValue](xref:Oracle.NoSQL.SDK.RecordValue) instances.
 * Each field value supports conversion to and from JSON.  You may create an
 instance of field value from a JSON string via
-[FieldValue.FromJsonString](xref:Oracle.NoSQL.Driver.FieldValue.FromJsonString*)
+[FieldValue.FromJsonString](xref:Oracle.NoSQL.SDK.FieldValue.FromJsonString*)
 or convert an instance of field value to JSON string via
-[FieldValue.ToJsonString](xref:Oracle.NoSQL.Driver.FieldValue.ToJsonString*).
-Note that [FieldValue.ToString](xref:Oracle.NoSQL.Driver.FieldValue.ToString)
+[FieldValue.ToJsonString](xref:Oracle.NoSQL.SDK.FieldValue.ToJsonString*).
+Note that [FieldValue.ToString](xref:Oracle.NoSQL.SDK.FieldValue.ToString)
 also returns JSON string and it is implicitly used by *Console.WriteLine*
 statements in the examples below.
 
 See examples below on how to create and use
-[FieldValue](xref:Oracle.NoSQL.Driver.FieldValue) instances.
+[FieldValue](xref:Oracle.NoSQL.SDK.FieldValue) instances.
 
 Note that the classes representing operation results that may contain a row
-value such as [PutResult](xref:Oracle.NoSQL.Driver.PutResult`1),
-[GetResult](xref:Oracle.NoSQL.Driver.GetResult`1),
-[QueryResult](xref:Oracle.NoSQL.Driver.QueryResult`1) are designed to
+value such as [PutResult](xref:Oracle.NoSQL.SDK.PutResult`1),
+[GetResult](xref:Oracle.NoSQL.SDK.GetResult`1),
+[QueryResult](xref:Oracle.NoSQL.SDK.QueryResult`1) are designed to
 support any type of row value (to be used when the SDK is extended to support
 class mapping) and thus are generic.  Currently the only type parameter in use
-is [RecordValue](xref:Oracle.NoSQL.Driver.RecordValue). For example, the
+is [RecordValue](xref:Oracle.NoSQL.SDK.RecordValue). For example, the
 result of *Get* operation is
-[GetResult](xref:Oracle.NoSQL.Driver.GetResult`1)<[RecordValue](xref:Oracle.NoSQL.Driver.RecordValue)>.
+[GetResult](xref:Oracle.NoSQL.SDK.GetResult`1)<[RecordValue](xref:Oracle.NoSQL.SDK.RecordValue)>.
 See result descriptions in the sections below.
 
 ## Add Data
@@ -373,59 +373,59 @@ Add rows to your table.
 When you store data in table rows, your application can easily retrieve, add
 to or delete information from the table.
 
-Method [PutAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.PutAsync*) and related
+Method [PutAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.PutAsync*) and related
 methods
-[PutIfAbsentAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.PutIfAbsentAsync*),
-[PutIfPresentAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.PutIfPresentAsync*)
+[PutIfAbsentAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.PutIfAbsentAsync*),
+[PutIfPresentAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.PutIfPresentAsync*)
 and
-[PutIfVersionAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.PutIfPresentAsync*)
+[PutIfVersionAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.PutIfPresentAsync*)
 are used to insert a single row into the table or update a single row.
 
 These methods can be used for unconditional and conditional puts:
 
-* Use [PutAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.PutAsync*) (without
+* Use [PutAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.PutAsync*) (without
 conditional options) to insert a new row or overwrite existing row with the
 same primary key if present.  This is unconditional put.
 * Use
-[PutIfAbsentAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.PutIfAbsentAsync*) to
+[PutIfAbsentAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.PutIfAbsentAsync*) to
 insert a new row only if the row with the same primary key does not exist.
 * Use
-[PutIfPresentAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.PutIfPresentAsync*) to
+[PutIfPresentAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.PutIfPresentAsync*) to
 overwrite existing row only if the row with the same primary key exists.
 * Use
-[PutIfVersionAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.PutIfPresentAsync*) to
+[PutIfVersionAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.PutIfPresentAsync*) to
 overwrite existing row only if the row with the same primary key exists and
-its [RowVersion](xref:Oracle.NoSQL.Driver.RowVersion) matches a
+its [RowVersion](xref:Oracle.NoSQL.SDK.RowVersion) matches a
 specific version.
 
 These methods take the value of the row as
-[MapValue](xref:Oracle.NoSQL.Driver.MapValue), thus you can pass either
-[MapValue](xref:Oracle.NoSQL.Driver.MapValue) or
-[RecordValue](xref:Oracle.NoSQL.Driver.RecordValue).  The field names should
+[MapValue](xref:Oracle.NoSQL.SDK.MapValue), thus you can pass either
+[MapValue](xref:Oracle.NoSQL.SDK.MapValue) or
+[RecordValue](xref:Oracle.NoSQL.SDK.RecordValue).  The field names should
 be the same as the table column names (where a field is omitted, it is
 equivalient to inserting SQL NULL in its place).
 
 You may also pass options to each of these methods as
-[PutOptions](xref:Oracle.NoSQL.Driver.PutOptions).  One important option is
-[PutOptions.TTL](xref:Oracle.NoSQL.Driver.PutOptions.TTL) which represents
+[PutOptions](xref:Oracle.NoSQL.SDK.PutOptions).  One important option is
+[PutOptions.TTL](xref:Oracle.NoSQL.SDK.PutOptions.TTL) which represents
 time to live and allows you to put an expiration on the table row.  For more
-details, see [TimeToLive](xref:Oracle.NoSQL.Driver.TimeToLive).
+details, see [TimeToLive](xref:Oracle.NoSQL.SDK.TimeToLive).
 
-Among other options, [PutOptions](xref:Oracle.NoSQL.Driver.PutOptions) class
-provides properties [IfAbsent](xref:Oracle.NoSQL.Driver.PutOptions.IfAbsent),
-[IfPresent](xref:Oracle.NoSQL.Driver.PutOptions.IfPresent) and
-[MatchVersion](xref:Oracle.NoSQL.Driver.PutOptions.MatchVersion) that can be
-used with [PutAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.PutAsync*) for
+Among other options, [PutOptions](xref:Oracle.NoSQL.SDK.PutOptions) class
+provides properties [IfAbsent](xref:Oracle.NoSQL.SDK.PutOptions.IfAbsent),
+[IfPresent](xref:Oracle.NoSQL.SDK.PutOptions.IfPresent) and
+[MatchVersion](xref:Oracle.NoSQL.SDK.PutOptions.MatchVersion) that can be
+used with [PutAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.PutAsync*) for
 conditional put operations, instead of using one of the *PutIf...* methods
 outlined above.  You may choose whichever approach is most convenient.  See
-[PutOptions](xref:Oracle.NoSQL.Driver.PutOptions) for details.
+[PutOptions](xref:Oracle.NoSQL.SDK.PutOptions) for details.
 
 Each of the *Put* methods above returns
-*Task<[PutResult](xref:Oracle.NoSQL.Driver.PutResult`1)<[RecordValue](xref:Oracle.NoSQL.Driver.RecordValue)>>*.
-[PutResult](xref:Oracle.NoSQL.Driver.PutResult`1) instance contains info
+*Task<[PutResult](xref:Oracle.NoSQL.SDK.PutResult`1)<[RecordValue](xref:Oracle.NoSQL.SDK.RecordValue)>>*.
+[PutResult](xref:Oracle.NoSQL.SDK.PutResult`1) instance contains info
 about a completed *Put* operation, such as success status (conditional put
 operations may fail if the corresponding condition was not met) and the
-resulting [RowVersion](xref:Oracle.NoSQL.Driver.RowVersion).
+resulting [RowVersion](xref:Oracle.NoSQL.SDK.RowVersion).
 
 To add rows to your table:
 
@@ -521,7 +521,7 @@ catch(Exception ex)
 }
 ```
 
-Note that [Success](xref:Oracle.NoSQL.Driver.PutResult`1.Success) property
+Note that [Success](xref:Oracle.NoSQL.SDK.PutResult`1.Success) property
 of the result only indicates successful completion as related to conditional
 *Put* operations (i.e. whether the condition was satisfied and thus the
 operation completed) and is always *true* for unconditional Puts.  If the
@@ -530,54 +530,54 @@ See [Handle Exceptions](#exceptions).
 
 You can perform a sequence of put operations on a table that share the same
 shard key using
-[PutManyAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.PutManyAsync*) method.
+[PutManyAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.PutManyAsync*) method.
 This sequence will be executed within the scope of single transaction, thus
 making this operation atomic.  You can also call
-[WriteManyAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.WriteManyAsync*)
+[WriteManyAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.WriteManyAsync*)
 to perform a sequence that includes both *Put* and *Delete* operations.
 
 Using fields of data type *JSON* allows more flexibility in the use of data
 as the data in JSON field does not have a predefined schema.  To put value
-into a JSON field, supply a [MapValue](xref:Oracle.NoSQL.Driver.MapValue)
+into a JSON field, supply a [MapValue](xref:Oracle.NoSQL.SDK.MapValue)
 instance as its field value as part of the row value. You may also create its
 value from a JSON string via
-[FieldValue.FromJsonString](xref:Oracle.NoSQL.Driver.FieldValue.FromJsonString*).
+[FieldValue.FromJsonString](xref:Oracle.NoSQL.SDK.FieldValue.FromJsonString*).
 
 ## Read Data
 
 Learn how to read data from your table.
 
 You can read a single row using the
-[GetAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.GetAsync*) method. This method
+[GetAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.GetAsync*) method. This method
 allows you to retrieve a row based on its primary key value. In order to read
 multiple rows in a single operation, see [Use Queries](#queries).
 
 This method takes the primary key value as
-[MapValue](xref:Oracle.NoSQL.Driver.MapValue).  The field names should
+[MapValue](xref:Oracle.NoSQL.SDK.MapValue).  The field names should
 be the same as the table primary key column names. You may also pass options
-as [GetOptions](xref:Oracle.NoSQL.Driver.GetOptions).
+as [GetOptions](xref:Oracle.NoSQL.SDK.GetOptions).
 
 You can set consistency of a read operation using
-[Consistency](xref:Oracle.NoSQL.Driver.Consistency) enumeration. By default
+[Consistency](xref:Oracle.NoSQL.SDK.Consistency) enumeration. By default
 all read operations are eventually consistent (see
-[Consistency.Eventual]([Consistency](xref:Oracle.NoSQL.Driver.Consistency.Eventual)).
+[Consistency.Eventual]([Consistency](xref:Oracle.NoSQL.SDK.Consistency.Eventual)).
 This type of read is less costly than those using absolute consistency (see
-[Consistency.Absolute]([Consistency](xref:Oracle.NoSQL.Driver.Consistency.Absolute)).
+[Consistency.Absolute]([Consistency](xref:Oracle.NoSQL.SDK.Consistency.Absolute)).
 The default consistency for read operations may be set as
-[Consistency](xref:Oracle.NoSQL.Driver.NoSQLConfig.Consistency) property of
-[NoSQLConfig](xref:Oracle.NoSQL.Driver.NoSQLConfig).  You may also change
+[Consistency](xref:Oracle.NoSQL.SDK.NoSQLConfig.Consistency) property of
+[NoSQLConfig](xref:Oracle.NoSQL.SDK.NoSQLConfig).  You may also change
 the consistency for a single *Get* operation by using
-[Consistency](xref:Oracle.NoSQL.Driver.GetOptions.Consistency) property of
-[GetOptions](xref:Oracle.NoSQL.Driver.GetOptions).
+[Consistency](xref:Oracle.NoSQL.SDK.GetOptions.Consistency) property of
+[GetOptions](xref:Oracle.NoSQL.SDK.GetOptions).
 
-[GetAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.GetAsync*) method returns
-*Task<[GetResult](xref:Oracle.NoSQL.Driver.GetResult`1)<[RecordValue](xref:Oracle.NoSQL.Driver.RecordValue)>>*.
-[GetResult](xref:Oracle.NoSQL.Driver.GetResult`1) instance contains the
-returned [Row](xref:Oracle.NoSQL.Driver.GetResult`1.Row), the row
-[Version](xref:Oracle.NoSQL.Driver.GetResult`1.Version) and other
+[GetAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.GetAsync*) method returns
+*Task<[GetResult](xref:Oracle.NoSQL.SDK.GetResult`1)<[RecordValue](xref:Oracle.NoSQL.SDK.RecordValue)>>*.
+[GetResult](xref:Oracle.NoSQL.SDK.GetResult`1) instance contains the
+returned [Row](xref:Oracle.NoSQL.SDK.GetResult`1.Row), the row
+[Version](xref:Oracle.NoSQL.SDK.GetResult`1.Version) and other
 information. If the row with the provided primary key does not exist in the
-table, the values of both [Row](xref:Oracle.NoSQL.Driver.GetResult`1.Row)
-and [Version](xref:Oracle.NoSQL.Driver.GetResult`1.Version) properties
+table, the values of both [Row](xref:Oracle.NoSQL.SDK.GetResult`1.Row)
+and [Version](xref:Oracle.NoSQL.SDK.GetResult`1.Version) properties
 will be *null*.
 
 ```csharp
@@ -634,25 +634,25 @@ update data. See
 for a full description of the query language.
 
 To execute a query, you may call
-[QueryAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.QueryAsync*) method or
+[QueryAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.QueryAsync*) method or
 call
-[GetQueryAsyncEnumerable]((xref:Oracle.NoSQL.Driver.NoSQLClient.GetQueryAsyncEnumerable*))
+[GetQueryAsyncEnumerable]((xref:Oracle.NoSQL.SDK.NoSQLClient.GetQueryAsyncEnumerable*))
 method and iterate over the resulting async enumerable.
 
 You may pass options to each of these methods as
-[QueryOptions](xref:Oracle.NoSQL.Driver.QueryOptions).
-[QueryAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.QueryAsync*) method (as well as
+[QueryOptions](xref:Oracle.NoSQL.SDK.QueryOptions).
+[QueryAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.QueryAsync*) method (as well as
 each iteration step over
-[GetQueryAsyncEnumerable]((xref:Oracle.NoSQL.Driver.NoSQLClient.GetQueryAsyncEnumerable*))
+[GetQueryAsyncEnumerable]((xref:Oracle.NoSQL.SDK.NoSQLClient.GetQueryAsyncEnumerable*))
 return
-*Task<[QueryResult](xref:Oracle.NoSQL.Driver.QueryResult`1)<[RecordValue](xref:Oracle.NoSQL.Driver.RecordValue)>>*.
-[QueryResult](xref:Oracle.NoSQL.Driver.QueryResult`1) contains query results
-as a list of [RecordValue](xref:Oracle.NoSQL.Driver.RecordValue) instances,
+*Task<[QueryResult](xref:Oracle.NoSQL.SDK.QueryResult`1)<[RecordValue](xref:Oracle.NoSQL.SDK.RecordValue)>>*.
+[QueryResult](xref:Oracle.NoSQL.SDK.QueryResult`1) contains query results
+as a list of [RecordValue](xref:Oracle.NoSQL.SDK.RecordValue) instances,
 as well as other information.
 
 When your query specifies a complete primary key (or you are executing an
 *INSERT* statement, see below), it is sufficient to call
-[QueryAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.QueryAsync*) once:
+[QueryAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.QueryAsync*) once:
 
 ```csharp
 var client = new NoSQLClient("config.json");
@@ -682,27 +682,27 @@ For other queries, this is not the case.
 
 The amount of data returned by the query is limited by the system.  It could
 also be further limited by setting
-[MaxReadKB](xref:Oracle.NoSQL.Driver.QueryOptions.MaxReadKB) property of
-[QueryOptions](xref:Oracle.NoSQL.Driver.QueryOptions).  This means that one
-invocation of [QueryAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.QueryAsync*)
+[MaxReadKB](xref:Oracle.NoSQL.SDK.QueryOptions.MaxReadKB) property of
+[QueryOptions](xref:Oracle.NoSQL.SDK.QueryOptions).  This means that one
+invocation of [QueryAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.QueryAsync*)
 may not return all available results.  This situation is dealt with by using
 continuation key.  Non-null
-[ContinuationKey](xref:Oracle.NoSQL.Driver.QueryResult`1.ContinuationKey)
-in [QueryResult](xref:Oracle.NoSQL.Driver.QueryResult`1) means that
+[ContinuationKey](xref:Oracle.NoSQL.SDK.QueryResult`1.ContinuationKey)
+in [QueryResult](xref:Oracle.NoSQL.SDK.QueryResult`1) means that
 more more query results may be available.  This means that queries should run
 in a loop, looping until the continuation key becomes *null*.
 
 Note that it is possible for query to return now rows
-([QueryResult.Rows](xref:Oracle.NoSQL.Driver.QueryResult`1.Rows) is
+([QueryResult.Rows](xref:Oracle.NoSQL.SDK.QueryResult`1.Rows) is
 empty) yet have not-null continuation key, which means that the query should
 continue looping.  See
-[QueryAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.QueryAsync*) for more
+[QueryAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.QueryAsync*) for more
 details.
 
 To continue the query, set
-[ContinuationKey](xref:Oracle.NoSQL.Driver.QueryOptions.ContinuationKey)
-in the [QueryOptions](xref:Oracle.NoSQL.Driver.QueryOptions) for
-the next call to [QueryAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.QueryAsync*)
+[ContinuationKey](xref:Oracle.NoSQL.SDK.QueryOptions.ContinuationKey)
+in the [QueryOptions](xref:Oracle.NoSQL.SDK.QueryOptions) for
+the next call to [QueryAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.QueryAsync*)
 and loop until the continuation key becomes *null*:
 
 The following example executes the query and prints query results:
@@ -732,11 +732,11 @@ catch(Exception ex)
 ```
 
 Another way to execute the query in a loop is to use
-[GetQueryAsyncEnumerable](xref:Oracle.NoSQL.Driver.NoSQLClient.GetQueryAsyncEnumerable*).
+[GetQueryAsyncEnumerable](xref:Oracle.NoSQL.SDK.NoSQLClient.GetQueryAsyncEnumerable*).
 It returns an instance of
-[IAsyncEnumerable](xref:System.Collections.Generic.IAsyncEnumerable`1)<[QueryResult](xref:Oracle.NoSQL.Driver.QueryResult`1)>
+[IAsyncEnumerable](xref:System.Collections.Generic.IAsyncEnumerable`1)<[QueryResult](xref:Oracle.NoSQL.SDK.QueryResult`1)>
 that can be iterated over.  Each iteration step returns a portion of the query
-results as [QueryResult](xref:Oracle.NoSQL.Driver.QueryResult`1).  For more
+results as [QueryResult](xref:Oracle.NoSQL.SDK.QueryResult`1).  For more
 information on async enumerables, see
 [Iterating With Async Enumerables in C# 8](https://docs.microsoft.com/en-us/archive/msdn-magazine/2019/november/csharp-iterating-with-async-enumerables-in-csharp-8).
 
@@ -821,8 +821,8 @@ large tables.
 
 As with the amount of data read by the query, the amount of data written is
 also limited by the system and can be further limited by setting
-[MaxWriteKB](xref:Oracle.NoSQL.Driver.QueryOptions.MaxWriteKB) of
-[QueryOptions](xref:Oracle.NoSQL.Driver.QueryOptions). In addition, the read
+[MaxWriteKB](xref:Oracle.NoSQL.SDK.QueryOptions.MaxWriteKB) of
+[QueryOptions](xref:Oracle.NoSQL.SDK.QueryOptions). In addition, the read
 limit may also apply to *UPDATE* and *DELETE* queries because of the amount of
 data that need to be read before finding the records that match the query
 predicate.
@@ -833,15 +833,15 @@ same query for multiple times. When you use prepared queries, the execution is
 much more efficient than starting with a SQL statement every time. The query
 language and API support query variables to assist with query reuse.
 
-Use [PrepareAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.PrepareAsync*) to
+Use [PrepareAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.PrepareAsync*) to
 prepare the query.  This method returns
-*Task<[PreparedStatement](xref:Oracle.NoSQL.Driver.PreparedStatement)*.
-[PreparedStatement](xref:Oracle.NoSQL.Driver.PreparedStatement) allows you to
+*Task<[PreparedStatement](xref:Oracle.NoSQL.SDK.PreparedStatement)*.
+[PreparedStatement](xref:Oracle.NoSQL.SDK.PreparedStatement) allows you to
 set query variables.  The query methods
-[QueryAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.QueryAsync*) and
-[GetQueryAsyncEnumerable](xref:Oracle.NoSQL.Driver.NoSQLClient.GetQueryAsyncEnumerable*)
+[QueryAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.QueryAsync*) and
+[GetQueryAsyncEnumerable](xref:Oracle.NoSQL.SDK.NoSQLClient.GetQueryAsyncEnumerable*)
 have overloads that execute prepared queries by taking
-[PreparedStatement](xref:Oracle.NoSQL.Driver.PreparedStatement) as a parameter
+[PreparedStatement](xref:Oracle.NoSQL.SDK.PreparedStatement) as a parameter
 instead of the SQL statement.  For example:
 
 ```csharp
@@ -884,39 +884,39 @@ catch(Exception ex)
 Learn how to delete rows from your table.
 
 To delete a row, use
-[DeleteAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.DeleteAsync*) method. Pass
+[DeleteAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.DeleteAsync*) method. Pass
 to it the table name and primary key of the row to delete.  This method takes
-the primary key value as [MapValue](xref:Oracle.NoSQL.Driver.MapValue).  The
+the primary key value as [MapValue](xref:Oracle.NoSQL.SDK.MapValue).  The
 field names should be the same as the table primary key column names. You may
-also pass options as [DeleteOptions](xref:Oracle.NoSQL.Driver.DeleteOptions).
+also pass options as [DeleteOptions](xref:Oracle.NoSQL.SDK.DeleteOptions).
 
 In addition, you can make delete operation conditional by specifying on a
-[RowVersion](xref:Oracle.NoSQL.Driver.RowVersion) of the row that was
+[RowVersion](xref:Oracle.NoSQL.SDK.RowVersion) of the row that was
 previously returned by
-[GetAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.GetAsync*) or
-[PutAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.PutAsync*).  Use
-[DeleteIfVersionAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.DeleteIfVersionAsync*)
+[GetAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.GetAsync*) or
+[PutAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.PutAsync*).  Use
+[DeleteIfVersionAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.DeleteIfVersionAsync*)
 method that takes the row version to match.  Alternatively, you may use
-[DeleteAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.DeleteAsync*) method and
+[DeleteAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.DeleteAsync*) method and
 pass the version as
-[MatchVersion](xref:Oracle.NoSQL.Driver.DeleteOptions.MatchVersion)
-property of [DeleteOptions](xref:Oracle.NoSQL.Driver.DeleteOptions).
+[MatchVersion](xref:Oracle.NoSQL.SDK.DeleteOptions.MatchVersion)
+property of [DeleteOptions](xref:Oracle.NoSQL.SDK.DeleteOptions).
 
-[DeleteAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.DeleteAsync*) and
-[DeleteIfVersionAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.DeleteIfVersionAsync*)
+[DeleteAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.DeleteAsync*) and
+[DeleteIfVersionAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.DeleteIfVersionAsync*)
 methods return 
-*Task<[DeleteResult](xref:Oracle.NoSQL.Driver.DeleteResult`1)<[RecordValue](xref:Oracle.NoSQL.Driver.RecordValue)>>*.
-[DeleteResult](xref:Oracle.NoSQL.Driver.DeleteResult`1) instance contains
+*Task<[DeleteResult](xref:Oracle.NoSQL.SDK.DeleteResult`1)<[RecordValue](xref:Oracle.NoSQL.SDK.RecordValue)>>*.
+[DeleteResult](xref:Oracle.NoSQL.SDK.DeleteResult`1) instance contains
 success status of the *Delete* operation. *Delete* operation may fail if the
 row with given primary key does not exist or this is a conditional *Delete*
 and provided row version did not match the existing row version.  In addition,
 for conditional *Delete* operation, the result may also contain
-[ExistingRow](xref:Oracle.NoSQL.Driver.DeleteResult`1.ExistingRow) and
-[ExistingVersion](xref:Oracle.NoSQL.Driver.DeleteResult`1.ExistingVersion) if
+[ExistingRow](xref:Oracle.NoSQL.SDK.DeleteResult`1.ExistingRow) and
+[ExistingVersion](xref:Oracle.NoSQL.SDK.DeleteResult`1.ExistingVersion) if
 the operation failed due to the version mismatch and
-[ReturnExisting](xref:Oracle.NoSQL.Driver.DeleteOptions.ReturnExisting)
+[ReturnExisting](xref:Oracle.NoSQL.SDK.DeleteOptions.ReturnExisting)
 property was set to *true* in
-[DeleteOptions](xref:Oracle.NoSQL.Driver.DeleteOptions).
+[DeleteOptions](xref:Oracle.NoSQL.SDK.DeleteOptions).
 
 ```csharp
 var client = new NoSQLClient("config.json");
@@ -997,7 +997,7 @@ catch(Exception ex)
 }
 ```
 
-Note that [Success](xref:Oracle.NoSQL.Driver.DeleteResult`1.Success) property of
+Note that [Success](xref:Oracle.NoSQL.SDK.DeleteResult`1.Success) property of
 the result only indicates whether the row to delete was found and for
 conditional *Delete*, whether the provided version was matched.  If the
 *Delete* operation fails for any other reason, an exception will be thrown.
@@ -1005,26 +1005,26 @@ See [Handle Exceptions](#exceptions).
 
 You can delete multiple rows having the same shard key in a single
 atomic operation using
-[DeleteRangeAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.DeleteRangeAsync*)
+[DeleteRangeAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.DeleteRangeAsync*)
 method.  This method deletes set of rows based on partial primary key (which
 must include a shard key) and optional
-[FieldRange](xref:Oracle.NoSQL.Driver.FieldRange) which specifies a range of
+[FieldRange](xref:Oracle.NoSQL.SDK.FieldRange) which specifies a range of
 values of one of the other (not included into the partial key) primary key
 fields.
 
 Similar to queries, the amount of data that can be deleted by this operation
 in one call is limited by the system and you may loop over multiple calls to
-[DeleteRangeAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.DeleteRangeAsync*)
-using [ContinuationKey](xref:Oracle.NoSQL.Driver.DeleteRangeOptions.ContinuationKey).
+[DeleteRangeAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.DeleteRangeAsync*)
+using [ContinuationKey](xref:Oracle.NoSQL.SDK.DeleteRangeOptions.ContinuationKey).
 Alternatively, you may use
-[GetDeleteRangeAsyncEnumerable](xref:Oracle.NoSQL.Driver.NoSQLClient.GetDeleteRangeAsyncEnumerable*)
+[GetDeleteRangeAsyncEnumerable](xref:Oracle.NoSQL.SDK.NoSQLClient.GetDeleteRangeAsyncEnumerable*)
 and loop over the result.
 
 Note that in either of this cases, when *DeleteRange* operation is split over
 multiple calls, the operation is no longer atomic. See
-[DeleteRangeAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.DeleteRangeAsync*)
+[DeleteRangeAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.DeleteRangeAsync*)
 and
-[GetDeleteRangeAsyncEnumerable](xref:Oracle.NoSQL.Driver.NoSQLClient.GetDeleteRangeAsyncEnumerable*)
+[GetDeleteRangeAsyncEnumerable](xref:Oracle.NoSQL.SDK.NoSQLClient.GetDeleteRangeAsyncEnumerable*)
 for more information.
 
 ## Modify Tables
@@ -1037,9 +1037,9 @@ Learn how to modify tables. You modify a table to:
 * Modify table limits
 
 Other than modifying table limits, use
-[ExecuteTableDDLAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.ExecuteTableDDLAsync*)
+[ExecuteTableDDLAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.ExecuteTableDDLAsync*)
 or
-[ExecuteTableDDLWithCompletionAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.ExecuteTableDDLWithCompletionAsync*)
+[ExecuteTableDDLWithCompletionAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.ExecuteTableDDLWithCompletionAsync*)
 to modify a table by issuing a DDL statement against this table.
 
 Examples of DDL statements to modify a table are:
@@ -1055,22 +1055,22 @@ Examples of DDL statements to modify a table are:
 ```
 
 Table limits can be modified using
-[SetTableLimitsAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.SetTableLimitsAsync*)
+[SetTableLimitsAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.SetTableLimitsAsync*)
 or
-[SetTableLimitsWithCompletionAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.SetTableLimitsWithCompletionAsync*)
+[SetTableLimitsWithCompletionAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.SetTableLimitsWithCompletionAsync*)
 methods.  They take table name and new
-[TableLimits](xref:Oracle.NoSQL.Driver.TableLimits) as parameters and return
-*Task<[TableResult](xref:Oracle.NoSQL.Driver.TableResult)>*.
+[TableLimits](xref:Oracle.NoSQL.SDK.TableLimits) as parameters and return
+*Task<[TableResult](xref:Oracle.NoSQL.SDK.TableResult)>*.
 
 Note that as with
-[ExecuteTableDDLAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.ExecuteTableDDLAsync*),
-[SetTableLimitsAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.SetTableLimitsAsync*)
+[ExecuteTableDDLAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.ExecuteTableDDLAsync*),
+[SetTableLimitsAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.SetTableLimitsAsync*)
 only launches the operation by the service and does not wait for its
 completion.  Similarly, you may use
-[TableResult.WaitForCompletionAsync](xref:Oracle.NoSQL.Driver.TableResult.WaitForCompletionAsync*)
+[TableResult.WaitForCompletionAsync](xref:Oracle.NoSQL.SDK.TableResult.WaitForCompletionAsync*)
 to asynchronously wait for the operation completion.  Alternatively, you may
 call
-[SetTableLimitsWithCompletionAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.SetTableLimitsWithCompletionAsync*)
+[SetTableLimitsWithCompletionAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.SetTableLimitsWithCompletionAsync*)
 that will return result only when the operation is completed by the service:
 
 ```csharp
@@ -1115,9 +1115,9 @@ for example:
 ```
 
 To execute these statements, use
-[ExecuteTableDDLAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.ExecuteTableDDLAsync*)
+[ExecuteTableDDLAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.ExecuteTableDDLAsync*)
 and
-[ExecuteTableDDLWithCompletionAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.ExecuteTableDDLWithCompletionAsync*).
+[ExecuteTableDDLWithCompletionAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.ExecuteTableDDLWithCompletionAsync*).
 See [Create Tables and Indexes](#create_tables) for more information.
 
 ```csharp
@@ -1157,15 +1157,15 @@ Learn how to handle exceptions.
 
 Your application may need to handle exceptions thrown by the driver.  In most
 cases, exceptions may be thrown when calling methods of
-[NoSQLClient](xref:Oracle.NoSQL.Driver.NoSQLClient).  It is also possible for
+[NoSQLClient](xref:Oracle.NoSQL.SDK.NoSQLClient).  It is also possible for
 exceptions to be thrown when creating
-[NoSQLClient](xref:Oracle.NoSQL.Driver.NoSQLClient) instance, when using
+[NoSQLClient](xref:Oracle.NoSQL.SDK.NoSQLClient) instance, when using
 methods such as
-[TableResult.WaitForCompletionAsync](xref:Oracle.NoSQL.Driver.TableResult.WaitForCompletionAsync*)
+[TableResult.WaitForCompletionAsync](xref:Oracle.NoSQL.SDK.TableResult.WaitForCompletionAsync*)
 or when using methods and conversion operations of the
-[FieldValue](xref:Oracle.NoSQL.Driver.FieldValue) class hierarchy.
+[FieldValue](xref:Oracle.NoSQL.SDK.FieldValue) class hierarchy.
 
-[NoSQLException](xref:Oracle.NoSQL.Driver.NoSQLException) serves as a base
+[NoSQLException](xref:Oracle.NoSQL.SDK.NoSQLException) serves as a base
 class for many exceptions thrown by the driver.  However, in certain cases
 the driver uses standard exception types such as:
 
@@ -1173,38 +1173,38 @@ the driver uses standard exception types such as:
 as [ArgumentNullException](xref:System.ArgumentNullException).  They are
 thrown when an invalid argument is passed to a method or when an invalid
 configuration (in code or in JSON) is passed to create
-[NoSQLClient](xref:Oracle.NoSQL.Driver.NoSQLClient) instance.
+[NoSQLClient](xref:Oracle.NoSQL.SDK.NoSQLClient) instance.
 * [TimeoutException](xref:System.TimeoutException) is thrown when an operation
-issued by [NoSQLClient](xref:Oracle.NoSQL.Driver.NoSQLClient) has timed out.
+issued by [NoSQLClient](xref:Oracle.NoSQL.SDK.NoSQLClient) has timed out.
 If you are getting many timeout exceptions, you may try to increase the
-timeout values in [NoSQLConfig](xref:Oracle.NoSQL.Driver.NoSQLConfig) or in
+timeout values in [NoSQLConfig](xref:Oracle.NoSQL.SDK.NoSQLConfig) or in
 *options* argument passed to the
-[NoSQLClient](xref:Oracle.NoSQL.Driver.NoSQLClient) method.
+[NoSQLClient](xref:Oracle.NoSQL.SDK.NoSQLClient) method.
 * [InvalidOperationException](xref:System.InvalidOperationException) is thrown
 when the service is an invalid state to perform an operation.  It may also
 be thrown if the query has failed be cause its processing exceeded the memory
 limit specifed in
-[QueryOptions.MaxMemoryMB](xref:Oracle.NoSQL.Driver.QueryOptions.MaxMemoryMB)
+[QueryOptions.MaxMemoryMB](xref:Oracle.NoSQL.SDK.QueryOptions.MaxMemoryMB)
 or
-[NoSQLConfig.MaxMemoryMB](xref:Oracle.NoSQL.Driver.NoSQLConfig.MaxMemoryMB).
+[NoSQLConfig.MaxMemoryMB](xref:Oracle.NoSQL.SDK.NoSQLConfig.MaxMemoryMB).
 In this case, you may increase the corresponding memory limit.   Otherwise,
 you may retry the operation.  If it still fails, contact Oracle Support for
 assistance.
 * [InvalidCastException](xref:System.InvalidCastException) and
 [OverflowException](xref:System.OverflowException) may occur when working
-with sublcasses of [FieldValue](xref:Oracle.NoSQL.Driver.FieldValue) and
+with sublcasses of [FieldValue](xref:Oracle.NoSQL.SDK.FieldValue) and
 trying to cast a value to a type it doesn't support or cast a numeric value
 to a smaller type causing arithmetic overflow.  Check the validity of the
-conversion in question.  See [FieldValue](xref:Oracle.NoSQL.Driver.FieldValue)
+conversion in question.  See [FieldValue](xref:Oracle.NoSQL.SDK.FieldValue)
 for details.
 * [OperationCanceledException](xref:System.OperationCanceledException) and
 [TaskCanceledException](xref:System.Threading.Tasks.TaskCanceledException)
 if you issued a cancellation of the operation started by a method of
-[NoSQLClient](xref:Oracle.NoSQL.Driver.NoSQLClient) using the provided
+[NoSQLClient](xref:Oracle.NoSQL.SDK.NoSQLClient) using the provided
 [CancellationToken](xref:System.Threading.CancellationToken).
 
 Other exceptions thrown by the driver are subclasses of
-[NoSQLException](xref:Oracle.NoSQL.Driver.NoSQLException).  See API
+[NoSQLException](xref:Oracle.NoSQL.SDK.NoSQLException).  See API
 documentation for more details.
 
 Note: for exceptions indicating that the operation has timed out or was
@@ -1221,24 +1221,24 @@ though the row has been already inserted into the table.
 In addition, exceptions may be split into two broad categories:
 * Exceptions that may be retried with the expectation that the operation may
 succeed on retry.  In general these are subclasses of
-[RetryableException](xref:Oracle.NoSQL.Driver.RetryableException).  These
+[RetryableException](xref:Oracle.NoSQL.SDK.RetryableException).  These
 include throttling exceptions as well as other exceptions where a resource is
 temporarily anavailable.  Some other subclasses of
-[NoSQLException](xref:Oracle.NoSQL.Driver.NoSQLException) may also be
+[NoSQLException](xref:Oracle.NoSQL.SDK.NoSQLException) may also be
 retryable depending on the conditions under which the exception occurred.  See
 API documentation for details.  In addition, network-related errors are
 retryable because most network conditions are temporary.
 * Exceptions that should not be retried because they will still fail after
 retry.  They include exceptions such as
-[TableNotFoundException](xref:Oracle.NoSQL.Driver.TableNotFoundException),
-[TableExistsException](xref:Oracle.NoSQL.Driver.TableExistsException) and
+[TableNotFoundException](xref:Oracle.NoSQL.SDK.TableNotFoundException),
+[TableExistsException](xref:Oracle.NoSQL.SDK.TableExistsException) and
 others as well as standard exceptions discussed above such as
 [ArgumentException](xref:System.ArgumentException).
 
 You can determine if a given instance of
-[NoSQLException](xref:Oracle.NoSQL.Driver.NoSQLException) is retryable by
+[NoSQLException](xref:Oracle.NoSQL.SDK.NoSQLException) is retryable by
 checking its
-[IsRetryable](xref:Oracle.NoSQL.Driver.NoSQLException.IsRetryable) property.
+[IsRetryable](xref:Oracle.NoSQL.SDK.NoSQLException.IsRetryable) property.
 
 ### Retry Handler
 
@@ -1250,33 +1250,33 @@ operation retries.  The retry hanlder determines:
 * How long to wait before each retry.
 
 All retry handlers implement
-[IRetryHandler](xref:Oracle.NoSQL.Driver.IRetryHandler) interface.  This
+[IRetryHandler](xref:Oracle.NoSQL.SDK.IRetryHandler) interface.  This
 interface provides two methods, one to determine if the operation in its
 current state should be retried and another to determine a retry delay befor
 the next retry.  You have a choice to use default retry handler or set your
 own retry handler as
-[RetryHandler](xref:Oracle.NoSQL.Driver.NoSQLConfig.RetryHandler)
-property of [NoSQLConfig](xref:Oracle.NoSQL.Driver.NoSQLConfig) when
-creating [NoSQLClient](xref:Oracle.NoSQL.Driver.NoSQLClient) instance.
+[RetryHandler](xref:Oracle.NoSQL.SDK.NoSQLConfig.RetryHandler)
+property of [NoSQLConfig](xref:Oracle.NoSQL.SDK.NoSQLConfig) when
+creating [NoSQLClient](xref:Oracle.NoSQL.SDK.NoSQLClient) instance.
 
 Note: retries are only performed within the timeout period alloted to the
 operation and configured as one of timeout properties in
-[NoSQLConfig](xref:Oracle.NoSQL.Driver.NoSQLConfig) or in *options*
-passed to the [NoSQLClient](xref:Oracle.NoSQL.Driver.NoSQLClient)
+[NoSQLConfig](xref:Oracle.NoSQL.SDK.NoSQLConfig) or in *options*
+passed to the [NoSQLClient](xref:Oracle.NoSQL.SDK.NoSQLClient)
 method.  If the operation or its retries have not succeded before the timeout
 is reached, [TimeoutException](xref:System.TimeoutException) is thrown.
 
 By default, the driver uses
-[NoSQLRetryHandler](xref:Oracle.NoSQL.Driver.NoSQLRetryHandler) class
+[NoSQLRetryHandler](xref:Oracle.NoSQL.SDK.NoSQLRetryHandler) class
 which controls retires based on operation type, exception type and whether
 the number of retries performed has reached a preconfigured maximum.  It also
 uses exponential backoff delay to wait between retries starting with a
 preconfigured base delay.  You may customize the properties such as maximum
 number of retries, base delay and others by creating your own instance of
-[NoSQLRetryHandler](xref:Oracle.NoSQL.Driver.NoSQLRetryHandler) and
+[NoSQLRetryHandler](xref:Oracle.NoSQL.SDK.NoSQLRetryHandler) and
 setting it as a
-[RetryHandler](xref:Oracle.NoSQL.Driver.NoSQLConfig.RetryHandler)
-property in [NoSQLConfig](xref:Oracle.NoSQL.Driver.NoSQLConfig).  For
+[RetryHandler](xref:Oracle.NoSQL.SDK.NoSQLConfig.RetryHandler)
+property in [NoSQLConfig](xref:Oracle.NoSQL.SDK.NoSQLConfig).  For
 example:
 
 ```csharp
@@ -1294,7 +1294,7 @@ var client = new NoSQLClient(
 ```
 
 You may also specify the same in the JSON configuration file used to create
-[NoSQLClient](xref:Oracle.NoSQL.Driver.NoSQLClient) instance:
+[NoSQLClient](xref:Oracle.NoSQL.SDK.NoSQLClient) instance:
 
 ```json
 {
@@ -1308,19 +1308,19 @@ You may also specify the same in the JSON configuration file used to create
 ```
 
 If you don't specify the retry handler, the driver will use an instance of
-[NoSQLRetryHandler](xref:Oracle.NoSQL.Driver.NoSQLRetryHandler) with
+[NoSQLRetryHandler](xref:Oracle.NoSQL.SDK.NoSQLRetryHandler) with
 default values for all parameters.
 
 Alternatively, you may choose to create your own retry handler class by
-implementing [IRetryHandler](xref:Oracle.NoSQL.Driver.IRetryHandler)
+implementing [IRetryHandler](xref:Oracle.NoSQL.SDK.IRetryHandler)
 interface.
 
 The last option is to disable retries alltogether.  You may do this if you
 plan to retry the operations within your application instead.  To disable
 retries, set
-[RetryHandler](xref:Oracle.NoSQL.Driver.NoSQLConfig.RetryHandler)
-property of [NoSQLConfig](xref:Oracle.NoSQL.Driver.NoSQLConfig) to
-[NoRetries](xref:Oracle.NoSQL.Driver.NoSQLConfig.NoRetries):
+[RetryHandler](xref:Oracle.NoSQL.SDK.NoSQLConfig.RetryHandler)
+property of [NoSQLConfig](xref:Oracle.NoSQL.SDK.NoSQLConfig) to
+[NoRetries](xref:Oracle.NoSQL.SDK.NoSQLConfig.NoRetries):
 
 ```csharp
 var client = new NoSQLClient(
@@ -1332,8 +1332,8 @@ var client = new NoSQLClient(
     });
 ```
 
-See [IRetryHandler](xref:Oracle.NoSQL.Driver.IRetryHandler) and
-[NoSQLRetryHandler](xref:Oracle.NoSQL.Driver.NoSQLRetryHandler) for
+See [IRetryHandler](xref:Oracle.NoSQL.SDK.IRetryHandler) and
+[NoSQLRetryHandler](xref:Oracle.NoSQL.SDK.NoSQLRetryHandler) for
 details.
 
 ## Handle Resource Limits
@@ -1345,14 +1345,14 @@ Programming in a resource-limited environment can be challenging. Tables have
 user-specified throughput limits and if an application exceeds those limits
 it may be throttled, which means an operation may fail with one of the
 throttling exceptions such as
-[ReadThrottlingException](xref:Oracle.NoSQL.Driver.ReadThrottlingException) or
-[WriteThrottlingException](xref:Oracle.NoSQL.Driver.WriteThrottlingException).
+[ReadThrottlingException](xref:Oracle.NoSQL.SDK.ReadThrottlingException) or
+[WriteThrottlingException](xref:Oracle.NoSQL.SDK.WriteThrottlingException).
 This is most common when using queries, which can read a lot of data, using up
 capacity very quickly. It can also happen for get and put operations that run
 in a tight loop.
 
 Even though throttling errors will be retried and using custom
-[RetryHandler](xref:Oracle.NoSQL.Driver.NoSQLConfig.RetryHandler) may allow
+[RetryHandler](xref:Oracle.NoSQL.SDK.NoSQLConfig.RetryHandler) may allow
 more direct control over retries, an application should not rely on retries
 to handle throttling as this will result in poor performance and inability to
 use all of the throughput available for the table.
@@ -1369,34 +1369,34 @@ loop or using *DeleteRange* operation in a loop.
 
 This approach may be improved by computing the delay based on how much
 throughput has been consumed by an operation. All data-related operation
-results such as [GetResult](xref:Oracle.NoSQL.Driver.GetResult`1),
-[PutResult](xref:Oracle.NoSQL.Driver.PutResult`1),
-[DeleteResult](xref:Oracle.NoSQL.Driver.DeleteResult`1),
-[DeleteRangeResult](xref:Oracle.NoSQL.Driver.DeleteRangeResult),
-[WriteManyResult](xref:Oracle.NoSQL.Driver.WriteManyResult`1),
-[PreparedStatement](xref:Oracle.NoSQL.Driver.PreparedStatement) and
-[QueryResult](xref:Oracle.NoSQL.Driver.QueryResult`1) include
+results such as [GetResult](xref:Oracle.NoSQL.SDK.GetResult`1),
+[PutResult](xref:Oracle.NoSQL.SDK.PutResult`1),
+[DeleteResult](xref:Oracle.NoSQL.SDK.DeleteResult`1),
+[DeleteRangeResult](xref:Oracle.NoSQL.SDK.DeleteRangeResult),
+[WriteManyResult](xref:Oracle.NoSQL.SDK.WriteManyResult`1),
+[PreparedStatement](xref:Oracle.NoSQL.SDK.PreparedStatement) and
+[QueryResult](xref:Oracle.NoSQL.SDK.QueryResult`1) include
 *ConsumedCapacity* property.
-[ConsumedCapacity](xref:Oracle.NoSQL.Driver.ConsumedCapacity) tells
+[ConsumedCapacity](xref:Oracle.NoSQL.SDK.ConsumedCapacity) tells
 you how many write and read units, as well as write and read KB has been
 consumed by an operation.  You may use this information to keep the throughput
 within the table limits.
 
 For queries, another option would be to reduce the amount of data read and/or
 written (for update queries) in a single iteration step call by setting
-[MaxReadKB](xref:Oracle.NoSQL.Driver.QueryOptions.MaxReadKB) and
-[MaxWriteKB](xref:Oracle.NoSQL.Driver.QueryOptions.MaxWriteKB) options. You
+[MaxReadKB](xref:Oracle.NoSQL.SDK.QueryOptions.MaxReadKB) and
+[MaxWriteKB](xref:Oracle.NoSQL.SDK.QueryOptions.MaxWriteKB) options. You
 can also limit the amount of data deleted by *DeleteRange* operation by
-setting [MaxWriteKB](xref:Oracle.NoSQL.Driver.DeleteRangeOptions.MaxWriteKB)
+setting [MaxWriteKB](xref:Oracle.NoSQL.SDK.DeleteRangeOptions.MaxWriteKB)
 option.
 
 ## Administrative Operations (On-Premise only)
 
 If you are using Node.js SDK with On-Premise Oracle NoSQL Database,  you may
 perform administrative operations on the store using
-[ExecuteAdminAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.ExecuteAdminAsync*)
+[ExecuteAdminAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.ExecuteAdminAsync*)
 and
-[ExecuteAdminWithCompletionAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.ExecuteAdminWithCompletionAsync*)
+[ExecuteAdminWithCompletionAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.ExecuteAdminWithCompletionAsync*)
 methods.  These are operations that don't affect a specific table.  Examples
 of such statements include:
 
@@ -1410,24 +1410,24 @@ available only when using
 [secure kvstore](https://docs.oracle.com/en/database/other-databases/nosql-database/21.1/security/index.html).
 
 These methods optional options object as
-[AdminOptions](xref:Oracle.NoSQL.Driver.AdminOptions) and return
-*Task<[AdminResult](xref:Oracle.NoSQL.Driver.AdminResult)>*.
-[AdminResult](xref:Oracle.NoSQL.Driver.AdminResult) instance contains the
+[AdminOptions](xref:Oracle.NoSQL.SDK.AdminOptions) and return
+*Task<[AdminResult](xref:Oracle.NoSQL.SDK.AdminResult)>*.
+[AdminResult](xref:Oracle.NoSQL.SDK.AdminResult) instance contains the
 status of the operation (as to whether it is completed or still in progress)
-as [State](xref:Oracle.NoSQL.Driver.AdminResult.State) as well as the
-operaion's [Output](xref:Oracle.NoSQL.Driver.AdminResult.Output) if any.
+as [State](xref:Oracle.NoSQL.SDK.AdminResult.State) as well as the
+operaion's [Output](xref:Oracle.NoSQL.SDK.AdminResult.Output) if any.
 
 Similar to
-[ExecuteTableDDLAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.ExecuteTableDDLAsync*),
+[ExecuteTableDDLAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.ExecuteTableDDLAsync*),
 some of these operations can be long running and the returned result does not
 imply the operation completion.  You may call
-[AdminResult.WaitForCompletionAsync](xref:Oracle.NoSQL.Driver.AdminResult.WaitForCompletionAsync*)
+[AdminResult.WaitForCompletionAsync](xref:Oracle.NoSQL.SDK.AdminResult.WaitForCompletionAsync*)
 to asynchronously wait for the operation completion.  Alternatively, use
-[ExecuteAdminWithCompletionAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.ExecuteAdminWithCompletionAsync*)
+[ExecuteAdminWithCompletionAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.ExecuteAdminWithCompletionAsync*)
 method that will only procude result once the operation is completed by the
 service.  You may also check the status of the currently running operation by
 calling
-[GetAdminStatusAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.GetAdminStatusAsync*)
+[GetAdminStatusAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.GetAdminStatusAsync*)
 
 For example, to create a namespace:
 
@@ -1449,15 +1449,15 @@ catch(Exception ex)
 ```
 
 Some other operations are immediate and are completed when 
-[ExecuteAdminAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.ExecuteAdminAsync*)
+[ExecuteAdminAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.ExecuteAdminAsync*)
 produces the result.  These are readonly operations that don't modify system
 state but only return back information, such as *SHOW* commands (see
 [Shell Utility Commands](https://docs.oracle.com/en/database/other-databases/nosql-database/21.1/sqlfornosql/shell-utility-commands.html#GUID-70FA12B5-6AD3-4965-9163-FA9549078EC7)).
 
 Because some statements, such as *CREATE USER*, may include passwords, both
-[ExecuteAdminAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.ExecuteAdminAsync*)
+[ExecuteAdminAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.ExecuteAdminAsync*)
 and
-[ExecuteAdminWithCompletionAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.ExecuteAdminWithCompletionAsync*)
+[ExecuteAdminWithCompletionAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.ExecuteAdminWithCompletionAsync*)
 have overloads that take *statement* parameter as *char[]* instead of *string*
 so that you can erase it afterwards and avoid keeping sensitive information
 in memory.
@@ -1501,11 +1501,11 @@ finally {
 ```
 
 In addition, there are methods such as
-[ListNamespacesAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.ListNamespacesAsync*),
-[ListUsersAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.ListUsersAsync*) and
-[ListRolesAsync](xref:Oracle.NoSQL.Driver.NoSQLClient.ListRolesAsync*) that
+[ListNamespacesAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.ListNamespacesAsync*),
+[ListUsersAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.ListUsersAsync*) and
+[ListRolesAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.ListRolesAsync*) that
 return namespaces, users and roles, respectively, present in the store.  These
 methods retrive this information by executing *SHOW* commands (such as
 *SHOW AS JSON NAMESPACES*) and parsing the JSON output of the command which is
-returned as [Output](xref:Oracle.NoSQL.Driver.AdminResult.Output) property of
-[AdminResult](xref:Oracle.NoSQL.Driver.AdminResult).
+returned as [Output](xref:Oracle.NoSQL.SDK.AdminResult.Output) property of
+[AdminResult](xref:Oracle.NoSQL.SDK.AdminResult).

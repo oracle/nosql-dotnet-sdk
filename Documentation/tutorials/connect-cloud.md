@@ -21,12 +21,12 @@ either by adding it as a reference to your project or independently.
 
 ### Add the SDK as a Project Reference
 
-You may add the SDK [NuGet Package](https://www.nuget.org/packages/Oracle.NoSQL.Driver/)
+You may add the SDK [NuGet Package](https://www.nuget.org/packages/Oracle.NoSQL.SDK/)
 as a reference to your project by using .Net CLI:
 
 ```bash
 cd <your-project-directory>
-dotnet add package Oracle.NoSQL.Driver
+dotnet add package Oracle.NoSQL.SDK
 ```
 
 Alternatively, you may perform the same using
@@ -39,7 +39,7 @@ You may install the SDK independently into a directory of your choice by using
 [nuget.exe CLI](https://docs.microsoft.com/en-us/nuget/install-nuget-client-tools#cli-tools):
 
 ```bash
-nuget.exe install Oracle.NoSQL.Driver -OutputDirectory <your-packages-directory>
+nuget.exe install Oracle.NoSQL.SDK -OutputDirectory <your-packages-directory>
 ```
 
 ## <a name="configure_cloud"></a>Configuring the SDK
@@ -104,20 +104,20 @@ There are 3 ways to supply credentials:
 
 1. Store credentials in an [OCI configuration file](#config_file).
 2. [Supply credentials directly](#config_api) as
-[IAMCredentials](xref:Oracle.NoSQL.Driver.IAMCredentials).
+[IAMCredentials](xref:Oracle.NoSQL.SDK.IAMCredentials).
 3. [Create your own credentials provider](#config_obj) to load credentials on
 demand from the location of your choice (e.g. keystore, keychain, encrypted
 file, etc.).
 
 You supply the credentials to the SDK when you create
-[NoSQLClient](xref:Oracle.NoSQL.Driver.NoSQLClient) instance that is used to
+[NoSQLClient](xref:Oracle.NoSQL.SDK.NoSQLClient) instance that is used to
 perform the database operations.  The IAM configuration is represented by
-[IAMAuthorizationProvider](xref:Oracle.NoSQL.Driver.IAMAuthorizationProvider)
+[IAMAuthorizationProvider](xref:Oracle.NoSQL.SDK.IAMAuthorizationProvider)
 instance and it indicates how the credentials are supplied.
-[IAMAuthorizationProvider](xref:Oracle.NoSQL.Driver.IAMAuthorizationProvider)
-is in turn a part of [NoSQLConfig](xref:Oracle.NoSQL.Driver.NoSQLConfig)
+[IAMAuthorizationProvider](xref:Oracle.NoSQL.SDK.IAMAuthorizationProvider)
+is in turn a part of [NoSQLConfig](xref:Oracle.NoSQL.SDK.NoSQLConfig)
 configuration that is passed to create
-[NoSQLClient](xref:Oracle.NoSQL.Driver.NoSQLClient) (see
+[NoSQLClient](xref:Oracle.NoSQL.SDK.NoSQLClient) (see
 [Connecting an Application](#connecting)).
 
 [Creating your own credentials provider](#config_obj) is the most secure
@@ -126,7 +126,7 @@ by the driver.  Otherwise, the recommended option is to use an
 [Oracle Cloud Infrastructure configuration file](#config_file).  Supplying
 credentials directly is the least secure option because sensitive information
 such as private key will be kept in memory for the lifetime of
-[NoSQLClient](xref:Oracle.NoSQL.Driver.NoSQLClient) instance.
+[NoSQLClient](xref:Oracle.NoSQL.SDK.NoSQLClient) instance.
 
 ##### <a name="config_file"></a>Using an OCI Configuration File
 
@@ -158,7 +158,7 @@ credentials in the OCI configuration file.  By default, the driver will look
 for credentials and a region in the OCI configuration file at the default path
 and in the default profile.  Thus, if you provide region together with
 credentials as shown above, you can create
-[NoSQLClient](xref:Oracle.NoSQL.Driver.NoSQLClient) instance without passing
+[NoSQLClient](xref:Oracle.NoSQL.SDK.NoSQLClient) instance without passing
 any configuration:
 
 ```csharp
@@ -166,7 +166,7 @@ var client = new NoSQLClient();
 ```
 
 Alternatively, you may specify the region (as well as other properties) in
-[NoSQLConfig](xref:Oracle.NoSQL.Driver.NoSQLConfig):
+[NoSQLConfig](xref:Oracle.NoSQL.SDK.NoSQLConfig):
 
 ```csharp
 var client = new NoSQLClient(
@@ -180,13 +180,13 @@ var client = new NoSQLClient(
 
 As in the previous example, default OCI configuration file with default
 profile will be used unless specified otherwise.  The region in
-[NoSQLConfig](xref:Oracle.NoSQL.Driver.NoSQLConfig) will take
+[NoSQLConfig](xref:Oracle.NoSQL.SDK.NoSQLConfig) will take
 precendence over the region in OCI configuration file if both are set.
 
 You may choose to use different path for OCI configuration file as well as
 different profile within the configuration file.  In this case, specify these
 when creating
-[IAMAuthorizationProvider](xref:Oracle.NoSQL.Driver.IAMAuthorizationProvider).
+[IAMAuthorizationProvider](xref:Oracle.NoSQL.SDK.IAMAuthorizationProvider).
 For example, if your OCI configuration file path is *~/myapp/.oci/config* and
 you store your credentials under profile **Jane**:
 
@@ -203,7 +203,7 @@ user=..........
 ...............
 ```
 
-Then create [NoSQLClient](xref:Oracle.NoSQL.Driver.NoSQLClient) instance as
+Then create [NoSQLClient](xref:Oracle.NoSQL.SDK.NoSQLClient) instance as
 follows:
 
 ```csharp
@@ -217,15 +217,15 @@ var client = new NoSQLClient(
 ```
 
 (Note that you don't have to specify the service type if you set
-[IAMAuthorizationProvider](xref:Oracle.NoSQL.Driver.IAMAuthorizationProvider),
+[IAMAuthorizationProvider](xref:Oracle.NoSQL.SDK.IAMAuthorizationProvider),
 see section [Specifying Service Type](#service_type))
 
 ##### <a name="config_api"></a>Specifying Credentials Directly
 
 You may specify credentials directly as
-[IAMCredentials](xref:Oracle.NoSQL.Driver.IAMCredentials) when creating
-[IAMAuthorizationProvider](xref:Oracle.NoSQL.Driver.IAMAuthorizationProvider).
-Create [NoSQLClient](xref:Oracle.NoSQL.Driver.NoSQLClient) as follows:
+[IAMCredentials](xref:Oracle.NoSQL.SDK.IAMCredentials) when creating
+[IAMAuthorizationProvider](xref:Oracle.NoSQL.SDK.IAMAuthorizationProvider).
+Create [NoSQLClient](xref:Oracle.NoSQL.SDK.NoSQLClient) as follows:
 
 ```csharp
 var client = new NoSQLClient(
@@ -246,9 +246,9 @@ var client = new NoSQLClient(
 ##### <a name="config_obj"></a>Creating Your Own Credentials Provider
 
 You may specify your custom credentials provider when creating
-[IAMAuthorizationProvider](xref:Oracle.NoSQL.Driver.IAMAuthorizationProvider).
+[IAMAuthorizationProvider](xref:Oracle.NoSQL.SDK.IAMAuthorizationProvider).
 The credentials provider is a delegate function that returns
-Task<[IAMCredentials](xref:Oracle.NoSQL.Driver.IAMCredentials)> and thus may
+Task<[IAMCredentials](xref:Oracle.NoSQL.SDK.IAMCredentials)> and thus may
 be implemented asynchronously:
 
 ```csharp
@@ -281,7 +281,7 @@ certificates that are added to it.  See
 [Calling Services from an Instance](https://docs.cloud.oracle.com/en-us/iaas/Content/Identity/Tasks/callingservicesfrominstances.htm) for prerequisite steps to set up Instance
 Principal.
 
-Once set up, create [NoSQLClient](xref:Oracle.NoSQL.Driver.NoSQLClient)
+Once set up, create [NoSQLClient](xref:Oracle.NoSQL.SDK.NoSQLClient)
 instance as follows:
 
 ```csharp
@@ -318,7 +318,7 @@ Note that when using Instance Principal you must specify compartment id
 to use default compartment.  Note that you must use compartment id and not
 compartment name or path.  In addition, when using Instance Principal, you may
 not prefix table name with compartment name or path when calling
-[NoSQLClient](xref:Oracle.NoSQL.Driver.NoSQLClient) APIs.
+[NoSQLClient](xref:Oracle.NoSQL.SDK.NoSQLClient) APIs.
 
 ### <a name="resource_principal"></a>Authorizing with Resource Principal
 
@@ -330,7 +330,7 @@ Service from other Oracle Cloud service resource such as
 See [Accessing Other Oracle Cloud Infrastructure Resources from Running Functions](https://docs.cloud.oracle.com/en-us/iaas/Content/Functions/Tasks/functionsaccessingociresources.htm)
 for how to set up Resource Principal.
 
-Once set up, create [NoSQLClient](xref:Oracle.NoSQL.Driver.NoSQLClient)
+Once set up, create [NoSQLClient](xref:Oracle.NoSQL.SDK.NoSQLClient)
 instance as follows:
 
 ```csharp
@@ -367,44 +367,44 @@ Note that when using Resource Principal you must specify compartment id
 to use default compartment.  Note that you must use compartment id and not
 compartment name or path.  In addition, when using Resource Principal, you may
 not prefix table name with compartment name or path when calling
-[NoSQLClient](xref:Oracle.NoSQL.Driver.NoSQLClient) APIs.
+[NoSQLClient](xref:Oracle.NoSQL.SDK.NoSQLClient) APIs.
 
 ## <a name="connecting"></a>Connecting an Application
 
 To use the SDK in your code, add
-[Oracle.NoSQL.Driver](xref:Oracle.NoSQL.Driver) namespace:
+[Oracle.NoSQL.SDK](xref:Oracle.NoSQL.SDK) namespace:
 
 ```csharp
-using Oracle.NoSQL.Driver;
+using Oracle.NoSQL.SDK;
 ```
 
 The first step in your Oracle NoSQL Database Cloud Service application is to
-create an instance of [NoSQLClient](xref:Oracle.NoSQL.Driver.NoSQLClient)
+create an instance of [NoSQLClient](xref:Oracle.NoSQL.SDK.NoSQLClient)
 class which is the main point of access to the service.  To create
-[NoSQLClient](xref:Oracle.NoSQL.Driver.NoSQLClient) instance, you need to
-supply an instance of [NoSQLConfig](xref:Oracle.NoSQL.Driver.NoSQLConfig)
+[NoSQLClient](xref:Oracle.NoSQL.SDK.NoSQLClient) instance, you need to
+supply an instance of [NoSQLConfig](xref:Oracle.NoSQL.SDK.NoSQLConfig)
 class containing the information needed to access the service.  Alternatively,
 you may choose to supply a path (absolute or relative to current directory) to
 a JSON file that contains the same configuration information as in
-[NoSQLConfig](xref:Oracle.NoSQL.Driver.NoSQLConfig).
+[NoSQLConfig](xref:Oracle.NoSQL.SDK.NoSQLConfig).
 
 The required information consists of the communication region or endpoint and
 authorization information described in section
 [Acquire Credentials for the Oracle NoSQL Database Cloud Service](#creds)
 (also see
-[IAMAuthorizationProvider](xref:Oracle.NoSQL.Driver.IAMAuthorizationProvider)).
+[IAMAuthorizationProvider](xref:Oracle.NoSQL.SDK.IAMAuthorizationProvider)).
 
 It is possible to specify a
-[Region](xref:Oracle.NoSQL.Driver.NoSQLConfig.Region) or an
-[Endpoint](xref:Oracle.NoSQL.Driver.NoSQLConfig.Endpoint), but not both. If
+[Region](xref:Oracle.NoSQL.SDK.NoSQLConfig.Region) or an
+[Endpoint](xref:Oracle.NoSQL.SDK.NoSQLConfig.Endpoint), but not both. If
 you use a region the endpoint of that region is inferred. If an endpoint is
 used, it needs to be either the endpoint of a Region or a reference to a host
 and port.  For example when using the Cloud Simulator you would use an
 endpoint string like **http://localhost:8080**.
 
 Other, optional parameters may also be specified in
-[NoSQLConfig](xref:Oracle.NoSQL.Driver.NoSQLConfig). See API documentation for
-[NoSQLConfig](xref:Oracle.NoSQL.Driver.NoSQLConfig) for more information.
+[NoSQLConfig](xref:Oracle.NoSQL.SDK.NoSQLConfig). See API documentation for
+[NoSQLConfig](xref:Oracle.NoSQL.SDK.NoSQLConfig) for more information.
 
 For example:
 
@@ -422,9 +422,9 @@ var client = new NoSQLClient(
 ```
 
 In addition to providing an instance of
-[NoSQLConfig](xref:Oracle.NoSQL.Driver.NoSQLConfig), you may store the initial
+[NoSQLConfig](xref:Oracle.NoSQL.SDK.NoSQLConfig), you may store the initial
 configuration in a JSON file and provide a path to that file when creating
-[NoSQLClient](xref:Oracle.NoSQL.Driver.NoSQLClient) instance.
+[NoSQLClient](xref:Oracle.NoSQL.SDK.NoSQLClient) instance.
 
 For example, you may provide the same configuration as in above example using
 the JSON file.  Create file **config.json** with following contents:
@@ -450,11 +450,11 @@ var client = new NoSQLClient("/path/to/config.json");
 ```
 
 In general, the JSON representation is very similar to the
-[NoSQLConfig](xref:Oracle.NoSQL.Driver.NoSQLConfig) instance, together with
+[NoSQLConfig](xref:Oracle.NoSQL.SDK.NoSQLConfig) instance, together with
 certain rules for values that cannot be directly represented in JSON.  For
 example, you may see the following from the above representation:
 
-* [Region](xref:Oracle.NoSQL.Driver.Region) values are represented as
+* [Region](xref:Oracle.NoSQL.SDK.Region) values are represented as
 corresponding region identifiers.
 * Authorization provider is represented as JSON object with the properties
 * for a given provider class and an additional *AuthorizationType* property
@@ -462,18 +462,18 @@ indicating the type of the authorization provider.
 * Timeout values are represented as their number of milliseconds.
 
 These rules are described in detail in
-[NoSQLConfig](xref:Oracle.NoSQL.Driver.NoSQLConfig).
+[NoSQLConfig](xref:Oracle.NoSQL.SDK.NoSQLConfig).
 
-In the *Oracle.NoSQL.Driver.Samples* directory, you will see JSON
+In the *Oracle.NoSQL.SDK.Samples* directory, you will see JSON
 configuration files that are used to create a
-[NoSQLClient](xref:Oracle.NoSQL.Driver.NoSQLClient) instance as shown above:
+[NoSQLClient](xref:Oracle.NoSQL.SDK.NoSQLClient) instance as shown above:
 * Use *cloud_template.json* for the cloud service to create a configuration of
 your choice as described in [Supply Credentials to the Application](#supply).
 Fill in appropriate values for properties needed and remove the rest.
 * Use *cloudsim.json* for the Cloud Simulator.
 
 As metioned in section [Using a Configuration File](#config_file), you may
-also create [NoSQLClient](xref:Oracle.NoSQL.Driver.NoSQLClient) instance for
+also create [NoSQLClient](xref:Oracle.NoSQL.SDK.NoSQLClient) instance for
 the cloud service with no-argument constructor (without any configuration
 provided) if you are using a default configuration file with default profile
 containing both the credentials and the service region.
@@ -482,25 +482,25 @@ containing both the credentials and the service region.
 
 Because this SDK is used both for the Oracle NoSQL Cloud Service and the
 On-Premise Oracle NoSQL Database,
-[NoSQLConfig](xref:Oracle.NoSQL.Driver.NoSQLConfig) instance can specify
+[NoSQLConfig](xref:Oracle.NoSQL.SDK.NoSQLConfig) instance can specify
 that we are connecting to the cloud service by setting its
-[ServiceType](xref:Oracle.NoSQL.Driver.NoSQLConfig.ServiceType) property to
-[ServiceType.Cloud](xref:Oracle.NoSQL.Driver.ServiceType.Cloud).
+[ServiceType](xref:Oracle.NoSQL.SDK.NoSQLConfig.ServiceType) property to
+[ServiceType.Cloud](xref:Oracle.NoSQL.SDK.ServiceType.Cloud).
 
 You can always explicitly specify the
-[ServiceType](xref:Oracle.NoSQL.Driver.NoSQLConfig.ServiceType) property in
-[NoSQLConfig](xref:Oracle.NoSQL.Driver.NoSQLConfig), but in many cases such as
+[ServiceType](xref:Oracle.NoSQL.SDK.NoSQLConfig.ServiceType) property in
+[NoSQLConfig](xref:Oracle.NoSQL.SDK.NoSQLConfig), but in many cases such as
 in the examples above, it may be determined automatically.  In particular, the
 driver will assume the cloud service if any of the following is true:
 
-* [NoSQLConfig](xref:Oracle.NoSQL.Driver.NoSQLConfig) has
-[Region](xref:Oracle.NoSQL.Driver.NoSQLConfig.Region) property set (as opposed
-to [Endpoint](xref:Oracle.NoSQL.Driver.NoSQLConfig.Endpoint) property).  It is
+* [NoSQLConfig](xref:Oracle.NoSQL.SDK.NoSQLConfig) has
+[Region](xref:Oracle.NoSQL.SDK.NoSQLConfig.Region) property set (as opposed
+to [Endpoint](xref:Oracle.NoSQL.SDK.NoSQLConfig.Endpoint) property).  It is
 recommended to use region instead of endpoint for the cloud service.
 * The value of
-[AuthorizationProvider](xref:Oracle.NoSQL.Driver.NoSQLConfig.AuthorizationProvider)
+[AuthorizationProvider](xref:Oracle.NoSQL.SDK.NoSQLConfig.AuthorizationProvider)
 is an instance of
-[IAMAuthorizationProvider](xref:Oracle.NoSQL.Driver.IAMAuthorizationProvider))
+[IAMAuthorizationProvider](xref:Oracle.NoSQL.SDK.IAMAuthorizationProvider))
 * No configuration is provided, with both the region and the credentials
 stored in OCI configuration file in default location as described in section
 [Using a Configuration File](#config_file).
@@ -508,14 +508,14 @@ stored in OCI configuration file in default location as described in section
 On the other hand, for the configuration that specifies neither service type
 nor authorization provider but that specifies the endpoint (and not region),
 the service type will default to
-[ServiceType.CloudSim](xref:Oracle.NoSQL.Driver.ServiceType.CloudSim) (see
+[ServiceType.CloudSim](xref:Oracle.NoSQL.SDK.ServiceType.CloudSim) (see
 [Using the Cloud Simulator](#cloudsim)).
 
-For more details, see [ServiceType](xref:Oracle.NoSQL.Driver.ServiceType)
+For more details, see [ServiceType](xref:Oracle.NoSQL.SDK.ServiceType)
 enumeration.
 
 You may also specify the service type in a JSON configuration file as
-string value of the [ServiceType](xref:Oracle.NoSQL.Driver.ServiceType)
+string value of the [ServiceType](xref:Oracle.NoSQL.SDK.ServiceType)
 enumeration constant.  For example:
 
 ```json
@@ -534,8 +534,8 @@ It is recommended that compartments be created for tables to better organize
 them and control security, which is a feature of compartments. The default
 compartment for tables is the root compartment of the user's tenancy. A
 default compartment for all operations can be specified by setting the
-[Compartment](xref:Oracle.NoSQL.Driver.NoSQLConfig.Compartment) property of
-[NoSQLConfig](xref:Oracle.NoSQL.Driver.NoSQLConfig).  For example:
+[Compartment](xref:Oracle.NoSQL.SDK.NoSQLConfig.Compartment) property of
+[NoSQLConfig](xref:Oracle.NoSQL.SDK.NoSQLConfig).  For example:
 
 ```csharp
 var client = new NoSQLClient(
@@ -552,12 +552,12 @@ is a path to a nested compartment, the top-level compartment must be excluded
 as it is inferred from the tenancy.
 
 In addition, all operation options classes have *Comparment* property, such as
-[TableDDLOptions.Compartment](xref:Oracle.NoSQL.Driver.TableDDLOptions.Compartment),
-[GetOptions.Compartment](xref:Oracle.NoSQL.Driver.GetOptions.Compartment),
-[PutOptions.Compartment](xref:Oracle.NoSQL.Driver.PutOptions.Compartment),
+[TableDDLOptions.Compartment](xref:Oracle.NoSQL.SDK.TableDDLOptions.Compartment),
+[GetOptions.Compartment](xref:Oracle.NoSQL.SDK.GetOptions.Compartment),
+[PutOptions.Compartment](xref:Oracle.NoSQL.SDK.PutOptions.Compartment),
 etc.  Thus you may also specify comparment separately for any operation.
 This value, if set, will override the compartment value in
-[NoSQLConfig](xref:Oracle.NoSQL.Driver.NoSQLConfig), if any.
+[NoSQLConfig](xref:Oracle.NoSQL.SDK.NoSQLConfig), if any.
 
 If compartment is not supplied, the tenancy OCID will be used as default. Note
 this only applies if you are [authorizing with user's identity](#user). When
@@ -605,11 +605,11 @@ Alternatively you may download the zip file or a tarball containing the SDK
 source from the
 [GitHub Releases](https://github.com/oracle/nosql-dotnet-sdk/releases) page.
 
-4.  The examples are located under *Oracle.NoSQL.Driver.Samples* directory.
+4.  The examples are located under *Oracle.NoSQL.SDK.Samples* directory.
 Go to the *BasicExample*:
 
 ```bash
-cd  Oracle.NoSQL.Driver.Samples/BasicExample
+cd  Oracle.NoSQL.SDK.Samples/BasicExample
 ```
 
 Under this directory, you will see the example source code *Program.cs* and
@@ -644,7 +644,7 @@ NoSQL Database SDK package as a dependency of the example project.
 Alternatively, you may build and run the example project in
 [Visual Studio](https://visualstudio.microsoft.com/).  In Visual Studio, open
 the Samples solution located at
-*Oracle.NoSQL.Driver.Samples/Oracle.NoSQL.Driver.Samples.sln*.
+*Oracle.NoSQL.SDK.Samples/Oracle.NoSQL.SDK.Samples.sln*.
 
 ## <a name="cloudsim"></a>Using the Cloud Simulator
 
@@ -677,7 +677,7 @@ and start the Cloud Simulator.
 2. Follow step 3. of [Example Quick Start](#quickstart) to obtain the SDK
 source.
 
-3. In *Oracle.NoSQL.Driver.Samples* directory you will find the file
+3. In *Oracle.NoSQL.SDK.Samples* directory you will find the file
 *cloudsim.json* containging default configuration for the Cloud Simulator.
 It should look like this:
 
@@ -690,8 +690,8 @@ It should look like this:
 Copy/edit this file to modify the endpoint if you are running the Cloud
 Simulator on a different port or another machine.  You may also add other
 configuration properties described in
-[NoSQLConfig](xref:Oracle.NoSQL.Driver.NoSQLConfig) if needed.  Note that
-[AuthorizationProvider](xref:Oracle.NoSQL.Driver.NoSQLConfig.AuthorizationProvider)
+[NoSQLConfig](xref:Oracle.NoSQL.SDK.NoSQLConfig) if needed.  Note that
+[AuthorizationProvider](xref:Oracle.NoSQL.SDK.NoSQLConfig.AuthorizationProvider)
 property should not be set for the Cloud Simulator.
 
 4.  Build and run examples as described in steps 4. and 5. of the
@@ -700,12 +700,12 @@ JSON configuration file as an optional command line parameter, which you can
 provide to the *dotnet run* command.  For example:
 
 ```bash
-cd Oracle.NoSQL.Driver.Samples/BasicExample
+cd Oracle.NoSQL.SDK.Samples/BasicExample
 dotnet run -f net5.0 -- ../cloudsim.json
 ```
 
 As described in section [Specifying Service Type](#service_type), for the
 configuration above, you do not need to specify
-[ServiceType](xref:Oracle.NoSQL.Driver.NoSQLConfig.ServiceType) property which
+[ServiceType](xref:Oracle.NoSQL.SDK.NoSQLConfig.ServiceType) property which
 will default to
-[ServiceType.CloudSim](xref:Oracle.NoSQL.Driver.ServiceType.CloudSim).
+[ServiceType.CloudSim](xref:Oracle.NoSQL.SDK.ServiceType.CloudSim).
