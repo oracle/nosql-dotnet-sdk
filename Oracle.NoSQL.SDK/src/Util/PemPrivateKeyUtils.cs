@@ -8,12 +8,13 @@
 namespace Oracle.NoSQL.SDK {
 
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Security.Cryptography;
     using System.Threading;
     using System.Threading.Tasks;
 
-    internal static class PemPrivateKeyUtils
+    internal static partial class PemPrivateKeyUtils
     {
         private const string PKCS8PEMPrefix = "-----BEGIN PRIVATE KEY-----";
         private const string PKCS8EncPEMPrefix =
@@ -26,7 +27,6 @@ namespace Oracle.NoSQL.SDK {
         private const string PKCS1PEMPostfix =
             "-----END RSA PRIVATE KEY-----";
 
-        private const string EncInfoHeader = "DEK-Info";
         private const string InvalidPEMError = "Invalid PEM private key: ";
 
         private ref struct PEMResult
@@ -38,50 +38,13 @@ namespace Oracle.NoSQL.SDK {
             internal string EncryptParams { get; set; }
         }
 
-        private static void ReadPEMHeader(string key, string val,
-            ref PEMResult result)
-        {
-            // We are interested in getting private key encryption info if
-            // using PKCS1 encrypted private key.  It should look like the
-            // following:
-            // -----BEGIN RSA PRIVATE KEY-----
-            // Proc-Type: 4,ENCRYPTED
-            // DEK-Info: AES-128-CBC,3F17F5316E2BAC89
-            //
-            // ...base64 encoded data...
-            // -----END RSA PRIVATE KEY----
-
-            // The value of DEK-Info header is comma-separated encryption
-            // algorithm name and initialization vector.
-
-            if (key == EncInfoHeader)
-            {
-                result.IsEncrypted = true;
-                var idx = val.IndexOf(',');
-                if (idx != -1)
-                {
-                    result.EncryptAlg = val.Substring(0, idx);
-                    result.EncryptParams = val.Substring(idx + 1).TrimEnd();
-                }
-                else
-                {
-                    result.EncryptAlg = val;
-                }
-            }
-        }
-
-        private static byte[] DecryptPKCS1(byte[] keyBytes, char[] passphrase,
-            string alg, string iv)
-        {
-            return null;
-        }
-
         private static void ParsePEM(string[] pemLines,
             out PEMResult result)
         {
             var startIndex = -1;
             var endIndex = -1;
             var checkHeaders = false;
+            Dictionary<string, string> headers = null;
 
             result = new PEMResult();
 
@@ -147,9 +110,10 @@ namespace Oracle.NoSQL.SDK {
                             }
                             else
                             {
+                                headers ??= new Dictionary<string, string>();
                                 var key = line.Substring(0, idx);
                                 var val = line.Substring(idx + 2).TrimStart();
-                                ReadPEMHeader(key, val, ref result);
+                                headers.Add(key, val);
                             }
                         }
 
@@ -164,6 +128,11 @@ namespace Oracle.NoSQL.SDK {
                     "Missing -----" +
                     (startIndex == -1 ? "BEGIN prefix " : "END postfix ") +
                     "line");
+            }
+
+            if (headers != null)
+            {
+                ProcessPEMHeaders(headers, ref result);
             }
 
             result.Data = string.Join("", pemLines, startIndex,
@@ -239,7 +208,7 @@ namespace Oracle.NoSQL.SDK {
             {
                 throw new ArgumentException(
                     "Failed to create private key from PEM file " +
-                    $"{pemFile}: ${ex.Message}", ex);
+                    $"{pemFile}: {ex.Message}", ex);
             }
         }
 

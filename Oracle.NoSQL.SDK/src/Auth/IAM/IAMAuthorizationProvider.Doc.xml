@@ -239,14 +239,17 @@ https://oss.oracle.com/licenses/upl/
         </para>
         <para>
             The private key, if provided in a file or as a string, must be in
-            PEM format.  If the private key is not encrypted, it can be either
-            in PKCS#1 or PKCS#8 format.  However, for encrypted private keys,
-            only PKCS#8 format is supported.  Using PKCS#1 encrypted private
-            keys with <em>Proc-Type</em> and <em>DEK-Info</em> headers is not
-            currently supported.  If you have an encrypted private key in
-            PKCS#1 format, you can convert it to PKCS#8 using openssl:
+            PEM format.  It can be either in PKCS#8 format (starts with
+            <em>-----BEGIN PRIVATE KEY-----</em> or
+            <em>-----BEGIN ENCRYPTED PRIVATE KEY-----</em>) or PKCS#1 format
+            (starts with <em>-----BEGIN RSA PRIVATE KEY-----</em>).  PKCS#8
+            format is preferred.  There is a limitation for encrypted private
+            keys in PKCS#1 format in that it must use AES encryption (with key
+            sizes of 128, 192 or 256 bits).  Otherwise, if you have an
+            encrypted private key in PKCS#1 format, you can convert it to
+            PKCS#8 using openssl:<br/>
             <!-- ReSharper disable MarkupTextTypo -->
-            <em>openssl pkcs8 -topk8 -inform PEM -outform PEM -in encrypted_pkcs1_key.pem -out encrypted_pkcs8_key.pem</em>
+            <b>openssl pkcs8 -topk8 -inform PEM -outform PEM -in encrypted_pkcs1_key.pem -out encrypted_pkcs8_key.pem</b>
             <!-- ReSharper restore MarkupTextTypo -->
         </para>
         <para>
