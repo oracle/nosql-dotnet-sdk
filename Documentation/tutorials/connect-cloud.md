@@ -97,6 +97,19 @@ been done they can be skipped. You need to obtain the following credentials:
 * Fingerprint for the public key uploaded to the user's account
 * Private key pass phrase, needed only if the private key is encrypted
 
+The private key may be either in PKCS#8 format (starts with
+<em>-----BEGIN PRIVATE KEY-----</em> or
+<em>-----BEGIN ENCRYPTED PRIVATE KEY-----</em>) or PKCS#1 format (starts with
+<em>-----BEGIN RSA PRIVATE KEY-----</em>).  PKCS#8
+format is preferred.  There is a limitation for encrypted private keys in
+PKCS#1 format in that it must use AES encryption (with key sizes of 128, 192
+or 256 bits).  Otherwise, if you have an encrypted private key in PKCS#1
+format, you can convert it to PKCS#8 using openssl:
+
+```bash
+openssl pkcs8 -topk8 -inform PEM -outform PEM -in encrypted_pkcs1_key.pem -out encrypted_pkcs8_key.pem
+```
+
 #### <a name="supply"></a>Supply Credentials to the Application
 
 Credentials are used to authorize your application to use the service.
