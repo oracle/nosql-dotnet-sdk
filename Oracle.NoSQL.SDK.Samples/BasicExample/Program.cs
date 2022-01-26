@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2018, 2021 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022 Oracle and/or its affiliates. All rights reserved.
  *
  * Licensed under the Universal Permissive License v 1.0 as shown at
  *  https://oss.oracle.com/licenses/upl/
@@ -70,7 +70,7 @@ namespace Oracle.NoSQL.SDK.Samples
             }
 
             var configFile = args.Length == 1 ? args[0] : null;
-            
+
             try
             {
                 using var client = configFile != null
@@ -107,7 +107,7 @@ namespace Oracle.NoSQL.SDK.Samples
                 {
                     TableLimits = new TableLimits(1, 5, 1)
                 });
-            
+
             Console.WriteLine("  Creating table {0}", TableName);
             Console.WriteLine("  Table state: {0}", tableResult.TableState);
 

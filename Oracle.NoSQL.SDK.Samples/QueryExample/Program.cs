@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2018, 2021 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022 Oracle and/or its affiliates. All rights reserved.
  *
  * Licensed under the Universal Permissive License v 1.0 as shown at
  *  https://oss.oracle.com/licenses/upl/
@@ -125,7 +125,7 @@ namespace Oracle.NoSQL.SDK.Samples
                 sql);
             Console.WriteLine("  Index city_idx created");
             Console.WriteLine("  Table state is {0}", tableResult.TableState);
-            
+
             // Write some records
             Console.WriteLine("\nInserting records");
 
@@ -152,7 +152,7 @@ namespace Oracle.NoSQL.SDK.Samples
                         ["city"] = "Shanghai"
                     }
                 });
-            
+
             await client.PutAsync(TableName,
                 new MapValue
                 {
@@ -182,19 +182,19 @@ namespace Oracle.NoSQL.SDK.Samples
             // Find user with name Supriya with a simple query.
             var statement =
                 $"SELECT * FROM {TableName} WHERE name = 'Supriya'";
-            
+
             Console.WriteLine("\nUse a simple query: {0}", statement);
             var queryEnumerable = client.GetQueryAsyncEnumerable(statement);
-            
+
             await DoQuery(queryEnumerable);
 
             // Find all the Seattle dwellers with a prepared statement.
             statement = $"DECLARE $city STRING; SELECT * FROM {TableName} " +
                 "u WHERE u.userInfo.city = $city";
-            
+
             Console.WriteLine("\nUse a prepared statement: {0}", statement);
             var preparedStatement = await client.PrepareAsync(statement);
-            
+
             const string city = "Seattle";
             Console.WriteLine(
                 "  Set variable $city to \"{0}\" in prepared statement",
