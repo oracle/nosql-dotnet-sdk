@@ -114,6 +114,12 @@ namespace Oracle.NoSQL.SDK
         private static readonly Realm OC8 = new Realm("oc8",
             "oraclecloud8.com");
 
+        private static readonly Realm OC9 = new Realm("oc9",
+            "oraclecloud9.com");
+
+        private static readonly Realm OC10 = new Realm("oc10",
+            "oraclecloud10.com");
+
         private readonly Realm realm;
 
         private Region(string regionId, string regionCode, Realm realm)
@@ -275,10 +281,22 @@ namespace Oracle.NoSQL.SDK
         }
 
         /// <summary>
+        /// Realm: OC1, South Africa Central (Johannesburg)
+        /// </summary>
+        public static readonly Region AF_JOHANNESBURG_1 = new Region(
+            "af-johannesburg-1", "jnb", OC1);
+
+        /// <summary>
         /// Realm: OC1, South Korea Central (Seoul)
         /// </summary>
         public static readonly Region AP_SEOUL_1 = new Region("ap-seoul-1",
             "icn", OC1);
+
+        /// <summary>
+        /// Realm: OC1, Singapore (Singapore)
+        /// </summary>
+        public static readonly Region AP_SINGAPORE_1 = new Region(
+            "ap-singapore-1", "sin", OC1);
 
         /// <summary>
         /// Realm: OC1, Japan East (Tokyo)
@@ -335,6 +353,18 @@ namespace Oracle.NoSQL.SDK
             "eu-frankfurt-1", "fra", OC1);
 
         /// <summary>
+        /// Realm: OC1, France South (Marseille)
+        /// </summary>
+        public static readonly Region EU_MARSEILLE_1 = new Region(
+            "eu-marseille-1", "mrs", OC1);
+
+        /// <summary>
+        /// Realm: OC1, Sweden Central (Stockholm)
+        /// </summary>
+        public static readonly Region EU_STOCKHOLM_1 = new Region(
+            "eu-stockholm-1", "arn", OC1);
+
+        /// <summary>
         /// Realm: OC1, Switzerland North (Zurich)
         /// </summary>
         public static readonly Region EU_ZURICH_1 = new Region("eu-zurich-1",
@@ -351,6 +381,12 @@ namespace Oracle.NoSQL.SDK
         /// </summary>
         public static readonly Region ME_JEDDAH_1 = new Region("me-jeddah-1",
             "jed", OC1);
+
+        /// <summary>
+        /// Realm: OC1, UAE Central (Abu Dhabi)
+        /// </summary>
+        public static readonly Region ME_ABUDHABI_1 = new Region(
+            "me-abudhabi-1", "auh", OC1);
 
         /// <summary>
         /// Realm: OC1, UAE East (Dubai)
@@ -447,5 +483,18 @@ namespace Oracle.NoSQL.SDK
         /// </summary>
         public static readonly Region AP_CHIYODA_1 = new Region(
             "ap-chiyoda-1", "nja", OC8);
+
+        /// <summary>
+        /// Realm: OC9, Oman (Muscat)
+        /// </summary>
+        public static readonly Region ME_DCC_MUSCAT_1 = new Region(
+            "me-dcc-muscat-1", "mct", OC9);
+
+        /// <summary>
+        /// Realm: OC10, Australia Central (Canberra)
+        /// </summary>
+        public static readonly Region AP_DCC_CANBERRA_1 = new Region(
+            "ap-dcc-canberra-1", "wga", OC10);
+
     }
 }

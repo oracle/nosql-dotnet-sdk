@@ -1,6 +1,6 @@
 # Oracle NoSQL Database .NET SDK
 
-This is version 5.1.1 of Oracle NoSQL Database .NET SDK for Oracle NoSQL
+This is version 5.1.3 of Oracle NoSQL Database .NET SDK for Oracle NoSQL
 Database. It supports both the
 [Oracle NoSQL Database Cloud Service](https://www.oracle.com/database/nosql-cloud.html)
 and the on-premise product,

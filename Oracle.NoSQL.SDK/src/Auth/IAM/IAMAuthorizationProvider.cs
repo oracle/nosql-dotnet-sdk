@@ -175,7 +175,7 @@ namespace Oracle.NoSQL.SDK
         {
             lock (providerLock)
             {
-                return signatureDetails == null || DateTime.Now >
+                return signatureDetails == null || DateTime.UtcNow >
                     signatureDetails.Time + CacheDuration;
             }
         }
