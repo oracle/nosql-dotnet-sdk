@@ -8,7 +8,7 @@
     <title>Prerequisites | NoSQL SDK for .NET </title>
     <meta name="viewport" content="width=device-width">
     <meta name="title" content="Prerequisites | NoSQL SDK for .NET ">
-    <meta name="generator" content="docfx 2.58.8.0">
+    <meta name="generator" content="docfx 2.58.2.0">
     
     <link rel="shortcut icon" href="../favicon.ico">
     <link rel="stylesheet" href="../styles/docfx.vendor.css">
@@ -191,6 +191,16 @@ been done they can be skipped. You need to obtain the following credentials:</p>
 <li>Fingerprint for the public key uploaded to the user's account</li>
 <li>Private key pass phrase, needed only if the private key is encrypted</li>
 </ul>
+<p>The private key may be either in PKCS#8 format (starts with
+<em>-----BEGIN PRIVATE KEY-----</em> or
+<em>-----BEGIN ENCRYPTED PRIVATE KEY-----</em>) or PKCS#1 format (starts with
+<em>-----BEGIN RSA PRIVATE KEY-----</em>).  PKCS#8
+format is preferred.  There is a limitation for encrypted private keys in
+PKCS#1 format in that it must use AES encryption (with key sizes of 128, 192
+or 256 bits).  Otherwise, if you have an encrypted private key in PKCS#1
+format, you can convert it to PKCS#8 using openssl:</p>
+<pre><code class="lang-bash">openssl pkcs8 -topk8 -inform PEM -outform PEM -in encrypted_pkcs1_key.pem -out encrypted_pkcs8_key.pem
+</code></pre>
 <h4 id="supply">Supply Credentials to the Application</h4>
 <p>Credentials are used to authorize your application to use the service.
 There are 3 ways to supply credentials:</p>
@@ -701,7 +711,7 @@ will default to
               <div class="contribution">
                 <ul class="nav">
                   <li>
-                    <a href="https://github.com/oracle/nosql-dotnet-sdk/blob/main/Documentation/tutorials/connect-cloud.md/#L1" class="contribution-link">Improve this Doc</a>
+                    <a href="https://github.com//oracle/nosql-dotnet-sdk/blob/main/Documentation/tutorials/connect-cloud.md/#L1" class="contribution-link">Improve this Doc</a>
                   </li>
                 </ul>
               </div>
@@ -721,7 +731,7 @@ will default to
             <span class="pull-right">
               <a href="#top">Back to top</a>
             </span>
-            <span>Copyright © 2020, 2021 Oracle and/or its affiliates. All rights reserved.</span>
+            <span>Copyright © 2020, 2022 Oracle and/or its affiliates. All rights reserved.</span>
             
           </div>
         </div>

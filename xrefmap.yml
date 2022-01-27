@@ -6322,6 +6322,12 @@ references:
   commentId: T:Oracle.NoSQL.SDK.Region
   fullName: Oracle.NoSQL.SDK.Region
   nameWithType: Region
+- uid: Oracle.NoSQL.SDK.Region.AF_JOHANNESBURG_1
+  name: AF_JOHANNESBURG_1
+  href: api/Oracle.NoSQL.SDK.Region.AF_JOHANNESBURG_1.html#Oracle_NoSQL_SDK_Region_AF_JOHANNESBURG_1
+  commentId: F:Oracle.NoSQL.SDK.Region.AF_JOHANNESBURG_1
+  fullName: Oracle.NoSQL.SDK.Region.AF_JOHANNESBURG_1
+  nameWithType: Region.AF_JOHANNESBURG_1
 - uid: Oracle.NoSQL.SDK.Region.AP_CHIYODA_1
   name: AP_CHIYODA_1
   href: api/Oracle.NoSQL.SDK.Region.AP_CHIYODA_1.html#Oracle_NoSQL_SDK_Region_AP_CHIYODA_1
@@ -6334,6 +6340,12 @@ references:
   commentId: F:Oracle.NoSQL.SDK.Region.AP_CHUNCHEON_1
   fullName: Oracle.NoSQL.SDK.Region.AP_CHUNCHEON_1
   nameWithType: Region.AP_CHUNCHEON_1
+- uid: Oracle.NoSQL.SDK.Region.AP_DCC_CANBERRA_1
+  name: AP_DCC_CANBERRA_1
+  href: api/Oracle.NoSQL.SDK.Region.AP_DCC_CANBERRA_1.html#Oracle_NoSQL_SDK_Region_AP_DCC_CANBERRA_1
+  commentId: F:Oracle.NoSQL.SDK.Region.AP_DCC_CANBERRA_1
+  fullName: Oracle.NoSQL.SDK.Region.AP_DCC_CANBERRA_1
+  nameWithType: Region.AP_DCC_CANBERRA_1
 - uid: Oracle.NoSQL.SDK.Region.AP_HYDERABAD_1
   name: AP_HYDERABAD_1
   href: api/Oracle.NoSQL.SDK.Region.AP_HYDERABAD_1.html#Oracle_NoSQL_SDK_Region_AP_HYDERABAD_1
@@ -6364,6 +6376,12 @@ references:
   commentId: F:Oracle.NoSQL.SDK.Region.AP_SEOUL_1
   fullName: Oracle.NoSQL.SDK.Region.AP_SEOUL_1
   nameWithType: Region.AP_SEOUL_1
+- uid: Oracle.NoSQL.SDK.Region.AP_SINGAPORE_1
+  name: AP_SINGAPORE_1
+  href: api/Oracle.NoSQL.SDK.Region.AP_SINGAPORE_1.html#Oracle_NoSQL_SDK_Region_AP_SINGAPORE_1
+  commentId: F:Oracle.NoSQL.SDK.Region.AP_SINGAPORE_1
+  fullName: Oracle.NoSQL.SDK.Region.AP_SINGAPORE_1
+  nameWithType: Region.AP_SINGAPORE_1
 - uid: Oracle.NoSQL.SDK.Region.AP_SYDNEY_1
   name: AP_SYDNEY_1
   href: api/Oracle.NoSQL.SDK.Region.AP_SYDNEY_1.html#Oracle_NoSQL_SDK_Region_AP_SYDNEY_1
@@ -6412,6 +6430,18 @@ references:
   commentId: F:Oracle.NoSQL.SDK.Region.EU_FRANKFURT_1
   fullName: Oracle.NoSQL.SDK.Region.EU_FRANKFURT_1
   nameWithType: Region.EU_FRANKFURT_1
+- uid: Oracle.NoSQL.SDK.Region.EU_MARSEILLE_1
+  name: EU_MARSEILLE_1
+  href: api/Oracle.NoSQL.SDK.Region.EU_MARSEILLE_1.html#Oracle_NoSQL_SDK_Region_EU_MARSEILLE_1
+  commentId: F:Oracle.NoSQL.SDK.Region.EU_MARSEILLE_1
+  fullName: Oracle.NoSQL.SDK.Region.EU_MARSEILLE_1
+  nameWithType: Region.EU_MARSEILLE_1
+- uid: Oracle.NoSQL.SDK.Region.EU_STOCKHOLM_1
+  name: EU_STOCKHOLM_1
+  href: api/Oracle.NoSQL.SDK.Region.EU_STOCKHOLM_1.html#Oracle_NoSQL_SDK_Region_EU_STOCKHOLM_1
+  commentId: F:Oracle.NoSQL.SDK.Region.EU_STOCKHOLM_1
+  fullName: Oracle.NoSQL.SDK.Region.EU_STOCKHOLM_1
+  nameWithType: Region.EU_STOCKHOLM_1
 - uid: Oracle.NoSQL.SDK.Region.EU_ZURICH_1
   name: EU_ZURICH_1
   href: api/Oracle.NoSQL.SDK.Region.EU_ZURICH_1.html#Oracle_NoSQL_SDK_Region_EU_ZURICH_1
@@ -6442,6 +6472,18 @@ references:
   commentId: Overload:Oracle.NoSQL.SDK.Region.FromRegionId
   fullName: Oracle.NoSQL.SDK.Region.FromRegionId
   nameWithType: Region.FromRegionId
+- uid: Oracle.NoSQL.SDK.Region.ME_ABUDHABI_1
+  name: ME_ABUDHABI_1
+  href: api/Oracle.NoSQL.SDK.Region.ME_ABUDHABI_1.html#Oracle_NoSQL_SDK_Region_ME_ABUDHABI_1
+  commentId: F:Oracle.NoSQL.SDK.Region.ME_ABUDHABI_1
+  fullName: Oracle.NoSQL.SDK.Region.ME_ABUDHABI_1
+  nameWithType: Region.ME_ABUDHABI_1
+- uid: Oracle.NoSQL.SDK.Region.ME_DCC_MUSCAT_1
+  name: ME_DCC_MUSCAT_1
+  href: api/Oracle.NoSQL.SDK.Region.ME_DCC_MUSCAT_1.html#Oracle_NoSQL_SDK_Region_ME_DCC_MUSCAT_1
+  commentId: F:Oracle.NoSQL.SDK.Region.ME_DCC_MUSCAT_1
+  fullName: Oracle.NoSQL.SDK.Region.ME_DCC_MUSCAT_1
+  nameWithType: Region.ME_DCC_MUSCAT_1
 - uid: Oracle.NoSQL.SDK.Region.ME_DUBAI_1
   name: ME_DUBAI_1
   href: api/Oracle.NoSQL.SDK.Region.ME_DUBAI_1.html#Oracle_NoSQL_SDK_Region_ME_DUBAI_1
