@@ -9,6 +9,7 @@
     <Copyright>Copyright (c) 2018, 2021 Oracle and/or its affiliates. All rights reserved.</Copyright>
     <Description>Oracle NoSQL .NET SDK</Description>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+	<PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageProjectUrl>https://github.com/oracle/nosql-dotnet-sdk</PackageProjectUrl>
     <RepositoryUrl>https://github.com/oracle/nosql-dotnet-sdk</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -37,7 +38,11 @@
 </ItemGroup>
 
   <ItemGroup>
-    <None Include="LICENSE.txt">
+	  <None Include="..\..\README.md">
+		  <Pack>True</Pack>
+		  <PackagePath></PackagePath>
+	  </None>
+	  <None Include="LICENSE.txt">
       <Pack>True</Pack>
       <PackagePath></PackagePath>
     </None>
