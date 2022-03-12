@@ -22,6 +22,7 @@ namespace Oracle.NoSQL.SDK.Tests
     {
         private TimeToLive? ttl;
         private TimeToLive? originalTTL;
+        private DateTime? modificationTime;
 
         internal int Id { get; }
 
@@ -45,6 +46,12 @@ namespace Oracle.NoSQL.SDK.Tests
 
         internal DateTime PutTime { get; set; }
 
+        internal DateTime ModificationTime
+        {
+            get => modificationTime ?? PutTime;
+            set => modificationTime = value;
+        }
+
         internal DataRow(int id, TimeToLive? ttl = null)
         {
             Id = id;
@@ -55,6 +62,7 @@ namespace Oracle.NoSQL.SDK.Tests
         {
             ttl = originalTTL;
             Version = null;
+            modificationTime = null;
         }
     }
 

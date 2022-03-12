@@ -9,14 +9,34 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
 {
     using System;
     using System.IO;
+    using System.Runtime.CompilerServices;
     using static Protocol;
 
     internal partial class RequestSerializer : IRequestSerializer
     {
+        private const short DefaultSerialVersion = V3;
+
+        private volatile short serialVersion = DefaultSerialVersion;
+
         private static long GetUnixMillisOrZero(DateTime? dateTime)
         {
             return dateTime.HasValue ? DateTimeUtils.GetUnixMillis(
                 dateTime.Value) : 0;
+        }
+
+        private void WriteOpcode(MemoryStream stream, Opcode opcode) =>
+            Protocol.WriteOpcode(stream, opcode, serialVersion);
+
+        public short SerialVersion => serialVersion;
+
+        public bool DecrementSerialVersion()
+        {
+            if (serialVersion == V3) {
+                serialVersion = V2;
+                return true;
+            }
+
+            return false;
         }
 
         public void ReadAndCheckError(MemoryStream stream)

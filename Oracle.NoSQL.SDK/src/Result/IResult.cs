@@ -7,6 +7,8 @@
 
 namespace Oracle.NoSQL.SDK
 {
+    using System;
+
     internal interface IDataResult
     {
         ConsumedCapacity ConsumedCapacity { get; set; }
@@ -19,6 +21,8 @@ namespace Oracle.NoSQL.SDK
         TRow ExistingRow { get; set; }
 
         RowVersion ExistingVersion { get; set; }
+
+        DateTime? ExistingModificationTime { get; set; }
     }
 
     internal interface IWriteResultWithId<TRow> : IWriteResult<TRow>

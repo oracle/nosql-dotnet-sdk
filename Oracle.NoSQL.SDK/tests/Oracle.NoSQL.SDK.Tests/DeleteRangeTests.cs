@@ -41,6 +41,11 @@ namespace Oracle.NoSQL.SDK.Tests
             {
                 Timeout = timeout
             })
+            .Concat(from durability in BadDurabilities
+                select new DeleteRangeOptions
+                {
+                    Durability = durability
+                })
             .Concat(
                 from maxWriteKB in BadPositiveInt32 select new DeleteRangeOptions
                 {
@@ -492,7 +497,8 @@ namespace Oracle.NoSQL.SDK.Tests
             {
                 FieldRange = testCase.FieldRange,
                 MaxWriteKB = maxWriteKB,
-                Timeout = TimeSpan.FromSeconds(10)
+                Timeout = TimeSpan.FromSeconds(10),
+                Durability = Durability.CommitSync
             };
 
             do
@@ -551,7 +557,8 @@ namespace Oracle.NoSQL.SDK.Tests
                 options = new DeleteRangeOptions
                 {
                     FieldRange = testCase.FieldRange,
-                    MaxWriteKB = maxWriteKB
+                    MaxWriteKB = maxWriteKB,
+                    Durability = Durability.CommitSync
                 };
                 // Provide some variety in options.
                 if (!maxWriteKB.HasValue)

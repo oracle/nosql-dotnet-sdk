@@ -237,6 +237,23 @@ namespace Oracle.NoSQL.SDK {
         /// thus can be used if the statement does not contain sensitive
         /// information.
         /// </remarks>
+        /// <example>
+        /// Create a namespace.  We can ignore the return value since the result
+        /// would represent the final state of successful operation (or an
+        /// exception will be thrown).
+        /// <code>
+        /// try
+        /// {
+        ///     await client.ExecuteAdminWithCompletionAsync(
+        ///         "CREATE NAMESPACE my_namespace");
+        ///     Console.WriteLine("Namespace created.");
+        /// }
+        /// catch(Exception e)
+        /// {
+        ///     Console.WriteLine($"Got exception: {e.Message}");
+        /// }
+        /// </code>
+        /// </example>
         /// <param name="statement">The statement.</param>
         /// <param name="options">(Optional) Options for admin DDL operation.
         /// If not specified or <c>null</c>, appropriate defaults

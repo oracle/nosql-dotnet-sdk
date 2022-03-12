@@ -21,6 +21,9 @@ namespace Oracle.NoSQL.SDK.Tests
         internal static readonly TableLimits DefaultTableLimits =
             new TableLimits(1000, 500, 100);
 
+        internal static readonly TableLimits DefaultOnDemandTableLimits =
+            new TableLimits(100);
+
         internal static readonly TableInfo SimpleTable = new TableInfo(
             TableNamePrefix + "T1",
             DefaultTableLimits,

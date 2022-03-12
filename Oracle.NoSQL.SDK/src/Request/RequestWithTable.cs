@@ -85,6 +85,8 @@ namespace Oracle.NoSQL.SDK
         internal override IOptions BaseOptions => WriteOptions;
 
         internal bool ReturnExisting => WriteOptions?.ReturnExisting ?? false;
+
+        internal Durability? Durability => WriteOptions?.Durability;
     }
 
 }

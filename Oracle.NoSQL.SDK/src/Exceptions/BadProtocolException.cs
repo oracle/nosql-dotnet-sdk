@@ -16,10 +16,12 @@ namespace Oracle.NoSQL.SDK
     /// <remarks>
     /// This exception indicates communication problem between the driver and
     /// the service that resulted in the invalid protocol message received by
-    /// either the driver or the service.  This exception may be due to a
-    /// version mismatch between the driver and the service, driver
-    /// installation issues and other reasons.  This exception is not
-    /// retryable.
+    /// either the driver or the service.  This exception may be due to the
+    /// driver sending request to an invalid service endpoint, driver
+    /// installation issues, environmental issues or other reasons.  This
+    /// exception is not retryable.  Note that if the problem is because the
+    /// service does not support the current driver protocol version,
+    /// <see cref="UnsupportedProtocolException"/> will be thrown instead.
     /// </remarks>
     public class BadProtocolException : NoSQLException
     {

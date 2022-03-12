@@ -59,7 +59,7 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
                 result.Version = ReadRecordVersion(stream);
             }
 
-            DeserializeWriteResponseWithId(stream, result);
+            DeserializeWriteResponseWithId(stream, serialVersion, result);
             return result;
         }
 
@@ -81,14 +81,22 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
             if (hasRow)
             {
                 result.Row = ReadRow(stream).ToObject<TRow>();
-                var millis = ReadPackedInt64(stream);
-                if (millis != 0)
+
+                long millis;
+                if ((millis = ReadPackedInt64(stream)) != 0)
                 {
                     result.ExpirationTime =
                         DateTimeUtils.UnixMillisToDateTime(millis);
                 }
 
                 result.Version = ReadRecordVersion(stream);
+
+                if (serialVersion > V2 &&
+                    (millis = ReadPackedInt64(stream)) != 0)
+                {
+                    result.ModificationTime =
+                        DateTimeUtils.UnixMillisToDateTime(millis);
+                }
             }
 
             return result;
@@ -98,7 +106,7 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
             PutRequest<TRow> request)
         {
             WriteOpcode(stream, GetPutOpcode(request));
-            SerializeWriteRequest(stream, request);
+            SerializeWriteRequest(stream, request, serialVersion);
             SerializePutOp(stream, request);
         }
 
@@ -113,7 +121,7 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
                 result.Version = ReadRecordVersion(stream);
             }
 
-            DeserializeWriteResponseWithId(stream, result);
+            DeserializeWriteResponseWithId(stream, serialVersion, result);
             return result;
         }
 
@@ -121,7 +129,7 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
             DeleteRequest<TRow> request)
         {
             WriteOpcode(stream, GetDeleteOpcode(request));
-            SerializeWriteRequest(stream, request);
+            SerializeWriteRequest(stream, request, serialVersion);
             SerializeDeleteOp(stream, request);
         }
 
@@ -132,7 +140,7 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
             DeserializeConsumedCapacity(stream, request, result);
             result.Success = ReadBoolean(stream);
 
-            DeserializeWriteResponse(stream, result);
+            DeserializeWriteResponse(stream, serialVersion, result);
             return result;
         }
 
@@ -142,6 +150,7 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
             WriteOpcode(stream, Opcode.MultiDelete);
             SerializeRequest(stream, request);
             WriteString(stream, request.TableName);
+            WriteDurability(stream, request.Durability, serialVersion);
             WriteFieldValue(stream, MapValue.FromObject(
                 request.PartialPrimaryKey));
             WriteFieldRange(stream, request.FieldRange);
@@ -172,6 +181,7 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
             SerializeRequest(stream, request);
             WriteString(stream, request.TableName);
             WritePackedInt32(stream, request.Operations.Count);
+            WriteDurability(stream, request.Durability, serialVersion);
 
             foreach (var op in request.Operations)
             {

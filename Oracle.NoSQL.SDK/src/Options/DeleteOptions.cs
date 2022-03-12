@@ -58,6 +58,9 @@ namespace Oracle.NoSQL.SDK
         /// <inheritdoc cref="GetOptions.Timeout"/>
         public TimeSpan? Timeout { get; set; }
 
+        /// <inheritdoc cref="PutOptions.Durability"/>
+        public Durability? Durability { get; set; }
+
         /// <summary>
         /// Gets or sets a value that determines whether to perform the Delete
         /// operation only if there is an existing row that matches the
@@ -96,6 +99,7 @@ namespace Oracle.NoSQL.SDK
         void IOptions.Validate()
         {
             CheckTimeout(Timeout);
+            Durability?.Validate();
         }
 
     }

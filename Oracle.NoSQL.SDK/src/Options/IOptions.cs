@@ -25,11 +25,15 @@ namespace Oracle.NoSQL.SDK
 
     internal interface IWriteOptions : IOptions
     {
+        Durability? Durability { get; }
+
         bool ReturnExisting { get; }
     }
 
     internal interface IWriteManyOptions : IOptions
     {
+        Durability? Durability { get; }
+
         bool AbortIfUnsuccessful { get; }
     }
 

@@ -58,7 +58,10 @@ namespace Oracle.NoSQL.SDK.Tests
                 from storageGB in BadPositiveInt32
                 select new TableLimits(
                     DefaultTableLimits.ReadUnits,
-                    DefaultTableLimits.WriteUnits, storageGB));
+                    DefaultTableLimits.WriteUnits, storageGB))
+            .Concat(
+                from storageGB in BadPositiveInt32
+                select new TableLimits(storageGB));  // on-demand table
 
         private static readonly IEnumerable<TableDDLOptions> BadTableDDLOpts =
             (from opt in BadTableDDLOptsNoLimits
@@ -191,6 +194,19 @@ namespace Oracle.NoSQL.SDK.Tests
                 Timeout = TimeSpan.FromMilliseconds(9999)
             });
             VerifyActiveTable(result, Table);
+        }
+
+        [TestMethod]
+        public async Task TestCreateTableOnDemandAsync()
+        {
+            CheckProtocolV3OrAbove();
+            var result = await client.ExecuteTableDDLAsync(
+                MakeCreateTable(Table), DefaultOnDemandTableLimits);
+            VerifyTableResult(result, Table,
+                newTableLimits:DefaultOnDemandTableLimits);
+
+            await result.WaitForCompletionAsync();
+            VerifyActiveTable(result, Table, DefaultOnDemandTableLimits);
         }
 
         [TestMethod]
@@ -355,6 +371,28 @@ namespace Oracle.NoSQL.SDK.Tests
             result = await client.SetTableLimitsWithCompletionAsync(
                 Table.Name, newTableLimits, options);
             VerifyActiveTable(result, Table, newTableLimits);
+        }
+
+        // Switch table from Provisioned mode to On-Demand and then
+        // switch it back to Provisioned mode.
+        [TestMethod]
+        public async Task TestAlterLimitsOnDemandAsync()
+        {
+            CheckNotOnPrem();
+            CheckProtocolV3OrAbove();
+
+            var result = await client.GetTableAsync(Table.Name);
+            VerifyActiveTable(result, Table);
+
+            result = await client.SetTableLimitsAsync(Table.Name,
+                DefaultOnDemandTableLimits);
+            VerifyTableResult(result, Table, ignoreTableLimits: true);
+            await result.WaitForCompletionAsync();
+            VerifyActiveTable(result, Table, DefaultOnDemandTableLimits);
+
+            result = await client.SetTableLimitsWithCompletionAsync(
+                Table.Name, DefaultTableLimits);
+            VerifyActiveTable(result, Table);
         }
 
         [TestMethod]

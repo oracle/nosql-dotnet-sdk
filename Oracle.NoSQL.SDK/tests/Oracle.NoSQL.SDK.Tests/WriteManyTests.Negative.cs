@@ -66,10 +66,17 @@ namespace Oracle.NoSQL.SDK.Tests
 
         private static readonly IEnumerable<WriteManyOptions>
             BadWriteManyOptions =
-            from timeout in BadTimeSpans select new WriteManyOptions
-            {
-                Timeout = timeout
-            };
+                Enumerable.Empty<WriteManyOptions>()
+                    .Concat(from timeout in BadTimeSpans
+                        select new WriteManyOptions
+                        {
+                            Timeout = timeout
+                        })
+                    .Concat(from durability in BadDurabilities
+                        select new WriteManyOptions
+                        {
+                            Durability = durability
+                        });
 
         private static readonly IEnumerable<PutManyOptions>
             BadPutManyOptions = GetBadPutOptions<PutManyOptions>();

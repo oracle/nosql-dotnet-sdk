@@ -23,6 +23,8 @@ namespace Oracle.NoSQL.SDK
 
         internal NoSQLConfig Config { get; private set; }
 
+        internal IRequestSerializer Serializer => Config.serializer;
+
         internal bool IsRetryableException(Exception ex)
         {
             return ex is NoSQLException noSqlEx && noSqlEx.IsRetryable ||
@@ -49,6 +51,7 @@ namespace Oracle.NoSQL.SDK
             var startTime = DateTime.Now;
             while (true)
             {
+                var serialVersion = Serializer.SerialVersion;
                 try
                 {
                     var result = await client.ExecuteRequestAsync(request,
@@ -59,21 +62,32 @@ namespace Oracle.NoSQL.SDK
                 catch (Exception ex)
                 {
                     request.AddException(ex);
-                    if (!IsRetryableException(ex) ||
-                        !Config.RetryHandler.ShouldRetry(request))
-                    {
-                        throw;
-                    }
-
+                    
                     var timeout = request.Timeout;
                     if (ex is SecurityInfoNotReadyException &&
                         timeout < Config.SecurityInfoNotReadyTimeout)
                     {
                         timeout = Config.SecurityInfoNotReadyTimeout;
                     }
+                    var elapsed = DateTime.Now - startTime;
+                    
+                    if (ex is UnsupportedProtocolException &&
+                        elapsed < timeout &&
+                        // We should always retry if some other concurrent
+                        // request has already decremented serial version.
+                        (serialVersion != Serializer.SerialVersion ||
+                         Serializer.DecrementSerialVersion()))
+                    {
+                        continue;
+                    }
+
+                    if (!IsRetryableException(ex) ||
+                        !Config.RetryHandler.ShouldRetry(request))
+                    {
+                        throw;
+                    }
 
                     var delay = Config.RetryHandler.GetRetryDelay(request);
-                    var elapsed = DateTime.Now - startTime;
                     var elapsedWithDelay = elapsed + delay;
 
                     if (elapsedWithDelay > timeout)

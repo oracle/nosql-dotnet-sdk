@@ -67,6 +67,15 @@ namespace Oracle.NoSQL.SDK
         public DateTime? ExpirationTime { get; internal set; }
 
         /// <summary>
+        /// Gets the modification time of the row.
+        /// </summary>
+        /// <value>
+        /// Modification time of the row in UTC if available from the server
+        /// or <c>null</c> if the server doesn't support this feature.
+        /// </value>
+        public DateTime? ModificationTime { get; internal set; }
+
+        /// <summary>
         /// Gets the version of the returned row.
         /// </summary>
         /// <value>

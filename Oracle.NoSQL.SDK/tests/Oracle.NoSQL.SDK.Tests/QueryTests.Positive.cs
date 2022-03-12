@@ -217,6 +217,10 @@ namespace Oracle.NoSQL.SDK.Tests
 
                 foreach (var row in testCase.UpdatedRowList)
                 {
+                    // Rough estimation of modification time, since this
+                    // function is called right after the update query.
+                    row.ModificationTime = currentTime;
+
                     // We update put time for new rows and if this query
                     // has updated TTL of the rows.  For existing updated rows
                     // without TTL update, the put time should be the original

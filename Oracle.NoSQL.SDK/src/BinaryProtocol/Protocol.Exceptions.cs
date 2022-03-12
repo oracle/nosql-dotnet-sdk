@@ -37,7 +37,7 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
         TableDeploymentLimitExceeded = 19,
         TenantDeploymentLimitExceeded = 20,
         OperationNotSupported = 21,
-
+        UnsupportedProtocol = 24,
 
         // Error codes for user throttling, range from 50 to 100(exclusive).
         ReadLimitExceeded = 50,
@@ -116,7 +116,15 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
                 case ErrorCode.ServerError:
                     return new ServerException(message);
                 case ErrorCode.BadProtocolMessage:
+                    if (message.Contains("driver serial version",
+                        StringComparison.OrdinalIgnoreCase))
+                    {
+                        return new UnsupportedProtocolException(message);
+                    }
+
                     return new BadProtocolException(message);
+                case ErrorCode.UnsupportedProtocol:
+                    return new UnsupportedProtocolException(message);
                 case ErrorCode.TableBusy:
                     return new TableBusyException(message);
                 case ErrorCode.RequestTimeout:

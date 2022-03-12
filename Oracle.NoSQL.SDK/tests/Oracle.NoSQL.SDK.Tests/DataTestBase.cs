@@ -9,6 +9,7 @@ namespace Oracle.NoSQL.SDK.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using static Utils;
@@ -105,6 +106,52 @@ namespace Oracle.NoSQL.SDK.Tests
                 // the boundary cases separately.
                 Assert.IsTrue(
                     Math.Abs(ttl.Value.Value - expectedTTL.Value) <= 1);
+            }
+        }
+
+        private const int ModTimeDeltaMillisLocal = 100;
+        private const int ModeTimeDeltaMillisRemote = 5000;
+        private const int ModeTimeDeltaMillisBig = 3600 * 1000;
+
+        internal static void VerifyModificationTime(DataRow row,
+            DateTime? modificationTime, bool isPrecise = true)
+        {
+            if (IsProtocolV3OrAbove)
+            {
+                Assert.IsNotNull(modificationTime);
+                var delta = modificationTime.Value - row.ModificationTime;
+                // If we don't have more or less precise modification time,
+                // just verify that it is somewhere within test run time
+                // boundary.  Note that in either case it cannot be verified
+                // 100% accurately.
+                var maxDeltaMillis = isPrecise
+                    ? (IsServerLocal
+                        ? ModTimeDeltaMillisLocal
+                        : ModeTimeDeltaMillisRemote)
+                    : ModeTimeDeltaMillisBig;
+
+                Assert.IsTrue(
+                    Math.Abs(delta.TotalMilliseconds) < maxDeltaMillis);
+            }
+            else
+            {
+                Assert.IsNull(modificationTime);
+            }
+        }
+
+        internal static void VerifyExistingModificationTime(DataRow row,
+            IWriteResult<RecordValue> result)
+        {
+            if (IsProtocolV3OrAbove)
+            {
+                Assert.IsNotNull(result.ExistingModificationTime);
+                var delta = result.ExistingModificationTime.Value -
+                            row.ModificationTime;
+                Assert.IsTrue(Math.Abs(delta.TotalMilliseconds) < 500);
+            }
+            else
+            {
+                Assert.IsNull(result.ExistingModificationTime);
             }
         }
 
@@ -370,7 +417,8 @@ namespace Oracle.NoSQL.SDK.Tests
         internal static void VerifyGetResult(GetResult<RecordValue> result,
             TableInfo table, DataRow row,
             Consistency consistency = Consistency.Eventual,
-            bool skipVerifyVersion = false)
+            bool skipVerifyVersion = false,
+            bool preciseModificationTime = true)
         {
             Assert.IsNotNull(result);
             VerifyConsumedCapacity(result.ConsumedCapacity);
@@ -389,11 +437,14 @@ namespace Oracle.NoSQL.SDK.Tests
                 Assert.IsNull(result.Row);
                 Assert.IsNull(result.Version);
                 Assert.IsNull(result.ExpirationTime);
+                Assert.IsNull(result.ModificationTime);
                 return;
             }
 
             Assert.IsNotNull(result.Version);
             VerifyExpirationTime(table, row, result.ExpirationTime);
+            VerifyModificationTime(row, result.ModificationTime,
+                preciseModificationTime);
 
             // For update queries (unlike puts) we don't know the row's
             // current version, so we don't verify.
@@ -409,7 +460,8 @@ namespace Oracle.NoSQL.SDK.Tests
             PutResult<RecordValue> result,
             TableInfo table, DataRow row, PutOptions options = null,
             bool success = true, DataRow existingRow = null,
-            bool isSubOp = false, bool isConditional = false)
+            bool isSubOp = false, bool isConditional = false,
+            bool verifyExistingModTime = true)
         {
             Assert.IsNotNull(row); // test self-check
             Assert.IsNotNull(result);
@@ -459,6 +511,7 @@ namespace Oracle.NoSQL.SDK.Tests
 
                 var isNew = row.Version == null;
                 row.Version = result.Version;
+                row.ModificationTime = DateTime.UtcNow;
                 // We update the put time if TTL is indicated in options or if
                 // TTL is being updated to the table's default or if this is a
                 // new row.
@@ -487,6 +540,10 @@ namespace Oracle.NoSQL.SDK.Tests
                     Assert.IsNotNull(existingRow.Version); // test self-check
                     AssertDeepEqual(existingRow.Version,
                         result.ExistingVersion, true);
+                    if (verifyExistingModTime)
+                    {
+                        VerifyExistingModificationTime(existingRow, result);
+                    }
                 }
                 else
                 {
@@ -498,7 +555,7 @@ namespace Oracle.NoSQL.SDK.Tests
             var getResult = await client.GetAsync(table.Name,
                 MakePrimaryKey(table, row));
             // This will verify that we get the same row as we put, including its
-            // version and expiration time
+            // version, expiration time and modification time
             VerifyGetResult(getResult, table, success ? row : existingRow);
 
             // Verify generated value for an identity column if any
@@ -516,7 +573,8 @@ namespace Oracle.NoSQL.SDK.Tests
             DeleteResult<RecordValue> result, TableInfo table,
             MapValue primaryKey, DeleteOptions options = null,
             bool success = true, DataRow existingRow = null,
-            bool isSubOp = false, bool isConditional = false)
+            bool isSubOp = false, bool isConditional = false,
+            bool verifyExistingModTime = true)
         {
             Assert.IsNotNull(result);
             Assert.AreEqual(success, result.Success);
@@ -553,6 +611,10 @@ namespace Oracle.NoSQL.SDK.Tests
                 Assert.IsNotNull(existingRow.Version); // test self-check
                 AssertDeepEqual(existingRow.Version, result.ExistingVersion,
                     true);
+                if (verifyExistingModTime)
+                {
+                    VerifyExistingModificationTime(existingRow, result);
+                }
             }
             else
             {

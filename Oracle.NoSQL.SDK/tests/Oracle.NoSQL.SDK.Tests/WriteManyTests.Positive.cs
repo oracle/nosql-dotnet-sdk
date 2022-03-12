@@ -225,7 +225,8 @@ namespace Oracle.NoSQL.SDK.Tests
                 {
                     AbortIfUnsuccessful = true,
                     Timeout = TimeSpan.FromSeconds(20),
-                    Compartment = Compartment
+                    Compartment = Compartment,
+                    Durability = Durability.CommitWriteNoSync
                 });
 
             yield return new DeleteManyTestCase(
@@ -254,7 +255,8 @@ namespace Oracle.NoSQL.SDK.Tests
                 from fromEnd in Enumerable.Range(-4, 10)
                 select MakePK(null, fromEnd), true, new DeleteManyOptions
                 {
-                    Timeout = TimeSpan.FromSeconds(15)
+                    Timeout = TimeSpan.FromSeconds(15),
+                    Durability = Durability.CommitNoSync
                 },
                 idx => idx >= 4);
 
@@ -280,7 +282,8 @@ namespace Oracle.NoSQL.SDK.Tests
                 new WriteManyOptions
                 {
                     AbortIfUnsuccessful = false,
-                    Timeout = TimeSpan.FromSeconds(30)
+                    Timeout = TimeSpan.FromSeconds(30),
+                    Durability = Durability.CommitSync
                 });
 
             yield return new WriteManyTestCase(
@@ -352,6 +355,19 @@ namespace Oracle.NoSQL.SDK.Tests
                 },
                 idx => idx != 5);
 
+            yield return new DeleteManyTestCase(
+                "deleteMany with incorrect matchVersion of row 5 and " +
+                "returnExisting in opt, 1 delete, success",
+                from fromStart in Enumerable.Range(0, 8)
+                select MakePK(fromStart),
+                true,
+                new DeleteManyOptions
+                {
+                    MatchVersion = GetMatchVersion(5),
+                    ReturnExisting = true
+                },
+                idx => idx != 5);
+
             yield return new PutManyTestCase(
                 "putMany with incorrect matchVersion and returnExisting in " +
                 "opt, no updates, success",
@@ -372,6 +388,20 @@ namespace Oracle.NoSQL.SDK.Tests
                 select MakeRow(fromStart),
                 false,
                 new PutManyOptions
+                {
+                    MatchVersion = GetMatchVersion(0),
+                    ReturnExisting = true,
+                    AbortIfUnsuccessful = true
+                },
+                idx => true);
+
+            yield return new DeleteManyTestCase(
+                "putMany with incorrect matchVersion, returnExisting and " +
+                "abortOnFail in opt, no deletes, fail",
+                from fromStart in Enumerable.Range(1, 7)
+                select MakePK(fromStart),
+                false,
+                new DeleteManyOptions
                 {
                     MatchVersion = GetMatchVersion(0),
                     ReturnExisting = true,
@@ -405,7 +435,9 @@ namespace Oracle.NoSQL.SDK.Tests
                 true,
                 new PutManyOptions
                 {
-                    TTL = TimeToLive.OfHours(10)
+                    TTL = TimeToLive.OfHours(10),
+                    Durability = new Durability(SyncPolicy.Sync,
+                        SyncPolicy.Sync, ReplicaAckPolicy.All)
                 });
         }
 
@@ -501,7 +533,8 @@ namespace Oracle.NoSQL.SDK.Tests
                         await VerifyPutAsync(ToPutResult(opResult),
                             Fixture.Table, row, putOp.Options, opSuccess,
                             Fixture.GetRow(row.Id, true), true,
-                            putOp.GetType() != typeof(PutOperation));
+                            putOp.GetType() != typeof(PutOperation),
+                            verifyExistingModTime:false);
                     }
                     else
                     {
@@ -519,7 +552,8 @@ namespace Oracle.NoSQL.SDK.Tests
                             Fixture.Table, primaryKey, deleteOp.Options,
                             opSuccess, Fixture.GetRow(primaryKey.Id, true),
                             true,
-                            deleteOp.GetType() != typeof(DeleteOperation));
+                            deleteOp.GetType() != typeof(DeleteOperation),
+                            verifyExistingModTime:false);
                     }
 
                     idx++;
@@ -564,7 +598,8 @@ namespace Oracle.NoSQL.SDK.Tests
                         ToPutResult(result.FailedOperationResult),
                         Fixture.Table, row, putOp.Options, false,
                         Fixture.GetRow(row.Id, true), true,
-                        putOp.GetType() != typeof(PutOperation));
+                        putOp.GetType() != typeof(PutOperation),
+                        verifyExistingModTime:false);
                 }
                 else
                 {
@@ -578,7 +613,8 @@ namespace Oracle.NoSQL.SDK.Tests
                         ToDeleteResult(result.FailedOperationResult),
                         Fixture.Table, primaryKey, deleteOp.Options,
                         false, Fixture.GetRow(primaryKey.Id, true),
-                        true, deleteOp.GetType() != typeof(DeleteOperation));
+                        true, deleteOp.GetType() != typeof(DeleteOperation),
+                        verifyExistingModTime:false);
                 }
 
                 // Verify that no rows has been affected by the operation.

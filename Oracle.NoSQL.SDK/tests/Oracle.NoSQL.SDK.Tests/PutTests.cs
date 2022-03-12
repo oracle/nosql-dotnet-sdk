@@ -224,6 +224,7 @@ namespace Oracle.NoSQL.SDK.Tests
             {
                 options.Timeout = TimeSpan.FromSeconds(8);
                 options.ExactMatch = true;
+                options.Durability = Durability.CommitSync;
             }
 
             var result = await client.PutAsync(table.Name, (MapValue)row,
@@ -251,7 +252,9 @@ namespace Oracle.NoSQL.SDK.Tests
             var options = new PutOptions
             {
                 TTL = modifiedRow.TTL,
-                Compartment = Compartment
+                Compartment = Compartment,
+                Durability = new Durability(SyncPolicy.Sync, SyncPolicy.Sync,
+                    ReplicaAckPolicy.All)
             };
             var result = await client.PutAsync(table.Name,
                 (MapValue)modifiedRow, options);
@@ -288,7 +291,8 @@ namespace Oracle.NoSQL.SDK.Tests
             var options = new PutOptions
             {
                 TTL = TimeToLive.DoNotExpire,
-                ReturnExisting = true
+                ReturnExisting = true,
+                Durability = Durability.CommitWriteNoSync
             };
             var result = await client.PutAsync(table.Name, (MapValue)row,
                 options);
@@ -319,7 +323,11 @@ namespace Oracle.NoSQL.SDK.Tests
         {
             SetForCleanup(null, row);
             var options = row.TTL.HasValue
-                ? new PutOptions {TTL = row.TTL}
+                ? new PutOptions
+                {
+                    TTL = row.TTL,
+                    Durability = Durability.CommitNoSync
+                }
                 : null;
             var result = await client.PutIfAbsentAsync(table.Name,
                 (MapValue)row, options);
@@ -403,7 +411,9 @@ namespace Oracle.NoSQL.SDK.Tests
                 ? new PutOptions
                 {
                     TTL = modifiedRow.TTL,
-                    ExactMatch = false
+                    ExactMatch = false,
+                    Durability = new Durability(SyncPolicy.Sync,
+                        SyncPolicy.WriteNoSync, ReplicaAckPolicy.None)
                 }
                 : null;
 
@@ -554,7 +564,8 @@ namespace Oracle.NoSQL.SDK.Tests
             var options = new PutOptions
             {
                 MatchVersion = existingRow.Version,
-                TTL = newRow.TTL
+                TTL = newRow.TTL,
+                Durability = Durability.CommitSync
             };
             var result = await client.PutAsync(table.Name, (MapValue)newRow,
                 options);
