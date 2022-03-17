@@ -151,6 +151,13 @@ namespace Oracle.NoSQL.SDK.Tests
         internal static bool IsAbsoluteConsistency =>
             client.Config.Consistency == Consistency.Absolute;
 
+        internal static short SerialVersion =>
+            client.Serializer.SerialVersion;
+
+        internal static bool IsProtocolV3OrAbove => SerialVersion >= 3;
+
+        internal static bool IsServerLocal => client.Config.Uri.IsLoopback;
+
         // When testing with cloud service or on-prem with rep-factor > 1
         // we may have failures if we are using eventual consistency and the
         // record is retrieved from the replica.  In this case the tests
@@ -174,6 +181,16 @@ namespace Oracle.NoSQL.SDK.Tests
             {
                 Assert.Inconclusive(
                     "This test does not run with on-prem kvstore");
+            }
+        }
+
+        internal static void CheckProtocolV3OrAbove()
+        {
+            if (!IsProtocolV3OrAbove)
+            {
+                Assert.Inconclusive(
+                    "This test does not run with proxy protocol version " +
+                    "less than V3");
             }
         }
 

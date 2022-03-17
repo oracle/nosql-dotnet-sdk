@@ -232,15 +232,16 @@ namespace Oracle.NoSQL.SDK {
         /// when you don't need to pass any other options.
         /// </remarks>
         /// <example>
-        /// Creating a namespace.  We can ignore the return value since the result
-        /// would represent the final state of successful operation (or an
-        /// exception will be thrown).
+        /// Create a table.  We can ignore the return value since the result
+        /// will represent successful completion of the table DDL operation
+        /// (<see cref="TableState.Active"/>) or an exception will be thrown.
         /// <code>
         /// try
         /// {
-        ///     await client.ExecuteAdminWithCompletionAsync(
-        ///         "CREATE NAMESPACE my_namespace");
-        ///     Console.WriteLine("Namespace created.");
+        ///     await client.ExecuteTableDDLWithCompletionAsync(
+        ///         "CREATE TABLE foo(id INTEGER, name STRING, PRIMARY KEY(id))",
+        ///         new TableLimits(100, 100, 50));
+        ///     Console.WriteLine("Table created.");
         /// }
         /// catch(Exception e)
         /// {

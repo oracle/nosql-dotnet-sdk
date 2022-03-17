@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [Unpublished]
+
+**Added**
+
+* Support for proxy V3 protocol including features such as on-demand tables,
+durability and new result fields for row modification time.
+
 ## [5.1.3]
 
 **Added**

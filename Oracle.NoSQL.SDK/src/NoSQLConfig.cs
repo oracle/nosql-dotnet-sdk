@@ -498,6 +498,24 @@ namespace Oracle.NoSQL.SDK
         public Consistency Consistency { get; set; } = Consistency.Eventual;
 
         /// <summary>
+        /// On-Premise only.
+        /// Gets or sets a <see cref="Durability"/> used for write operations.
+        /// </summary>
+        /// <remarks>
+        /// This property serves as a default value for
+        /// <see cref="PutOptions.Durability"/>,
+        /// <see cref="DeleteOptions.Durability"/>,
+        /// <see cref="DeleteRangeOptions.Durability"/> and
+        /// <see cref="WriteManyOptions.Durability"/>.  
+        /// </remarks>
+        /// <value>
+        /// Durability used for write operations.  If not set, the
+        /// default server-side durability settings are used.
+        /// </value>
+        /// <seealso cref="SDK.Durability"/>
+        public Durability? Durability { get; set; }
+
+        /// <summary>
         /// Gets or sets the maximum amount of memory in megabytes that can be
         /// used by the driver-side portion of a query.
         /// </summary>

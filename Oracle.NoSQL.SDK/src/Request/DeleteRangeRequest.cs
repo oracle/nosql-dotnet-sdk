@@ -42,6 +42,8 @@ namespace Oracle.NoSQL.SDK
 
         internal override IOptions BaseOptions => Options;
 
+        internal Durability? Durability => Options?.Durability;
+
         internal override void Validate()
         {
             base.Validate();

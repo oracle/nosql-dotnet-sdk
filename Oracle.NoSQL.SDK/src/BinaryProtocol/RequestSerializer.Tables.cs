@@ -69,6 +69,11 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
                 WriteUnpackedInt32(stream, tableLimits.WriteUnits);
                 WriteUnpackedInt32(stream, tableLimits.StorageGB);
 
+                if (serialVersion > V2)
+                {
+                    WriteByte(stream, (byte)tableLimits.CapacityMode);
+                }
+
                 var tableName = request.GetTableName();
                 if (tableName != null)
                 {
@@ -89,7 +94,7 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
         public TableResult DeserializeTableDDL(MemoryStream stream,
             TableDDLRequest request)
         {
-            return DeserializeTableResult(stream, request,
+            return DeserializeTableResult(stream, request, serialVersion,
                 new TableResult(request));
         }
 
@@ -105,7 +110,8 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
         public TableResult DeserializeGetTable(MemoryStream stream,
             GetTableRequest request)
         {
-            return DeserializeTableResult(stream, request, new TableResult());
+            return DeserializeTableResult(stream, request, serialVersion,
+                new TableResult());
         }
 
         public void SerializeGetTableUsage(MemoryStream stream,

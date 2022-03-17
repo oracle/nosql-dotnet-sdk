@@ -17,8 +17,6 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
 
     internal static partial class Protocol
     {
-        const short SerialVersion = 2;
-
         internal const int RequestSizeLimit = 2 * 1024 * 1024;
 
         internal static void WriteTimeout(MemoryStream stream, int timeout)
@@ -92,9 +90,10 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
             WriteByteArray(stream, version.data);
         }
 
-        internal static void WriteOpcode(MemoryStream stream, Opcode opcode)
+        internal static void WriteOpcode(MemoryStream stream, Opcode opcode,
+            short serialVersion)
         {
-            WriteUnpackedInt16(stream, SerialVersion);
+            WriteUnpackedInt16(stream, serialVersion);
             WriteByte(stream, (byte) opcode);
         }
 
@@ -186,6 +185,28 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
             }
         }
 
+        internal static void WriteDurability(MemoryStream stream,
+            Durability? durability, short serialVersion)
+        {
+            if (serialVersion < V3)
+            {
+                return;
+            }
+
+            if (!durability.HasValue)
+            {
+                WriteByte(stream, 0);
+                return;
+            }
+
+            var masterSync = (int)durability.Value.MasterSync + 1;
+            var replicaSync = (int)durability.Value.ReplicaSync + 1;
+            var replicaAck = (int)durability.Value.ReplicaAck + 1;
+
+            var value = masterSync | (replicaSync << 2) | (replicaAck << 4);
+            WriteByte(stream, (byte)value);
+        }
+
         internal static void SerializeRequest(MemoryStream stream,
             Request request)
         {
@@ -205,13 +226,14 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
         }
 
         internal static void SerializeWriteRequest(MemoryStream stream,
-            WriteRequest request)
+            WriteRequest request, short serialVersion)
         {
             SerializeRequest(stream, request);
             Debug.Assert(request.TableName != null,
                 "Write operation must have table name");
             WriteString(stream, request.TableName);
             WriteBoolean(stream, request.ReturnExisting);
+            WriteDurability(stream, request.Durability, serialVersion);
         }
 
         internal static void WriteMathContext(MemoryStream stream)

@@ -67,6 +67,9 @@ namespace Oracle.NoSQL.SDK
         /// <inheritdoc cref="GetOptions.Timeout"/>
         public TimeSpan? Timeout { get; set; }
 
+        /// <inheritdoc cref="PutOptions.Durability"/>
+        public Durability? Durability { get; set; }
+
         /// <summary>
         /// Gets or sets the field range.
         /// </summary>
@@ -130,6 +133,7 @@ namespace Oracle.NoSQL.SDK
         void IOptions.Validate()
         {
             CheckTimeout(Timeout);
+            Durability?.Validate();
             CheckPositiveInt32(MaxWriteKB, nameof(MaxWriteKB));
 
             // Currently the proxy returns BadProtocolException on this so we

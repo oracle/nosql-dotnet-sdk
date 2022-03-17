@@ -7,6 +7,7 @@
 
 namespace Oracle.NoSQL.SDK
 {
+    using System;
 
     /// <summary>
     /// Represents the result of the Delete operation.
@@ -63,6 +64,12 @@ namespace Oracle.NoSQL.SDK
             set => ExistingVersion = value;
         }
 
+        DateTime? IWriteResult<TRow>.ExistingModificationTime
+        {
+            get => ExistingModificationTime;
+            set => ExistingModificationTime = value;
+        }
+
         /// <inheritdoc cref="GetResult{TRow}.ConsumedCapacity"/>
         public ConsumedCapacity ConsumedCapacity { get; internal set; }
 
@@ -109,6 +116,24 @@ namespace Oracle.NoSQL.SDK
         /// <seealso cref="DeleteOptions.MatchVersion"/>
         /// <seealso cref="NoSQLClient.DeleteIfVersionAsync"/>
         public RowVersion ExistingVersion { get; internal set; }
+
+        /// <summary>
+        /// Gets the modification time of existing row if the conditional
+        /// Delete operation has failed.
+        /// </summary>
+        /// <remarks>
+        /// This value is available if the conditional Delete operation (as
+        /// indicated by <see cref="DeleteOptions.MatchVersion"/>) has failed,
+        /// there is an existing row,
+        /// <see cref="DeleteOptions.ReturnExisting"/> was set to <c>true</c>
+        /// and the server supports this feature.
+        /// </remarks>
+        /// <value>
+        /// The modification time of existing row if available, otherwise
+        /// <c>null</c>.
+        /// </value>
+        public DateTime? ExistingModificationTime { get; internal set; }
+
     }
 
 }

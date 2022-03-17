@@ -8,14 +8,17 @@
 namespace Oracle.NoSQL.SDK.BinaryProtocol
 {
     using System;
-    using System.Data;
     using System.IO;
-    using DbType = DbType;
+    using static DateTimeUtils;
 
     // Static methods for reading binary protocol values
 
     internal static partial class Protocol
     {
+        internal const short V2 = 2;
+        
+        internal const short V3 = 3;
+
         private static void ReadMap(MemoryStream stream,
             MapValue mapValue)
         {
@@ -136,20 +139,31 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
         }
 
         internal static void DeserializeWriteResponse<TRow>(
-            MemoryStream stream, IWriteResult<TRow> result)
+            MemoryStream stream, short serialVersion,
+            IWriteResult<TRow> result)
         {
             var returnInfo = ReadBoolean(stream);
             if (returnInfo)
             {
                 result.ExistingRow = ReadRow(stream).ToObject<TRow>();
                 result.ExistingVersion = ReadRecordVersion(stream);
+                if (serialVersion > V2)
+                {
+                    var millis = ReadPackedInt64(stream);
+                    if (millis != 0)
+                    {
+                        result.ExistingModificationTime =
+                            UnixMillisToDateTime(millis);
+                    }
+                }
             }
         }
 
         internal static void DeserializeWriteResponseWithId<TRow>(
-            MemoryStream stream, IWriteResultWithId<TRow> result)
+            MemoryStream stream, short serialVersion,
+            IWriteResultWithId<TRow> result)
         {
-            DeserializeWriteResponse(stream, result);
+            DeserializeWriteResponse(stream, serialVersion, result);
             if (ReadBoolean(stream))
             {
                 result.GeneratedValue = ReadFieldValue(stream);
@@ -157,7 +171,8 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
         }
 
         internal static TableResult DeserializeTableResult(
-            MemoryStream stream, Request request, TableResult result)
+            MemoryStream stream, Request request, short serialVersion,
+            TableResult result)
         {
             var hasInfo = ReadBoolean(stream);
             if (hasInfo)
@@ -183,11 +198,21 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
                     var readUnits = ReadPackedInt32(stream);
                     var writeUnits = ReadPackedInt32(stream);
                     var storageGB = ReadPackedInt32(stream);
+                    var capacityMode = CapacityMode.Provisioned;
+
+                    if (serialVersion > V2)
+                    {
+                        capacityMode = (CapacityMode)ReadByte(stream);
+                    }
+
                     if (request.Config.ServiceType !=
                         ServiceType.KVStore)
                     {
-                        result.TableLimits = new TableLimits(readUnits,
-                            writeUnits, storageGB);
+                        result.TableLimits =
+                            capacityMode == CapacityMode.Provisioned
+                                ? new TableLimits(readUnits,
+                                    writeUnits, storageGB)
+                                : new TableLimits(storageGB);
                     }
 
                     result.TableSchema = ReadString(stream);

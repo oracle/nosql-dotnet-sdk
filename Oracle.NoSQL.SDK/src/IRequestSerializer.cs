@@ -12,6 +12,16 @@ namespace Oracle.NoSQL.SDK {
     {
         string ContentType { get; }
 
+        short SerialVersion { get; }
+
+        // This method allows serializer to fall back to an older protocol
+        // version if the service does not support the current version.
+        // Returns true if the fallback was successful.  The implementation
+        // depends on the protocol versions in use and is specific to the
+        // protocol.  This method may be called concurrently so it must be
+        // thread-safe.
+        bool DecrementSerialVersion();
+
         // It is possible that this method should not be exposed in this
         // interface and called by the client, but only called internally
         // in the beginning of each Deserialize... method in BinaryProtocol,

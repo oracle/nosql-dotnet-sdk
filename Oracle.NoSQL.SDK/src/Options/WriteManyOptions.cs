@@ -29,6 +29,9 @@ namespace Oracle.NoSQL.SDK
         /// <inheritdoc cref="GetOptions.Timeout"/>
         public TimeSpan? Timeout { get; set; }
 
+        /// <inheritdoc cref="PutOptions.Durability"/>
+        public Durability? Durability { get; set; }
+
         /// <summary>
         /// Gets or sets the value that determines whether to abort the
         /// transaction if any Put or Delete operation fails.
@@ -57,6 +60,7 @@ namespace Oracle.NoSQL.SDK
         void IOptions.Validate()
         {
             CheckTimeout(Timeout);
+            Durability?.Validate();
         }
 
     }

@@ -39,6 +39,18 @@ namespace Oracle.NoSQL.SDK.Tests
             (Consistency)(-1)
         };
 
+        internal static readonly Durability[] BadDurabilities =
+        {
+            new Durability((SyncPolicy)(-1), SyncPolicy.Sync,
+                ReplicaAckPolicy.All),
+            new Durability(SyncPolicy.NoSync, (SyncPolicy)100,
+                ReplicaAckPolicy.None),
+            new Durability(SyncPolicy.WriteNoSync, SyncPolicy.NoSync,
+                (ReplicaAckPolicy)(-1)), 
+            new Durability(SyncPolicy.WriteNoSync, SyncPolicy.NoSync,
+                (ReplicaAckPolicy)25)
+        };
+
         // Relevant to both Put and individual put sub-op in WriteMany.
         internal static IEnumerable<TPutOptions>
             GetBaseBadPutOptions<TPutOptions>()
@@ -66,8 +78,12 @@ namespace Oracle.NoSQL.SDK.Tests
                 {
                     Timeout = timeout
                 })
+            .Concat(from durability in BadDurabilities
+                select new TPutOptions
+            {
+                Durability = durability
+            })
             .Concat(GetBaseBadPutOptions<TPutOptions>());
-
 
         // Relevant to both Put and individual put sub-op in WriteMany.
         // Currently, none apply.
@@ -85,6 +101,11 @@ namespace Oracle.NoSQL.SDK.Tests
                 select new TDeleteOptions
                 {
                     Timeout = timeout
+                })
+            .Concat(from durability in BadDurabilities
+                select new TDeleteOptions
+                {
+                    Durability = durability
                 })
             .Concat(GetBaseBadDeleteOptions<TDeleteOptions>());
 

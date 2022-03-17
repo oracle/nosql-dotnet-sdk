@@ -182,7 +182,8 @@ namespace Oracle.NoSQL.SDK.Tests
             {
                 Compartment = Compartment,
                 Timeout = TimeSpan.FromSeconds(12),
-                ReturnExisting = true // should have no effect here
+                ReturnExisting = true, // should have no effect here
+                Durability = Durability.CommitSync
             };
             var result = await client.DeleteAsync(table.Name, primaryKey,
                 options);
@@ -285,7 +286,8 @@ namespace Oracle.NoSQL.SDK.Tests
 
             var result = await client.DeleteIfVersionAsync(table.Name,
                 primaryKey, version);
-            await VerifyDeleteAsync(result, table, primaryKey, isConditional:true);
+            await VerifyDeleteAsync(result, table, primaryKey,
+                isConditional:true);
 
             // now the row has been deleted
             result = await client.DeleteIfVersionAsync(table.Name, primaryKey,
@@ -330,5 +332,23 @@ namespace Oracle.NoSQL.SDK.Tests
                 isConditional:true);
         }
 
+        [DataTestMethod]
+        [DynamicData(nameof(DeleteExistingRowDataSource))]
+        public async Task TestDeleteIfVersionWithDurabilityAsync(
+            TableInfo table, DataRow row)
+        {
+            SetForCleanup(row);
+            var primaryKey = MakePrimaryKey(table, row);
+            var version = row.Version;
+
+            var result = await client.DeleteIfVersionAsync(table.Name,
+                primaryKey, version, new DeleteOptions
+                {
+                    Durability = new Durability(SyncPolicy.Sync,
+                        SyncPolicy.WriteNoSync, ReplicaAckPolicy.All)
+                });
+            await VerifyDeleteAsync(result, table, primaryKey,
+                isConditional:true);
+        }
     }
 }

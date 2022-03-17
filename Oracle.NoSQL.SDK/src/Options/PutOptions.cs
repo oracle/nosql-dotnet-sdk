@@ -64,6 +64,23 @@ namespace Oracle.NoSQL.SDK
         public TimeSpan? Timeout { get; set; }
 
         /// <summary>
+        /// On-premise only.
+        /// Gets or sets <see cref="Durability"/> value to use for the
+        /// operation.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="Durability"/> determines <see cref="SyncPolicy"/> for
+        /// Master and Replicas as well as <see cref="ReplicaAckPolicy"/> for
+        /// the Replicas.
+        /// </remarks>
+        /// <value>
+        /// Durability used for the operation.  If not set, defaults to
+        /// <see cref="NoSQLConfig.Durability"/>.
+        /// </value>
+        /// <seealso cref="Durability"/>
+        public Durability? Durability { get; set; }
+
+        /// <summary>
         /// Gets or sets a value that determines whether to perform the Put
         /// operation only if there is no existing row that matches the
         /// primary key.
@@ -244,6 +261,7 @@ namespace Oracle.NoSQL.SDK
         void IOptions.Validate()
         {
             CheckTimeout(Timeout);
+            Durability?.Validate();
             CheckPositiveInt32(IdentityCacheSize, nameof(IdentityCacheSize));
             if (UpdateTTLToDefault && TTL.HasValue)
             {
