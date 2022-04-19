@@ -12,12 +12,31 @@ namespace Oracle.NoSQL.SDK
         private void AddPutOp(PutOperation putOp)
         {
             putOp.Validate();
-            ops.Add(putOp);
+            AddValidatedPutOp(putOp);
         }
 
         private void AddDeleteOp(DeleteOperation deleteOp)
         {
             deleteOp.Validate();
+            AddValidatedDeleteOp(deleteOp);
+        }
+
+        // Avoid repeated validation of options when creating
+        // WriteOperationCollection for PutManyAsync.
+        internal void AddValidatedPutOp(PutOperation putOp)
+        {
+            ops.Add(putOp);
+
+            if (putOp.DoesReads)
+            {
+                DoesReads = true;
+            }
+        }
+
+        // Avoid repeated validation of options when creating
+        // WriteOperationCollection for DeleteManyAsync.
+        internal void AddValidatedDeleteOp(DeleteOperation deleteOp)
+        {
             ops.Add(deleteOp);
         }
 

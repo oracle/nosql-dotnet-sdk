@@ -133,7 +133,8 @@ namespace Oracle.NoSQL.SDK {
         /// the exceptions outlined in the remarks section of
         /// <see cref="NoSQLRetryHandler"/>.  The default is 1 second.
         /// </value>
-        public TimeSpan BaseDelay { get; set; } = TimeSpan.FromSeconds(1);
+        public TimeSpan BaseDelay { get; set; } =
+            TimeSpan.FromMilliseconds(200);
 
         /// <summary>
         /// Gets or sets the base retry delay when an operation fails with
@@ -163,7 +164,7 @@ namespace Oracle.NoSQL.SDK {
         /// default is 1 second.
         /// </value>
         internal TimeSpan SecurityInfoBaseDelay { get; set; } =
-            TimeSpan.FromSeconds(1);
+            TimeSpan.FromMilliseconds(100);
 
         /// <summary>
         /// Gets or sets the number of times the operation is retried

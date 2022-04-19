@@ -19,9 +19,31 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
         private const int DecimalPrecision = 29;
         private const int DecimalRounding = 6; // Half-even
 
+        // Extract the table name, namespace and opcode from the prepared
+        // query. This dips into the portion of the prepared query that is
+        // normally opaque.
+        // int (4 byte)
+        // byte[] (32 bytes -- hash)
+        // byte (number of tables)
+        // namespace (string)
+        // table name (string)
+        // operation (1 byte)
+        private static void DeserializePreparedStatementInfo(
+            MemoryStream stream, PreparedStatement statement)
+        {
+            var savedPosition = stream.Position;
+            stream.Seek(37, SeekOrigin.Current); // 4 + 32 + 1
+            statement.Namespace = ReadString(stream);
+            statement.TableName = ReadString(stream);
+            statement.OperationCode = ReadByte(stream);
+            stream.Position = savedPosition;
+        }
+
         private static void DeserializePreparedStatement(MemoryStream stream,
             bool getQueryPlan, PreparedStatement statement)
         {
+            DeserializePreparedStatementInfo(stream, statement);
+
             statement.ProxyStatement = ReadByteArrayWithUnpackedLength(
                 stream);
             if (getQueryPlan)

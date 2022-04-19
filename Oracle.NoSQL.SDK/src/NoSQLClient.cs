@@ -226,7 +226,12 @@ namespace Oracle.NoSQL.SDK {
         {
             Config = config;
             Config.Init();
-            client = new Http.Client(Config);
+            Serializer = new BinaryProtocol.RequestSerializer();
+            client = new Http.Client(Config, Serializer);
+            if (RateLimitingHandler.IsRateLimitingEnabled(config))
+            {
+                RateLimitingHandler = new RateLimitingHandler(this);
+            }
         }
 
         /// <summary>
@@ -309,6 +314,7 @@ namespace Oracle.NoSQL.SDK {
             {
                 client.Dispose();
                 Config.ReleaseResources();
+                RateLimitingHandler?.Dispose();
                 disposed = true;
             }
         }

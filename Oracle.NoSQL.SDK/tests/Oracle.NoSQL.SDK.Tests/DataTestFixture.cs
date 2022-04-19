@@ -205,6 +205,7 @@ namespace Oracle.NoSQL.SDK.Tests
                     TimeToLive.OfDays((id + 1) % 6)
                     : (TimeToLive?)null,
                 ["shardId"] = id / RowsPerShard,
+                // Make sure we don't exceed max primary key size of 64 bytes.
                 ["pkString"] = RepeatString("id", id % 20) + id,
                 ["colBoolean"] = id % 2 == 0 ? id % 4 == 0 : FieldValue.Null,
                 ["colInteger"] =

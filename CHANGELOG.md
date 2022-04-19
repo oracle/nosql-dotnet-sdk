@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 **Added**
 
+* Support for rate limiting.
+
 * Support for proxy V3 protocol including features such as on-demand tables,
 durability and new result fields for row modification time.
 

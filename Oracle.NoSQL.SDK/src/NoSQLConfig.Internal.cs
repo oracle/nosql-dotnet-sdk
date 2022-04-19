@@ -161,8 +161,6 @@ namespace Oracle.NoSQL.SDK
 
         internal Uri Uri { get; set; }
 
-        internal IRequestSerializer serializer;
-
         static NoSQLConfig()
         {
             JsonSerializerOptions = new JsonSerializerOptions
@@ -298,14 +296,13 @@ namespace Oracle.NoSQL.SDK
             // AuthorizationProvider is validated in ConfigureAuthorization().
 
             ConnectionOptions?.Validate();
+            RateLimitingHandler.ValidateConfig(this);
         }
 
         internal void Init()
         {
             Validate();
             InitUri();
-
-            serializer = new BinaryProtocol.RequestSerializer();
 
             RetryHandler ??= new NoSQLRetryHandler();
 

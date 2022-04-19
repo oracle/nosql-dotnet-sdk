@@ -7,7 +7,9 @@
 
 namespace Oracle.NoSQL.SDK
 {
+    using System;
     using System.Diagnostics;
+    using System.Runtime.InteropServices.ComTypes;
 
     /// <summary>
     /// Cloud Service/Cloud Simulator only.  Represents read and write
@@ -101,14 +103,62 @@ namespace Oracle.NoSQL.SDK
         public int WriteKB { get; internal set; }
 
         /// <summary>
+        /// Gets the value indicating how long the operation has been delayed
+        /// by the rate limiter due to the table read limit.
+        /// </summary>
+        /// <value>
+        /// Time the operation has been delayed for due to the table read
+        /// limit. <c>0</c> if rate limiting is disabled, or the operation
+        /// does not perform reads, or the operation was not delayed by the
+        /// read rate limiter.
+        /// </value>
+        /// <seealso cref="IRateLimiter"/>
+        public TimeSpan ReadRateLimitDelay { get; internal set; }
+
+        /// <summary>
+        /// Gets the value indicating how long the operation has been delayed
+        /// by the rate limiter due to the table write limit.
+        /// </summary>
+        /// <value>
+        /// Time the operation has been delayed for due to the table write
+        /// limit. <c>0</c> if rate limiting is disabled, or the operation
+        /// does not perform writes, or the operation was not delayed by the
+        /// write rate limiter.
+        /// </value>
+        /// <seealso cref="IRateLimiter"/>
+        public TimeSpan WriteRateLimitDelay { get; internal set; }
+
+
+        /// <summary>
+        /// Gets the value indicating how long the operation has been delayed
+        /// due to rate limiting.
+        /// </summary>
+        /// <value>
+        /// A sum of <see cref="ReadRateLimitDelay"/> and
+        /// <see cref="WriteRateLimitDelay"/>.
+        /// </value>
+        /// <seelaso cref="ReadRateLimitDelay"/>
+        /// <seelaso cref="WriteRateLimitDelay"/>
+        public TimeSpan RateLimitDelay =>
+            ReadRateLimitDelay + WriteRateLimitDelay;
+
+        /// <summary>
         /// Returns a string representing this consumed capacity.
         /// </summary>
         /// <returns>A string containing information represented by this
         /// consumed capacity.</returns>
         public override string ToString()
         {
-            return $"ReadUnits: {ReadUnits}, ReadKB: {ReadKB}, " +
-                $"WriteUnits: {WriteUnits}, WriteKB: {WriteKB}";
+            var result = $"ReadUnits: {ReadUnits}, ReadKB: {ReadKB}, " +
+                         $"WriteUnits: {WriteUnits}, WriteKB: {WriteKB}";
+            
+            var rateLimitingDelay = RateLimitDelay;
+            if (rateLimitingDelay != TimeSpan.Zero)
+            {
+                result += $" RateLimitDelay: {rateLimitingDelay}";
+            }
+
+            return result;
         }
 
         internal void Add(ConsumedCapacity other)
@@ -126,13 +176,10 @@ namespace Oracle.NoSQL.SDK
             ReadKB = 0;
             WriteUnits = 0;
             WriteKB = 0;
+            ReadRateLimitDelay = TimeSpan.Zero;
+            WriteRateLimitDelay = TimeSpan.Zero;
         }
 
-        internal ConsumedCapacity Clone()
-        {
-            return new ConsumedCapacity(ReadUnits, ReadKB, WriteUnits,
-                WriteKB);
-        }
     }
 
 }

@@ -179,7 +179,8 @@ namespace Oracle.NoSQL.SDK.Tests
              config.AuthorizationProvider is IAMAuthorizationProvider iam &&
              iam.Credentials?.PrivateKey == null &&
              iam.CredentialsProvider == null &&
-             iam.DelegationTokenProvider == null);
+             iam.DelegationTokenProvider == null &&
+             config.RateLimiterCreator == null);
 
         private static IEnumerable<object[]> PositiveJsonDataSource =>
             from config in GoodConfigs where CanUseConfigWithJson(config)

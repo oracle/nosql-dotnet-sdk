@@ -33,7 +33,7 @@ namespace Oracle.NoSQL.SDK.Tests
 
         public static void ClassInitialize(TestContext staticContext)
         {
-            staticContext.WriteLine($"In ClassInitialize, TestName={staticContext.TestName}");
+            Debug.WriteLine($"In ClassInitialize, TestName={staticContext.TestName}");
         }
 
         public static void ClassCleanup()

@@ -105,7 +105,36 @@ namespace Oracle.NoSQL.SDK
     public partial class WriteOperationCollection :
         IReadOnlyCollection<IWriteOperation>
     {
-        internal List<IWriteOperation> ops = new List<IWriteOperation>();
+        private readonly List<IWriteOperation> ops;
+
+        // Used by rate limiting.
+        internal bool DoesReads { get; private set; }
+
+        /// <summary>
+        /// Initializes a new empty instance of
+        /// <see cref="WriteOperationCollection"/> with default initial
+        /// capacity.
+        /// </summary>
+        /// <seealso cref="WriteOperationCollection(int)"/>
+        public WriteOperationCollection()
+        {
+            ops = new List<IWriteOperation>();
+        }
+
+        /// <summary>
+        /// Initializes a new empty instance of
+        /// <see cref="WriteOperationCollection"/> with specified initial
+        /// capacity.
+        /// </summary>
+        /// <remarks>
+        /// Capacity is the number of elements the collection can hold without
+        /// internal resizing, see <see cref="List{T}.Capacity"/>.
+        /// </remarks>
+        /// <param name="capacity">Initial capacity.</param>
+        public WriteOperationCollection(int capacity)
+        {
+            ops = new List<IWriteOperation>(capacity);
+        }
 
         /// <summary>
         /// Adds a <see cref="PutOperation"/> to the collection.

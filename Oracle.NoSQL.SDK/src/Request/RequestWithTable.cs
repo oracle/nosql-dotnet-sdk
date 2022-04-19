@@ -28,7 +28,9 @@ namespace Oracle.NoSQL.SDK
         /// <value>
         /// Table name.
         /// </value>
-        public string TableName { get; internal set; }
+        public string TableName { get; }
+
+        internal override string InternalTableName => TableName;
 
         internal override void Validate()
         {
@@ -60,6 +62,9 @@ namespace Oracle.NoSQL.SDK
         internal Consistency Consistency =>
             ReadOptions?.Consistency ?? Config.Consistency;
 
+        internal override bool SupportsRateLimiting => true;
+
+        internal override bool DoesReads => true;
     }
 
     /// <summary>
@@ -87,6 +92,10 @@ namespace Oracle.NoSQL.SDK
         internal bool ReturnExisting => WriteOptions?.ReturnExisting ?? false;
 
         internal Durability? Durability => WriteOptions?.Durability;
+
+        internal override bool SupportsRateLimiting => true;
+
+        internal override bool DoesWrites => true;
     }
 
 }

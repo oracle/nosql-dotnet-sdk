@@ -735,6 +735,82 @@ namespace Oracle.NoSQL.SDK
         public ConnectionOptions ConnectionOptions { get; set; }
 
         /// <summary>
+        /// For Cloud Service or Cloud Simulator only.
+        /// Gets or sets the value that determines whether to enable rate
+        /// limiting based on table limits.
+        /// </summary>
+        /// <remarks>
+        /// If enabled, by default the driver uses rate limiting algorithm
+        /// built into the SDK by creating instances of
+        /// <see cref="NoSQLRateLimiter"/>.  To use custom rate limiting
+        /// algorithm, you may set property <see cref="RateLimiterCreator"/>
+        /// to create instances of custom implementation of
+        /// <see cref="IRateLimiter"/> interface.
+        /// </remarks>
+        /// <value>
+        /// <c>true</c> if rate limiting is enabled, otherwise <c>false</c>.
+        /// The default is <c>false</c>.
+        /// </value>
+        /// <seealso cref="IRateLimiter"/>
+        /// <seealso cref="NoSQLRateLimiter"/>
+        public bool RateLimitingEnabled { get; set; }
+
+        /// <summary>
+        /// For Cloud Service or Cloud Simulator only.
+        /// Gets or sets the percentage of table limits used for rate
+        /// limiting.
+        /// </summary>
+        /// <remarks>
+        /// When rate limiting is enabled (see
+        /// <see cref="RateLimitingEnabled"/>), specifies the percentage of
+        /// table limits this <see cref="NoSQLClient"/> instance will use.
+        /// This is useful when running multiple clients and allotting each
+        /// client only a portion of the table limits.
+        /// </remarks>
+        /// <value>
+        /// Percentage of the table limits to use for rate limiting. Must be
+        /// greater than <c>0</c> and less than or equal to <c>100</c>.  If
+        /// not set, full (100 %) table limits will be used.  If rate limiting
+        /// is disabled, this property has no effect.
+        /// </value>
+        /// <seealso cref="RateLimitingEnabled"/>
+        /// <seealso cref="IRateLimiter"/>
+        public double? RateLimiterPercent { get; set; }
+
+        /// <summary>
+        /// For Cloud Service or Cloud Simulator only.
+        /// Gets or sets a delegate used to create custom rate limiter
+        /// instances.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Setting this property allows you to specify custom rate limiting
+        /// algorithm instead of driver-default (see
+        /// <see cref="NoSQLRateLimiter"/>).  Typically you would do this by
+        /// having a class implementing <see cref="IRateLimiter"/> interface,
+        /// in which case this property will be set to a factory delegate that
+        /// creates new instances of this class.  The driver will use this
+        /// delegate to create two instances of <see cref="IRateLimiter"/>
+        /// per table (one for reads and another one for writes).
+        /// </para>
+        /// <para>
+        /// Note that this delegate does not set initial limit (rate) of a
+        /// rate limiter instance.  Instead,
+        /// <see cref="IRateLimiter.SetLimit"/> is used to set the initial
+        /// limit.
+        /// </para>
+        /// </remarks>
+        /// <value>
+        /// The delegate that takes no arguments and returns an instance of
+        /// <see cref="IRateLimiter"/>. If not set, the driver will use
+        /// instances of <see cref="NoSQLRateLimiter"/>.  If rate limiting is
+        /// disabled, this property has no effect.
+        /// </value>
+        /// <seealso cref="IRateLimiter"/>
+        /// <seealso cref="RateLimitingEnabled"/>
+        public Func<IRateLimiter> RateLimiterCreator { get; set; }
+
+        /// <summary>
         /// Creates an instance of <see cref="NoSQLConfig"/> from a JSON
         /// string.
         /// </summary>

@@ -1361,28 +1361,66 @@ The better approach would be to avoid throttling entirely by rate-limiting
 your application. In this context *rate-limiting* means keeping operation
 rates under the limits for the table.
 
-When you run your operations in a loop, rate-limiting may be as simple as
-adding constant delay between your operations in the loop (the delay, like
-operations themselves, should be asynchronous).  This applies to single row
-operations such as *Get* and *Put* as well as to reading query results in a
-loop or using *DeleteRange* operation in a loop.
+The SDK provides support for rate limiting.  To use rate limiting, you must
+set the property
+[NoSQLConfig.RateLimitingEnabled](xref:Oracle.NoSQL.SDK.NoSQLConfig.RateLimitingEnabled)
+of the initial configuration used to create
+[NoSQLClient](xref:Oracle.NoSQL.SDK.NoSQLClient) instance, e.g.:
 
-This approach may be improved by computing the delay based on how much
-throughput has been consumed by an operation. All data-related operation
-results such as [GetResult](xref:Oracle.NoSQL.SDK.GetResult`1),
-[PutResult](xref:Oracle.NoSQL.SDK.PutResult`1),
-[DeleteResult](xref:Oracle.NoSQL.SDK.DeleteResult`1),
-[DeleteRangeResult](xref:Oracle.NoSQL.SDK.DeleteRangeResult),
-[WriteManyResult](xref:Oracle.NoSQL.SDK.WriteManyResult`1),
-[PreparedStatement](xref:Oracle.NoSQL.SDK.PreparedStatement) and
-[QueryResult](xref:Oracle.NoSQL.SDK.QueryResult`1) include
-*ConsumedCapacity* property.
-[ConsumedCapacity](xref:Oracle.NoSQL.SDK.ConsumedCapacity) tells
-you how many write and read units, as well as write and read KB has been
-consumed by an operation.  You may use this information to keep the throughput
-within the table limits.
+```csharp
+var client = new NoSQLClient(
+    new NoSQLConfig
+    {
+        Region = Region.US_ASHBURN_1,
+        AuthorizationProvider = new IAMAuthorizationProvider(
+            "~/myapp/.oci/config", "Jane"),
+        RateLimitingEnabled = true
+    });
+```
 
-For queries, another option would be to reduce the amount of data read and/or
+Internally, a pair of rate limiters is created for each table, one for read
+operations and another for write operations.  All rate limiters implement
+[IRateLimiter](xref:Oracle.NoSQL.SDK.IRateLimiter) interface.
+
+By default, the SDK uses rate-limiting algorithm implemented by
+[NoSQLRateLimiter](xref:Oracle.NoSQL.SDK.NoSQLRateLimiter) class.  You may
+choose instead to implement custom rate-limiting logic by creating your own
+implementation of [IRateLimiter](xref:Oracle.NoSQL.SDK.IRateLimiter)
+interface and providing a factory delegate to create your own rate limiters
+by setting
+[NoSQLConfig.RateLimiterCreator](xref:Oracle.NoSQL.SDK.NoSQLConfig.RateLimiterCreator)
+property of the initial configuration.
+
+Note that by default rate limiting in the SDK assumes that read and write
+operations are issued from only one
+[NoSQLClient](xref:Oracle.NoSQL.SDK.NoSQLClient) instance. This might not work
+as expected when using multiple clients against the same table.  You may
+improve this by allocating only a percentage of each table's limits to a given
+[NoSQLClient](xref:Oracle.NoSQL.SDK.NoSQLClient) instance by setting 
+[NoSQLConfig.RateLimiterPercent](xref:Oracle.NoSQL.SDK.NoSQLConfig.RateLimiterPercent)
+property of the initial configuration.
+
+Here is an example of a more custom configuration:
+
+```csharp
+var client = new NoSQLClient(
+    new NoSQLConfig
+    {
+        Region = Region.US_ASHBURN_1,
+        AuthorizationProvider = new IAMAuthorizationProvider(
+            "~/myapp/.oci/config", "Jane"),
+        RateLimitingEnabled = true,
+        RateLimiterPercent = 20,
+        RateLimiterCreator = () => new MyRateLimiter()
+    });
+```
+
+For more information, see API documentation for
+[IRateLimiter](xref:Oracle.NoSQL.SDK.IRateLimiter),
+[NoSQLRateLimiter](xref:Oracle.NoSQL.SDK.NoSQLRateLimiter) and
+[NoSQLConfig](xref:Oracle.NoSQL.SDK.NoSQLConfig).
+
+Note that you may further reduce the amount of data read and/or
 written (for update queries) in a single iteration step call by setting
 [MaxReadKB](xref:Oracle.NoSQL.SDK.QueryOptions.MaxReadKB) and
 [MaxWriteKB](xref:Oracle.NoSQL.SDK.QueryOptions.MaxWriteKB) options. You

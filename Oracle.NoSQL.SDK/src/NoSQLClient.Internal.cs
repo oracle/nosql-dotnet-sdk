@@ -23,7 +23,14 @@ namespace Oracle.NoSQL.SDK
 
         internal NoSQLConfig Config { get; private set; }
 
-        internal IRequestSerializer Serializer => Config.serializer;
+        internal IRequestSerializer Serializer { get; private set; }
+
+        internal RateLimitingHandler RateLimitingHandler { get; private set; }
+
+        internal static TimeoutException GetTimeoutException(TimeSpan timeout,
+            int retryCount, Exception inner) => new TimeoutException(
+            $"Operation timed out after {timeout.TotalMilliseconds} ms " +
+            $"and {retryCount} retries", inner);
 
         internal bool IsRetryableException(Exception ex)
         {
@@ -48,20 +55,36 @@ namespace Oracle.NoSQL.SDK
         {
             request.Init();
 
-            var startTime = DateTime.Now;
+            var rlReq =
+                RateLimitingHandler != null && request.SupportsRateLimiting
+                    ? new RateLimitingRequest(RateLimitingHandler, request)
+                    : null;
+
+            var startTime = DateTime.UtcNow;
             while (true)
             {
                 var serialVersion = Serializer.SerialVersion;
                 try
                 {
+                    if (rlReq != null)
+                    {
+                        await rlReq.Start(cancellationToken);
+                    }
+                    
                     var result = await client.ExecuteRequestAsync(request,
                         cancellationToken);
                     request.ApplyResult(result);
+
+                    if (rlReq != null)
+                    {
+                        await rlReq.Finish(result, cancellationToken);
+                    }
                     return result;
                 }
                 catch (Exception ex)
                 {
                     request.AddException(ex);
+                    rlReq?.HandleException(ex);
                     
                     var timeout = request.Timeout;
                     if (ex is SecurityInfoNotReadyException &&
@@ -69,16 +92,23 @@ namespace Oracle.NoSQL.SDK
                     {
                         timeout = Config.SecurityInfoNotReadyTimeout;
                     }
-                    var elapsed = DateTime.Now - startTime;
-                    
-                    if (ex is UnsupportedProtocolException &&
-                        elapsed < timeout &&
+
+                    var endTime = startTime + timeout;
+                    var now = DateTime.UtcNow;
+
+                    if (ex is UnsupportedProtocolException && now < endTime &&
                         // We should always retry if some other concurrent
                         // request has already decremented serial version.
                         (serialVersion != Serializer.SerialVersion ||
                          Serializer.DecrementSerialVersion()))
                     {
                         continue;
+                    }
+
+                    if (ex is TimeoutException)
+                    {
+                        throw GetTimeoutException(now - startTime,
+                            request.RetryCount, ex);
                     }
 
                     if (!IsRetryableException(ex) ||
@@ -88,13 +118,12 @@ namespace Oracle.NoSQL.SDK
                     }
 
                     var delay = Config.RetryHandler.GetRetryDelay(request);
-                    var elapsedWithDelay = elapsed + delay;
+                    endTime -= delay;
 
-                    if (elapsedWithDelay > timeout)
+                    if (now > endTime)
                     {
-                        throw new TimeoutException(
-                            $"Operation timed out after {elapsed} and " +
-                            $"{request.RetryCount} retries", ex);
+                        throw GetTimeoutException(now - startTime,
+                            request.RetryCount, ex);
                     }
 
                     await Task.Delay(delay, cancellationToken);
@@ -105,49 +134,47 @@ namespace Oracle.NoSQL.SDK
         // These should be slightly more efficient than using Linq
         // Select with lambda function.
 
-        private static IWriteOperation[] CreatePutManyOps<TRow>(
+        private static WriteOperationCollection CreatePutManyOps<TRow>(
             IReadOnlyCollection<TRow> rows,
             PutManyOptions options)
         {
             CheckNotNull(rows, nameof(rows));
             ((IOptions)options)?.Validate();
 
-            var ops = new IWriteOperation[rows.Count];
+            var woc = new WriteOperationCollection(rows.Count);
 
-            var i = 0;
             foreach (var row in rows)
             {
                 CheckNotNull(row, nameof(row));
-                ops[i++] = new PutOperation(row, options,
-                    options?.AbortIfUnsuccessful ?? false);
+                woc.AddValidatedPutOp(new PutOperation(row, options,
+                    options?.AbortIfUnsuccessful ?? false));
             }
 
-            return ops;
+            return woc;
         }
 
-        private static IWriteOperation[] CreateDeleteManyOps(
+        private static WriteOperationCollection CreateDeleteManyOps(
             IReadOnlyCollection<object> primaryKeys,
             DeleteManyOptions options)
         {
             CheckNotNull(primaryKeys, nameof(primaryKeys));
             ((IOptions)options)?.Validate();
 
-            var ops = new IWriteOperation[primaryKeys.Count];
+            var woc = new WriteOperationCollection(primaryKeys.Count);
 
-            var i = 0;
             foreach (var primaryKey in primaryKeys)
             {
                 CheckNotNull(primaryKey, nameof(primaryKey));
-                ops[i++] = new DeleteOperation(primaryKey, options,
-                    options?.AbortIfUnsuccessful ?? false);
+                woc.AddValidatedDeleteOp(new DeleteOperation(primaryKey,
+                    options, options?.AbortIfUnsuccessful ?? false));
             }
 
-            return ops;
+            return woc;
         }
 
         private async Task<WriteManyResult<TRow>> WriteManyInternalAsync<TRow>(
             string tableName,
-            IReadOnlyCollection<IWriteOperation> operations,
+            WriteOperationCollection operations,
             IWriteManyOptions options,
             CancellationToken cancellationToken)
         {
