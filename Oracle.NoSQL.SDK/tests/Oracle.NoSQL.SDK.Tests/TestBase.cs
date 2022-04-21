@@ -275,6 +275,27 @@ namespace Oracle.NoSQL.SDK.Tests
                 MakeDropTable(table, true));
         }
 
+        internal static void VerifyTableLimits(TableLimits expected,
+            TableLimits actual)
+        {
+            Assert.AreEqual(expected.CapacityMode, actual.CapacityMode);
+            
+            if (expected.CapacityMode == CapacityMode.Provisioned)
+            {
+                Assert.AreEqual(expected.ReadUnits, actual.ReadUnits);
+                Assert.AreEqual(expected.WriteUnits, actual.WriteUnits);
+            }
+            else
+            {
+                // For On-Demand tables, we don't know what read/write units
+                // are returned by the service, so we cannot verify.
+                Assert.IsTrue(actual.ReadUnits >= 0);
+                Assert.IsTrue(actual.WriteUnits >= 0);
+            }
+
+            Assert.AreEqual(expected.StorageGB, actual.StorageGB);
+        }
+
         internal static void VerifyTableResult(TableResult result,
             TableInfo table, TableState? expectedState = null,
             TableLimits newTableLimits = null, bool ignoreTableLimits = false)
@@ -295,8 +316,8 @@ namespace Oracle.NoSQL.SDK.Tests
             }
             else if (!ignoreTableLimits)
             {
-                var tableLimits = newTableLimits ?? table.TableLimits;
-                AssertDeepEqual(tableLimits, result.TableLimits);
+                VerifyTableLimits(newTableLimits ?? table.TableLimits,
+                    result.TableLimits);
             }
 
             if (result.TableSchema != null)

@@ -24,12 +24,29 @@ namespace Oracle.NoSQL.SDK
         internal int WriteUnits { get; set; }
     }
 
+    // Represents disabled rate limiter that does nothing.  Used when read
+    // and/or write limit is not available for a given table (i.e. the limit
+    // is set to 0 or TableLimits is null).  Currently this only occurs for
+    // On-Demand tables in CloudSim.
+    internal class NullRateLimiter : IRateLimiter
+    {
+        public Task<TimeSpan> ConsumeUnitsAsync(int units, TimeSpan timeout,
+            bool consumeOnTimeout, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(TimeSpan.Zero);
+        }
+
+        public void SetLimit(double limitPerSecond)
+        {
+        }
+
+        public void HandleThrottlingException(RetryableException ex)
+        {
+        }
+    }
+
     internal sealed class RateLimitingHandler : IDisposable
     {
-        // Pre-set limits for On-Demand tables.
-        private const int OnDemandReadUnits = 10000;
-        private const int OnDemandWriteUnits = 5000;
-
         // Check table limits in background every 10 minutes.
         private static readonly TimeSpan BackgroundCheckInterval =
             TimeSpan.FromMinutes(10);
@@ -40,6 +57,9 @@ namespace Oracle.NoSQL.SDK
                 // Allow enough timeout for multiple retries.
                 Timeout = TimeSpan.FromMinutes(5)
             };
+
+        private static readonly NullRateLimiter NullRateLimiter =
+            new NullRateLimiter();
 
         private readonly NoSQLClient client;
         private readonly Func<IRateLimiter> rateLimiterCreator;
@@ -91,6 +111,11 @@ namespace Oracle.NoSQL.SDK
 
         private IRateLimiter CreateRateLimiter(int units)
         {
+            if (units == 0)
+            {
+                return NullRateLimiter;
+            }
+
             var rateLimiter = rateLimiterCreator();
             SetLimit(rateLimiter, units);
             return rateLimiter;
@@ -122,23 +147,10 @@ namespace Oracle.NoSQL.SDK
                 return;
             }
 
-            Debug.Assert(tableResult.TableLimits != null);
-
             if (!rateLimiterMap.TryGetValue(tableNameLower, out var entry))
             {
-                int readUnits;
-                int writeUnits;
-                if (tableResult.TableLimits.CapacityMode ==
-                    CapacityMode.Provisioned)
-                {
-                    readUnits = tableResult.TableLimits.ReadUnits;
-                    writeUnits = tableResult.TableLimits.WriteUnits;
-                }
-                else
-                {
-                    readUnits = OnDemandReadUnits;
-                    writeUnits = OnDemandWriteUnits;
-                }
+                var readUnits = tableResult.TableLimits?.ReadUnits ?? 0;
+                var writeUnits = tableResult.TableLimits?.WriteUnits ?? 0;
 
                 entry = new RateLimiterEntry
                 {
@@ -154,12 +166,28 @@ namespace Oracle.NoSQL.SDK
                 if (entry.ReadUnits != tableResult.TableLimits.ReadUnits)
                 {
                     entry.ReadUnits = tableResult.TableLimits.ReadUnits;
-                    SetLimit(entry.ReadRateLimiter, entry.ReadUnits);
+
+                    if (entry.ReadUnits > 0)
+                    {
+                        SetLimit(entry.ReadRateLimiter, entry.ReadUnits);
+                    }
+                    else
+                    {
+                        entry.ReadRateLimiter = NullRateLimiter;
+                    }
                 }
                 if (entry.WriteUnits != tableResult.TableLimits.WriteUnits)
                 {
                     entry.WriteUnits = tableResult.TableLimits.WriteUnits;
-                    SetLimit(entry.WriteRateLimiter, entry.WriteUnits);
+
+                    if (entry.WriteUnits > 0)
+                    {
+                        SetLimit(entry.WriteRateLimiter, entry.WriteUnits);
+                    }
+                    else
+                    {
+                        entry.WriteRateLimiter = NullRateLimiter;
+                    }
                 }
             }
         }

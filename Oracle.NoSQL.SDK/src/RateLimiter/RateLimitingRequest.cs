@@ -69,16 +69,16 @@ namespace Oracle.NoSQL.SDK
             // called).
             entry ??= handler.InitRateLimiterEntry(request);
 
+            if (entry == null)
+            {
+                return;
+            }
+
             // Recompute doesReads and doesWrites since their values could
             // change as a result of operation completion (currently this is
             // the case for doesWrites for unprepared query).
             doesReads = doesReads || request.DoesReads;
             doesWrites = doesWrites || request.DoesWrites;
-
-            if (entry == null)
-            {
-                return;
-            }
 
             Debug.Assert(result is IDataResult);
             var consumedCapacity = ((IDataResult)result).ConsumedCapacity;
