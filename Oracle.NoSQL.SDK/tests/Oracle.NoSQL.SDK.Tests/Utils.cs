@@ -115,7 +115,7 @@ namespace Oracle.NoSQL.SDK.Tests
         
         private class CustomComparison<T> : IComparison
         {
-            private Func<T,T,bool> comparator;
+            private readonly Func<T,T,bool> comparator;
 
             internal CustomComparison(Func<T,T,bool> comparator)
             {
@@ -131,7 +131,7 @@ namespace Oracle.NoSQL.SDK.Tests
             {
                 var result = Object.ReferenceEquals(value1, value2) ||
                     (value1 != null && value2 != null &&
-                    comparator((T)value1, (T)value2));
+                     comparator((T)value1, (T)value2));
                 return (result
                     ? ComparisonResult.Pass : ComparisonResult.Fail,
                     context);
@@ -140,15 +140,24 @@ namespace Oracle.NoSQL.SDK.Tests
 
         // Workaround for a bug in DeepEqual where it throws on RSA type.
         // Other types may be added for custom comparison if needed.
-        private static readonly IComparison customCompare1 =
+        private static readonly IComparison CustomCompare1 =
             new CustomComparison<RSA>((value1, value2) =>
             value1.ToXmlString(true) == value2.ToXmlString(true));
+
+        // DeepEqual also crashes when comparing delegates.  However
+        // DeepCloner clones delegates in a way that equality no longer holds.
+        // So for now we can't fully compare delegates (and unfortunately
+        // there is no option in DeepCloner to copy certain types as-is).
+        private static readonly IComparison CustomCompare2 =
+            new CustomComparison<Delegate>((value1, value2) =>
+                value1.GetType() == value2.GetType());
 
         private static CompareSyntax<T,T> CreateCompareSyntax<T>(T expected,
             T actual, bool comparePrivate)
         {
             var compareSyntax = expected.WithDeepEqual(actual)
-                .WithCustomComparison(customCompare1);
+                .WithCustomComparison(CustomCompare1)
+                .WithCustomComparison(CustomCompare2);
 
             if (comparePrivate)
             {
@@ -176,6 +185,7 @@ namespace Oracle.NoSQL.SDK.Tests
                 Assert.Fail($"Values are not deep equal: {ex}");
             }
         }
+
         internal static void AssertNotDeepEqual<T>(T expected, T actual,
             bool comparePrivate = false)
         {

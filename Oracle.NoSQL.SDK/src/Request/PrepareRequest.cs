@@ -18,6 +18,9 @@ namespace Oracle.NoSQL.SDK
     /// <seealso cref="NoSQLClient.PrepareAsync"/>
     public class PrepareRequest : Request
     {
+        // Used by rate limiting.
+        private string tableName;
+
         internal PrepareRequest(NoSQLClient client, string statement,
             PrepareOptions options) : base(client)
         {
@@ -43,6 +46,18 @@ namespace Oracle.NoSQL.SDK
         {
             base.Validate();
             CheckNotNullOrEmpty(Statement, nameof(Statement));
+        }
+
+        internal override bool SupportsRateLimiting => true;
+
+        internal override bool DoesReads => true;
+
+        internal override string InternalTableName => tableName;
+
+        internal override void ApplyResult(object result)
+        {
+            base.ApplyResult(result);
+            tableName = ((PreparedStatement)result).TableName;
         }
 
         /// <summary>

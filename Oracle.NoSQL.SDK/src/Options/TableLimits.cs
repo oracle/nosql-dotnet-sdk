@@ -7,6 +7,7 @@
 
 namespace Oracle.NoSQL.SDK
 {
+    using System.Diagnostics;
     using static ValidateUtils;
 
     /// <summary>
@@ -89,6 +90,21 @@ namespace Oracle.NoSQL.SDK
     /// to change <see cref="CapacityMode"/> of the existing table, that is
     /// to switch the table from Provisioned to On Demand or vice versa.
     /// </para>
+    /// <para>
+    /// <see cref="TableLimits"/> are also returned as part of
+    /// <see cref="TableResult"/> from operations listed above as well as
+    /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.GetTableAsync*"/> and
+    /// <see cref="TableResult.WaitForCompletionAsync"/>.  For returned
+    /// <see cref="TableLimits"/>, when using with
+    /// <see cref="ServiceType.Cloud"/> Service, <see cref="ReadUnits"/> and
+    /// <see cref="WriteUnits"/> will be available for both
+    /// <see cref="SDK.CapacityMode.Provisioned"/> and
+    /// <see cref="SDK.CapacityMode.OnDemand"/> tables.  For
+    /// <see cref="SDK.CapacityMode.OnDemand"/> tables, these values will
+    /// indicate the maximum limits set by the service for on-demand tables.
+    /// Note that these values are not available for on-demand tables when
+    /// using Cloud Simulator (see <see cref="ServiceType.CloudSim"/>).
+    /// </para>
     /// <example>
     /// Specifying table limits when creating a provisioned table.
     /// <code>
@@ -114,6 +130,15 @@ namespace Oracle.NoSQL.SDK
     /// <seealso cref="NoSQLClient.SetTableLimitsWithCompletionAsync"/>
     public class TableLimits
     {
+        internal TableLimits(int readUnits, int writeUnits, int storageGB,
+            CapacityMode capacityMode)
+        {
+            ReadUnits = readUnits > 0 ? readUnits : 0;
+            WriteUnits = writeUnits > 0 ? writeUnits : 0;
+            StorageGB = storageGB;
+            CapacityMode = capacityMode;
+        }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="TableLimits"/> class
         /// with <see cref="SDK.CapacityMode.Provisioned"/> capacity mode.
@@ -124,12 +149,9 @@ namespace Oracle.NoSQL.SDK
         /// </param>
         /// <param name="storageGB">Maximum storage in gigabytes.  Must be a
         /// positive value.</param>
-        public TableLimits(int readUnits, int writeUnits, int storageGB)
+        public TableLimits(int readUnits, int writeUnits, int storageGB) :
+            this(readUnits, writeUnits, storageGB, CapacityMode.Provisioned)
         {
-            CapacityMode = CapacityMode.Provisioned;
-            ReadUnits = readUnits;
-            WriteUnits = writeUnits;
-            StorageGB = storageGB;
         }
 
         /// <summary>
@@ -138,12 +160,9 @@ namespace Oracle.NoSQL.SDK
         /// </summary>
         /// <param name="storageGB">Maximum storage in gigabytes.  Must be a
         /// positive value.</param>
-        public TableLimits(int storageGB)
+        public TableLimits(int storageGB) :
+            this(0, 0, storageGB, CapacityMode.OnDemand)
         {
-            CapacityMode = CapacityMode.OnDemand;
-            ReadUnits = 0;
-            WriteUnits = 0;
-            StorageGB = storageGB;
         }
 
         /// <summary>
@@ -158,8 +177,7 @@ namespace Oracle.NoSQL.SDK
         /// Gets read units.
         /// </summary>
         /// <value>
-        /// Read units if <see cref="CapacityMode"/> is
-        /// <see cref="SDK.CapacityMode.Provisioned"/>, otherwise 0.
+        /// Read units if available, otherwise 0.
         /// </value>
         public int ReadUnits { get; }
 
@@ -167,8 +185,7 @@ namespace Oracle.NoSQL.SDK
         /// Gets write units.
         /// </summary>
         /// <value>
-        /// Write units if <see cref="CapacityMode"/> is
-        /// <see cref="SDK.CapacityMode.Provisioned"/>, otherwise 0.
+        /// Write units if available, otherwise 0.
         /// </value>
         public int WriteUnits { get; }
 
@@ -188,6 +205,12 @@ namespace Oracle.NoSQL.SDK
                 CheckPositiveInt32(ReadUnits, nameof(ReadUnits));
                 CheckPositiveInt32(WriteUnits, nameof(WriteUnits));
             }
+            else
+            {
+                Debug.Assert(ReadUnits == 0);
+                Debug.Assert(WriteUnits == 0);
+            }
+
             CheckPositiveInt32(StorageGB, nameof(StorageGB));
         }
     }

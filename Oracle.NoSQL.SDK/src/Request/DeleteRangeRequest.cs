@@ -44,6 +44,12 @@ namespace Oracle.NoSQL.SDK
 
         internal Durability? Durability => Options?.Durability;
 
+        internal override bool SupportsRateLimiting => true;
+
+        internal override bool DoesReads => true;
+
+        internal override bool DoesWrites => true;
+
         internal override void Validate()
         {
             base.Validate();

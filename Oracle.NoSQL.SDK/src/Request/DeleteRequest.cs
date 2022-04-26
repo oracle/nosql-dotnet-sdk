@@ -51,6 +51,8 @@ namespace Oracle.NoSQL.SDK
 
         bool IDeleteOp.ReturnExisting => ReturnExisting;
 
+        internal override bool DoesReads => true;
+
         internal override void Serialize(IRequestSerializer serializer,
             MemoryStream stream)
         {

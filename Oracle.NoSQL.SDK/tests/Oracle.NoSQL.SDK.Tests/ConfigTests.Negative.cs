@@ -166,6 +166,9 @@ namespace Oracle.NoSQL.SDK.Tests
             "ftp://foo", // protocol must be http or https,
         };
 
+        private static readonly double[] BadRateLimiterPercentages =
+            { -1, 0, 101, 100.01 };
+
         private static readonly IEnumerable<NoSQLConfig> BadConfigs =
             Enumerable.Empty<NoSQLConfig>()
                 // invalid service type
@@ -232,6 +235,12 @@ namespace Oracle.NoSQL.SDK.Tests
                     {
                         Endpoint = CloudSimEndpoint,
                         MaxMemoryMB = val
+                    })
+                .Concat(from val in BadRateLimiterPercentages
+                    select new NoSQLConfig
+                    {
+                        Endpoint = CloudSimEndpoint,
+                        RateLimiterPercent = val
                     })
                 // TablePollDelay must be <= TablePollTimeout
                 .Append(new NoSQLConfig

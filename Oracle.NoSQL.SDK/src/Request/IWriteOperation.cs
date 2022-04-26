@@ -62,6 +62,9 @@ namespace Oracle.NoSQL.SDK
         PutOpKind IPutOp.PutOpKind =>
             Options?.putOpKind ?? PutOpKind.Always;
 
+        internal bool DoesReads =>
+            ((IPutOp)this).PutOpKind != PutOpKind.Always;
+
         RowVersion IPutOp.MatchVersion => Options?.MatchVersion;
 
         bool IPutOp.ReturnExisting => Options?.ReturnExisting ?? false;

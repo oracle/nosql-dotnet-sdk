@@ -359,6 +359,26 @@ namespace Oracle.NoSQL.SDK.Tests
                 Endpoint = "https://localhost:8181",
                 AuthorizationProvider = StoreAuthProvider
             })
+            .Append(new NoSQLConfig
+            {
+                Endpoint = CloudSimEndpoint,
+                RateLimitingEnabled = true
+            })
+            .Append(new NoSQLConfig
+            {
+                Region = Region.US_SANJOSE_1,
+                AuthorizationProvider = CloudAuthProvider,
+                RateLimitingEnabled = true
+            })
+            .Append(new NoSQLConfig
+            {
+                ServiceType = ServiceType.Cloud,
+                Endpoint = "https://nosql.us-phoenix-1.oci.oraclecloud.com",
+                AuthorizationProvider = CloudAuthProvider,
+                RateLimitingEnabled = true,
+                RateLimiterPercent = 75.123,
+                RateLimiterCreator = () => new NoSQLRateLimiter(TimeSpan.Zero)
+            })
             .Concat(
                 from provider in GoodKVStoreAuthProviders
                 select new NoSQLConfig

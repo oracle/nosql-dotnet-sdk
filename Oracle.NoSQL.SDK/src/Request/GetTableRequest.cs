@@ -53,6 +53,12 @@ namespace Oracle.NoSQL.SDK
             return serializer.DeserializeGetTable(stream, this);
         }
 
+        internal override void ApplyResult(object result)
+        {
+            base.ApplyResult(result);
+            Client.RateLimitingHandler?.ApplyTableResult((TableResult)result);
+        }
+
         /// <summary>
         /// Gets the options for <see cref="NoSQLClient.GetTableAsync"/>
         /// operation.

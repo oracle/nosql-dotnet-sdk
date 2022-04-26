@@ -64,8 +64,8 @@ namespace Oracle.NoSQL.SDK {
                 // We always read the prepared statement if the request
                 // does not have it.
                 Debug.Assert(result.PreparedStatement != null);
-
-                request.PreparedStatement = result.PreparedStatement;
+                // Should be set by QueryRequest<TRow>.ApplyResult().
+                Debug.Assert(request.PreparedStatement != null);
 
                 if (request.PreparedStatement.DriverQueryPlan == null)
                 {

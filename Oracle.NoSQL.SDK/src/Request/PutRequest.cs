@@ -54,6 +54,9 @@ namespace Oracle.NoSQL.SDK
 
         bool IPutOp.ReturnExisting => ReturnExisting;
 
+        internal override bool DoesReads =>
+            ((IPutOp)this).PutOpKind != PutOpKind.Always;
+
         internal override void Serialize(IRequestSerializer serializer,
             MemoryStream stream)
         {

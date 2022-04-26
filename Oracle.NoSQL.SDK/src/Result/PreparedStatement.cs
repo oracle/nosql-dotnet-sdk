@@ -182,6 +182,16 @@ namespace Oracle.NoSQL.SDK
 
         internal string[] VariableNames { get; set; }
 
+        // The following 3 properties are read from the binary form of
+        // prepared statement (ProxyStatement) that is normally opaque.  They
+        // are currently used for rate limiting.
+
+        internal string Namespace { get; set; }
+
+        internal string TableName { get; set; }
+
+        internal sbyte OperationCode { get; set; }
+
         internal TopologyInfo TopologyInfo
         {
             get

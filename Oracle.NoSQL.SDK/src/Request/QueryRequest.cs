@@ -8,6 +8,7 @@
 namespace Oracle.NoSQL.SDK
 {
     using System;
+    using System.Diagnostics;
     using System.IO;
     using static ValidateUtils;
 
@@ -20,6 +21,9 @@ namespace Oracle.NoSQL.SDK
     /// </summary>
     public abstract class QueryRequest : Request
     {
+        // "5" == PrepareCallback.QueryOperation.SELECT
+        internal const int OperationCodeSelect = 5;
+
         internal QueryRequest(NoSQLClient client, string statement,
             QueryOptions options) : base(client)
         {
@@ -52,6 +56,17 @@ namespace Oracle.NoSQL.SDK
         internal int ShardId { get; set; } = -1;
 
         internal bool IsInternal { get; set; }
+
+        internal override bool SupportsRateLimiting => true;
+
+        internal override bool DoesReads => true;
+
+        internal override bool DoesWrites =>
+            PreparedStatement != null &&
+            PreparedStatement.OperationCode == OperationCodeSelect;
+
+        internal override string InternalTableName =>
+            PreparedStatement?.TableName;
     }
 
     /// <summary>
@@ -161,28 +176,24 @@ namespace Oracle.NoSQL.SDK
             base.ApplyResult(result);
 
             var queryResult = (QueryResult<TRow>)result;
-            PreparedStatement preparedStatement;
 
             // Received prepared statement
             if (queryResult.PreparedStatement != null)
             {
-                preparedStatement = queryResult.PreparedStatement;
+                Debug.Assert(PreparedStatement == null);
+                PreparedStatement = queryResult.PreparedStatement;
                 // Advanced query will be executed on the next Query() call,
                 // so we need continuation key.
-                if (preparedStatement.DriverQueryPlan != null &&
+                if (PreparedStatement.DriverQueryPlan != null &&
                     queryResult.ContinuationKey == null)
                 {
                     queryResult.ContinuationKey = new QueryContinuationKey();
                 }
             }
-            else
-            {
-                preparedStatement = PreparedStatement;
-            }
 
             if (queryResult.TopologyInfo != null)
             {
-                preparedStatement.SetTopologyInfo(queryResult.TopologyInfo);
+                PreparedStatement.SetTopologyInfo(queryResult.TopologyInfo);
             }
 
             // Once we have prepared statement, it will be part of
@@ -191,7 +202,7 @@ namespace Oracle.NoSQL.SDK
             if (queryResult.ContinuationKey != null)
             {
                 queryResult.ContinuationKey.PreparedStatement =
-                    preparedStatement;
+                    PreparedStatement;
             }
         }
     }

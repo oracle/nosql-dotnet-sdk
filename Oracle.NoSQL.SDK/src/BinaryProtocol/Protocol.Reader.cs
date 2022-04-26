@@ -208,11 +208,8 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
                     if (request.Config.ServiceType !=
                         ServiceType.KVStore)
                     {
-                        result.TableLimits =
-                            capacityMode == CapacityMode.Provisioned
-                                ? new TableLimits(readUnits,
-                                    writeUnits, storageGB)
-                                : new TableLimits(storageGB);
+                        result.TableLimits = new TableLimits(readUnits,
+                            writeUnits, storageGB, capacityMode);
                     }
 
                     result.TableSchema = ReadString(stream);

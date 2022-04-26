@@ -73,6 +73,12 @@ namespace Oracle.NoSQL.SDK
 
         internal string GetTableName() => tableName;
 
+        internal override void ApplyResult(object result)
+        {
+            base.ApplyResult(result);
+            Client.RateLimitingHandler?.ApplyTableResult((TableResult)result);
+        }
+
         /// <summary>
         /// Gets the SQL statement.  Returns <c>null</c> if this is
         /// an instance of <see cref="TableLimitsRequest"/>.

@@ -109,7 +109,7 @@ namespace Oracle.NoSQL.SDK.Tests
             }
         }
 
-        private const int ModTimeDeltaMillisLocal = 100;
+        private const int ModTimeDeltaMillisLocal = 1000;
         private const int ModeTimeDeltaMillisRemote = 5000;
         private const int ModeTimeDeltaMillisBig = 3600 * 1000;
 

@@ -8,7 +8,6 @@
 namespace Oracle.NoSQL.SDK
 {
     using System;
-    using System.Collections.Generic;
     using System.IO;
     using static ValidateUtils;
 
@@ -31,7 +30,7 @@ namespace Oracle.NoSQL.SDK
         internal const int MaxOpCount = 50;
 
         internal WriteManyRequest(NoSQLClient client, string tableName,
-            IReadOnlyCollection<IWriteOperation> operations,
+            WriteOperationCollection operations,
             IWriteManyOptions options) : base(client, tableName)
         {
             Operations = operations;
@@ -41,6 +40,12 @@ namespace Oracle.NoSQL.SDK
         internal override IOptions BaseOptions => Options;
 
         internal Durability? Durability => Options?.Durability;
+
+        internal override bool SupportsRateLimiting => true;
+
+        internal override bool DoesReads => Operations.DoesReads;
+
+        internal override bool DoesWrites => true;
 
         internal override void Serialize(IRequestSerializer serializer,
             MemoryStream stream)
@@ -82,7 +87,7 @@ namespace Oracle.NoSQL.SDK
         /// collection will be either all <see cref="PutOperation"/> or all
         /// <see cref="DeleteOperation"/> instances respectively.
         /// </value>
-        public IReadOnlyCollection<IWriteOperation> Operations { get; }
+        public WriteOperationCollection Operations { get; }
 
         internal IWriteManyOptions Options { get; }
 

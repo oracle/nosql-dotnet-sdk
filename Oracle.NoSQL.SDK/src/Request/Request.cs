@@ -147,10 +147,21 @@ namespace Oracle.NoSQL.SDK
 
         internal virtual bool ShouldRetry => true;
 
+        internal virtual bool SupportsRateLimiting => false;
+
+        // Used by rate limiting.
+        internal virtual bool DoesReads => false;
+
+        // Used by rate limiting.
+        internal virtual bool DoesWrites => false;
+
+        // Used by rate limiting.
+        internal virtual string InternalTableName => null;
+
         internal NoSQLConfig Config => Client.Config;
 
         /// <summary>
-        /// Gets the list of exceptions that occured while retrying the
+        /// Gets the list of exceptions that occurred while retrying the
         /// operation.
         /// </summary>
         /// <remarks>
@@ -206,7 +217,6 @@ namespace Oracle.NoSQL.SDK
         public Exception PriorException =>
             Exceptions != null && Exceptions.Count > 1 ?
             Exceptions[^2] : null;
-
     }
 
 }
