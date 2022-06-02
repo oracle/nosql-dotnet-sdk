@@ -353,10 +353,28 @@ namespace Oracle.NoSQL.SDK
             "eu-frankfurt-1", "fra", OC1);
 
         /// <summary>
+        /// Realm: OC1, Spain (Madrid)
+        /// </summary>
+        public static readonly Region EU_MADRID_1 = new Region(
+            "eu-madrid-1", "mad", OC1);
+
+        /// <summary>
+        /// Realm: OC1, Italy (Milan)
+        /// </summary>
+        public static readonly Region EU_MILAN_1 = new Region(
+            "eu-milan-1", "lin", OC1);
+
+        /// <summary>
         /// Realm: OC1, France South (Marseille)
         /// </summary>
         public static readonly Region EU_MARSEILLE_1 = new Region(
             "eu-marseille-1", "mrs", OC1);
+
+        /// <summary>
+        /// Realm: OC1, France (Paris)
+        /// </summary>
+        public static readonly Region EU_PARIS_1 = new Region(
+            "eu-paris-1", "cdg", OC1);
 
         /// <summary>
         /// Realm: OC1, Sweden Central (Stockholm)
@@ -393,6 +411,18 @@ namespace Oracle.NoSQL.SDK
         /// </summary>
         public static readonly Region ME_DUBAI_1 = new Region("me-dubai-1",
             "dxb", OC1);
+
+        /// <summary>
+        /// Realm: OC1, Mexico (Queretari)
+        /// </summary>
+        public static readonly Region MX_QUERETARO_1 = new Region(
+            "mx-queretaro-1", "qro", OC1);
+
+        /// <summary>
+        /// Realm: OC1, Israel (Jerusalem)
+        /// </summary>
+        public static readonly Region IL_JERUSALEM_1 = new Region(
+            "il-jerusalem-1", "mtz", OC1);
 
         /// <summary>
         /// Realm: OC1, UK West (Newport)
@@ -443,6 +473,12 @@ namespace Oracle.NoSQL.SDK
             "sa-santiago-1", "scl", OC1);
 
         /// <summary>
+        /// Realm: OC1, Brazil (Vinhedo)
+        /// </summary>
+        public static readonly Region SA_VINHEDO_1 = new Region(
+            "sa-vinhedo-1", "vcp", OC1);
+
+        /// <summary>
         /// Realm: OC2, US Gov East (Ashburn)
         /// </summary>
         public static readonly Region US_LANGLEY_1 = new Region(
@@ -473,6 +509,12 @@ namespace Oracle.NoSQL.SDK
             "us-gov-phoenix-1", "tus", OC3);
 
         /// <summary>
+        /// Realm: OC4, UK Gov (Cardiff)
+        /// </summary>
+        public static readonly Region UK_GOV_CARDIFF_1 = new Region(
+            "uk-gov-cardiff-1", "brs", OC4);
+
+        /// <summary>
         /// Realm: OC4, UK Gov South (London)
         /// </summary>
         public static readonly Region UK_GOV_LONDON_1 = new Region(
@@ -483,6 +525,13 @@ namespace Oracle.NoSQL.SDK
         /// </summary>
         public static readonly Region AP_CHIYODA_1 = new Region(
             "ap-chiyoda-1", "nja", OC8);
+
+        /// <summary>
+        /// Realm: OC8, Japan (Ibaraki)
+        /// Note: ukb is actually Kobe, but OCI uses it for Ibaraki
+        /// </summary>
+        public static readonly Region AP_IBARAKI_1 = new Region(
+            "ap-ibaraki-1", "ukb", OC8);
 
         /// <summary>
         /// Realm: OC9, Oman (Muscat)

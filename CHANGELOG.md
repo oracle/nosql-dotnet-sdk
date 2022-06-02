@@ -13,6 +13,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 * Support for proxy V3 protocol including features such as on-demand tables,
 durability and new result fields for row modification time.
 
+* Added new regions for cloud service: mad, lin, cdg, qro, mtz, vcp, brs, ukb.
+
 ## [5.1.3]
 
 **Added**
