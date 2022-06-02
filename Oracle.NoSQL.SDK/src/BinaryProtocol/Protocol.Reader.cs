@@ -8,6 +8,7 @@
 namespace Oracle.NoSQL.SDK.BinaryProtocol
 {
     using System;
+    using System.Globalization;
     using System.IO;
     using static DateTimeUtils;
 
@@ -18,6 +19,29 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
         internal const short V2 = 2;
         
         internal const short V3 = 3;
+
+        // Some values of type Number will not fit into decimal type because
+        // of the latter limited range.  In this case we try to parse them as
+        // double.  This might lose precision but there is no other choice at
+        // this time.
+        private static FieldValue ReadNumberValue(MemoryStream stream)
+        {
+            var stringValue = ReadString(stream);
+            if (decimal.TryParse(stringValue, NumberStyles.Any, null,
+                    out var decimalResult))
+            {
+                return decimalResult;
+            }
+
+            if (double.TryParse(stringValue, NumberStyles.Any, null,
+                    out var doubleResult))
+            {
+                return doubleResult;
+            }
+
+            throw new BadProtocolException(
+                $"Invalid number value string: {stringValue}");
+        }
 
         private static void ReadMap(MemoryStream stream,
             MapValue mapValue)
@@ -91,7 +115,7 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
                 case DbType.Timestamp:
                     return ReadDateTime(stream);
                 case DbType.Number:
-                    return ReadDecimal(stream);
+                    return ReadNumberValue(stream);
                 case DbType.Null:
                     return FieldValue.Null;
                 case DbType.JsonNull:

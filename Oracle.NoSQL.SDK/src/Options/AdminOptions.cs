@@ -46,12 +46,13 @@ namespace Oracle.NoSQL.SDK
         /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.ExecuteAdminAsync*"/>
         /// it defaults to
         /// <see cref="NoSQLConfig.AdminTimeout"/>.  For
-        /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.ExecuteAdminWithCompletionAsync*"/>
-        /// it defaults to the sum of
-        /// <see cref="NoSQLConfig.AdminTimeout"/>
-        /// and <see cref="NoSQLConfig.AdminPollTimeout"/> if
-        /// <see cref="NoSQLConfig.AdminPollTimeout"/> is set or to no timeout
-        /// if <see cref="NoSQLConfig.AdminPollTimeout"/> is not set.
+        /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.ExecuteAdminWithCompletionAsync*"/>,
+        /// separate default timeouts are used for issuing the admin operation
+        /// and waiting for its completion, with
+        /// values of <see cref="NoSQLConfig.AdminTimeout"/> and
+        /// <see cref="NoSQLConfig.AdminPollTimeout"/> correspondingly (the
+        /// latter defaults to no timeout if
+        /// <see cref="NoSQLConfig.AdminPollTimeout"/> is not set).
         /// </remarks>
         /// <value>
         /// Operation timeout.  If set, must be a positive value.

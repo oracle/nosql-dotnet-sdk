@@ -60,7 +60,9 @@ namespace Oracle.NoSQL.SDK
                     ? new RateLimitingRequest(RateLimitingHandler, request)
                     : null;
 
+            var timeout = request.Timeout; // original request timeout
             var startTime = DateTime.UtcNow;
+
             while (true)
             {
                 var serialVersion = Serializer.SerialVersion;
@@ -86,7 +88,6 @@ namespace Oracle.NoSQL.SDK
                     request.AddException(ex);
                     rlReq?.HandleException(ex);
                     
-                    var timeout = request.Timeout;
                     if (ex is SecurityInfoNotReadyException &&
                         timeout < Config.SecurityInfoNotReadyTimeout)
                     {
@@ -126,6 +127,9 @@ namespace Oracle.NoSQL.SDK
                             request.RetryCount, ex);
                     }
 
+                    // This will adjust http request timeout for the time
+                    // already elapsed.
+                    request.Timeout = endTime - now;
                     await Task.Delay(delay, cancellationToken);
                 }
             }
@@ -211,21 +215,18 @@ namespace Oracle.NoSQL.SDK
                 return;
             }
 
+            var options = new GetTableOptions
+            {
+                Compartment = tableResult.CompartmentId,
+                Timeout = Config.Timeout
+            };
+
             var request = new GetTableRequest(this, tableResult.TableName,
-                tableResult.OperationId, tableResult.CompartmentId != null ?
-                    new GetTableOptions
-                    {
-                        Compartment = tableResult.CompartmentId
-                    }
-                    : null);
+                tableResult.OperationId, options);
             var startTime = DateTime.Now;
 
             while(true)
             {
-                request.Timeout =
-                    tablePollTimeout ??
-                    TableDDLRequest.DefaultPollRequestTimeout;
-
                 TableResult result = null;
                 try
                 {
@@ -266,13 +267,18 @@ namespace Oracle.NoSQL.SDK
 
                 if (tablePollTimeout.HasValue)
                 {
-                    tablePollTimeout = tablePollTimeout -
-                        (DateTime.Now + tablePollDelay - startTime);
+                    tablePollTimeout -=
+                        DateTime.Now + tablePollDelay - startTime;
                     if (tablePollTimeout <= TimeSpan.Zero)
                     {
                         throw new TimeoutException(
                             "Reached timeout while waiting for table state " +
                             tableState);
+                    }
+
+                    if (options.Timeout > tablePollTimeout)
+                    {
+                        options.Timeout = tablePollTimeout;
                     }
                 }
 
@@ -294,14 +300,15 @@ namespace Oracle.NoSQL.SDK
                 return;
             }
 
-            var request = new AdminStatusRequest(this, adminResult);
+            var options = new GetAdminStatusOptions()
+            {
+                Timeout = Config.Timeout
+            };
+            var request = new AdminStatusRequest(this, adminResult, options);
             var startTime = DateTime.Now;
 
             while (true)
             {
-                request.Timeout =
-                    adminPollTimeout ??
-                    AdminRequest.DefaultPollRequestTimeout;
                 var result = (AdminResult) await ExecuteValidatedRequestAsync(
                     request, cancellationToken);
                 Debug.Assert(result != null);
@@ -316,13 +323,19 @@ namespace Oracle.NoSQL.SDK
 
                 if (adminPollTimeout.HasValue)
                 {
-                    adminPollTimeout = adminPollTimeout -
-                        (DateTime.Now + adminPollDelay - startTime);
+                    adminPollTimeout -=
+                        DateTime.Now + adminPollDelay - startTime;
+                    
                     if (adminPollTimeout <= TimeSpan.Zero)
                     {
                         throw new TimeoutException(
                             "Reached timeout while waiting for " +
                             "admin operation completion");
+                    }
+
+                    if (options.Timeout > adminPollTimeout)
+                    {
+                        options.Timeout = adminPollTimeout;
                     }
                 }
 

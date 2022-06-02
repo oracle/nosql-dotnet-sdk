@@ -7,6 +7,7 @@
 
 namespace Oracle.NoSQL.SDK
 {
+    using System;
     using System.Collections.Generic;
     using Query;
     using static ValidateUtils;
@@ -136,17 +137,13 @@ namespace Oracle.NoSQL.SDK
         /// </summary>
         /// <remarks>
         /// <para>
-        /// The bind variables are represented as a dictionary with
+        /// This method returns bind variables as a dictionary with
         /// <c>string</c> keys and values of type <see cref="FieldValue"/>.
-        /// You may use methods of <see cref="IDictionary{TKey,TValue}"/> on
-        /// this property together with facilities provided by
-        /// <see cref="FieldValue"/> and its subclasses to get, set, add and
-        /// remove bind variables.
-        /// </para>
-        /// <para>
-        /// Note that the bind variables are not cleared after a query execution.
-        /// If you wish to remove all bind variables, call
-        /// <see cref="ICollection{T}.Clear"/> on this property.
+        /// You may use it to access bind variables and set their values.
+        /// This is an alternative to using
+        /// <see cref="SetVariable(string,Oracle.NoSQL.SDK.FieldValue)"/>
+        /// method.  To set bind variable by its position, use
+        /// <see cref="SetVariable(int,Oracle.NoSQL.SDK.FieldValue)"/> method.
         /// </para>
         /// </remarks>
         /// <value>
@@ -154,25 +151,147 @@ namespace Oracle.NoSQL.SDK
         /// <see cref="IDictionary{TKey,TValue}"/>.
         /// </value>
         /// <example>
-        /// Accessing bind variables.
+        /// Setting bind variables.
         /// <code>
-        /// // .....
-        /// // Clear bind variables after this prepared statement was used
-        /// // in a query execution.
-        /// preparedStatement.Variables.Clear();
-        ///
         /// // Setting variables of different types.
         /// preparedStatement.Variables["$var1"] = 10;
         /// preparedStatement.Variables["$var2"] = "abc";
         /// preparedStatement.Variables["$var3"] = new DateTime(2021, 05, 18);
-        ///
-        /// // Remove a variable previously set.
-        /// preparedStatement.Variables.Remove("$var4");
         /// </code>
         /// </example>
         /// <seealso cref="FieldValue"/>
         public IDictionary<string, FieldValue> Variables =>
             variables ??= new Dictionary<string, FieldValue>();
+
+        /// <summary>
+        /// Binds a variable to a given value.  The variable is identified by
+        /// its name.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The values of bind variables are set as instances of
+        /// <see cref="FieldValue"/>.  Thus you may pass different types of
+        /// values to this method via using implicit conversions provided by
+        /// <see cref="FieldValue"/> (see example below).  This method returns
+        /// this instance <see cref="PreparedStatement"/> to enable chaining.
+        /// </para>
+        /// <para>
+        /// Note that the bind variables are not cleared after a query
+        /// execution. If you wish to remove all bind variables, call
+        /// <see cref="ClearVariables"/> method.
+        /// </para>
+        /// </remarks>
+        /// <param name="name">Name of the variable.</param>
+        /// <param name="value">The value of the variable.</param>
+        /// <returns>This instance.</returns>
+        /// <example>
+        /// Setting bind variables by name.
+        /// <code>
+        /// var preparedStatement = await client.PrepareAsync(
+        ///     "SELECT * FROM orders WHERE quantity > $qty AND " +
+        ///     "city = $city AND date = $date");
+        /// 
+        /// // Set variables of different types.
+        /// preparedStatement
+        ///     .SetVariable("$qty", 1000)
+        ///     .SetVariable("$city", "New York")
+        ///     .SetVariable("$date", new DateTime(2021, 05, 18));
+        ///
+        /// // Execute the query.
+        /// await foreach(var result in
+        ///     client.GetQueryAsyncEnumerable(preparedStatement))
+        /// {
+        ///     // .....    
+        /// }
+        /// </code>
+        /// </example>
+        /// <seealso cref="FieldValue"/>
+        public PreparedStatement SetVariable(string name, FieldValue value)
+        {
+            Variables[name] = value;
+            return this;
+        }
+
+        /// <summary>
+        /// Binds an external variable to a given value.  The variable is
+        /// identified by its position within the query string.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// This method is useful for queries where bind variables identified
+        /// by "?" are used instead of named variables (but it can be used for
+        /// both types of variables).
+        /// </para>
+        /// <para>
+        /// The positions start at <c>1</c>. The variable that appears first
+        /// in the query text has position 1, the variable that appears second
+        /// has position 2 and so on.
+        /// </para>
+        /// <para>
+        /// If the provided position exceeds the number of variables in the
+        /// query string (and thus does not refer to any existing variable in
+        /// the query), this method will throw
+        /// <exception cref="ArgumentOutOfRangeException"/> if the driver has
+        /// access to the variables used in the query (otherwise, such
+        /// exception would be thrown when the query is executed).
+        /// </para>
+        /// </remarks>
+        /// <param name="position">The position of the variable.</param>
+        /// <param name="value">The value of the variable.</param>
+        /// <returns>This instance.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"> If position is
+        /// negative or zero or greater than the total number of external
+        /// variables in the query.</exception>
+        /// <example>
+        /// Setting bind variables by position.
+        /// <code>
+        /// var preparedStatement = await client.PrepareAsync(
+        ///     "SELECT * FROM users u where u.firstName = ? AND " +
+        ///     "u.address.city = ?");
+        /// 
+        /// preparedStatement
+        ///     .SetVariable(1, "John")
+        ///     .SetVariable(2, "Redwood City");
+        /// 
+        /// // Execute the query.
+        /// await foreach(var result in
+        ///     client.GetQueryAsyncEnumerable(preparedStatement))
+        /// {
+        ///     // .....    
+        /// }
+        /// </code>
+        /// </example>
+        /// <seealso cref="FieldValue"/>
+        public PreparedStatement SetVariable(int position, FieldValue value)
+        {
+            if (position < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(position),
+                    "Position must be positive");
+            }
+
+            if (VariableNames == null)
+            {
+                return SetVariable("#" + position, value);
+            }
+
+            if (position > VariableNames.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(position),
+                    $"There is no variable at position {position}");
+            }
+
+            return SetVariable(VariableNames[position - 1], value);
+        }
+
+        /// <summary>
+        /// Clears all bind variables from the statement.
+        /// </summary>
+        /// <remarks>
+        /// This operation is equivalent to calling
+        /// <see cref="ICollection{T}.Clear"/> on <see cref="Variables"/>.
+        /// </remarks>
+        public void ClearVariables() => Variables.Clear();
 
         internal byte[] ProxyStatement { get; set; }
 

@@ -854,7 +854,7 @@ try {
     var preparedStatement = await client.PrepareAsync(sql);
 
     // Set value for $name variable and execute the query
-    preparedStatement.Variables["$name"] = "Taylor";
+    preparedStatement.SetVariable("$name", "Taylor");
     await foreach(var result in client.GetQueryAsyncEnumerable(
         preparedStatement))
     {
@@ -864,7 +864,7 @@ try {
     }
 
     // Set different value for $name and re-execute the query.
-    preparedStatement.Variables["$name"] = "Jane";
+    preparedStatement.SetVariable("$name", "Jane");
     await foreach(var result in client.GetQueryAsyncEnumerable(
         preparedStatement))
     {

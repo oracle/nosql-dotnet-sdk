@@ -8,6 +8,7 @@
 namespace Oracle.NoSQL.SDK.Query {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using static Utils;
@@ -16,7 +17,7 @@ namespace Oracle.NoSQL.SDK.Query {
     {
         private readonly SortStep step;
         private readonly PlanAsyncIterator inputIterator;
-        private readonly List<RecordValue> rows;
+        private List<RecordValue> rows;
         private int rowIndex = -1;
 
         internal SortIterator(QueryRuntime runtime, SortStep step) :
@@ -57,7 +58,11 @@ namespace Oracle.NoSQL.SDK.Query {
                     return false;
                 }
 
-                rows.Sort(this);
+                // OrderBy performs a stable sort.
+                // Note that we could avoid creating additional list by
+                // iterating via IEnumerator but then we would lose the
+                // ability to release row memory as we iterate (see below).
+                rows = rows.OrderBy(row => row, this).ToList();
                 rowIndex = 0;
             }
 

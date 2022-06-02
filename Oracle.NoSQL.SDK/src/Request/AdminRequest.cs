@@ -23,31 +23,16 @@ namespace Oracle.NoSQL.SDK
     /// <seealso cref="Request"/>
     public class AdminRequest : Request
     {
-        // Timeout to use for AdminStatusRequest when called inside
-        // WaitForCompletionAsync() without timeout.  Large enough for many
-        // retries if necessary.  This timeout is also added to the timeout
-        // of AdminRequest when called from
-        // ExecuteAdminWithCompletionAsync.
-        internal static readonly TimeSpan DefaultPollRequestTimeout =
-            TimeSpan.FromSeconds(600);
-
-        private readonly bool withCompletion;
-
         internal AdminRequest(NoSQLClient client, char [] statement,
-            AdminOptions options, bool withCompletion = false) :
-            base(client)
+            AdminOptions options) : base(client)
         {
             Statement = statement;
             Options = options;
-            this.withCompletion = withCompletion;
         }
 
         internal override IOptions BaseOptions => Options;
 
-        internal override TimeSpan GetDefaultTimeout() => withCompletion ?
-            Config.AdminTimeout +
-            (Config.AdminPollTimeout ?? DefaultPollRequestTimeout) :
-            Config.AdminTimeout;
+        internal override TimeSpan GetDefaultTimeout() => Config.AdminTimeout;
 
         internal override void Serialize(IRequestSerializer serializer,
             MemoryStream stream)

@@ -99,7 +99,7 @@ namespace Oracle.NoSQL.SDK.Query {
 
         private static bool IsMinMax(SQLFuncCode code, int result)
         {
-            return (code == SQLFuncCode.Min && result < 0) || result > 0;
+            return code == SQLFuncCode.Min ? result < 0 : result > 0;
         }
 
         private void AggregateColumn(ref FieldValue aggregate,
@@ -173,13 +173,19 @@ namespace Oracle.NoSQL.SDK.Query {
         }
 
         private RecordValue MakeResult(FieldValue[] groupingTuple,
-            FieldValue[] aggregateTuple)
+            FieldValue[] aggregateTuple = null)
         {
             var result = new RecordValue();
             int i;
             for (i = 0; i < step.GroupingColumnCount; i++)
             {
                 result[step.ColumnNames[i]] = groupingTuple[i];
+            }
+
+            if (aggregateTuple == null)
+            {
+                Debug.Assert(!HasAggregateColumns);
+                return result;
             }
 
             for (; i < step.ColumnNames.Length; i++)
@@ -228,7 +234,7 @@ namespace Oracle.NoSQL.SDK.Query {
                         // and don't need to iterate over groupMap.
                         if (!HasAggregateColumns)
                         {
-                            Result = row;
+                            Result = MakeResult(groupTuple);
                             return true;
                         }
                     }

@@ -178,11 +178,13 @@ namespace Oracle.NoSQL.SDK {
         /// </para>
         /// <para>
         /// For this operation, <see cref="AdminOptions.Timeout"/> covers
-        /// the total time interval including waiting for the DDL operation
-        /// completion.  If not specified, it defaults to no timeout if
-        /// <see cref="NoSQLConfig.AdminPollTimeout"/> is not set or to the
-        /// sum of <see cref="NoSQLConfig.AdminTimeout"/> and
-        /// <see cref="NoSQLConfig.AdminPollTimeout"/> if the latter is set.
+        /// the total time interval including waiting for the admin operation
+        /// completion.  If not specified, separate default timeouts are used
+        /// for issuing the admin operation and waiting for its completion,
+        /// with values of <see cref="NoSQLConfig.AdminTimeout"/> and
+        /// <see cref="NoSQLConfig.AdminPollTimeout"/> correspondingly (the
+        /// latter defaults to no timeout if
+        /// <see cref="NoSQLConfig.AdminPollTimeout"/> is not set).
         /// Note that as with <see cref="AdminResult.WaitForCompletionAsync"/>
         /// you may specify the poll delay as
         /// <see cref="AdminOptions.PollDelay"/> which otherwise defaults
@@ -216,7 +218,7 @@ namespace Oracle.NoSQL.SDK {
             CancellationToken cancellationToken = default)
         {
             var startTime = DateTime.Now;
-            var request = new AdminRequest(this, statement, options, true);
+            var request = new AdminRequest(this, statement, options);
             var result = (AdminResult) await ExecuteRequestAsync(request,
                 cancellationToken);
             Debug.Assert(result != null);

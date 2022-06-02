@@ -55,11 +55,13 @@ namespace Oracle.NoSQL.SDK
         /// <see cref="NoSQLConfig.TableDDLTimeout"/>.  For
         /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.ExecuteTableDDLWithCompletionAsync*"/>
         /// and
-        /// <see cref="NoSQLClient.SetTableLimitsWithCompletionAsync"/> it
-        /// defaults to the sum of <see cref="NoSQLConfig.TableDDLTimeout"/>
-        /// and <see cref="NoSQLConfig.TablePollTimeout"/> if
-        /// <see cref="NoSQLConfig.TablePollTimeout"/> is set or to no timeout
-        /// if <see cref="NoSQLConfig.TablePollTimeout"/> is not set.
+        /// <see cref="NoSQLClient.SetTableLimitsWithCompletionAsync"/>
+        /// separate default timeouts are used for issuing the DDL operation
+        /// and waiting for its completion, with
+        /// values of <see cref="NoSQLConfig.TableDDLTimeout"/> and
+        /// <see cref="NoSQLConfig.TablePollTimeout"/> correspondingly (the
+        /// latter defaults to no timeout if
+        /// <see cref="NoSQLConfig.TablePollTimeout"/> is not set).
         /// </remarks>
         /// <value>
         /// Operation timeout.  If set, must be a positive value.

@@ -166,8 +166,12 @@ namespace Oracle.NoSQL.SDK
                     continue;
                 }
 
-                value.Add(propertyName, FieldValue.DeserializeFromJson(
-                    ref reader, options, true));
+                // Using indexer instead of Add() will allow duplicate keys
+                // in JSON string (which are technically allowed but
+                // discouraged) and will result in the last value of a
+                // particular key being used.
+                value[propertyName] = FieldValue.DeserializeFromJson(
+                    ref reader, options, true);
                 propertyName = null;
             }
 

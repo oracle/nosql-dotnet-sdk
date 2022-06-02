@@ -179,10 +179,12 @@ namespace Oracle.NoSQL.SDK {
         /// <para>
         /// For this operation, <see cref="TableDDLOptions.Timeout"/> covers
         /// the total time interval including waiting for the DDL operation
-        /// completion.  If not specified, it defaults to no timeout if
-        /// <see cref="NoSQLConfig.TablePollTimeout"/> is not set or to the
-        /// sum of <see cref="NoSQLConfig.TableDDLTimeout"/> and
-        /// <see cref="NoSQLConfig.TablePollTimeout"/> if the latter is set.
+        /// completion.  If not specified, separate default timeouts are used
+        /// for issuing the DDL operation and waiting for its completion, with
+        /// values of <see cref="NoSQLConfig.TableDDLTimeout"/> and
+        /// <see cref="NoSQLConfig.TablePollTimeout"/> correspondingly (the
+        /// latter defaults to no timeout if
+        /// <see cref="NoSQLConfig.TablePollTimeout"/> is not set).
         /// Note that as with <see cref="TableResult.WaitForCompletionAsync"/>
         /// you may specify poll delay as
         /// <see cref="TableDDLOptions.PollDelay"/> which otherwise defaults
@@ -216,7 +218,7 @@ namespace Oracle.NoSQL.SDK {
             CancellationToken cancellationToken = default)
         {
             return DoTableDDLWithCompletionAsync(
-                new TableDDLRequest(this, statement, options, true),
+                new TableDDLRequest(this, statement, options),
                 cancellationToken);
         }
 
@@ -392,11 +394,13 @@ namespace Oracle.NoSQL.SDK {
         /// </para>
         /// <para>
         /// For this operation, <see cref="TableDDLOptions.Timeout"/> covers
-        /// the total time interval including waiting for the operation
-        /// completion.  If not specified, it defaults to no timeout if
-        /// <see cref="NoSQLConfig.TablePollTimeout"/> is not set or to the
-        /// sum of <see cref="NoSQLConfig.TableDDLTimeout"/> and
-        /// <see cref="NoSQLConfig.TablePollTimeout"/> if the latter is set.
+        /// the total time interval including waiting for the DDL operation
+        /// completion.  If not specified, separate default timeouts are used
+        /// for issuing the DDL operation and waiting for its completion, with
+        /// values of <see cref="NoSQLConfig.TableDDLTimeout"/> and
+        /// <see cref="NoSQLConfig.TablePollTimeout"/> correspondingly (the
+        /// latter defaults to no timeout if
+        /// <see cref="NoSQLConfig.TablePollTimeout"/> is not set).
         /// Note that as with <see cref="TableResult.WaitForCompletionAsync"/>
         /// you may specify poll delay as
         /// <see cref="TableDDLOptions.PollDelay"/> which otherwise defaults
@@ -452,8 +456,8 @@ namespace Oracle.NoSQL.SDK {
             CancellationToken cancellationToken = default)
         {
             return DoTableDDLWithCompletionAsync(
-                new TableLimitsRequest(this, tableName, tableLimits, options,
-                    true), cancellationToken);
+                new TableLimitsRequest(this, tableName, tableLimits, options),
+                cancellationToken);
         }
 
         /// <summary>
