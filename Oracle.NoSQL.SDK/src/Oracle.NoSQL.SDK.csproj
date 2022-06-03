@@ -35,7 +35,10 @@
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
         <_Parameter1>Oracle.NoSQL.SDK.SmokeTest</_Parameter1>
     </AssemblyAttribute>
-</ItemGroup>
+	  <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+		  <_Parameter1>Oracle.NoSQL.SDK.QTF</_Parameter1>
+	  </AssemblyAttribute>
+  </ItemGroup>
 
   <ItemGroup>
 	  <None Include="..\..\README.md">

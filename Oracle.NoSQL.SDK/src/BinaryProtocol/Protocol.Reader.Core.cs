@@ -240,19 +240,6 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
             return DateTime.SpecifyKind(value, DateTimeKind.Utc);
         }
 
-        private static decimal ReadDecimal(MemoryStream stream)
-        {
-            var stringValue = ReadString(stream);
-            if (!decimal.TryParse(stringValue, NumberStyles.Any, null,
-                out decimal result))
-            {
-                throw new BadProtocolException(
-                    $"Invalid Decimal string: {stringValue}");
-            }
-
-            return result;
-        }
-
         internal static string[] ReadStringArray(MemoryStream stream)
         {
             return ReadArray(stream, ReadString);

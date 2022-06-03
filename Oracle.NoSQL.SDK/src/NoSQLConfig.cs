@@ -298,11 +298,12 @@ namespace Oracle.NoSQL.SDK
         /// <para>
         /// Note that for operations performed by
         /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.ExecuteTableDDLWithCompletionAsync*"/>
-        /// and
-        /// <see cref="NoSQLClient.SetTableLimitsWithCompletionAsync"/>, the
-        /// default timeout is the sum of <see cref="TableDDLTimeout"/> and
-        /// <see cref="TablePollTimeout"/> if <see cref="TablePollTimeout"/>
-        /// is specified, and no timeout otherwise.
+        /// and <see cref="NoSQLClient.SetTableLimitsWithCompletionAsync"/>,
+        /// separate default timeouts are used for issuing the DDL operation
+        /// and waiting for its completion, with values of
+        /// <see cref="TableDDLTimeout"/> and <see cref="TablePollTimeout"/>
+        /// correspondingly (the latter defaults to no timeout if
+        /// <see cref="TablePollTimeout"/> is not set).
         /// </para>
         /// </remarks>
         /// <value>
@@ -326,10 +327,11 @@ namespace Oracle.NoSQL.SDK
         /// <para>
         /// Note that for operations performed by
         /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.ExecuteAdminWithCompletionAsync*"/>,
-        /// the default timeout is the sum of <see cref="AdminTimeout"/>
-        /// and <see cref="AdminPollTimeout"/> if
-        /// <see cref="AdminPollTimeout"/> is specified, and no timeout
-        /// otherwise.
+        /// separate default timeouts are used for issuing the admin operation
+        /// and waiting for its completion, with values of
+        /// <see cref="AdminTimeout"/> and <see cref="AdminPollTimeout"/>
+        /// correspondingly (the latter defaults to no timeout if
+        /// <see cref="AdminPollTimeout"/> is not set).
         /// </para>
         /// </remarks>
         /// <value>

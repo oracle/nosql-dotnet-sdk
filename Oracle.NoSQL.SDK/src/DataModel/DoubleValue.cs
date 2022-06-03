@@ -166,17 +166,15 @@ namespace Oracle.NoSQL.SDK
             }
         }
 
-        internal override int QueryHashCode()
+        internal static int QueryHashCode(double value)
         {
-            try
-            {
-                return NumberValue.QueryHashCode((decimal)value);
-            }
-            catch (OverflowException)
-            {
-                return value.GetHashCode();
-            }
+            var longValue = unchecked((long)value);
+            return value.Equals(longValue)
+                ? LongValue.QueryHashCode(longValue)
+                : value.GetHashCode();
         }
+
+        internal override int QueryHashCode() => QueryHashCode(value);
 
         internal override long GetMemorySize() =>
             GetObjectSize(sizeof(double));

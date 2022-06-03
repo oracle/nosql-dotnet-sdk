@@ -195,7 +195,10 @@ namespace Oracle.NoSQL.SDK {
         /// </returns>
         /// <exception cref="ArgumentException"> If
         /// <paramref name="preparedStatement"/> is <c>null</c> or invalid or
-        /// <paramref name="options"/> contains invalid values.
+        /// <paramref name="options"/> contains invalid values or if the
+        /// statement uses external variables and there is a variable that
+        /// was not bound or if a variable was bound that is not present in
+        /// the query.
         /// </exception>
         /// <exception cref="TimeoutException">Operation has timed out.
         /// </exception>
@@ -314,7 +317,10 @@ namespace Oracle.NoSQL.SDK {
         /// <see cref="QueryResult{TRow}"/> objects.</returns>
         /// <exception cref="ArgumentException"> If
         /// <paramref name="preparedStatement"/> is <c>null</c> or invalid or
-        /// <paramref name="options"/> contains invalid values.
+        /// <paramref name="options"/> contains invalid values or if the
+        /// statement uses external variables and there is a variable that
+        /// was not bound or if a variable was bound that is not present in
+        /// the query.
         /// </exception>
         /// <exception cref="TimeoutException">Operation has timed out.
         /// </exception>

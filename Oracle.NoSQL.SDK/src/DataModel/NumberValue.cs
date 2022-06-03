@@ -8,6 +8,7 @@
 namespace Oracle.NoSQL.SDK
 {
     using System;
+    using System.Globalization;
     using System.Text.Json;
     using static SizeOf;
 
@@ -51,13 +52,17 @@ namespace Oracle.NoSQL.SDK
     {
         private decimal value;
 
-        // Compare with greatest possible precision
+        // Note that the default conversion as below may be imprecise since
+        // the result will be rounded to a maximum of 15 significant digits.
+        private static decimal DoubleToDecimal(double value) =>
+            Convert.ToDecimal(value);
+
         internal static int CompareDecimalDouble(decimal value1,
             double value2)
         {
             try
             {
-                return value1.CompareTo((decimal)value2);
+                return value1.CompareTo(DoubleToDecimal(value2));
             }
             catch (OverflowException)
             {
@@ -70,7 +75,7 @@ namespace Oracle.NoSQL.SDK
         {
             try
             {
-                return value1.Equals((decimal)value2);
+                return value1.Equals(DoubleToDecimal(value2));
             }
             catch (OverflowException)
             {
@@ -197,9 +202,10 @@ namespace Oracle.NoSQL.SDK
 
         internal static int QueryHashCode(decimal value)
         {
-            var longValue = (long)value;
-            return longValue == value ? LongValue.QueryHashCode(longValue) :
-                value.GetHashCode();
+            var doubleValue = Convert.ToDouble(value);
+            return DecimalDoubleEquals(value, doubleValue)
+                ? DoubleValue.QueryHashCode(doubleValue)
+                : value.GetHashCode();
         }
 
         internal override long GetMemorySize() =>
