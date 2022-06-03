@@ -13,6 +13,7 @@ by position in the query string.
 * Support for rate limiting.
 * Support for proxy V3 protocol including features such as on-demand tables,
 durability and new result fields for row modification time.
+* Added new regions for cloud service: mad, lin, cdg, qro, mtz, vcp, brs, ukb.
 
 **Changed**
 
