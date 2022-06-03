@@ -279,7 +279,7 @@ namespace Oracle.NoSQL.SDK.Tests
             TableLimits actual)
         {
             Assert.AreEqual(expected.CapacityMode, actual.CapacityMode);
-            
+
             if (expected.CapacityMode == CapacityMode.Provisioned)
             {
                 Assert.AreEqual(expected.ReadUnits, actual.ReadUnits);

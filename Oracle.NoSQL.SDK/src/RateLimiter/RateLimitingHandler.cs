@@ -20,7 +20,7 @@ namespace Oracle.NoSQL.SDK
         internal IRateLimiter WriteRateLimiter { get; set; }
 
         internal int ReadUnits { get; set; }
-        
+
         internal int WriteUnits { get; set; }
     }
 
@@ -97,7 +97,7 @@ namespace Oracle.NoSQL.SDK
                     config.RateLimiterPercent > 100))
             {
                 throw new ArgumentOutOfRangeException(
-                    nameof(config.RateLimiterPercent), 
+                    nameof(config.RateLimiterPercent),
                     "RateLimiterPercent must be > 0 and <= 100, got " +
                         config.RateLimiterPercent);
             }

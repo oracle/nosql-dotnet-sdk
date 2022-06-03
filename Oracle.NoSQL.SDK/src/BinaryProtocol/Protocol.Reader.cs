@@ -17,7 +17,7 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
     internal static partial class Protocol
     {
         internal const short V2 = 2;
-        
+
         internal const short V3 = 3;
 
         // Some values of type Number will not fit into decimal type because

@@ -46,7 +46,7 @@ namespace Oracle.NoSQL.SDK.Tests
             new Durability(SyncPolicy.NoSync, (SyncPolicy)100,
                 ReplicaAckPolicy.None),
             new Durability(SyncPolicy.WriteNoSync, SyncPolicy.NoSync,
-                (ReplicaAckPolicy)(-1)), 
+                (ReplicaAckPolicy)(-1)),
             new Durability(SyncPolicy.WriteNoSync, SyncPolicy.NoSync,
                 (ReplicaAckPolicy)25)
         };

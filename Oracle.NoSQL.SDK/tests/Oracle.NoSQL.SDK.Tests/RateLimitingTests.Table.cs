@@ -392,7 +392,7 @@ namespace Oracle.NoSQL.SDK.Tests
         private static NoSQLConfig MakeConfig(TestCase testCase, Stats stats)
         {
             var config = client.Config.Clone();
-            
+
             config.RateLimitingEnabled = true;
             config.RateLimiterPercent = testCase.RateLimiterPercent;
             config.RateLimiterCreator = testCase.RateLimiterCreator;

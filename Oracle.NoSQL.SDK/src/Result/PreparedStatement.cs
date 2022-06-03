@@ -44,9 +44,8 @@ namespace Oracle.NoSQL.SDK
     /// An instance of <see cref="PreparedStatement"/> is thread-safe if bind
     /// variables are <em>not</em> used.  If bind variables are used, it is
     /// not thread-safe.  In this case, you can construct additional instances
-    /// of <see cref="PreparedStatement"/> using
-    /// <see cref="PreparedStatement.CopyStatement"/> in order to share the
-    /// prepared statement among threads.
+    /// of <see cref="PreparedStatement"/> using <see cref="CopyStatement"/>
+    /// in order to share the prepared statement among threads.
     /// </para>
     /// </remarks>
     /// <example>
@@ -59,8 +58,9 @@ namespace Oracle.NoSQL.SDK
     ///     "id &lt;= $id AND salary &lt;= $salary");
     ///
     /// // Set bind variables.
-    /// preparedStatement.Variables["$id"] = 1100;
-    /// preparedStatement.Variables["$salary"] = 100500;
+    /// preparedStatement
+    ///     .SetVariable("$id", 1100)
+    ///     .SetVariable("$salary", 100500);
     ///
     /// // Execute the query.
     /// await foreach(var result in
@@ -73,7 +73,7 @@ namespace Oracle.NoSQL.SDK
     /// }
     ///
     /// // Change the value of the bind variable.
-    /// preparedStatement.variables["$id"] = 2000;
+    /// preparedStatement.SetVariable("$id", 2000);
     ///
     /// // Execute the query again.
     /// await foreach(var result in
@@ -190,7 +190,7 @@ namespace Oracle.NoSQL.SDK
         /// var preparedStatement = await client.PrepareAsync(
         ///     "SELECT * FROM orders WHERE quantity > $qty AND " +
         ///     "city = $city AND date = $date");
-        /// 
+        ///
         /// // Set variables of different types.
         /// preparedStatement
         ///     .SetVariable("$qty", 1000)
@@ -201,7 +201,7 @@ namespace Oracle.NoSQL.SDK
         /// await foreach(var result in
         ///     client.GetQueryAsyncEnumerable(preparedStatement))
         /// {
-        ///     // .....    
+        ///     // .....
         /// }
         /// </code>
         /// </example>
@@ -248,16 +248,16 @@ namespace Oracle.NoSQL.SDK
         /// var preparedStatement = await client.PrepareAsync(
         ///     "SELECT * FROM users u where u.firstName = ? AND " +
         ///     "u.address.city = ?");
-        /// 
+        ///
         /// preparedStatement
         ///     .SetVariable(1, "John")
         ///     .SetVariable(2, "Redwood City");
-        /// 
+        ///
         /// // Execute the query.
         /// await foreach(var result in
         ///     client.GetQueryAsyncEnumerable(preparedStatement))
         /// {
-        ///     // .....    
+        ///     // .....
         /// }
         /// </code>
         /// </example>

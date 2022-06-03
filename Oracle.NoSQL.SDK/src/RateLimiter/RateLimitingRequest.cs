@@ -12,7 +12,7 @@ namespace Oracle.NoSQL.SDK
     using System.Diagnostics;
     using System.Threading;
     using System.Threading.Tasks;
-    
+
     internal class RateLimitingRequest
     {
         private readonly RateLimitingHandler handler;

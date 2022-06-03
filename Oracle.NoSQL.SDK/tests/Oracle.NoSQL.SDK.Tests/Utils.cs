@@ -112,7 +112,7 @@ namespace Oracle.NoSQL.SDK.Tests
             value = DeepCopy(value);
             return AssignProperties(value, properties);
         }
-        
+
         private class CustomComparison<T> : IComparison
         {
             private readonly Func<T,T,bool> comparator;

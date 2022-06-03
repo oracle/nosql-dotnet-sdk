@@ -151,7 +151,7 @@ namespace Oracle.NoSQL.SDK
         {
             var result = $"ReadUnits: {ReadUnits}, ReadKB: {ReadKB}, " +
                          $"WriteUnits: {WriteUnits}, WriteKB: {WriteKB}";
-            
+
             var rateLimitingDelay = RateLimitDelay;
             if (rateLimitingDelay != TimeSpan.Zero)
             {

@@ -72,7 +72,7 @@ namespace Oracle.NoSQL.SDK
                     {
                         await rlReq.Start(cancellationToken);
                     }
-                    
+
                     var result = await client.ExecuteRequestAsync(request,
                         cancellationToken);
                     request.ApplyResult(result);
@@ -87,7 +87,7 @@ namespace Oracle.NoSQL.SDK
                 {
                     request.AddException(ex);
                     rlReq?.HandleException(ex);
-                    
+
                     if (ex is SecurityInfoNotReadyException &&
                         timeout < Config.SecurityInfoNotReadyTimeout)
                     {
@@ -325,7 +325,7 @@ namespace Oracle.NoSQL.SDK
                 {
                     adminPollTimeout -=
                         DateTime.Now + adminPollDelay - startTime;
-                    
+
                     if (adminPollTimeout <= TimeSpan.Zero)
                     {
                         throw new TimeoutException(

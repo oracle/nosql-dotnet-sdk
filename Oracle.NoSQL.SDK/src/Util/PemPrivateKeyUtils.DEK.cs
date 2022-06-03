@@ -63,7 +63,7 @@ namespace Oracle.NoSQL.SDK {
 #if NET5_0_OR_GREATER
             return Convert.FromHexString(s);
 #else
-            
+
             var bytes = new byte[s.Length >> 1];
             for (var i = 0; i < bytes.Length; i++)
             {
@@ -97,7 +97,7 @@ namespace Oracle.NoSQL.SDK {
 
             var key = new byte[keySize];
             var offset = 0;
-        
+
             for (;;)
             {
                 digest.TransformBlock(pwd, 0, pwd.Length, null, 0);

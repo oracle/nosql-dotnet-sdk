@@ -508,7 +508,7 @@ namespace Oracle.NoSQL.SDK
         /// <see cref="PutOptions.Durability"/>,
         /// <see cref="DeleteOptions.Durability"/>,
         /// <see cref="DeleteRangeOptions.Durability"/> and
-        /// <see cref="WriteManyOptions.Durability"/>.  
+        /// <see cref="WriteManyOptions.Durability"/>.
         /// </remarks>
         /// <value>
         /// Durability used for write operations.  If not set, the
