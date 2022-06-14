@@ -36,7 +36,7 @@ namespace Oracle.NoSQL.SDK {
     ///         // We can also use ExecuteTableDDLWithCompletionAsync()
     ///         var tableResult = await client.ExecuteTableDDLAsync(
     ///             "CREATE TABLE foo(id INTEGER, name STRING, PRIMARY KEY(id))",
-    ///             new TableLimits(100, 100, 50))";
+    ///             new TableLimits(100, 100, 50));
     ///
     ///         await tableResult.WaitForCompletionAsync();
     ///         Console.WriteLine("Table name: {0}, table state: {1}",

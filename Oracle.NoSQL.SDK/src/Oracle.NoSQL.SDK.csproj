@@ -17,7 +17,7 @@
     <PackageReleaseNotes>Initial release.
     </PackageReleaseNotes>
     <PackageIcon>Icon.png</PackageIcon>
-    <Version>5.3.1</Version>
+    <Version>5.1.4</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
