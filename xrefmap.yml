@@ -640,6 +640,30 @@ references:
   commentId: F:Oracle.NoSQL.SDK.BooleanValue.True
   fullName: Oracle.NoSQL.SDK.BooleanValue.True
   nameWithType: BooleanValue.True
+- uid: Oracle.NoSQL.SDK.CapacityMode
+  name: CapacityMode
+  href: api/Oracle.NoSQL.SDK.CapacityMode.html
+  commentId: T:Oracle.NoSQL.SDK.CapacityMode
+  fullName: Oracle.NoSQL.SDK.CapacityMode
+  nameWithType: CapacityMode
+- uid: Oracle.NoSQL.SDK.CapacityMode.OnDemand
+  name: OnDemand
+  href: api/Oracle.NoSQL.SDK.CapacityMode.OnDemand.html#Oracle_NoSQL_SDK_CapacityMode_OnDemand
+  commentId: F:Oracle.NoSQL.SDK.CapacityMode.OnDemand
+  fullName: Oracle.NoSQL.SDK.CapacityMode.OnDemand
+  nameWithType: CapacityMode.OnDemand
+- uid: Oracle.NoSQL.SDK.CapacityMode.Provisioned
+  name: Provisioned
+  href: api/Oracle.NoSQL.SDK.CapacityMode.Provisioned.html#Oracle_NoSQL_SDK_CapacityMode_Provisioned
+  commentId: F:Oracle.NoSQL.SDK.CapacityMode.Provisioned
+  fullName: Oracle.NoSQL.SDK.CapacityMode.Provisioned
+  nameWithType: CapacityMode.Provisioned
+- uid: Oracle.NoSQL.SDK.CapacityMode.value__
+  name: value__
+  href: api/Oracle.NoSQL.SDK.CapacityMode.value__.html#Oracle_NoSQL_SDK_CapacityMode_value__
+  commentId: F:Oracle.NoSQL.SDK.CapacityMode.value__
+  fullName: Oracle.NoSQL.SDK.CapacityMode.value__
+  nameWithType: CapacityMode.value__
 - uid: Oracle.NoSQL.SDK.ConnectionOptions
   name: ConnectionOptions
   href: api/Oracle.NoSQL.SDK.ConnectionOptions.html
@@ -712,6 +736,18 @@ references:
   commentId: T:Oracle.NoSQL.SDK.ConsumedCapacity
   fullName: Oracle.NoSQL.SDK.ConsumedCapacity
   nameWithType: ConsumedCapacity
+- uid: Oracle.NoSQL.SDK.ConsumedCapacity.RateLimitDelay
+  name: RateLimitDelay
+  href: api/Oracle.NoSQL.SDK.ConsumedCapacity.RateLimitDelay.html#Oracle_NoSQL_SDK_ConsumedCapacity_RateLimitDelay
+  commentId: P:Oracle.NoSQL.SDK.ConsumedCapacity.RateLimitDelay
+  fullName: Oracle.NoSQL.SDK.ConsumedCapacity.RateLimitDelay
+  nameWithType: ConsumedCapacity.RateLimitDelay
+- uid: Oracle.NoSQL.SDK.ConsumedCapacity.RateLimitDelay*
+  name: RateLimitDelay
+  href: api/Oracle.NoSQL.SDK.ConsumedCapacity.RateLimitDelay.html
+  commentId: Overload:Oracle.NoSQL.SDK.ConsumedCapacity.RateLimitDelay
+  fullName: Oracle.NoSQL.SDK.ConsumedCapacity.RateLimitDelay
+  nameWithType: ConsumedCapacity.RateLimitDelay
 - uid: Oracle.NoSQL.SDK.ConsumedCapacity.ReadKB
   name: ReadKB
   href: api/Oracle.NoSQL.SDK.ConsumedCapacity.ReadKB.html#Oracle_NoSQL_SDK_ConsumedCapacity_ReadKB
@@ -724,6 +760,18 @@ references:
   commentId: Overload:Oracle.NoSQL.SDK.ConsumedCapacity.ReadKB
   fullName: Oracle.NoSQL.SDK.ConsumedCapacity.ReadKB
   nameWithType: ConsumedCapacity.ReadKB
+- uid: Oracle.NoSQL.SDK.ConsumedCapacity.ReadRateLimitDelay
+  name: ReadRateLimitDelay
+  href: api/Oracle.NoSQL.SDK.ConsumedCapacity.ReadRateLimitDelay.html#Oracle_NoSQL_SDK_ConsumedCapacity_ReadRateLimitDelay
+  commentId: P:Oracle.NoSQL.SDK.ConsumedCapacity.ReadRateLimitDelay
+  fullName: Oracle.NoSQL.SDK.ConsumedCapacity.ReadRateLimitDelay
+  nameWithType: ConsumedCapacity.ReadRateLimitDelay
+- uid: Oracle.NoSQL.SDK.ConsumedCapacity.ReadRateLimitDelay*
+  name: ReadRateLimitDelay
+  href: api/Oracle.NoSQL.SDK.ConsumedCapacity.ReadRateLimitDelay.html
+  commentId: Overload:Oracle.NoSQL.SDK.ConsumedCapacity.ReadRateLimitDelay
+  fullName: Oracle.NoSQL.SDK.ConsumedCapacity.ReadRateLimitDelay
+  nameWithType: ConsumedCapacity.ReadRateLimitDelay
 - uid: Oracle.NoSQL.SDK.ConsumedCapacity.ReadUnits
   name: ReadUnits
   href: api/Oracle.NoSQL.SDK.ConsumedCapacity.ReadUnits.html#Oracle_NoSQL_SDK_ConsumedCapacity_ReadUnits
@@ -760,6 +808,18 @@ references:
   commentId: Overload:Oracle.NoSQL.SDK.ConsumedCapacity.WriteKB
   fullName: Oracle.NoSQL.SDK.ConsumedCapacity.WriteKB
   nameWithType: ConsumedCapacity.WriteKB
+- uid: Oracle.NoSQL.SDK.ConsumedCapacity.WriteRateLimitDelay
+  name: WriteRateLimitDelay
+  href: api/Oracle.NoSQL.SDK.ConsumedCapacity.WriteRateLimitDelay.html#Oracle_NoSQL_SDK_ConsumedCapacity_WriteRateLimitDelay
+  commentId: P:Oracle.NoSQL.SDK.ConsumedCapacity.WriteRateLimitDelay
+  fullName: Oracle.NoSQL.SDK.ConsumedCapacity.WriteRateLimitDelay
+  nameWithType: ConsumedCapacity.WriteRateLimitDelay
+- uid: Oracle.NoSQL.SDK.ConsumedCapacity.WriteRateLimitDelay*
+  name: WriteRateLimitDelay
+  href: api/Oracle.NoSQL.SDK.ConsumedCapacity.WriteRateLimitDelay.html
+  commentId: Overload:Oracle.NoSQL.SDK.ConsumedCapacity.WriteRateLimitDelay
+  fullName: Oracle.NoSQL.SDK.ConsumedCapacity.WriteRateLimitDelay
+  nameWithType: ConsumedCapacity.WriteRateLimitDelay
 - uid: Oracle.NoSQL.SDK.ConsumedCapacity.WriteUnits
   name: WriteUnits
   href: api/Oracle.NoSQL.SDK.ConsumedCapacity.WriteUnits.html#Oracle_NoSQL_SDK_ConsumedCapacity_WriteUnits
@@ -1037,6 +1097,18 @@ references:
   commentId: Overload:Oracle.NoSQL.SDK.DeleteOptions.Compartment
   fullName: Oracle.NoSQL.SDK.DeleteOptions.Compartment
   nameWithType: DeleteOptions.Compartment
+- uid: Oracle.NoSQL.SDK.DeleteOptions.Durability
+  name: Durability
+  href: api/Oracle.NoSQL.SDK.DeleteOptions.Durability.html#Oracle_NoSQL_SDK_DeleteOptions_Durability
+  commentId: P:Oracle.NoSQL.SDK.DeleteOptions.Durability
+  fullName: Oracle.NoSQL.SDK.DeleteOptions.Durability
+  nameWithType: DeleteOptions.Durability
+- uid: Oracle.NoSQL.SDK.DeleteOptions.Durability*
+  name: Durability
+  href: api/Oracle.NoSQL.SDK.DeleteOptions.Durability.html
+  commentId: Overload:Oracle.NoSQL.SDK.DeleteOptions.Durability
+  fullName: Oracle.NoSQL.SDK.DeleteOptions.Durability
+  nameWithType: DeleteOptions.Durability
 - uid: Oracle.NoSQL.SDK.DeleteOptions.MatchVersion
   name: MatchVersion
   href: api/Oracle.NoSQL.SDK.DeleteOptions.MatchVersion.html#Oracle_NoSQL_SDK_DeleteOptions_MatchVersion
@@ -1121,6 +1193,18 @@ references:
   commentId: Overload:Oracle.NoSQL.SDK.DeleteRangeOptions.ContinuationKey
   fullName: Oracle.NoSQL.SDK.DeleteRangeOptions.ContinuationKey
   nameWithType: DeleteRangeOptions.ContinuationKey
+- uid: Oracle.NoSQL.SDK.DeleteRangeOptions.Durability
+  name: Durability
+  href: api/Oracle.NoSQL.SDK.DeleteRangeOptions.Durability.html#Oracle_NoSQL_SDK_DeleteRangeOptions_Durability
+  commentId: P:Oracle.NoSQL.SDK.DeleteRangeOptions.Durability
+  fullName: Oracle.NoSQL.SDK.DeleteRangeOptions.Durability
+  nameWithType: DeleteRangeOptions.Durability
+- uid: Oracle.NoSQL.SDK.DeleteRangeOptions.Durability*
+  name: Durability
+  href: api/Oracle.NoSQL.SDK.DeleteRangeOptions.Durability.html
+  commentId: Overload:Oracle.NoSQL.SDK.DeleteRangeOptions.Durability
+  fullName: Oracle.NoSQL.SDK.DeleteRangeOptions.Durability
+  nameWithType: DeleteRangeOptions.Durability
 - uid: Oracle.NoSQL.SDK.DeleteRangeOptions.FieldRange
   name: FieldRange
   href: api/Oracle.NoSQL.SDK.DeleteRangeOptions.FieldRange.html#Oracle_NoSQL_SDK_DeleteRangeOptions_FieldRange
@@ -1335,6 +1419,22 @@ references:
   fullName.vb: Oracle.NoSQL.SDK.DeleteResult(Of TRow).ConsumedCapacity
   nameWithType: DeleteResult<TRow>.ConsumedCapacity
   nameWithType.vb: DeleteResult(Of TRow).ConsumedCapacity
+- uid: Oracle.NoSQL.SDK.DeleteResult`1.ExistingModificationTime
+  name: ExistingModificationTime
+  href: api/Oracle.NoSQL.SDK.DeleteResult-1.ExistingModificationTime.html#Oracle_NoSQL_SDK_DeleteResult_1_ExistingModificationTime
+  commentId: P:Oracle.NoSQL.SDK.DeleteResult`1.ExistingModificationTime
+  fullName: Oracle.NoSQL.SDK.DeleteResult<TRow>.ExistingModificationTime
+  fullName.vb: Oracle.NoSQL.SDK.DeleteResult(Of TRow).ExistingModificationTime
+  nameWithType: DeleteResult<TRow>.ExistingModificationTime
+  nameWithType.vb: DeleteResult(Of TRow).ExistingModificationTime
+- uid: Oracle.NoSQL.SDK.DeleteResult`1.ExistingModificationTime*
+  name: ExistingModificationTime
+  href: api/Oracle.NoSQL.SDK.DeleteResult-1.ExistingModificationTime.html
+  commentId: Overload:Oracle.NoSQL.SDK.DeleteResult`1.ExistingModificationTime
+  fullName: Oracle.NoSQL.SDK.DeleteResult<TRow>.ExistingModificationTime
+  fullName.vb: Oracle.NoSQL.SDK.DeleteResult(Of TRow).ExistingModificationTime
+  nameWithType: DeleteResult<TRow>.ExistingModificationTime
+  nameWithType.vb: DeleteResult(Of TRow).ExistingModificationTime
 - uid: Oracle.NoSQL.SDK.DeleteResult`1.ExistingRow
   name: ExistingRow
   href: api/Oracle.NoSQL.SDK.DeleteResult-1.ExistingRow.html#Oracle_NoSQL_SDK_DeleteResult_1_ExistingRow
@@ -1503,6 +1603,132 @@ references:
   commentId: Overload:Oracle.NoSQL.SDK.DoubleValue.ToInt64
   fullName: Oracle.NoSQL.SDK.DoubleValue.ToInt64
   nameWithType: DoubleValue.ToInt64
+- uid: Oracle.NoSQL.SDK.Durability
+  name: Durability
+  href: api/Oracle.NoSQL.SDK.Durability.html
+  commentId: T:Oracle.NoSQL.SDK.Durability
+  fullName: Oracle.NoSQL.SDK.Durability
+  nameWithType: Durability
+- uid: Oracle.NoSQL.SDK.Durability.#ctor(Oracle.NoSQL.SDK.SyncPolicy,Oracle.NoSQL.SDK.SyncPolicy,Oracle.NoSQL.SDK.ReplicaAckPolicy)
+  name: Durability(SyncPolicy, SyncPolicy, ReplicaAckPolicy)
+  href: api/Oracle.NoSQL.SDK.Durability.-ctor.html#Oracle_NoSQL_SDK_Durability__ctor_Oracle_NoSQL_SDK_SyncPolicy_Oracle_NoSQL_SDK_SyncPolicy_Oracle_NoSQL_SDK_ReplicaAckPolicy_
+  commentId: M:Oracle.NoSQL.SDK.Durability.#ctor(Oracle.NoSQL.SDK.SyncPolicy,Oracle.NoSQL.SDK.SyncPolicy,Oracle.NoSQL.SDK.ReplicaAckPolicy)
+  fullName: Oracle.NoSQL.SDK.Durability.Durability(Oracle.NoSQL.SDK.SyncPolicy, Oracle.NoSQL.SDK.SyncPolicy, Oracle.NoSQL.SDK.ReplicaAckPolicy)
+  nameWithType: Durability.Durability(SyncPolicy, SyncPolicy, ReplicaAckPolicy)
+- uid: Oracle.NoSQL.SDK.Durability.#ctor*
+  name: Durability
+  href: api/Oracle.NoSQL.SDK.Durability.-ctor.html
+  commentId: Overload:Oracle.NoSQL.SDK.Durability.#ctor
+  fullName: Oracle.NoSQL.SDK.Durability.Durability
+  nameWithType: Durability.Durability
+- uid: Oracle.NoSQL.SDK.Durability.CommitNoSync
+  name: CommitNoSync
+  href: api/Oracle.NoSQL.SDK.Durability.CommitNoSync.html#Oracle_NoSQL_SDK_Durability_CommitNoSync
+  commentId: F:Oracle.NoSQL.SDK.Durability.CommitNoSync
+  fullName: Oracle.NoSQL.SDK.Durability.CommitNoSync
+  nameWithType: Durability.CommitNoSync
+- uid: Oracle.NoSQL.SDK.Durability.CommitSync
+  name: CommitSync
+  href: api/Oracle.NoSQL.SDK.Durability.CommitSync.html#Oracle_NoSQL_SDK_Durability_CommitSync
+  commentId: F:Oracle.NoSQL.SDK.Durability.CommitSync
+  fullName: Oracle.NoSQL.SDK.Durability.CommitSync
+  nameWithType: Durability.CommitSync
+- uid: Oracle.NoSQL.SDK.Durability.CommitWriteNoSync
+  name: CommitWriteNoSync
+  href: api/Oracle.NoSQL.SDK.Durability.CommitWriteNoSync.html#Oracle_NoSQL_SDK_Durability_CommitWriteNoSync
+  commentId: F:Oracle.NoSQL.SDK.Durability.CommitWriteNoSync
+  fullName: Oracle.NoSQL.SDK.Durability.CommitWriteNoSync
+  nameWithType: Durability.CommitWriteNoSync
+- uid: Oracle.NoSQL.SDK.Durability.Equals(Oracle.NoSQL.SDK.Durability)
+  name: Equals(Durability)
+  href: api/Oracle.NoSQL.SDK.Durability.Equals.html#Oracle_NoSQL_SDK_Durability_Equals_Oracle_NoSQL_SDK_Durability_
+  commentId: M:Oracle.NoSQL.SDK.Durability.Equals(Oracle.NoSQL.SDK.Durability)
+  fullName: Oracle.NoSQL.SDK.Durability.Equals(Oracle.NoSQL.SDK.Durability)
+  nameWithType: Durability.Equals(Durability)
+- uid: Oracle.NoSQL.SDK.Durability.Equals(System.Object)
+  name: Equals(Object)
+  href: api/Oracle.NoSQL.SDK.Durability.Equals.html#Oracle_NoSQL_SDK_Durability_Equals_System_Object_
+  commentId: M:Oracle.NoSQL.SDK.Durability.Equals(System.Object)
+  fullName: Oracle.NoSQL.SDK.Durability.Equals(System.Object)
+  nameWithType: Durability.Equals(Object)
+- uid: Oracle.NoSQL.SDK.Durability.Equals*
+  name: Equals
+  href: api/Oracle.NoSQL.SDK.Durability.Equals.html
+  commentId: Overload:Oracle.NoSQL.SDK.Durability.Equals
+  fullName: Oracle.NoSQL.SDK.Durability.Equals
+  nameWithType: Durability.Equals
+- uid: Oracle.NoSQL.SDK.Durability.GetHashCode
+  name: GetHashCode()
+  href: api/Oracle.NoSQL.SDK.Durability.GetHashCode.html#Oracle_NoSQL_SDK_Durability_GetHashCode
+  commentId: M:Oracle.NoSQL.SDK.Durability.GetHashCode
+  fullName: Oracle.NoSQL.SDK.Durability.GetHashCode()
+  nameWithType: Durability.GetHashCode()
+- uid: Oracle.NoSQL.SDK.Durability.GetHashCode*
+  name: GetHashCode
+  href: api/Oracle.NoSQL.SDK.Durability.GetHashCode.html
+  commentId: Overload:Oracle.NoSQL.SDK.Durability.GetHashCode
+  fullName: Oracle.NoSQL.SDK.Durability.GetHashCode
+  nameWithType: Durability.GetHashCode
+- uid: Oracle.NoSQL.SDK.Durability.MasterSync
+  name: MasterSync
+  href: api/Oracle.NoSQL.SDK.Durability.MasterSync.html#Oracle_NoSQL_SDK_Durability_MasterSync
+  commentId: P:Oracle.NoSQL.SDK.Durability.MasterSync
+  fullName: Oracle.NoSQL.SDK.Durability.MasterSync
+  nameWithType: Durability.MasterSync
+- uid: Oracle.NoSQL.SDK.Durability.MasterSync*
+  name: MasterSync
+  href: api/Oracle.NoSQL.SDK.Durability.MasterSync.html
+  commentId: Overload:Oracle.NoSQL.SDK.Durability.MasterSync
+  fullName: Oracle.NoSQL.SDK.Durability.MasterSync
+  nameWithType: Durability.MasterSync
+- uid: Oracle.NoSQL.SDK.Durability.op_Equality(Oracle.NoSQL.SDK.Durability,Oracle.NoSQL.SDK.Durability)
+  name: Equality(Durability, Durability)
+  href: api/Oracle.NoSQL.SDK.Durability.op_Equality.html#Oracle_NoSQL_SDK_Durability_op_Equality_Oracle_NoSQL_SDK_Durability_Oracle_NoSQL_SDK_Durability_
+  commentId: M:Oracle.NoSQL.SDK.Durability.op_Equality(Oracle.NoSQL.SDK.Durability,Oracle.NoSQL.SDK.Durability)
+  fullName: Oracle.NoSQL.SDK.Durability.Equality(Oracle.NoSQL.SDK.Durability, Oracle.NoSQL.SDK.Durability)
+  nameWithType: Durability.Equality(Durability, Durability)
+- uid: Oracle.NoSQL.SDK.Durability.op_Equality*
+  name: Equality
+  href: api/Oracle.NoSQL.SDK.Durability.op_Equality.html
+  commentId: Overload:Oracle.NoSQL.SDK.Durability.op_Equality
+  fullName: Oracle.NoSQL.SDK.Durability.Equality
+  nameWithType: Durability.Equality
+- uid: Oracle.NoSQL.SDK.Durability.op_Inequality(Oracle.NoSQL.SDK.Durability,Oracle.NoSQL.SDK.Durability)
+  name: Inequality(Durability, Durability)
+  href: api/Oracle.NoSQL.SDK.Durability.op_Inequality.html#Oracle_NoSQL_SDK_Durability_op_Inequality_Oracle_NoSQL_SDK_Durability_Oracle_NoSQL_SDK_Durability_
+  commentId: M:Oracle.NoSQL.SDK.Durability.op_Inequality(Oracle.NoSQL.SDK.Durability,Oracle.NoSQL.SDK.Durability)
+  fullName: Oracle.NoSQL.SDK.Durability.Inequality(Oracle.NoSQL.SDK.Durability, Oracle.NoSQL.SDK.Durability)
+  nameWithType: Durability.Inequality(Durability, Durability)
+- uid: Oracle.NoSQL.SDK.Durability.op_Inequality*
+  name: Inequality
+  href: api/Oracle.NoSQL.SDK.Durability.op_Inequality.html
+  commentId: Overload:Oracle.NoSQL.SDK.Durability.op_Inequality
+  fullName: Oracle.NoSQL.SDK.Durability.Inequality
+  nameWithType: Durability.Inequality
+- uid: Oracle.NoSQL.SDK.Durability.ReplicaAck
+  name: ReplicaAck
+  href: api/Oracle.NoSQL.SDK.Durability.ReplicaAck.html#Oracle_NoSQL_SDK_Durability_ReplicaAck
+  commentId: P:Oracle.NoSQL.SDK.Durability.ReplicaAck
+  fullName: Oracle.NoSQL.SDK.Durability.ReplicaAck
+  nameWithType: Durability.ReplicaAck
+- uid: Oracle.NoSQL.SDK.Durability.ReplicaAck*
+  name: ReplicaAck
+  href: api/Oracle.NoSQL.SDK.Durability.ReplicaAck.html
+  commentId: Overload:Oracle.NoSQL.SDK.Durability.ReplicaAck
+  fullName: Oracle.NoSQL.SDK.Durability.ReplicaAck
+  nameWithType: Durability.ReplicaAck
+- uid: Oracle.NoSQL.SDK.Durability.ReplicaSync
+  name: ReplicaSync
+  href: api/Oracle.NoSQL.SDK.Durability.ReplicaSync.html#Oracle_NoSQL_SDK_Durability_ReplicaSync
+  commentId: P:Oracle.NoSQL.SDK.Durability.ReplicaSync
+  fullName: Oracle.NoSQL.SDK.Durability.ReplicaSync
+  nameWithType: Durability.ReplicaSync
+- uid: Oracle.NoSQL.SDK.Durability.ReplicaSync*
+  name: ReplicaSync
+  href: api/Oracle.NoSQL.SDK.Durability.ReplicaSync.html
+  commentId: Overload:Oracle.NoSQL.SDK.Durability.ReplicaSync
+  fullName: Oracle.NoSQL.SDK.Durability.ReplicaSync
+  nameWithType: Durability.ReplicaSync
 - uid: Oracle.NoSQL.SDK.EvolutionLimitException
   name: EvolutionLimitException
   href: api/Oracle.NoSQL.SDK.EvolutionLimitException.html
@@ -2552,6 +2778,22 @@ references:
   fullName.vb: Oracle.NoSQL.SDK.GetResult(Of TRow).ExpirationTime
   nameWithType: GetResult<TRow>.ExpirationTime
   nameWithType.vb: GetResult(Of TRow).ExpirationTime
+- uid: Oracle.NoSQL.SDK.GetResult`1.ModificationTime
+  name: ModificationTime
+  href: api/Oracle.NoSQL.SDK.GetResult-1.ModificationTime.html#Oracle_NoSQL_SDK_GetResult_1_ModificationTime
+  commentId: P:Oracle.NoSQL.SDK.GetResult`1.ModificationTime
+  fullName: Oracle.NoSQL.SDK.GetResult<TRow>.ModificationTime
+  fullName.vb: Oracle.NoSQL.SDK.GetResult(Of TRow).ModificationTime
+  nameWithType: GetResult<TRow>.ModificationTime
+  nameWithType.vb: GetResult(Of TRow).ModificationTime
+- uid: Oracle.NoSQL.SDK.GetResult`1.ModificationTime*
+  name: ModificationTime
+  href: api/Oracle.NoSQL.SDK.GetResult-1.ModificationTime.html
+  commentId: Overload:Oracle.NoSQL.SDK.GetResult`1.ModificationTime
+  fullName: Oracle.NoSQL.SDK.GetResult<TRow>.ModificationTime
+  fullName.vb: Oracle.NoSQL.SDK.GetResult(Of TRow).ModificationTime
+  nameWithType: GetResult<TRow>.ModificationTime
+  nameWithType.vb: GetResult(Of TRow).ModificationTime
 - uid: Oracle.NoSQL.SDK.GetResult`1.Row
   name: Row
   href: api/Oracle.NoSQL.SDK.GetResult-1.Row.html#Oracle_NoSQL_SDK_GetResult_1_Row
@@ -3400,6 +3642,48 @@ references:
   commentId: Overload:Oracle.NoSQL.SDK.InvalidAuthorizationException.#ctor
   fullName: Oracle.NoSQL.SDK.InvalidAuthorizationException.InvalidAuthorizationException
   nameWithType: InvalidAuthorizationException.InvalidAuthorizationException
+- uid: Oracle.NoSQL.SDK.IRateLimiter
+  name: IRateLimiter
+  href: api/Oracle.NoSQL.SDK.IRateLimiter.html
+  commentId: T:Oracle.NoSQL.SDK.IRateLimiter
+  fullName: Oracle.NoSQL.SDK.IRateLimiter
+  nameWithType: IRateLimiter
+- uid: Oracle.NoSQL.SDK.IRateLimiter.ConsumeUnitsAsync(System.Int32,System.TimeSpan,System.Boolean,System.Threading.CancellationToken)
+  name: ConsumeUnitsAsync(Int32, TimeSpan, Boolean, CancellationToken)
+  href: api/Oracle.NoSQL.SDK.IRateLimiter.ConsumeUnitsAsync.html#Oracle_NoSQL_SDK_IRateLimiter_ConsumeUnitsAsync_System_Int32_System_TimeSpan_System_Boolean_System_Threading_CancellationToken_
+  commentId: M:Oracle.NoSQL.SDK.IRateLimiter.ConsumeUnitsAsync(System.Int32,System.TimeSpan,System.Boolean,System.Threading.CancellationToken)
+  fullName: Oracle.NoSQL.SDK.IRateLimiter.ConsumeUnitsAsync(System.Int32, System.TimeSpan, System.Boolean, System.Threading.CancellationToken)
+  nameWithType: IRateLimiter.ConsumeUnitsAsync(Int32, TimeSpan, Boolean, CancellationToken)
+- uid: Oracle.NoSQL.SDK.IRateLimiter.ConsumeUnitsAsync*
+  name: ConsumeUnitsAsync
+  href: api/Oracle.NoSQL.SDK.IRateLimiter.ConsumeUnitsAsync.html
+  commentId: Overload:Oracle.NoSQL.SDK.IRateLimiter.ConsumeUnitsAsync
+  fullName: Oracle.NoSQL.SDK.IRateLimiter.ConsumeUnitsAsync
+  nameWithType: IRateLimiter.ConsumeUnitsAsync
+- uid: Oracle.NoSQL.SDK.IRateLimiter.HandleThrottlingException(Oracle.NoSQL.SDK.RetryableException)
+  name: HandleThrottlingException(RetryableException)
+  href: api/Oracle.NoSQL.SDK.IRateLimiter.HandleThrottlingException.html#Oracle_NoSQL_SDK_IRateLimiter_HandleThrottlingException_Oracle_NoSQL_SDK_RetryableException_
+  commentId: M:Oracle.NoSQL.SDK.IRateLimiter.HandleThrottlingException(Oracle.NoSQL.SDK.RetryableException)
+  fullName: Oracle.NoSQL.SDK.IRateLimiter.HandleThrottlingException(Oracle.NoSQL.SDK.RetryableException)
+  nameWithType: IRateLimiter.HandleThrottlingException(RetryableException)
+- uid: Oracle.NoSQL.SDK.IRateLimiter.HandleThrottlingException*
+  name: HandleThrottlingException
+  href: api/Oracle.NoSQL.SDK.IRateLimiter.HandleThrottlingException.html
+  commentId: Overload:Oracle.NoSQL.SDK.IRateLimiter.HandleThrottlingException
+  fullName: Oracle.NoSQL.SDK.IRateLimiter.HandleThrottlingException
+  nameWithType: IRateLimiter.HandleThrottlingException
+- uid: Oracle.NoSQL.SDK.IRateLimiter.SetLimit(System.Double)
+  name: SetLimit(Double)
+  href: api/Oracle.NoSQL.SDK.IRateLimiter.SetLimit.html#Oracle_NoSQL_SDK_IRateLimiter_SetLimit_System_Double_
+  commentId: M:Oracle.NoSQL.SDK.IRateLimiter.SetLimit(System.Double)
+  fullName: Oracle.NoSQL.SDK.IRateLimiter.SetLimit(System.Double)
+  nameWithType: IRateLimiter.SetLimit(Double)
+- uid: Oracle.NoSQL.SDK.IRateLimiter.SetLimit*
+  name: SetLimit
+  href: api/Oracle.NoSQL.SDK.IRateLimiter.SetLimit.html
+  commentId: Overload:Oracle.NoSQL.SDK.IRateLimiter.SetLimit
+  fullName: Oracle.NoSQL.SDK.IRateLimiter.SetLimit
+  nameWithType: IRateLimiter.SetLimit
 - uid: Oracle.NoSQL.SDK.IRetryHandler
   name: IRetryHandler
   href: api/Oracle.NoSQL.SDK.IRetryHandler.html
@@ -4912,6 +5196,18 @@ references:
   commentId: Overload:Oracle.NoSQL.SDK.NoSQLConfig.Consistency
   fullName: Oracle.NoSQL.SDK.NoSQLConfig.Consistency
   nameWithType: NoSQLConfig.Consistency
+- uid: Oracle.NoSQL.SDK.NoSQLConfig.Durability
+  name: Durability
+  href: api/Oracle.NoSQL.SDK.NoSQLConfig.Durability.html#Oracle_NoSQL_SDK_NoSQLConfig_Durability
+  commentId: P:Oracle.NoSQL.SDK.NoSQLConfig.Durability
+  fullName: Oracle.NoSQL.SDK.NoSQLConfig.Durability
+  nameWithType: NoSQLConfig.Durability
+- uid: Oracle.NoSQL.SDK.NoSQLConfig.Durability*
+  name: Durability
+  href: api/Oracle.NoSQL.SDK.NoSQLConfig.Durability.html
+  commentId: Overload:Oracle.NoSQL.SDK.NoSQLConfig.Durability
+  fullName: Oracle.NoSQL.SDK.NoSQLConfig.Durability
+  nameWithType: NoSQLConfig.Durability
 - uid: Oracle.NoSQL.SDK.NoSQLConfig.Endpoint
   name: Endpoint
   href: api/Oracle.NoSQL.SDK.NoSQLConfig.Endpoint.html#Oracle_NoSQL_SDK_NoSQLConfig_Endpoint
@@ -4966,6 +5262,42 @@ references:
   commentId: F:Oracle.NoSQL.SDK.NoSQLConfig.NoRetries
   fullName: Oracle.NoSQL.SDK.NoSQLConfig.NoRetries
   nameWithType: NoSQLConfig.NoRetries
+- uid: Oracle.NoSQL.SDK.NoSQLConfig.RateLimiterCreator
+  name: RateLimiterCreator
+  href: api/Oracle.NoSQL.SDK.NoSQLConfig.RateLimiterCreator.html#Oracle_NoSQL_SDK_NoSQLConfig_RateLimiterCreator
+  commentId: P:Oracle.NoSQL.SDK.NoSQLConfig.RateLimiterCreator
+  fullName: Oracle.NoSQL.SDK.NoSQLConfig.RateLimiterCreator
+  nameWithType: NoSQLConfig.RateLimiterCreator
+- uid: Oracle.NoSQL.SDK.NoSQLConfig.RateLimiterCreator*
+  name: RateLimiterCreator
+  href: api/Oracle.NoSQL.SDK.NoSQLConfig.RateLimiterCreator.html
+  commentId: Overload:Oracle.NoSQL.SDK.NoSQLConfig.RateLimiterCreator
+  fullName: Oracle.NoSQL.SDK.NoSQLConfig.RateLimiterCreator
+  nameWithType: NoSQLConfig.RateLimiterCreator
+- uid: Oracle.NoSQL.SDK.NoSQLConfig.RateLimiterPercent
+  name: RateLimiterPercent
+  href: api/Oracle.NoSQL.SDK.NoSQLConfig.RateLimiterPercent.html#Oracle_NoSQL_SDK_NoSQLConfig_RateLimiterPercent
+  commentId: P:Oracle.NoSQL.SDK.NoSQLConfig.RateLimiterPercent
+  fullName: Oracle.NoSQL.SDK.NoSQLConfig.RateLimiterPercent
+  nameWithType: NoSQLConfig.RateLimiterPercent
+- uid: Oracle.NoSQL.SDK.NoSQLConfig.RateLimiterPercent*
+  name: RateLimiterPercent
+  href: api/Oracle.NoSQL.SDK.NoSQLConfig.RateLimiterPercent.html
+  commentId: Overload:Oracle.NoSQL.SDK.NoSQLConfig.RateLimiterPercent
+  fullName: Oracle.NoSQL.SDK.NoSQLConfig.RateLimiterPercent
+  nameWithType: NoSQLConfig.RateLimiterPercent
+- uid: Oracle.NoSQL.SDK.NoSQLConfig.RateLimitingEnabled
+  name: RateLimitingEnabled
+  href: api/Oracle.NoSQL.SDK.NoSQLConfig.RateLimitingEnabled.html#Oracle_NoSQL_SDK_NoSQLConfig_RateLimitingEnabled
+  commentId: P:Oracle.NoSQL.SDK.NoSQLConfig.RateLimitingEnabled
+  fullName: Oracle.NoSQL.SDK.NoSQLConfig.RateLimitingEnabled
+  nameWithType: NoSQLConfig.RateLimitingEnabled
+- uid: Oracle.NoSQL.SDK.NoSQLConfig.RateLimitingEnabled*
+  name: RateLimitingEnabled
+  href: api/Oracle.NoSQL.SDK.NoSQLConfig.RateLimitingEnabled.html
+  commentId: Overload:Oracle.NoSQL.SDK.NoSQLConfig.RateLimitingEnabled
+  fullName: Oracle.NoSQL.SDK.NoSQLConfig.RateLimitingEnabled
+  nameWithType: NoSQLConfig.RateLimitingEnabled
 - uid: Oracle.NoSQL.SDK.NoSQLConfig.Region
   name: Region
   href: api/Oracle.NoSQL.SDK.NoSQLConfig.Region.html#Oracle_NoSQL_SDK_NoSQLConfig_Region
@@ -5104,6 +5436,66 @@ references:
   commentId: Overload:Oracle.NoSQL.SDK.NoSQLException.Request
   fullName: Oracle.NoSQL.SDK.NoSQLException.Request
   nameWithType: NoSQLException.Request
+- uid: Oracle.NoSQL.SDK.NoSQLRateLimiter
+  name: NoSQLRateLimiter
+  href: api/Oracle.NoSQL.SDK.NoSQLRateLimiter.html
+  commentId: T:Oracle.NoSQL.SDK.NoSQLRateLimiter
+  fullName: Oracle.NoSQL.SDK.NoSQLRateLimiter
+  nameWithType: NoSQLRateLimiter
+- uid: Oracle.NoSQL.SDK.NoSQLRateLimiter.#ctor
+  name: NoSQLRateLimiter()
+  href: api/Oracle.NoSQL.SDK.NoSQLRateLimiter.-ctor.html#Oracle_NoSQL_SDK_NoSQLRateLimiter__ctor
+  commentId: M:Oracle.NoSQL.SDK.NoSQLRateLimiter.#ctor
+  fullName: Oracle.NoSQL.SDK.NoSQLRateLimiter.NoSQLRateLimiter()
+  nameWithType: NoSQLRateLimiter.NoSQLRateLimiter()
+- uid: Oracle.NoSQL.SDK.NoSQLRateLimiter.#ctor(System.TimeSpan)
+  name: NoSQLRateLimiter(TimeSpan)
+  href: api/Oracle.NoSQL.SDK.NoSQLRateLimiter.-ctor.html#Oracle_NoSQL_SDK_NoSQLRateLimiter__ctor_System_TimeSpan_
+  commentId: M:Oracle.NoSQL.SDK.NoSQLRateLimiter.#ctor(System.TimeSpan)
+  fullName: Oracle.NoSQL.SDK.NoSQLRateLimiter.NoSQLRateLimiter(System.TimeSpan)
+  nameWithType: NoSQLRateLimiter.NoSQLRateLimiter(TimeSpan)
+- uid: Oracle.NoSQL.SDK.NoSQLRateLimiter.#ctor*
+  name: NoSQLRateLimiter
+  href: api/Oracle.NoSQL.SDK.NoSQLRateLimiter.-ctor.html
+  commentId: Overload:Oracle.NoSQL.SDK.NoSQLRateLimiter.#ctor
+  fullName: Oracle.NoSQL.SDK.NoSQLRateLimiter.NoSQLRateLimiter
+  nameWithType: NoSQLRateLimiter.NoSQLRateLimiter
+- uid: Oracle.NoSQL.SDK.NoSQLRateLimiter.ConsumeUnitsAsync(System.Int32,System.TimeSpan,System.Boolean,System.Threading.CancellationToken)
+  name: ConsumeUnitsAsync(Int32, TimeSpan, Boolean, CancellationToken)
+  href: api/Oracle.NoSQL.SDK.NoSQLRateLimiter.ConsumeUnitsAsync.html#Oracle_NoSQL_SDK_NoSQLRateLimiter_ConsumeUnitsAsync_System_Int32_System_TimeSpan_System_Boolean_System_Threading_CancellationToken_
+  commentId: M:Oracle.NoSQL.SDK.NoSQLRateLimiter.ConsumeUnitsAsync(System.Int32,System.TimeSpan,System.Boolean,System.Threading.CancellationToken)
+  fullName: Oracle.NoSQL.SDK.NoSQLRateLimiter.ConsumeUnitsAsync(System.Int32, System.TimeSpan, System.Boolean, System.Threading.CancellationToken)
+  nameWithType: NoSQLRateLimiter.ConsumeUnitsAsync(Int32, TimeSpan, Boolean, CancellationToken)
+- uid: Oracle.NoSQL.SDK.NoSQLRateLimiter.ConsumeUnitsAsync*
+  name: ConsumeUnitsAsync
+  href: api/Oracle.NoSQL.SDK.NoSQLRateLimiter.ConsumeUnitsAsync.html
+  commentId: Overload:Oracle.NoSQL.SDK.NoSQLRateLimiter.ConsumeUnitsAsync
+  fullName: Oracle.NoSQL.SDK.NoSQLRateLimiter.ConsumeUnitsAsync
+  nameWithType: NoSQLRateLimiter.ConsumeUnitsAsync
+- uid: Oracle.NoSQL.SDK.NoSQLRateLimiter.HandleThrottlingException(Oracle.NoSQL.SDK.RetryableException)
+  name: HandleThrottlingException(RetryableException)
+  href: api/Oracle.NoSQL.SDK.NoSQLRateLimiter.HandleThrottlingException.html#Oracle_NoSQL_SDK_NoSQLRateLimiter_HandleThrottlingException_Oracle_NoSQL_SDK_RetryableException_
+  commentId: M:Oracle.NoSQL.SDK.NoSQLRateLimiter.HandleThrottlingException(Oracle.NoSQL.SDK.RetryableException)
+  fullName: Oracle.NoSQL.SDK.NoSQLRateLimiter.HandleThrottlingException(Oracle.NoSQL.SDK.RetryableException)
+  nameWithType: NoSQLRateLimiter.HandleThrottlingException(RetryableException)
+- uid: Oracle.NoSQL.SDK.NoSQLRateLimiter.HandleThrottlingException*
+  name: HandleThrottlingException
+  href: api/Oracle.NoSQL.SDK.NoSQLRateLimiter.HandleThrottlingException.html
+  commentId: Overload:Oracle.NoSQL.SDK.NoSQLRateLimiter.HandleThrottlingException
+  fullName: Oracle.NoSQL.SDK.NoSQLRateLimiter.HandleThrottlingException
+  nameWithType: NoSQLRateLimiter.HandleThrottlingException
+- uid: Oracle.NoSQL.SDK.NoSQLRateLimiter.SetLimit(System.Double)
+  name: SetLimit(Double)
+  href: api/Oracle.NoSQL.SDK.NoSQLRateLimiter.SetLimit.html#Oracle_NoSQL_SDK_NoSQLRateLimiter_SetLimit_System_Double_
+  commentId: M:Oracle.NoSQL.SDK.NoSQLRateLimiter.SetLimit(System.Double)
+  fullName: Oracle.NoSQL.SDK.NoSQLRateLimiter.SetLimit(System.Double)
+  nameWithType: NoSQLRateLimiter.SetLimit(Double)
+- uid: Oracle.NoSQL.SDK.NoSQLRateLimiter.SetLimit*
+  name: SetLimit
+  href: api/Oracle.NoSQL.SDK.NoSQLRateLimiter.SetLimit.html
+  commentId: Overload:Oracle.NoSQL.SDK.NoSQLRateLimiter.SetLimit
+  fullName: Oracle.NoSQL.SDK.NoSQLRateLimiter.SetLimit
+  nameWithType: NoSQLRateLimiter.SetLimit
 - uid: Oracle.NoSQL.SDK.NoSQLRetryHandler
   name: NoSQLRetryHandler
   href: api/Oracle.NoSQL.SDK.NoSQLRetryHandler.html
@@ -5320,6 +5712,18 @@ references:
   commentId: Overload:Oracle.NoSQL.SDK.PreparedStatement.#ctor
   fullName: Oracle.NoSQL.SDK.PreparedStatement.PreparedStatement
   nameWithType: PreparedStatement.PreparedStatement
+- uid: Oracle.NoSQL.SDK.PreparedStatement.ClearVariables
+  name: ClearVariables()
+  href: api/Oracle.NoSQL.SDK.PreparedStatement.ClearVariables.html#Oracle_NoSQL_SDK_PreparedStatement_ClearVariables
+  commentId: M:Oracle.NoSQL.SDK.PreparedStatement.ClearVariables
+  fullName: Oracle.NoSQL.SDK.PreparedStatement.ClearVariables()
+  nameWithType: PreparedStatement.ClearVariables()
+- uid: Oracle.NoSQL.SDK.PreparedStatement.ClearVariables*
+  name: ClearVariables
+  href: api/Oracle.NoSQL.SDK.PreparedStatement.ClearVariables.html
+  commentId: Overload:Oracle.NoSQL.SDK.PreparedStatement.ClearVariables
+  fullName: Oracle.NoSQL.SDK.PreparedStatement.ClearVariables
+  nameWithType: PreparedStatement.ClearVariables
 - uid: Oracle.NoSQL.SDK.PreparedStatement.ConsumedCapacity
   name: ConsumedCapacity
   href: api/Oracle.NoSQL.SDK.PreparedStatement.ConsumedCapacity.html#Oracle_NoSQL_SDK_PreparedStatement_ConsumedCapacity
@@ -5356,6 +5760,24 @@ references:
   commentId: Overload:Oracle.NoSQL.SDK.PreparedStatement.QueryPlan
   fullName: Oracle.NoSQL.SDK.PreparedStatement.QueryPlan
   nameWithType: PreparedStatement.QueryPlan
+- uid: Oracle.NoSQL.SDK.PreparedStatement.SetVariable(System.Int32,Oracle.NoSQL.SDK.FieldValue)
+  name: SetVariable(Int32, FieldValue)
+  href: api/Oracle.NoSQL.SDK.PreparedStatement.SetVariable.html#Oracle_NoSQL_SDK_PreparedStatement_SetVariable_System_Int32_Oracle_NoSQL_SDK_FieldValue_
+  commentId: M:Oracle.NoSQL.SDK.PreparedStatement.SetVariable(System.Int32,Oracle.NoSQL.SDK.FieldValue)
+  fullName: Oracle.NoSQL.SDK.PreparedStatement.SetVariable(System.Int32, Oracle.NoSQL.SDK.FieldValue)
+  nameWithType: PreparedStatement.SetVariable(Int32, FieldValue)
+- uid: Oracle.NoSQL.SDK.PreparedStatement.SetVariable(System.String,Oracle.NoSQL.SDK.FieldValue)
+  name: SetVariable(String, FieldValue)
+  href: api/Oracle.NoSQL.SDK.PreparedStatement.SetVariable.html#Oracle_NoSQL_SDK_PreparedStatement_SetVariable_System_String_Oracle_NoSQL_SDK_FieldValue_
+  commentId: M:Oracle.NoSQL.SDK.PreparedStatement.SetVariable(System.String,Oracle.NoSQL.SDK.FieldValue)
+  fullName: Oracle.NoSQL.SDK.PreparedStatement.SetVariable(System.String, Oracle.NoSQL.SDK.FieldValue)
+  nameWithType: PreparedStatement.SetVariable(String, FieldValue)
+- uid: Oracle.NoSQL.SDK.PreparedStatement.SetVariable*
+  name: SetVariable
+  href: api/Oracle.NoSQL.SDK.PreparedStatement.SetVariable.html
+  commentId: Overload:Oracle.NoSQL.SDK.PreparedStatement.SetVariable
+  fullName: Oracle.NoSQL.SDK.PreparedStatement.SetVariable
+  nameWithType: PreparedStatement.SetVariable
 - uid: Oracle.NoSQL.SDK.PreparedStatement.SQLText
   name: SQLText
   href: api/Oracle.NoSQL.SDK.PreparedStatement.SQLText.html#Oracle_NoSQL_SDK_PreparedStatement_SQLText
@@ -5639,6 +6061,18 @@ references:
   commentId: Overload:Oracle.NoSQL.SDK.PutOptions.Compartment
   fullName: Oracle.NoSQL.SDK.PutOptions.Compartment
   nameWithType: PutOptions.Compartment
+- uid: Oracle.NoSQL.SDK.PutOptions.Durability
+  name: Durability
+  href: api/Oracle.NoSQL.SDK.PutOptions.Durability.html#Oracle_NoSQL_SDK_PutOptions_Durability
+  commentId: P:Oracle.NoSQL.SDK.PutOptions.Durability
+  fullName: Oracle.NoSQL.SDK.PutOptions.Durability
+  nameWithType: PutOptions.Durability
+- uid: Oracle.NoSQL.SDK.PutOptions.Durability*
+  name: Durability
+  href: api/Oracle.NoSQL.SDK.PutOptions.Durability.html
+  commentId: Overload:Oracle.NoSQL.SDK.PutOptions.Durability
+  fullName: Oracle.NoSQL.SDK.PutOptions.Durability
+  nameWithType: PutOptions.Durability
 - uid: Oracle.NoSQL.SDK.PutOptions.ExactMatch
   name: ExactMatch
   href: api/Oracle.NoSQL.SDK.PutOptions.ExactMatch.html#Oracle_NoSQL_SDK_PutOptions_ExactMatch
@@ -5829,6 +6263,22 @@ references:
   fullName.vb: Oracle.NoSQL.SDK.PutResult(Of TRow).ConsumedCapacity
   nameWithType: PutResult<TRow>.ConsumedCapacity
   nameWithType.vb: PutResult(Of TRow).ConsumedCapacity
+- uid: Oracle.NoSQL.SDK.PutResult`1.ExistingModificationTime
+  name: ExistingModificationTime
+  href: api/Oracle.NoSQL.SDK.PutResult-1.ExistingModificationTime.html#Oracle_NoSQL_SDK_PutResult_1_ExistingModificationTime
+  commentId: P:Oracle.NoSQL.SDK.PutResult`1.ExistingModificationTime
+  fullName: Oracle.NoSQL.SDK.PutResult<TRow>.ExistingModificationTime
+  fullName.vb: Oracle.NoSQL.SDK.PutResult(Of TRow).ExistingModificationTime
+  nameWithType: PutResult<TRow>.ExistingModificationTime
+  nameWithType.vb: PutResult(Of TRow).ExistingModificationTime
+- uid: Oracle.NoSQL.SDK.PutResult`1.ExistingModificationTime*
+  name: ExistingModificationTime
+  href: api/Oracle.NoSQL.SDK.PutResult-1.ExistingModificationTime.html
+  commentId: Overload:Oracle.NoSQL.SDK.PutResult`1.ExistingModificationTime
+  fullName: Oracle.NoSQL.SDK.PutResult<TRow>.ExistingModificationTime
+  fullName.vb: Oracle.NoSQL.SDK.PutResult(Of TRow).ExistingModificationTime
+  nameWithType: PutResult<TRow>.ExistingModificationTime
+  nameWithType.vb: PutResult(Of TRow).ExistingModificationTime
 - uid: Oracle.NoSQL.SDK.PutResult`1.ExistingRow
   name: ExistingRow
   href: api/Oracle.NoSQL.SDK.PutResult-1.ExistingRow.html#Oracle_NoSQL_SDK_PutResult_1_ExistingRow
@@ -6352,6 +6802,12 @@ references:
   commentId: F:Oracle.NoSQL.SDK.Region.AP_HYDERABAD_1
   fullName: Oracle.NoSQL.SDK.Region.AP_HYDERABAD_1
   nameWithType: Region.AP_HYDERABAD_1
+- uid: Oracle.NoSQL.SDK.Region.AP_IBARAKI_1
+  name: AP_IBARAKI_1
+  href: api/Oracle.NoSQL.SDK.Region.AP_IBARAKI_1.html#Oracle_NoSQL_SDK_Region_AP_IBARAKI_1
+  commentId: F:Oracle.NoSQL.SDK.Region.AP_IBARAKI_1
+  fullName: Oracle.NoSQL.SDK.Region.AP_IBARAKI_1
+  nameWithType: Region.AP_IBARAKI_1
 - uid: Oracle.NoSQL.SDK.Region.AP_MELBOURNE_1
   name: AP_MELBOURNE_1
   href: api/Oracle.NoSQL.SDK.Region.AP_MELBOURNE_1.html#Oracle_NoSQL_SDK_Region_AP_MELBOURNE_1
@@ -6430,12 +6886,30 @@ references:
   commentId: F:Oracle.NoSQL.SDK.Region.EU_FRANKFURT_1
   fullName: Oracle.NoSQL.SDK.Region.EU_FRANKFURT_1
   nameWithType: Region.EU_FRANKFURT_1
+- uid: Oracle.NoSQL.SDK.Region.EU_MADRID_1
+  name: EU_MADRID_1
+  href: api/Oracle.NoSQL.SDK.Region.EU_MADRID_1.html#Oracle_NoSQL_SDK_Region_EU_MADRID_1
+  commentId: F:Oracle.NoSQL.SDK.Region.EU_MADRID_1
+  fullName: Oracle.NoSQL.SDK.Region.EU_MADRID_1
+  nameWithType: Region.EU_MADRID_1
 - uid: Oracle.NoSQL.SDK.Region.EU_MARSEILLE_1
   name: EU_MARSEILLE_1
   href: api/Oracle.NoSQL.SDK.Region.EU_MARSEILLE_1.html#Oracle_NoSQL_SDK_Region_EU_MARSEILLE_1
   commentId: F:Oracle.NoSQL.SDK.Region.EU_MARSEILLE_1
   fullName: Oracle.NoSQL.SDK.Region.EU_MARSEILLE_1
   nameWithType: Region.EU_MARSEILLE_1
+- uid: Oracle.NoSQL.SDK.Region.EU_MILAN_1
+  name: EU_MILAN_1
+  href: api/Oracle.NoSQL.SDK.Region.EU_MILAN_1.html#Oracle_NoSQL_SDK_Region_EU_MILAN_1
+  commentId: F:Oracle.NoSQL.SDK.Region.EU_MILAN_1
+  fullName: Oracle.NoSQL.SDK.Region.EU_MILAN_1
+  nameWithType: Region.EU_MILAN_1
+- uid: Oracle.NoSQL.SDK.Region.EU_PARIS_1
+  name: EU_PARIS_1
+  href: api/Oracle.NoSQL.SDK.Region.EU_PARIS_1.html#Oracle_NoSQL_SDK_Region_EU_PARIS_1
+  commentId: F:Oracle.NoSQL.SDK.Region.EU_PARIS_1
+  fullName: Oracle.NoSQL.SDK.Region.EU_PARIS_1
+  nameWithType: Region.EU_PARIS_1
 - uid: Oracle.NoSQL.SDK.Region.EU_STOCKHOLM_1
   name: EU_STOCKHOLM_1
   href: api/Oracle.NoSQL.SDK.Region.EU_STOCKHOLM_1.html#Oracle_NoSQL_SDK_Region_EU_STOCKHOLM_1
@@ -6472,6 +6946,12 @@ references:
   commentId: Overload:Oracle.NoSQL.SDK.Region.FromRegionId
   fullName: Oracle.NoSQL.SDK.Region.FromRegionId
   nameWithType: Region.FromRegionId
+- uid: Oracle.NoSQL.SDK.Region.IL_JERUSALEM_1
+  name: IL_JERUSALEM_1
+  href: api/Oracle.NoSQL.SDK.Region.IL_JERUSALEM_1.html#Oracle_NoSQL_SDK_Region_IL_JERUSALEM_1
+  commentId: F:Oracle.NoSQL.SDK.Region.IL_JERUSALEM_1
+  fullName: Oracle.NoSQL.SDK.Region.IL_JERUSALEM_1
+  nameWithType: Region.IL_JERUSALEM_1
 - uid: Oracle.NoSQL.SDK.Region.ME_ABUDHABI_1
   name: ME_ABUDHABI_1
   href: api/Oracle.NoSQL.SDK.Region.ME_ABUDHABI_1.html#Oracle_NoSQL_SDK_Region_ME_ABUDHABI_1
@@ -6496,6 +6976,12 @@ references:
   commentId: F:Oracle.NoSQL.SDK.Region.ME_JEDDAH_1
   fullName: Oracle.NoSQL.SDK.Region.ME_JEDDAH_1
   nameWithType: Region.ME_JEDDAH_1
+- uid: Oracle.NoSQL.SDK.Region.MX_QUERETARO_1
+  name: MX_QUERETARO_1
+  href: api/Oracle.NoSQL.SDK.Region.MX_QUERETARO_1.html#Oracle_NoSQL_SDK_Region_MX_QUERETARO_1
+  commentId: F:Oracle.NoSQL.SDK.Region.MX_QUERETARO_1
+  fullName: Oracle.NoSQL.SDK.Region.MX_QUERETARO_1
+  nameWithType: Region.MX_QUERETARO_1
 - uid: Oracle.NoSQL.SDK.Region.RegionCode
   name: RegionCode
   href: api/Oracle.NoSQL.SDK.Region.RegionCode.html#Oracle_NoSQL_SDK_Region_RegionCode
@@ -6532,6 +7018,12 @@ references:
   commentId: F:Oracle.NoSQL.SDK.Region.SA_SAOPAULO_1
   fullName: Oracle.NoSQL.SDK.Region.SA_SAOPAULO_1
   nameWithType: Region.SA_SAOPAULO_1
+- uid: Oracle.NoSQL.SDK.Region.SA_VINHEDO_1
+  name: SA_VINHEDO_1
+  href: api/Oracle.NoSQL.SDK.Region.SA_VINHEDO_1.html#Oracle_NoSQL_SDK_Region_SA_VINHEDO_1
+  commentId: F:Oracle.NoSQL.SDK.Region.SA_VINHEDO_1
+  fullName: Oracle.NoSQL.SDK.Region.SA_VINHEDO_1
+  nameWithType: Region.SA_VINHEDO_1
 - uid: Oracle.NoSQL.SDK.Region.SecondLevelDomain
   name: SecondLevelDomain
   href: api/Oracle.NoSQL.SDK.Region.SecondLevelDomain.html#Oracle_NoSQL_SDK_Region_SecondLevelDomain
@@ -6562,6 +7054,12 @@ references:
   commentId: F:Oracle.NoSQL.SDK.Region.UK_CARDIFF_1
   fullName: Oracle.NoSQL.SDK.Region.UK_CARDIFF_1
   nameWithType: Region.UK_CARDIFF_1
+- uid: Oracle.NoSQL.SDK.Region.UK_GOV_CARDIFF_1
+  name: UK_GOV_CARDIFF_1
+  href: api/Oracle.NoSQL.SDK.Region.UK_GOV_CARDIFF_1.html#Oracle_NoSQL_SDK_Region_UK_GOV_CARDIFF_1
+  commentId: F:Oracle.NoSQL.SDK.Region.UK_GOV_CARDIFF_1
+  fullName: Oracle.NoSQL.SDK.Region.UK_GOV_CARDIFF_1
+  nameWithType: Region.UK_GOV_CARDIFF_1
 - uid: Oracle.NoSQL.SDK.Region.UK_GOV_LONDON_1
   name: UK_GOV_LONDON_1
   href: api/Oracle.NoSQL.SDK.Region.UK_GOV_LONDON_1.html#Oracle_NoSQL_SDK_Region_UK_GOV_LONDON_1
@@ -6634,6 +7132,36 @@ references:
   commentId: Overload:Oracle.NoSQL.SDK.Region.Values
   fullName: Oracle.NoSQL.SDK.Region.Values
   nameWithType: Region.Values
+- uid: Oracle.NoSQL.SDK.ReplicaAckPolicy
+  name: ReplicaAckPolicy
+  href: api/Oracle.NoSQL.SDK.ReplicaAckPolicy.html
+  commentId: T:Oracle.NoSQL.SDK.ReplicaAckPolicy
+  fullName: Oracle.NoSQL.SDK.ReplicaAckPolicy
+  nameWithType: ReplicaAckPolicy
+- uid: Oracle.NoSQL.SDK.ReplicaAckPolicy.All
+  name: All
+  href: api/Oracle.NoSQL.SDK.ReplicaAckPolicy.All.html#Oracle_NoSQL_SDK_ReplicaAckPolicy_All
+  commentId: F:Oracle.NoSQL.SDK.ReplicaAckPolicy.All
+  fullName: Oracle.NoSQL.SDK.ReplicaAckPolicy.All
+  nameWithType: ReplicaAckPolicy.All
+- uid: Oracle.NoSQL.SDK.ReplicaAckPolicy.None
+  name: None
+  href: api/Oracle.NoSQL.SDK.ReplicaAckPolicy.None.html#Oracle_NoSQL_SDK_ReplicaAckPolicy_None
+  commentId: F:Oracle.NoSQL.SDK.ReplicaAckPolicy.None
+  fullName: Oracle.NoSQL.SDK.ReplicaAckPolicy.None
+  nameWithType: ReplicaAckPolicy.None
+- uid: Oracle.NoSQL.SDK.ReplicaAckPolicy.SimpleMajority
+  name: SimpleMajority
+  href: api/Oracle.NoSQL.SDK.ReplicaAckPolicy.SimpleMajority.html#Oracle_NoSQL_SDK_ReplicaAckPolicy_SimpleMajority
+  commentId: F:Oracle.NoSQL.SDK.ReplicaAckPolicy.SimpleMajority
+  fullName: Oracle.NoSQL.SDK.ReplicaAckPolicy.SimpleMajority
+  nameWithType: ReplicaAckPolicy.SimpleMajority
+- uid: Oracle.NoSQL.SDK.ReplicaAckPolicy.value__
+  name: value__
+  href: api/Oracle.NoSQL.SDK.ReplicaAckPolicy.value__.html#Oracle_NoSQL_SDK_ReplicaAckPolicy_value__
+  commentId: F:Oracle.NoSQL.SDK.ReplicaAckPolicy.value__
+  fullName: Oracle.NoSQL.SDK.ReplicaAckPolicy.value__
+  nameWithType: ReplicaAckPolicy.value__
 - uid: Oracle.NoSQL.SDK.Request
   name: Request
   href: api/Oracle.NoSQL.SDK.Request.html
@@ -7222,6 +7750,36 @@ references:
   commentId: Overload:Oracle.NoSQL.SDK.StringValue.ToInt64
   fullName: Oracle.NoSQL.SDK.StringValue.ToInt64
   nameWithType: StringValue.ToInt64
+- uid: Oracle.NoSQL.SDK.SyncPolicy
+  name: SyncPolicy
+  href: api/Oracle.NoSQL.SDK.SyncPolicy.html
+  commentId: T:Oracle.NoSQL.SDK.SyncPolicy
+  fullName: Oracle.NoSQL.SDK.SyncPolicy
+  nameWithType: SyncPolicy
+- uid: Oracle.NoSQL.SDK.SyncPolicy.NoSync
+  name: NoSync
+  href: api/Oracle.NoSQL.SDK.SyncPolicy.NoSync.html#Oracle_NoSQL_SDK_SyncPolicy_NoSync
+  commentId: F:Oracle.NoSQL.SDK.SyncPolicy.NoSync
+  fullName: Oracle.NoSQL.SDK.SyncPolicy.NoSync
+  nameWithType: SyncPolicy.NoSync
+- uid: Oracle.NoSQL.SDK.SyncPolicy.Sync
+  name: Sync
+  href: api/Oracle.NoSQL.SDK.SyncPolicy.Sync.html#Oracle_NoSQL_SDK_SyncPolicy_Sync
+  commentId: F:Oracle.NoSQL.SDK.SyncPolicy.Sync
+  fullName: Oracle.NoSQL.SDK.SyncPolicy.Sync
+  nameWithType: SyncPolicy.Sync
+- uid: Oracle.NoSQL.SDK.SyncPolicy.value__
+  name: value__
+  href: api/Oracle.NoSQL.SDK.SyncPolicy.value__.html#Oracle_NoSQL_SDK_SyncPolicy_value__
+  commentId: F:Oracle.NoSQL.SDK.SyncPolicy.value__
+  fullName: Oracle.NoSQL.SDK.SyncPolicy.value__
+  nameWithType: SyncPolicy.value__
+- uid: Oracle.NoSQL.SDK.SyncPolicy.WriteNoSync
+  name: WriteNoSync
+  href: api/Oracle.NoSQL.SDK.SyncPolicy.WriteNoSync.html#Oracle_NoSQL_SDK_SyncPolicy_WriteNoSync
+  commentId: F:Oracle.NoSQL.SDK.SyncPolicy.WriteNoSync
+  fullName: Oracle.NoSQL.SDK.SyncPolicy.WriteNoSync
+  nameWithType: SyncPolicy.WriteNoSync
 - uid: Oracle.NoSQL.SDK.TableBusyException
   name: TableBusyException
   href: api/Oracle.NoSQL.SDK.TableBusyException.html
@@ -7444,6 +8002,12 @@ references:
   commentId: T:Oracle.NoSQL.SDK.TableLimits
   fullName: Oracle.NoSQL.SDK.TableLimits
   nameWithType: TableLimits
+- uid: Oracle.NoSQL.SDK.TableLimits.#ctor(System.Int32)
+  name: TableLimits(Int32)
+  href: api/Oracle.NoSQL.SDK.TableLimits.-ctor.html#Oracle_NoSQL_SDK_TableLimits__ctor_System_Int32_
+  commentId: M:Oracle.NoSQL.SDK.TableLimits.#ctor(System.Int32)
+  fullName: Oracle.NoSQL.SDK.TableLimits.TableLimits(System.Int32)
+  nameWithType: TableLimits.TableLimits(Int32)
 - uid: Oracle.NoSQL.SDK.TableLimits.#ctor(System.Int32,System.Int32,System.Int32)
   name: TableLimits(Int32, Int32, Int32)
   href: api/Oracle.NoSQL.SDK.TableLimits.-ctor.html#Oracle_NoSQL_SDK_TableLimits__ctor_System_Int32_System_Int32_System_Int32_
@@ -7456,6 +8020,18 @@ references:
   commentId: Overload:Oracle.NoSQL.SDK.TableLimits.#ctor
   fullName: Oracle.NoSQL.SDK.TableLimits.TableLimits
   nameWithType: TableLimits.TableLimits
+- uid: Oracle.NoSQL.SDK.TableLimits.CapacityMode
+  name: CapacityMode
+  href: api/Oracle.NoSQL.SDK.TableLimits.CapacityMode.html#Oracle_NoSQL_SDK_TableLimits_CapacityMode
+  commentId: P:Oracle.NoSQL.SDK.TableLimits.CapacityMode
+  fullName: Oracle.NoSQL.SDK.TableLimits.CapacityMode
+  nameWithType: TableLimits.CapacityMode
+- uid: Oracle.NoSQL.SDK.TableLimits.CapacityMode*
+  name: CapacityMode
+  href: api/Oracle.NoSQL.SDK.TableLimits.CapacityMode.html
+  commentId: Overload:Oracle.NoSQL.SDK.TableLimits.CapacityMode
+  fullName: Oracle.NoSQL.SDK.TableLimits.CapacityMode
+  nameWithType: TableLimits.CapacityMode
 - uid: Oracle.NoSQL.SDK.TableLimits.ReadUnits
   name: ReadUnits
   href: api/Oracle.NoSQL.SDK.TableLimits.ReadUnits.html#Oracle_NoSQL_SDK_TableLimits_ReadUnits
@@ -8095,6 +8671,36 @@ references:
   commentId: Overload:Oracle.NoSQL.SDK.UnauthorizedException.#ctor
   fullName: Oracle.NoSQL.SDK.UnauthorizedException.UnauthorizedException
   nameWithType: UnauthorizedException.UnauthorizedException
+- uid: Oracle.NoSQL.SDK.UnsupportedProtocolException
+  name: UnsupportedProtocolException
+  href: api/Oracle.NoSQL.SDK.UnsupportedProtocolException.html
+  commentId: T:Oracle.NoSQL.SDK.UnsupportedProtocolException
+  fullName: Oracle.NoSQL.SDK.UnsupportedProtocolException
+  nameWithType: UnsupportedProtocolException
+- uid: Oracle.NoSQL.SDK.UnsupportedProtocolException.#ctor
+  name: UnsupportedProtocolException()
+  href: api/Oracle.NoSQL.SDK.UnsupportedProtocolException.-ctor.html#Oracle_NoSQL_SDK_UnsupportedProtocolException__ctor
+  commentId: M:Oracle.NoSQL.SDK.UnsupportedProtocolException.#ctor
+  fullName: Oracle.NoSQL.SDK.UnsupportedProtocolException.UnsupportedProtocolException()
+  nameWithType: UnsupportedProtocolException.UnsupportedProtocolException()
+- uid: Oracle.NoSQL.SDK.UnsupportedProtocolException.#ctor(System.String)
+  name: UnsupportedProtocolException(String)
+  href: api/Oracle.NoSQL.SDK.UnsupportedProtocolException.-ctor.html#Oracle_NoSQL_SDK_UnsupportedProtocolException__ctor_System_String_
+  commentId: M:Oracle.NoSQL.SDK.UnsupportedProtocolException.#ctor(System.String)
+  fullName: Oracle.NoSQL.SDK.UnsupportedProtocolException.UnsupportedProtocolException(System.String)
+  nameWithType: UnsupportedProtocolException.UnsupportedProtocolException(String)
+- uid: Oracle.NoSQL.SDK.UnsupportedProtocolException.#ctor(System.String,System.Exception)
+  name: UnsupportedProtocolException(String, Exception)
+  href: api/Oracle.NoSQL.SDK.UnsupportedProtocolException.-ctor.html#Oracle_NoSQL_SDK_UnsupportedProtocolException__ctor_System_String_System_Exception_
+  commentId: M:Oracle.NoSQL.SDK.UnsupportedProtocolException.#ctor(System.String,System.Exception)
+  fullName: Oracle.NoSQL.SDK.UnsupportedProtocolException.UnsupportedProtocolException(System.String, System.Exception)
+  nameWithType: UnsupportedProtocolException.UnsupportedProtocolException(String, Exception)
+- uid: Oracle.NoSQL.SDK.UnsupportedProtocolException.#ctor*
+  name: UnsupportedProtocolException
+  href: api/Oracle.NoSQL.SDK.UnsupportedProtocolException.-ctor.html
+  commentId: Overload:Oracle.NoSQL.SDK.UnsupportedProtocolException.#ctor
+  fullName: Oracle.NoSQL.SDK.UnsupportedProtocolException.UnsupportedProtocolException
+  nameWithType: UnsupportedProtocolException.UnsupportedProtocolException
 - uid: Oracle.NoSQL.SDK.UserInfo
   name: UserInfo
   href: api/Oracle.NoSQL.SDK.UserInfo.html
@@ -8167,6 +8773,18 @@ references:
   commentId: Overload:Oracle.NoSQL.SDK.WriteManyOptions.Compartment
   fullName: Oracle.NoSQL.SDK.WriteManyOptions.Compartment
   nameWithType: WriteManyOptions.Compartment
+- uid: Oracle.NoSQL.SDK.WriteManyOptions.Durability
+  name: Durability
+  href: api/Oracle.NoSQL.SDK.WriteManyOptions.Durability.html#Oracle_NoSQL_SDK_WriteManyOptions_Durability
+  commentId: P:Oracle.NoSQL.SDK.WriteManyOptions.Durability
+  fullName: Oracle.NoSQL.SDK.WriteManyOptions.Durability
+  nameWithType: WriteManyOptions.Durability
+- uid: Oracle.NoSQL.SDK.WriteManyOptions.Durability*
+  name: Durability
+  href: api/Oracle.NoSQL.SDK.WriteManyOptions.Durability.html
+  commentId: Overload:Oracle.NoSQL.SDK.WriteManyOptions.Durability
+  fullName: Oracle.NoSQL.SDK.WriteManyOptions.Durability
+  nameWithType: WriteManyOptions.Durability
 - uid: Oracle.NoSQL.SDK.WriteManyOptions.Timeout
   name: Timeout
   href: api/Oracle.NoSQL.SDK.WriteManyOptions.Timeout.html#Oracle_NoSQL_SDK_WriteManyOptions_Timeout
@@ -8369,6 +8987,12 @@ references:
   commentId: M:Oracle.NoSQL.SDK.WriteOperationCollection.#ctor
   fullName: Oracle.NoSQL.SDK.WriteOperationCollection.WriteOperationCollection()
   nameWithType: WriteOperationCollection.WriteOperationCollection()
+- uid: Oracle.NoSQL.SDK.WriteOperationCollection.#ctor(System.Int32)
+  name: WriteOperationCollection(Int32)
+  href: api/Oracle.NoSQL.SDK.WriteOperationCollection.-ctor.html#Oracle_NoSQL_SDK_WriteOperationCollection__ctor_System_Int32_
+  commentId: M:Oracle.NoSQL.SDK.WriteOperationCollection.#ctor(System.Int32)
+  fullName: Oracle.NoSQL.SDK.WriteOperationCollection.WriteOperationCollection(System.Int32)
+  nameWithType: WriteOperationCollection.WriteOperationCollection(Int32)
 - uid: Oracle.NoSQL.SDK.WriteOperationCollection.#ctor*
   name: WriteOperationCollection
   href: api/Oracle.NoSQL.SDK.WriteOperationCollection.-ctor.html
@@ -8520,6 +9144,22 @@ references:
   fullName.vb: Oracle.NoSQL.SDK.WriteOperationResult(Of TRow).WriteOperationResult
   nameWithType: WriteOperationResult<TRow>.WriteOperationResult
   nameWithType.vb: WriteOperationResult(Of TRow).WriteOperationResult
+- uid: Oracle.NoSQL.SDK.WriteOperationResult`1.ExistingModificationTime
+  name: ExistingModificationTime
+  href: api/Oracle.NoSQL.SDK.WriteOperationResult-1.ExistingModificationTime.html#Oracle_NoSQL_SDK_WriteOperationResult_1_ExistingModificationTime
+  commentId: P:Oracle.NoSQL.SDK.WriteOperationResult`1.ExistingModificationTime
+  fullName: Oracle.NoSQL.SDK.WriteOperationResult<TRow>.ExistingModificationTime
+  fullName.vb: Oracle.NoSQL.SDK.WriteOperationResult(Of TRow).ExistingModificationTime
+  nameWithType: WriteOperationResult<TRow>.ExistingModificationTime
+  nameWithType.vb: WriteOperationResult(Of TRow).ExistingModificationTime
+- uid: Oracle.NoSQL.SDK.WriteOperationResult`1.ExistingModificationTime*
+  name: ExistingModificationTime
+  href: api/Oracle.NoSQL.SDK.WriteOperationResult-1.ExistingModificationTime.html
+  commentId: Overload:Oracle.NoSQL.SDK.WriteOperationResult`1.ExistingModificationTime
+  fullName: Oracle.NoSQL.SDK.WriteOperationResult<TRow>.ExistingModificationTime
+  fullName.vb: Oracle.NoSQL.SDK.WriteOperationResult(Of TRow).ExistingModificationTime
+  nameWithType: WriteOperationResult<TRow>.ExistingModificationTime
+  nameWithType.vb: WriteOperationResult(Of TRow).ExistingModificationTime
 - uid: Oracle.NoSQL.SDK.WriteOperationResult`1.ExistingRow
   name: ExistingRow
   href: api/Oracle.NoSQL.SDK.WriteOperationResult-1.ExistingRow.html#Oracle_NoSQL_SDK_WriteOperationResult_1_ExistingRow

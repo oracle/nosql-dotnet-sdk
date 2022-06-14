@@ -863,7 +863,7 @@ try {
     var preparedStatement = await client.PrepareAsync(sql);
 
     // Set value for $name variable and execute the query
-    preparedStatement.Variables[&quot;$name&quot;] = &quot;Taylor&quot;;
+    preparedStatement.SetVariable(&quot;$name&quot;, &quot;Taylor&quot;);
     await foreach(var result in client.GetQueryAsyncEnumerable(
         preparedStatement))
     {
@@ -873,7 +873,7 @@ try {
     }
 
     // Set different value for $name and re-execute the query.
-    preparedStatement.Variables[&quot;$name&quot;] = &quot;Jane&quot;;
+    preparedStatement.SetVariable(&quot;$name&quot;, &quot;Jane&quot;);
     await foreach(var result in client.GetQueryAsyncEnumerable(
         preparedStatement))
     {
@@ -1318,26 +1318,56 @@ use all of the throughput available for the table.</p>
 <p>The better approach would be to avoid throttling entirely by rate-limiting
 your application. In this context <em>rate-limiting</em> means keeping operation
 rates under the limits for the table.</p>
-<p>When you run your operations in a loop, rate-limiting may be as simple as
-adding constant delay between your operations in the loop (the delay, like
-operations themselves, should be asynchronous).  This applies to single row
-operations such as <em>Get</em> and <em>Put</em> as well as to reading query results in a
-loop or using <em>DeleteRange</em> operation in a loop.</p>
-<p>This approach may be improved by computing the delay based on how much
-throughput has been consumed by an operation. All data-related operation
-results such as <a class="xref" href="../api/Oracle.NoSQL.SDK.GetResult-1.html">GetResult</a>,
-<a class="xref" href="../api/Oracle.NoSQL.SDK.PutResult-1.html">PutResult</a>,
-<a class="xref" href="../api/Oracle.NoSQL.SDK.DeleteResult-1.html">DeleteResult</a>,
-<a class="xref" href="../api/Oracle.NoSQL.SDK.DeleteRangeResult.html">DeleteRangeResult</a>,
-<a class="xref" href="../api/Oracle.NoSQL.SDK.WriteManyResult-1.html">WriteManyResult</a>,
-<a class="xref" href="../api/Oracle.NoSQL.SDK.PreparedStatement.html">PreparedStatement</a> and
-<a class="xref" href="../api/Oracle.NoSQL.SDK.QueryResult-1.html">QueryResult</a> include
-<em>ConsumedCapacity</em> property.
-<a class="xref" href="../api/Oracle.NoSQL.SDK.ConsumedCapacity.html">ConsumedCapacity</a> tells
-you how many write and read units, as well as write and read KB has been
-consumed by an operation.  You may use this information to keep the throughput
-within the table limits.</p>
-<p>For queries, another option would be to reduce the amount of data read and/or
+<p>The SDK provides support for rate limiting.  To use rate limiting, you must
+set the property
+<a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLConfig.RateLimitingEnabled.html#Oracle_NoSQL_SDK_NoSQLConfig_RateLimitingEnabled">NoSQLConfig.RateLimitingEnabled</a>
+of the initial configuration used to create
+<a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLClient.html">NoSQLClient</a> instance, e.g.:</p>
+<pre><code class="lang-csharp">var client = new NoSQLClient(
+    new NoSQLConfig
+    {
+        Region = Region.US_ASHBURN_1,
+        AuthorizationProvider = new IAMAuthorizationProvider(
+            &quot;~/myapp/.oci/config&quot;, &quot;Jane&quot;),
+        RateLimitingEnabled = true
+    });
+</code></pre>
+<p>Internally, a pair of rate limiters is created for each table, one for read
+operations and another for write operations.  All rate limiters implement
+<a class="xref" href="../api/Oracle.NoSQL.SDK.IRateLimiter.html">IRateLimiter</a> interface.</p>
+<p>By default, the SDK uses rate-limiting algorithm implemented by
+<a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLRateLimiter.html">NoSQLRateLimiter</a> class.  You may
+choose instead to implement custom rate-limiting logic by creating your own
+implementation of <a class="xref" href="../api/Oracle.NoSQL.SDK.IRateLimiter.html">IRateLimiter</a>
+interface and providing a factory delegate to create your own rate limiters
+by setting
+<a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLConfig.RateLimiterCreator.html#Oracle_NoSQL_SDK_NoSQLConfig_RateLimiterCreator">NoSQLConfig.RateLimiterCreator</a>
+property of the initial configuration.</p>
+<p>Note that by default rate limiting in the SDK assumes that read and write
+operations are issued from only one
+<a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLClient.html">NoSQLClient</a> instance. This might not work
+as expected when using multiple clients against the same table.  You may
+improve this by allocating only a percentage of each table's limits to a given
+<a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLClient.html">NoSQLClient</a> instance by setting
+<a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLConfig.RateLimiterPercent.html#Oracle_NoSQL_SDK_NoSQLConfig_RateLimiterPercent">NoSQLConfig.RateLimiterPercent</a>
+property of the initial configuration.</p>
+<p>Here is an example of a more custom configuration:</p>
+<pre><code class="lang-csharp">var client = new NoSQLClient(
+    new NoSQLConfig
+    {
+        Region = Region.US_ASHBURN_1,
+        AuthorizationProvider = new IAMAuthorizationProvider(
+            &quot;~/myapp/.oci/config&quot;, &quot;Jane&quot;),
+        RateLimitingEnabled = true,
+        RateLimiterPercent = 20,
+        RateLimiterCreator = () =&gt; new MyRateLimiter()
+    });
+</code></pre>
+<p>For more information, see API documentation for
+<a class="xref" href="../api/Oracle.NoSQL.SDK.IRateLimiter.html">IRateLimiter</a>,
+<a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLRateLimiter.html">NoSQLRateLimiter</a> and
+<a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLConfig.html">NoSQLConfig</a>.</p>
+<p>Note that you may further reduce the amount of data read and/or
 written (for update queries) in a single iteration step call by setting
 <a class="xref" href="../api/Oracle.NoSQL.SDK.QueryOptions.MaxReadKB.html#Oracle_NoSQL_SDK_QueryOptions_MaxReadKB">MaxReadKB</a> and
 <a class="xref" href="../api/Oracle.NoSQL.SDK.QueryOptions.MaxWriteKB.html#Oracle_NoSQL_SDK_QueryOptions_MaxWriteKB">MaxWriteKB</a> options. You
