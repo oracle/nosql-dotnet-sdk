@@ -31,7 +31,7 @@ to download Oracle NoSQL Database.  See
 [Oracle NoSQL Database Documentation](https://docs.oracle.com/en/database/other-databases/nosql-database/index.html)
 to get started with Oracle NoSQL Database.
 In particular, see the
-[Administrator Guide](https://docs.oracle.com/en/database/other-databases/nosql-database/20.3/admin/index.html)
+[Administrator Guide](https://docs.oracle.com/en/database/other-databases/nosql-database/22.1/admin/index.html)
 on how to install, configure and run Oracle NoSQL Database Service.
 * Optionally, [Visual Studio 2019](https://visualstudio.microsoft.com/downloads/)
 or later, or [Visual Studio Code](https://code.visualstudio.com/).
