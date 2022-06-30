@@ -240,7 +240,7 @@ methods.  These methods return only when the DDL operation is fully completed
 by the service or throw an exception if the execution of the DDL operation
 failed.  The resulting
 [TableResult](xref:Oracle.NoSQL.SDK.TableResult) instance will
-have table state 
+have table state
 [TableState.Active](xref:Oracle.NoSQL.SDK.TableState.Active) or
 [TableState.Dropped](xref:Oracle.NoSQL.SDK.TableState.Dropped)
 (if the DDL operation was *DROP TABLE*).
@@ -254,7 +254,7 @@ try
     var statement =
         "CREATE TABLE IF NOT EXISTS users(id INTEGER, " +
         "name STRING, PRIMARY KEY(id))";
-        
+
     var result = await client.ExecuteTableDDLAsync(statement,
         new TableLimits(20, 10, 5));
 
@@ -453,7 +453,7 @@ try
             ["id"] = 1,
             ["name"] = "Jane"
         });
-    
+
     // Expected output: PutIfAbsentAsync failed.
     Console.WriteLine("PutIfAbsentAsync {0}.",
         result.Success ? "succeeded" : "failed");
@@ -608,7 +608,7 @@ try
          {
             Consistency = Consistency.Absolute
          });
-    
+
     // The expected output will be:
     // { "id": 2, "name": "Jack" }
     Console.WriteLine("Got row with absolute consistency: {0}",
@@ -904,7 +904,7 @@ property of [DeleteOptions](xref:Oracle.NoSQL.SDK.DeleteOptions).
 
 [DeleteAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.DeleteAsync*) and
 [DeleteIfVersionAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.DeleteIfVersionAsync*)
-methods return 
+methods return
 *Task<[DeleteResult](xref:Oracle.NoSQL.SDK.DeleteResult`1)<[RecordValue](xref:Oracle.NoSQL.SDK.RecordValue)>>*.
 [DeleteResult](xref:Oracle.NoSQL.SDK.DeleteResult`1) instance contains
 success status of the *Delete* operation. *Delete* operation may fail if the
@@ -980,7 +980,7 @@ try
     // changed the row version, so the old version no longer matches.
     // The result will also contain existing row and its version because
     // we specified ReturnExisting in DeleteOptions.
-    
+
     deleteResult = await client.DeleteIfVersionAsync(tableName,
         primaryKey, version);
 
@@ -1083,7 +1083,7 @@ try
 {
     var result = await client.SetTableLimitsWithCompletionAsync(
         tableName, new TableLimits(40, 10, 5));
-    
+
     // Expected output: Table state is Active.
     Console.WriteLine("Table state is {0}.", result.TableState);
 
@@ -1396,7 +1396,7 @@ operations are issued from only one
 [NoSQLClient](xref:Oracle.NoSQL.SDK.NoSQLClient) instance. This might not work
 as expected when using multiple clients against the same table.  You may
 improve this by allocating only a percentage of each table's limits to a given
-[NoSQLClient](xref:Oracle.NoSQL.SDK.NoSQLClient) instance by setting 
+[NoSQLClient](xref:Oracle.NoSQL.SDK.NoSQLClient) instance by setting
 [NoSQLConfig.RateLimiterPercent](xref:Oracle.NoSQL.SDK.NoSQLConfig.RateLimiterPercent)
 property of the initial configuration.
 
@@ -1445,7 +1445,7 @@ of such statements include:
 
 Note that management of users and roles as in the last 3 examples above is
 available only when using
-[secure kvstore](https://docs.oracle.com/en/database/other-databases/nosql-database/21.1/security/index.html).
+[secure kvstore](https://docs.oracle.com/en/database/other-databases/nosql-database/22.1/security/index.html).
 
 These methods optional options object as
 [AdminOptions](xref:Oracle.NoSQL.SDK.AdminOptions) and return
@@ -1486,11 +1486,11 @@ catch(Exception ex)
 }
 ```
 
-Some other operations are immediate and are completed when 
+Some other operations are immediate and are completed when
 [ExecuteAdminAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.ExecuteAdminAsync*)
 produces the result.  These are readonly operations that don't modify system
 state but only return back information, such as *SHOW* commands (see
-[Shell Utility Commands](https://docs.oracle.com/en/database/other-databases/nosql-database/21.1/sqlfornosql/shell-utility-commands.html#GUID-70FA12B5-6AD3-4965-9163-FA9549078EC7)).
+[Shell Utility Commands](https://docs.oracle.com/en/database/other-databases/nosql-database/22.1/sqlfornosql/shell-utility-commands.html#GUID-70FA12B5-6AD3-4965-9163-FA9549078EC7)).
 
 Because some statements, such as *CREATE USER*, may include passwords, both
 [ExecuteAdminAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.ExecuteAdminAsync*)
