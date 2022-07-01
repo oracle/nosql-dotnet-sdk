@@ -121,7 +121,7 @@ namespace Oracle.NoSQL.SDK
                     var delay = Config.RetryHandler.GetRetryDelay(request);
                     endTime -= delay;
 
-                    if (now > endTime)
+                    if (now >= endTime)
                     {
                         throw GetTimeoutException(now - startTime,
                             request.RetryCount, ex);
@@ -196,6 +196,13 @@ namespace Oracle.NoSQL.SDK
             Debug.Assert(result != null);
             var timeout = request.Options?.Timeout - (DateTime.Now -
                 startTime);
+
+            if (timeout <= TimeSpan.Zero)
+            {
+                // Make sure timeout is positive.
+                timeout = TimeSpan.FromMilliseconds(1);
+            }
+
             return await result.WaitForCompletionAsync(timeout,
                 request.Options?.PollDelay, cancellationToken);
         }
@@ -205,20 +212,20 @@ namespace Oracle.NoSQL.SDK
             TimeSpan? timeout, TimeSpan? pollDelay,
             CancellationToken cancellationToken)
         {
-            var tablePollTimeout = timeout ?? Config.TablePollTimeout;
-            var tablePollDelay = pollDelay ?? Config.TablePollDelay;
-            CheckPollParameters(tablePollTimeout, tablePollDelay,
-                nameof(timeout), nameof(pollDelay));
-
             if (tableResult.TableState == tableState)
             {
                 return;
             }
 
+            var tablePollTimeout = timeout ?? Config.TablePollTimeout;
+            var tablePollDelay = pollDelay ?? Config.TablePollDelay;
+
             var options = new GetTableOptions
             {
                 Compartment = tableResult.CompartmentId,
-                Timeout = Config.Timeout
+                Timeout = tablePollTimeout < Config.Timeout
+                    ? tablePollTimeout
+                    : Config.Timeout
             };
 
             var request = new GetTableRequest(this, tableResult.TableName,
@@ -290,20 +297,21 @@ namespace Oracle.NoSQL.SDK
             AdminResult adminResult, TimeSpan? timeout, TimeSpan? pollDelay,
             CancellationToken cancellationToken)
         {
-            var adminPollTimeout = timeout ?? Config.AdminPollTimeout;
-            var adminPollDelay = pollDelay ?? Config.AdminPollDelay;
-            CheckPollParameters(adminPollTimeout, adminPollDelay,
-                nameof(timeout), nameof(pollDelay));
-
             if (adminResult.State == AdminState.Complete)
             {
                 return;
             }
 
-            var options = new GetAdminStatusOptions()
+            var adminPollTimeout = timeout ?? Config.AdminPollTimeout;
+            var adminPollDelay = pollDelay ?? Config.AdminPollDelay;
+
+            var options = new GetAdminStatusOptions
             {
-                Timeout = Config.Timeout
+                Timeout = adminPollTimeout < Config.Timeout
+                    ? adminPollTimeout
+                    : Config.Timeout
             };
+
             var request = new AdminStatusRequest(this, adminResult, options);
             var startTime = DateTime.Now;
 

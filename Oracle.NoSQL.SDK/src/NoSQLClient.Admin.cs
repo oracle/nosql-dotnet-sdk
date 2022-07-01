@@ -222,8 +222,16 @@ namespace Oracle.NoSQL.SDK {
             var result = (AdminResult) await ExecuteRequestAsync(request,
                 cancellationToken);
             Debug.Assert(result != null);
+
             var timeout = request.Options?.Timeout -
                 (DateTime.Now - startTime);
+
+            if (timeout <= TimeSpan.Zero)
+            {
+                // Make sure timeout is positive.
+                timeout = TimeSpan.FromMilliseconds(1);
+            }
+
             return await result.WaitForCompletionAsync(timeout,
                 request.Options?.PollDelay, cancellationToken);
         }
