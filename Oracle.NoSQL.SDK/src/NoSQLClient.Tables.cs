@@ -634,10 +634,14 @@ namespace Oracle.NoSQL.SDK {
         {
             CheckTableName(tableName);
             CheckEnumValue(tableState);
+            CheckPollParameters(options?.Timeout, options?.PollDelay,
+                nameof(options.Timeout), nameof(options.PollDelay));
+
             var result = new TableResult
             {
                 TableName = tableName
             };
+
             await WaitForTableStateInternalAsync(result, tableState,
                 options?.Timeout, options?.PollDelay, cancellationToken);
             return result;

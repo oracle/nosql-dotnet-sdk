@@ -208,7 +208,7 @@ namespace Oracle.NoSQL.SDK
             }
 
             var tableState = request.Statement != null &&
-                Regex.IsMatch(request.Statement, "^\\s*DROP\\s+TABLE",
+                Regex.IsMatch(request.Statement, @"^\s*DROP\s+TABLE\s+",
                     RegexOptions.IgnoreCase) ?
                     TableState.Dropped : TableState.Active;
 

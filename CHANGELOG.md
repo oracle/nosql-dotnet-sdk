@@ -32,6 +32,8 @@ SDKs.
 
 **Fixed**
 
+* Fixed potential invalid timeout errors and make sure table state polling or
+admin operation status polling do not run over timeout.
 * Fixed erroneous min-max comparison in group iterator.
 * Fixed erroneous returned result in group iterator when no aggregates are
 present.

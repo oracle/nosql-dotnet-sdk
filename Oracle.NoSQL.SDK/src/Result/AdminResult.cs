@@ -11,6 +11,7 @@ namespace Oracle.NoSQL.SDK
     using System.Diagnostics;
     using System.Threading;
     using System.Threading.Tasks;
+    using static ValidateUtils;
 
     /// <summary>
     /// On-premise only.  Represents the status of an admin DDL operation and
@@ -152,6 +153,9 @@ namespace Oracle.NoSQL.SDK
             CancellationToken cancellationToken = default)
         {
             Debug.Assert(client != null);
+            CheckPollParameters(timeout, pollDelay, nameof(timeout),
+                nameof(pollDelay));
+
             await client.WaitForAdminCompletionAsync(this, timeout,
                 pollDelay, cancellationToken);
             return this;
