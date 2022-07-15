@@ -32,6 +32,8 @@ SDKs.
 
 **Fixed**
 
+* Fixed an issue when using PrivateKeyPEM property for IAM authentication to
+allow both Unix and Windows line endings in the PEM string.
 * Fixed potential invalid timeout errors and make sure table state polling or
 admin operation status polling do not run over timeout.
 * Fixed erroneous min-max comparison in group iterator.

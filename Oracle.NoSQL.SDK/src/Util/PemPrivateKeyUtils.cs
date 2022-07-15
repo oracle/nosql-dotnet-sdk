@@ -184,7 +184,9 @@ namespace Oracle.NoSQL.SDK {
         {
             try
             {
-                return GetFromPEM(pem.Split(Environment.NewLine), passphrase);
+                return GetFromPEM(
+                    pem.Split(new[] { "\r\n", "\r", "\n" },
+                        StringSplitOptions.None), passphrase);
             }
             catch (Exception ex)
             {
