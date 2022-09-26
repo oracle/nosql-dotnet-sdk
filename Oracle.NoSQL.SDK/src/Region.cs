@@ -111,6 +111,9 @@ namespace Oracle.NoSQL.SDK
         private static readonly Realm OC4 = new Realm("oc4",
             "oraclegovcloud.uk");
 
+        private static readonly Realm OC5 = new Realm("oc5",
+            "oraclecloud5.com");
+
         private static readonly Realm OC8 = new Realm("oc8",
             "oraclecloud8.com");
 
@@ -119,6 +122,9 @@ namespace Oracle.NoSQL.SDK
 
         private static readonly Realm OC10 = new Realm("oc10",
             "oraclecloud10.com");
+
+        private static readonly Realm OC14 = new Realm("oc14",
+            "oraclecloud14.com");
 
         private readonly Realm realm;
 
@@ -449,6 +455,12 @@ namespace Oracle.NoSQL.SDK
             "sjc", OC1);
 
         /// <summary>
+        /// Realm: OC1, US Central (Chicago)
+        /// </summary>
+        public static readonly Region US_CHICAGO_1 = new Region("us-chicago-1",
+            "ord", OC1);
+
+        /// <summary>
         /// Realm: OC1, Canada Southeast (Toronto)
         /// </summary>
         public static readonly Region CA_TORONTO_1 = new Region("ca-toronto-1",
@@ -521,6 +533,12 @@ namespace Oracle.NoSQL.SDK
             "uk-gov-london-1", "ltn", OC4);
 
         /// <summary>
+        /// Realm: OC5, US West (Tacoma)
+        /// </summary>
+        public static readonly Region US_TACOMA_1 = new Region(
+            "us-tacoma-1", "tiw", OC5);
+
+        /// <summary>
         /// Realm: OC8, Japan East (Chiyoda)
         /// </summary>
         public static readonly Region AP_CHIYODA_1 = new Region(
@@ -544,6 +562,12 @@ namespace Oracle.NoSQL.SDK
         /// </summary>
         public static readonly Region AP_DCC_CANBERRA_1 = new Region(
             "ap-dcc-canberra-1", "wga", OC10);
+
+        /// <summary>
+        /// Realm: OC14, Italy (Milan)
+        /// </summary>
+        public static readonly Region EU_DCC_MILAN_1 = new Region(
+            "eu-dcc-milan-1", "bgy", OC14);
 
     }
 }
