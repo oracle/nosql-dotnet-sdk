@@ -12,7 +12,7 @@ namespace Oracle.NoSQL.SDK
     /// <summary>
     /// Cloud Service/Cloud Simulator only.  The exception that is thrown when
     /// the number of write operations passed to
-    /// <see cref="NoSQLClient.WriteManyAsync"/>,
+    /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.WriteManyAsync*"/>,
     /// <see cref="NoSQLClient.PutManyAsync"/> or
     /// <see cref="NoSQLClient.DeleteManyAsync"/> exceeds the system-defined
     /// limit.
@@ -20,11 +20,12 @@ namespace Oracle.NoSQL.SDK
     /// <remarks>
     /// The number of write operations may mean the number of operations in
     /// <see cref="WriteOperationCollection"/> passed to
-    /// <see cref="NoSQLClient.WriteManyAsync"/>, then number of rows passed
-    /// to <see cref="NoSQLClient.PutManyAsync"/> or the number of primary
-    /// keys passed to <see cref="NoSQLClient.DeleteManyAsync"/>.
+    /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.WriteManyAsync*"/>, the
+    /// number of rows passed to <see cref="NoSQLClient.PutManyAsync"/> or
+    /// the number of primary keys passed to
+    /// <see cref="NoSQLClient.DeleteManyAsync"/>.
     /// </remarks>
-    /// <seealso cref="NoSQLClient.WriteManyAsync"/>
+    /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.WriteManyAsync*"/>
     /// <seealso cref="NoSQLClient.PutManyAsync"/>
     /// <seealso cref="NoSQLClient.DeleteManyAsync"/>
     public class BatchOperationNumberLimitException : NoSQLException

@@ -7,19 +7,14 @@
 
 namespace Oracle.NoSQL.SDK
 {
+    using System.Collections.Generic;
+
     public partial class WriteOperationCollection
     {
-        private void AddPutOp(PutOperation putOp)
-        {
-            putOp.Validate();
-            AddValidatedPutOp(putOp);
-        }
+        private readonly List<IWriteOperation> ops;
 
-        private void AddDeleteOp(DeleteOperation deleteOp)
-        {
-            deleteOp.Validate();
-            AddValidatedDeleteOp(deleteOp);
-        }
+        // Used by rate limiting.
+        internal bool DoesReads { get; private set; }
 
         // Avoid repeated validation of options when creating
         // WriteOperationCollection for PutManyAsync.
@@ -40,93 +35,193 @@ namespace Oracle.NoSQL.SDK
             ops.Add(deleteOp);
         }
 
+        internal void AddPutOp(PutOperation putOp)
+        {
+            putOp.Validate();
+            AddValidatedPutOp(putOp);
+        }
+
+        internal void AddDeleteOp(DeleteOperation deleteOp)
+        {
+            deleteOp.Validate();
+            AddValidatedDeleteOp(deleteOp);
+        }
+
+        internal IWriteOperation this[int idx] => ops[idx];
+
+        internal WriteOperationCollection AddPut<TRow>(string tableName,
+            TRow row, PutOptions options, bool abortIfUnsuccessful = false)
+        {
+            AddPutOp(new PutOperation(tableName, row, options,
+                abortIfUnsuccessful));
+            return this;
+        }
+
+        internal WriteOperationCollection AddPut<TRow>(string tableName,
+            TRow row, bool abortIfUnsuccessful = false)
+        {
+            return AddPut(tableName, row, null, abortIfUnsuccessful);
+        }
+
+        internal WriteOperationCollection AddPutIfAbsent<TRow>(
+            string tableName, TRow row, PutOptions options,
+            bool abortIfUnsuccessful = false)
+        {
+            AddPutOp(new PutIfAbsentOperation(tableName, row,
+                options, abortIfUnsuccessful));
+            return this;
+        }
+
+        internal WriteOperationCollection AddPutIfAbsent<TRow>(
+            string tableName, TRow row, bool abortIfUnsuccessful = false)
+        {
+            return AddPutIfAbsent(tableName, row, null, abortIfUnsuccessful);
+        }
+
+        internal WriteOperationCollection AddPutIfPresent<TRow>(
+            string tableName, TRow row, PutOptions options,
+            bool abortIfUnsuccessful = false)
+        {
+            AddPutOp(new PutIfPresentOperation(tableName, row,
+                options, abortIfUnsuccessful));
+            return this;
+        }
+
+        internal WriteOperationCollection AddPutIfPresent<TRow>(
+            string tableName, TRow row, bool abortIfUnsuccessful = false)
+        {
+            return AddPutIfPresent(tableName, row, null, abortIfUnsuccessful);
+        }
+
+        internal WriteOperationCollection AddPutIfVersion<TRow>(
+            string tableName, TRow row, RowVersion matchVersion,
+            PutOptions options, bool abortIfUnsuccessful = false)
+        {
+            AddPutOp(new PutIfVersionOperation(tableName, row,
+                matchVersion, options, abortIfUnsuccessful));
+            return this;
+        }
+
+        internal WriteOperationCollection AddPutIfVersion<TRow>(
+            string tableName, TRow row, RowVersion matchVersion,
+            bool abortIfUnsuccessful = false)
+        {
+            return AddPutIfVersion(tableName, row, matchVersion, null,
+                abortIfUnsuccessful);
+        }
+
+        internal WriteOperationCollection AddDelete(string tableName,
+            object primaryKey, DeleteOptions options,
+            bool abortIfUnsuccessful = false)
+        {
+            AddDeleteOp(new DeleteOperation(tableName, primaryKey,
+                options, abortIfUnsuccessful));
+            return this;
+        }
+
+        internal WriteOperationCollection AddDelete(string tableName,
+            object primaryKey, bool abortIfUnsuccessful = false)
+        {
+            return AddDelete(tableName, primaryKey, null,
+                abortIfUnsuccessful);
+        }
+
+        internal WriteOperationCollection AddDeleteIfVersion(
+            string tableName, object primaryKey, RowVersion matchVersion,
+            DeleteOptions options, bool abortIfUnsuccessful = false)
+        {
+            AddDeleteOp(new DeleteIfVersionOperation(tableName,
+                primaryKey, matchVersion, options, abortIfUnsuccessful));
+            return this;
+        }
+
+        internal WriteOperationCollection AddDeleteIfVersion(
+            string tableName, object primaryKey, RowVersion matchVersion,
+            bool abortIfUnsuccessful = false)
+        {
+            return AddDeleteIfVersion(tableName, primaryKey, matchVersion,
+                null, abortIfUnsuccessful);
+        }
+
         internal WriteOperationCollection AddPut<TRow>(TRow row,
             PutOptions options, bool abortIfUnsuccessful = false)
         {
-            AddPutOp(new PutOperation(row, options, abortIfUnsuccessful));
-            return this;
+            return AddPut(null, row, options, abortIfUnsuccessful);
         }
 
         internal WriteOperationCollection AddPut<TRow>(TRow row,
             bool abortIfUnsuccessful = false)
         {
-            return AddPut(row, null, abortIfUnsuccessful);
+            return AddPut(null, row, null, abortIfUnsuccessful);
         }
 
         internal WriteOperationCollection AddPutIfAbsent<TRow>(TRow row,
             PutOptions options, bool abortIfUnsuccessful = false)
         {
-            AddPutOp(new PutIfAbsentOperation(row, options,
-                abortIfUnsuccessful));
-            return this;
+            return AddPutIfAbsent(null, row, options, abortIfUnsuccessful);
         }
 
         internal WriteOperationCollection AddPutIfAbsent<TRow>(TRow row,
             bool abortIfUnsuccessful = false)
         {
-            return AddPutIfAbsent(row, null, abortIfUnsuccessful);
+            return AddPutIfAbsent(null, row, null, abortIfUnsuccessful);
         }
 
         internal WriteOperationCollection AddPutIfPresent<TRow>(TRow row,
             PutOptions options, bool abortIfUnsuccessful = false)
         {
-            AddPutOp(new PutIfPresentOperation(row, options,
-                abortIfUnsuccessful));
-            return this;
+            return AddPutIfPresent(null, row, options, abortIfUnsuccessful);
         }
 
         internal WriteOperationCollection AddPutIfPresent<TRow>(TRow row,
             bool abortIfUnsuccessful = false)
         {
-            return AddPutIfPresent(row, null, abortIfUnsuccessful);
+            return AddPutIfPresent(null, row, null, abortIfUnsuccessful);
         }
 
         internal WriteOperationCollection AddPutIfVersion<TRow>(TRow row,
             RowVersion matchVersion, PutOptions options,
             bool abortIfUnsuccessful = false)
         {
-            AddPutOp(new PutIfVersionOperation(row, matchVersion, options,
-                abortIfUnsuccessful));
-            return this;
+            return AddPutIfVersion(null, row, matchVersion, options,
+                abortIfUnsuccessful);
         }
 
         internal WriteOperationCollection AddPutIfVersion<TRow>(TRow row,
             RowVersion matchVersion,
             bool abortIfUnsuccessful = false)
         {
-            return AddPutIfVersion(row, matchVersion, null,
+            return AddPutIfVersion(null, row, matchVersion, null,
                 abortIfUnsuccessful);
         }
 
         internal WriteOperationCollection AddDelete(object primaryKey,
             DeleteOptions options, bool abortIfUnsuccessful = false)
         {
-            AddDeleteOp(new DeleteOperation(primaryKey, options,
-                abortIfUnsuccessful));
-            return this;
+            return AddDelete(null, primaryKey, options, abortIfUnsuccessful);
         }
 
         internal WriteOperationCollection AddDelete(object primaryKey,
             bool abortIfUnsuccessful = false)
         {
-            return AddDelete(primaryKey, null, abortIfUnsuccessful);
+            return AddDelete(null, primaryKey, null, abortIfUnsuccessful);
         }
 
         internal WriteOperationCollection AddDeleteIfVersion(
             object primaryKey, RowVersion matchVersion,
             DeleteOptions options, bool abortIfUnsuccessful = false)
         {
-            AddDeleteOp(new DeleteIfVersionOperation(primaryKey, matchVersion,
-                options, abortIfUnsuccessful));
-            return this;
+            return AddDeleteIfVersion(null, primaryKey, matchVersion, options,
+                abortIfUnsuccessful);
         }
 
         internal WriteOperationCollection AddDeleteIfVersion(
             object primaryKey, RowVersion matchVersion,
             bool abortIfUnsuccessful = false)
         {
-            return AddDeleteIfVersion(primaryKey, matchVersion, null,
+            return AddDeleteIfVersion(null, primaryKey, matchVersion, null,
                 abortIfUnsuccessful);
         }
     }
+
 }

@@ -102,10 +102,16 @@ namespace Oracle.NoSQL.SDK.Tests
                 Fields = fields;
             }
 
-            internal RecordFieldType(IReadOnlyList<TableField> fields) :
-                base(DataType.Record)
+            // For both parent and child tables.
+            internal RecordFieldType(IReadOnlyList<TableField> parentFields,
+                IReadOnlyList<TableField> fields) : base(DataType.Record)
             {
-                Fields = fields;
+                Fields = parentFields?.Concat(fields).ToArray() ?? fields;
+            }
+
+            internal RecordFieldType(IReadOnlyList<TableField> fields) :
+                this(null, fields)
+            {
             }
 
             internal IReadOnlyList<TableField> Fields { get; }
@@ -173,17 +179,36 @@ namespace Oracle.NoSQL.SDK.Tests
 
         public class TableInfo
         {
-            internal TableInfo(string name, TableLimits tableLimits,
-                TableField[] fields, string[] primaryKey,
-                int shardKeySize = 0)
+            private TableInfo(TableInfo parent, string name,
+                TableLimits tableLimits, TableField[] fields,
+                string[] primaryKey, int shardKeySize)
             {
+                Parent = parent;
                 Name = name;
                 TableLimits = tableLimits;
                 Fields = fields;
                 PrimaryKey = primaryKey;
                 ShardKeySize = shardKeySize;
-                RecordType = new RecordFieldType(fields);
+                RecordType = new RecordFieldType(
+                    parent?.GetPrimaryKeyFields(), fields);
             }
+
+            internal TableInfo(string name, TableLimits tableLimits,
+                TableField[] fields, string[] primaryKey,
+                int shardKeySize = 0) : this(null, name, tableLimits, fields,
+                primaryKey, shardKeySize)
+            {
+            }
+
+            // For child tables
+            internal TableInfo(TableInfo parent, string name,
+                TableField[] fields, string[] primaryKey) : this(parent, name,
+                null, fields, primaryKey, 0)
+            {
+            }
+
+            // For child tables
+            internal TableInfo Parent { get; }
 
             internal string Name { get; }
 
@@ -205,6 +230,17 @@ namespace Oracle.NoSQL.SDK.Tests
             {
                 var result = Array.Find(Fields, elem => elem.Name == name);
                 Assert.IsNotNull(result); // test self-check
+                return result;
+            }
+
+            internal TableField[] GetPrimaryKeyFields()
+            {
+                var result = new TableField[PrimaryKey.Length];
+                for (var i = 0; i < result.Length; i++)
+                {
+                    result[i] = GetField(PrimaryKey[i]);
+                }
+
                 return result;
             }
         }
@@ -291,6 +327,11 @@ namespace Oracle.NoSQL.SDK.Tests
         internal static MapValue DoMakePrimaryKey(TableInfo table,
             MapValue row, MapValue pk)
         {
+            if (table.Parent != null)
+            {
+                DoMakePrimaryKey(table.Parent, row, pk);
+            }
+
             foreach (var pkField in table.PrimaryKey)
             {
                 pk[pkField] = row[pkField];

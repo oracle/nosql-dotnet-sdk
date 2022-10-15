@@ -888,17 +888,26 @@ namespace Oracle.NoSQL.SDK {
         }
 
         /// <summary>
-        /// Atomically executes a sequence of Put and Delete operations on a
-        /// table.
+        /// Atomically executes a sequence of Put and Delete operations on one
+        /// or more tables that share the same shard key.
         /// </summary>
         /// <remarks>
         /// <para>
         /// This method executes a sequence of put and delete operations
-        /// associated with a table that share the same <em>shard key</em>
-        /// portion of their primary keys.  All the specified operations are
-        /// executed within the scope of a single transaction, thus making the
-        /// operation atomic.  It is an efficient way to atomically modify
-        /// multiple related rows.
+        /// associated with one or more tables that share the same
+        /// <em>shard key</em> portion of their primary keys.  All the
+        /// specified operations are executed within the scope of a single
+        /// transaction, thus making the operation atomic.  It is an
+        /// efficient way to atomically modify multiple related rows.
+        /// </para>
+        /// <para>
+        /// You can issue operations for multiple tables as long as these
+        /// tables have the same shard key.  This means that these tables must
+        /// be part of the same parent/child table hierarchy that has a single
+        /// ancestor table specifying the shard key. Thus you may include
+        /// operations for this ancestor table and/or any of its descendants
+        /// (for example, parent and child tables, sibling tables, etc.).  All
+        /// operations must be on rows that share the same shard key value.
         /// </para>
         /// <para>
         /// There are some size-based limitations on this operation:
@@ -920,14 +929,22 @@ namespace Oracle.NoSQL.SDK {
         /// The sequence of Put and Delete operations to execute is specified
         /// as <see cref="WriteOperationCollection"/>.  Each operation must be
         /// on a distinct row in the table (you may not have multiple
-        /// operations share the same primary key).  When you add an operation
-        /// to the collection, you may also specify its
-        /// <see cref="PutOptions"/> or <see cref="DeleteOptions"/>.  You may
-        /// share the same options object between different operations in the
-        /// collection.  You may not specify <em>Compartment</em> and
-        /// <em>Timeout</em> properties in the options added to the
-        /// collection, these can only be specified as part of
+        /// operations on the same table that share the same primary key).
+        /// When you add an operation to the collection, you may also specify
+        /// its <see cref="PutOptions"/> or <see cref="DeleteOptions"/>.  You
+        /// may share the same options object between different operations in
+        /// the collection.  You may not specify <em>Compartment</em>,
+        /// <em>Timeout</em> or <em>Durability</em> properties in the options
+        /// added to the collection, these can only be specified as part of
         /// <see cref="WriteManyOptions"/>.
+        /// </para>
+        /// <para>
+        /// Using this method requires specifying table name for each
+        /// operation.  Thus, to add operations to
+        /// <see cref="WriteOperationCollection"/> you must use methods of
+        /// <see cref="WriteOperationCollection"/> that take table name as a
+        /// parameter.  See <see cref="WriteOperationCollection"/> for
+        /// details.
         /// </para>
         /// <para>
         /// <em>AbortIfUnsuccessful</em> parameter specifies whether the whole
@@ -961,14 +978,102 @@ namespace Oracle.NoSQL.SDK {
         /// respectively.
         /// </para>
         /// <para>
-        /// If the operations are all Put or all Delete and it is sufficient
-        /// to specify the same options for all operations (instead of
-        /// on per-operation basis), you may also opt to use easier APIs
-        /// <see cref="PutManyAsync"/> and <see cref="DeleteManyAsync"/>.
+        /// If all operations are for single table, you may also use
+        /// <see cref="WriteManyAsync(string, WriteOperationCollection, WriteManyOptions, CancellationToken)"/>
+        /// method. If, in addition, the operations are all Put or all Delete
+        /// and it is sufficient to specify the same options for all
+        /// operations (instead of on per-operation basis), you may also opt
+        /// to use simpler APIs <see cref="PutManyAsync"/> and
+        /// <see cref="DeleteManyAsync"/>.
         /// </para>
         /// </remarks>
         /// <example>
-        /// Performing WriteMany operation.
+        /// Performing WriteMany operation with parent table "emp" and
+        /// child table "emp.expenses".
+        /// <code>
+        /// var row = new MapValue
+        /// {
+        ///     ["id"] = 1000,
+        ///     ["name"] = "Jane"
+        /// };
+        ///
+        /// var childRow = new MapValue
+        /// {
+        ///     ["id"] = 1001,
+        ///     ["name"] = "Jane",
+        ///     ["expenseId"] = 100001,
+        ///     ["expenseTitle"] = "Books"
+        /// };
+        /// var primaryKey = new MapValue
+        /// {
+        ///     ["id"] = 2000
+        /// };
+        ///
+        /// var result = await client.WriteManyAsync(
+        ///     new WriteOperationCollection()
+        ///         .AddPut("emp", row)
+        ///         .AddPutIfAbsent("emp.expenses", childRow, true)
+        ///         .AddDelete("emp", primaryKey, true));
+        /// </code>
+        /// </example>
+        /// <param name="operations">Collection of Put and Delete operations
+        /// to execute in a single transaction.</param>
+        /// <param name="options">(Optional) Options for the WriteMany
+        /// operation. If not specified or <c>null</c>, appropriate defaults
+        /// will be used.  See <see cref="WriteManyOptions"/>.</param>
+        /// <param name="cancellationToken">(Optional) Cancellation token.
+        /// </param>
+        /// <returns>Task returning <see cref="WriteManyResult{TRow}"/>.
+        /// </returns>
+        /// <exception cref="ArgumentException"> If
+        /// <paramref name="operations"/> is <c>null</c> or empty or
+        /// <paramref name="options"/> contains invalid values.
+        /// </exception>
+        /// <exception cref="TimeoutException">Operation has timed out.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">The table or
+        /// the service is not in a valid state to perform this operation.
+        /// </exception>
+        /// <exception cref="NoSQLException"><see cref="NoSQLException"/> or
+        /// one of its subclasses is thrown if operation cannot be performed
+        /// for any other reason.  See documentation for corresponding
+        /// subclass of <see cref="NoSQLException"/>.</exception>
+        /// <seealso cref="WriteOperationCollection"/>
+        /// <seealso cref="WriteManyOptions"/>
+        /// <seealso cref="WriteManyResult{TRow}"/>
+        /// <seealso cref="WriteManyAsync(string, WriteOperationCollection, WriteManyOptions, CancellationToken)"/>
+        public Task<WriteManyResult<RecordValue>> WriteManyAsync(
+            WriteOperationCollection operations,
+            WriteManyOptions options = null,
+            CancellationToken cancellationToken = default)
+        {
+            return WriteManyInternalAsync<RecordValue>(null, operations,
+                options, cancellationToken);
+        }
+
+        /// <summary>
+        /// Atomically executes a sequence of Put and Delete operations on a
+        /// table.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// This method is similar to
+        /// <see cref="WriteManyAsync(WriteOperationCollection, WriteManyOptions, CancellationToken)"/>,
+        /// and is used to execute sequence of Put and Delete operations on a
+        /// single table.  All other considerations and limitations of
+        /// <see cref="WriteManyAsync(WriteOperationCollection, WriteManyOptions, CancellationToken)"/>
+        /// apply to this method.
+        /// </para>
+        /// <para>
+        /// This method takes <paramref name="tableName"/> parameter.  To use
+        /// this method, when adding operations to
+        /// <see cref="WriteOperationCollection"/>, use methods that do not
+        /// take table name as a parameter (or pass <c>null</c> as table
+        /// name).  See <see cref="WriteOperationCollection"/> for details.
+        /// </para>
+        /// </remarks>
+        /// <example>
+        /// Performing WriteMany operation on a single table.
         /// <code>
         /// var row1 = new MapValue
         /// {
@@ -1007,8 +1112,8 @@ namespace Oracle.NoSQL.SDK {
         /// </returns>
         /// <exception cref="ArgumentException"> If
         /// <paramref name="tableName"/> is <c>null</c> or invalid or
-        /// <paramref name="operations"/> is <c>null</c> or contains invalid
-        /// values or <paramref name="options"/> contains invalid values.
+        /// <paramref name="operations"/> is <c>null</c> or empty or
+        /// <paramref name="options"/> contains invalid values.
         /// </exception>
         /// <exception cref="TimeoutException">Operation has timed out.
         /// </exception>
@@ -1038,9 +1143,15 @@ namespace Oracle.NoSQL.SDK {
         /// Atomically executes a sequence of Put operations on a table.
         /// </summary>
         /// <remarks>
-        /// This API is a shorthand for <see cref="WriteManyAsync"/> and can be
-        /// used instead of it when all of the following is true:
+        /// This API is a shorthand for
+        /// <see cref="WriteManyAsync(string, WriteOperationCollection, WriteManyOptions, CancellationToken)"/>
+        /// and can be used instead of it when all of the following is true:
         /// <list type="bullet">
+        /// <item>
+        /// <description>
+        /// All operations are on a single table.
+        /// </description>
+        /// </item>
         /// <item>
         /// <description>
         /// All operations in the sequence are Put (no Delete
@@ -1064,7 +1175,7 @@ namespace Oracle.NoSQL.SDK {
         /// </item>
         /// </list>
         /// Other than the above, this API is the same as
-        /// <see cref="WriteManyAsync"/>.
+        /// <see cref="WriteManyAsync(string, WriteOperationCollection, WriteManyOptions, CancellationToken)"/>.
         /// </remarks>
         /// <example>
         /// Performing PutMany operation.
@@ -1117,7 +1228,7 @@ namespace Oracle.NoSQL.SDK {
         /// one of its subclasses is thrown if operation cannot be performed
         /// for any other reason.  See documentation for corresponding
         /// subclass of <see cref="NoSQLException"/>.</exception>
-        /// <seealso cref="WriteManyAsync"/>
+        /// <seealso cref="WriteManyAsync(string, WriteOperationCollection, WriteManyOptions, CancellationToken)"/>
         public Task<WriteManyResult<RecordValue>> PutManyAsync(
             string tableName,
             IReadOnlyCollection<MapValue> rows,
@@ -1132,9 +1243,15 @@ namespace Oracle.NoSQL.SDK {
         /// Atomically executes a sequence of Delete operations on a table.
         /// </summary>
         /// <remarks>
-        /// This API is a shorthand for <see cref="WriteManyAsync"/> and can be
-        /// used instead of it when all of the following is true:
+        /// This API is a shorthand for
+        /// <see cref="WriteManyAsync(string, WriteOperationCollection, WriteManyOptions, CancellationToken)"/>
+        /// and can be used instead of it when all of the following is true:
         /// <list type="bullet">
+        /// <item>
+        /// <description>
+        /// All operations are on a single table.
+        /// </description>
+        /// </item>
         /// <item>
         /// <description>
         /// All operations in the sequence are Delete (no Put
@@ -1158,7 +1275,7 @@ namespace Oracle.NoSQL.SDK {
         /// </item>
         /// </list>
         /// Other than the above, this API is the same as
-        /// <see cref="WriteManyAsync"/>.
+        /// <see cref="WriteManyAsync(string, WriteOperationCollection, WriteManyOptions, CancellationToken)"/>.
         /// </remarks>
         /// <example>
         /// Performing DeleteMany operation.
@@ -1209,7 +1326,7 @@ namespace Oracle.NoSQL.SDK {
         /// one of its subclasses is thrown if operation cannot be performed
         /// for any other reason.  See documentation for corresponding
         /// subclass of <see cref="NoSQLException"/>.</exception>
-        /// <seealso cref="WriteManyAsync"/>
+        /// <seealso cref="WriteManyAsync(string, WriteOperationCollection, WriteManyOptions, CancellationToken)"/>
         public Task<WriteManyResult<RecordValue>> DeleteManyAsync(
             string tableName,
             IReadOnlyCollection<MapValue> primaryKeys,

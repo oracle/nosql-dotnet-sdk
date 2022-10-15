@@ -18,11 +18,11 @@ namespace Oracle.NoSQL.SDK
     /// <see cref="NoSQLClient.GetAsync"/> operation and can be used by
     /// <see cref="NoSQLClient.PutIfVersionAsync"/>,
     /// <see cref="NoSQLClient.DeleteIfVersionAsync"/> and
-    /// <see cref="NoSQLClient.WriteManyAsync"/> APIs to conditionally perform
-    /// those operations to ensure an atomic read-modify-write cycle.  This is
-    /// an opaque object from an application perspective.  Using
-    /// <see cref="RowVersion"/> in this way adds cost to operations so it
-    /// should be done only if necessary.
+    /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.WriteManyAsync*"/> APIs to
+    /// conditionally perform those operations to ensure an atomic
+    /// read-modify-write cycle.  This is an opaque object from an application
+    /// perspective.  Using <see cref="RowVersion"/> in this way adds cost to
+    /// operations so it should be done only if necessary.
     /// </remarks>
     /// <example>
     /// Using <see cref="RowVersion"/> for a conditional Put operation.

@@ -107,7 +107,7 @@ namespace Oracle.NoSQL.SDK.Http
             // deserialization, so we have to use ReadAsByteArrayAsync().
             var buffer = await response.Content.ReadAsByteArrayAsync();
             stream = new MemoryStream(buffer, 0, buffer.Length, false, true);
-            serializer.ReadAndCheckError(stream);
+            serializer.ReadAndCheckError(stream, request);
             return request.Deserialize(serializer, stream);
         }
 

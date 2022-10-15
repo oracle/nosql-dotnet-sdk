@@ -9,6 +9,7 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
 {
     using System.Diagnostics;
     using System.IO;
+    using System.Text;
     using static Protocol;
 
     internal partial class RequestSerializer
@@ -44,6 +45,27 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
             {
                 WriteVersion(stream, op.MatchVersion);
             }
+        }
+
+        private static string GetOperationTableNames(WriteOperationCollection woc)
+        {
+            Debug.Assert(woc.Count != 0);
+
+            StringBuilder result = new StringBuilder();
+            var i = 0;
+            foreach(IWriteOperation op in woc)
+            {
+                Debug.Assert(op.TableName != null);
+                result.Append(op.TableName);
+                if (++i < woc.Count)
+                {
+                    result.Append(',');
+                }
+            }
+
+            // table names cannot be empty
+            Debug.Assert(result.Length != 0);
+            return result.ToString();
         }
 
         private WriteOperationResult<TRow>
@@ -174,12 +196,15 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
             return result;
         }
 
-        public void SerializeWriteMany<TRow>(MemoryStream stream,
-            WriteManyRequest<TRow> request)
+        public void SerializeWriteMany(MemoryStream stream,
+            WriteManyRequest request)
         {
             WriteOpcode(stream, Opcode.WriteMultiple);
             SerializeRequest(stream, request);
-            WriteString(stream, request.TableName);
+            WriteString(stream,
+                request.IsSingleTable
+                    ? request.TableName
+                    : GetOperationTableNames(request.Operations));
             WritePackedInt32(stream, request.Operations.Count);
             WriteDurability(stream, request.Durability, serialVersion);
 
@@ -212,7 +237,7 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
         }
 
         public WriteManyResult<TRow> DeserializeWriteMany<TRow>(
-            MemoryStream stream, WriteManyRequest<TRow> request)
+            MemoryStream stream, WriteManyRequest request)
         {
             var result = new WriteManyResult<TRow>();
             var succeeded = ReadBoolean(stream);

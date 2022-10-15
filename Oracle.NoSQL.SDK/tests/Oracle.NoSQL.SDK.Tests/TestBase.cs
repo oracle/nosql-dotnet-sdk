@@ -14,6 +14,10 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 // DynamicData test cases.
 [assembly: TestDataSourceDiscovery(TestDataSourceDiscoveryOption.DuringExecution)]
 
+// Make sure class cleanup is called at the end of testing each class rather
+// than at the end of assembly.
+[assembly: ClassCleanupExecution(ClassCleanupBehavior.EndOfClass)]
+
 namespace Oracle.NoSQL.SDK.Tests
 {
     using System;
@@ -133,6 +137,7 @@ namespace Oracle.NoSQL.SDK.Tests
         private const string ConfigFileProp = "noSQLConfigFile";
         private const string ServiceTypeProp = "serviceType";
         private const string EndpointProp = "endpoint";
+        private const string KVVersionProp = "kvVersion";
 
         // ReSharper disable once StaticMemberInGenericType
         internal static NoSQLClient client;
@@ -157,6 +162,9 @@ namespace Oracle.NoSQL.SDK.Tests
         internal static bool IsProtocolV3OrAbove => SerialVersion >= 3;
 
         internal static bool IsServerLocal => client.Config.Uri.IsLoopback;
+
+        // ReSharper disable once StaticMemberInGenericType
+        internal static Version KVVersion { get; private set; }
 
         // When testing with cloud service or on-prem with rep-factor > 1
         // we may have failures if we are using eventual consistency and the
@@ -229,6 +237,16 @@ namespace Oracle.NoSQL.SDK.Tests
                     Endpoint = endpoint
                 });
             }
+
+            if (staticContext.Properties.Contains(KVVersionProp))
+            {
+                var versionStr =
+                    (string)staticContext.Properties[KVVersionProp];
+                if (versionStr != null)
+                {
+                    KVVersion = Version.Parse(versionStr);
+                }
+            }
         }
 
         public new static void ClassCleanup()
@@ -241,6 +259,22 @@ namespace Oracle.NoSQL.SDK.Tests
 
     public class TablesTestBase<TTests> : ClientTestBase<TTests>
     {
+        // ReSharper disable once StaticMemberInGenericType
+        private static readonly Version
+            ChildTablesCloudVersion = new Version("21.2.5");
+
+        internal static bool SupportsChildTables => IsOnPrem ||
+            KVVersion == null || KVVersion >= ChildTablesCloudVersion;
+
+        internal static void CheckSupportsChildTables()
+        {
+            if (!SupportsChildTables)
+            {
+                Assert.Inconclusive(
+                    "This test requires child table support");
+            }
+        }
+
         internal static async Task CreateTableAsync(TableInfo table,
             IndexInfo[] indexes = null)
         {

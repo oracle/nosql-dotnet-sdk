@@ -28,7 +28,7 @@ namespace Oracle.NoSQL.SDK {
         // since in a different protocol more than just a status code may
         // be read.  This can be addressed if/when we introduce a new
         // type of protocol.
-        void ReadAndCheckError(MemoryStream stream);
+        void ReadAndCheckError(MemoryStream stream, Request request);
 
         void SerializeTableDDL(MemoryStream stream, TableDDLRequest request);
 
@@ -93,11 +93,11 @@ namespace Oracle.NoSQL.SDK {
         DeleteRangeResult DeserializeDeleteRange(MemoryStream stream,
             DeleteRangeRequest request);
 
-        void SerializeWriteMany<TRow>(MemoryStream stream,
-            WriteManyRequest<TRow> request);
+        void SerializeWriteMany(MemoryStream stream,
+            WriteManyRequest request);
 
         WriteManyResult<TRow> DeserializeWriteMany<TRow>(MemoryStream stream,
-            WriteManyRequest<TRow> request);
+            WriteManyRequest request);
 
         void SerializePrepare(MemoryStream stream, PrepareRequest request);
 

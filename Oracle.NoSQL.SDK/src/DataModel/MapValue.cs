@@ -23,10 +23,11 @@ namespace Oracle.NoSQL.SDK
     /// This class is used to represent values of NoSQL data types
     /// <em>Map</em> and <em>Json</em>.  On input, for operations such as
     /// <see cref="NoSQLClient.PutAsync"/> and
-    /// <see cref="NoSQLClient.WriteManyAsync"/> this class also represents
-    /// table rows.  In addition, this class also represents primary key
-    /// values used for operations such as <see cref="NoSQLClient.GetAsync"/>
-    /// and <see cref="NoSQLClient.DeleteAsync"/>.  For the cases listed above
+    /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.WriteManyAsync*"/> this
+    /// class also represents table rows.  In addition, this class also
+    /// represents primary key values used for operations such as
+    /// <see cref="NoSQLClient.GetAsync"/> and
+    /// <see cref="NoSQLClient.DeleteAsync"/>.  For the cases listed above
     /// the key ordering is not required.  When the key ordering is required,
     /// e.g. for the results of operations such as
     /// <see cref="NoSQLClient.GetAsync"/> and

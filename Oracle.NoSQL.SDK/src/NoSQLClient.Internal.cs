@@ -150,7 +150,7 @@ namespace Oracle.NoSQL.SDK
             foreach (var row in rows)
             {
                 CheckNotNull(row, nameof(row));
-                woc.AddValidatedPutOp(new PutOperation(row, options,
+                woc.AddValidatedPutOp(new PutOperation(null, row, options,
                     options?.AbortIfUnsuccessful ?? false));
             }
 
@@ -169,7 +169,7 @@ namespace Oracle.NoSQL.SDK
             foreach (var primaryKey in primaryKeys)
             {
                 CheckNotNull(primaryKey, nameof(primaryKey));
-                woc.AddValidatedDeleteOp(new DeleteOperation(primaryKey,
+                woc.AddValidatedDeleteOp(new DeleteOperation(null, primaryKey,
                     options, options?.AbortIfUnsuccessful ?? false));
             }
 
@@ -177,10 +177,8 @@ namespace Oracle.NoSQL.SDK
         }
 
         private async Task<WriteManyResult<TRow>> WriteManyInternalAsync<TRow>(
-            string tableName,
-            WriteOperationCollection operations,
-            IWriteManyOptions options,
-            CancellationToken cancellationToken)
+            string tableName, WriteOperationCollection operations,
+            IWriteManyOptions options, CancellationToken cancellationToken)
         {
             return (WriteManyResult<TRow>) await ExecuteRequestAsync(
                 new WriteManyRequest<TRow>(this, tableName, operations,

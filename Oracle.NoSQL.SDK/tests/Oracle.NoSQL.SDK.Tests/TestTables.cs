@@ -92,6 +92,20 @@ namespace Oracle.NoSQL.SDK.Tests
             TTL = TimeToLive.OfDays(3)
         };
 
+        internal static readonly TableInfo AllTypesChildTable = new TableInfo(
+            AllTypesTable, AllTypesTable.Name + ".childTable", new[]
+            {
+                new TableField("childId", DataType.Long),
+                new TableField("colInteger", DataType.Integer),
+                new TableField("colNumber", DataType.Number),
+                new TableField("colJSON", DataType.Json)
+            }, new[] { "childId" })
+        {
+            // Pending release of the KV bug fix TTL can be changed to differ
+            // from TTL of the parent table.
+            TTL = TimeToLive.OfDays(3)
+        };
+
         static TestTables()
         {
             AllTypesTable.IdentityField = AllTypesTable.Fields[^1];

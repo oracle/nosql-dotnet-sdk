@@ -20,39 +20,48 @@ namespace Oracle.NoSQL.SDK.Tests
     [TestClass]
     public partial class WriteManyTests : DataTestBase<WriteManyTests>
     {
-        private static readonly DataTestFixture Fixture = new DataTestFixture(
-            AllTypesTable, new AllTypesRowFactory(100), 20);
+        private static readonly DataTestFixture ParentFixture =
+            new DataTestFixture(AllTypesTable,
+                new AllTypesRowFactory(100), 20);
+
+        private static readonly DataTestFixture ChildFixture =
+            new DataTestFixture(AllTypesChildTable,
+                new AllTypesChildRowFactory(ParentFixture.RowFactory), 30);
 
         private static readonly DataRow GoodRow =
-            Fixture.GetRow(Fixture.GetRowIdFromShard(0));
+            ParentFixture.GetRow(ParentFixture.GetRowIdFromShard(0));
         private static readonly DataRow GoodRow1 =
-            Fixture.GetRow(Fixture.GetRowIdFromShard(0, 1));
+            ParentFixture.GetRow(ParentFixture.GetRowIdFromShard(0, 1));
         private static readonly DataRow GoodRowShard2 =
-            Fixture.MakeRowFromShard(1);
+            ParentFixture.MakeRowFromShard(1);
 
         private static readonly MapValue GoodPK = MakePrimaryKey(
-            Fixture.Table, GoodRow);
+            ParentFixture.Table, GoodRow);
         private static readonly MapValue GoodPK1 = MakePrimaryKey(
-            Fixture.Table, GoodRow1);
+            ParentFixture.Table, GoodRow1);
         private static readonly MapValue GoodPKShard2 = MakePrimaryKey(
-            Fixture.Table, GoodRowShard2);
+            ParentFixture.Table, GoodRowShard2);
 
         private static readonly IWriteOperation GoodPutOp =
-            new PutOperation(GoodRow, null, false);
+            new PutOperation(ParentFixture.Table.Name, GoodRow, null, false);
         private static readonly IWriteOperation GoodPutOp1 =
-            new PutOperation(GoodRow1, null, false);
+            new PutOperation(ParentFixture.Table.Name,GoodRow1, null, false);
         private static readonly IWriteOperation GoodPutOpShard2 =
-            new PutIfAbsentOperation(GoodRowShard2, new PutOptions
-            {
-                TTL = TimeToLive.OfDays(3)
-            }, true);
+            new PutIfAbsentOperation(ParentFixture.Table.Name,GoodRowShard2,
+                new PutOptions
+                {
+                    TTL = TimeToLive.OfDays(3)
+                }, true);
 
         private static readonly IWriteOperation GoodDeleteOp =
-            new DeleteOperation(GoodPK, null, false);
+            new DeleteOperation(ParentFixture.Table.Name, GoodPK, null,
+                false);
         private static readonly IWriteOperation GoodDeleteOp1 =
-            new DeleteOperation(GoodPK1, null, false);
+            new DeleteOperation(ParentFixture.Table.Name, GoodPK1, null,
+                false);
         private static readonly IWriteOperation GoodDeleteOpShard2 =
-            new DeleteOperation(GoodPKShard2, null, true);
+            new DeleteOperation(ParentFixture.Table.Name, GoodPKShard2, null,
+                true);
 
         private static readonly IWriteOperation[] GoodWriteOps =
             {GoodPutOp, GoodDeleteOp1};
@@ -86,41 +95,55 @@ namespace Oracle.NoSQL.SDK.Tests
 
         private static IEnumerable<IWriteOperation> BadWriteManyOps =>
             Enumerable.Empty<IWriteOperation>()
-                .Concat(from badRow in GetBadRows(Fixture.Table, GoodRow)
-                    select new PutOperation(badRow, null, false))
-                .Concat(from badRow in GetBadRows(Fixture.Table, GoodRow)
-                    select new PutIfAbsentOperation(badRow, new PutOptions(),
-                        true))
-                .Concat(from badRow in GetBadRows(Fixture.Table, GoodRow)
-                    select new PutIfPresentOperation(badRow, null, false))
-                .Concat(from badRow in GetBadRows(Fixture.Table, GoodRow)
-                    select new PutIfVersionOperation(badRow, GoodRow.Version,
-                        null, true))
+                .Concat(from badRow in GetBadRows(ParentFixture.Table, GoodRow)
+                    select new PutOperation(ParentFixture.Table.Name, badRow,
+                        null, false))
+                .Concat(from badRow in GetBadRows(ParentFixture.Table, GoodRow)
+                    select new PutIfAbsentOperation(ParentFixture.Table.Name,
+                        badRow, new PutOptions(), true))
+                .Concat(from badRow in GetBadRows(ParentFixture.Table, GoodRow)
+                    select new PutIfPresentOperation(ParentFixture.Table.Name,
+                        badRow, null, false))
+                .Concat(from badRow in GetBadRows(ParentFixture.Table, GoodRow)
+                    select new PutIfVersionOperation(ParentFixture.Table.Name,
+                        badRow, GoodRow.Version, null, true))
                 .Concat(from badOpt in BadPutOpOptions
-                    select new PutOperation(GoodRow, badOpt, false))
-                .Concat(from badOpt in BadPutOpOptions
-                    select new PutIfAbsentOperation(GoodRow, badOpt, false))
-                .Concat(from badOpt in BadPutOpOptions
-                    select new PutIfPresentOperation(GoodRow, badOpt, true))
-                .Concat(from badOpt in BadPutOpOptions
-                    select new PutIfVersionOperation(GoodRow, GoodRow.Version,
+                    select new PutOperation(ParentFixture.Table.Name, GoodRow,
                         badOpt, false))
-                .Append(new PutIfVersionOperation(GoodRow, null, null, false))
-                .Concat(from badPK in GetBadPrimaryKeys(Fixture.Table, GoodPK)
-                    select new DeleteOperation(badPK, null, false))
-                .Concat(from badPK in GetBadPrimaryKeys(Fixture.Table, GoodPK)
-                    select new DeleteOperation(badPK, new DeleteOptions
-                    {
-                        MatchVersion = GoodRow.Version
-                    }, false))
-                .Concat(from badPK in GetBadPrimaryKeys(Fixture.Table, GoodPK)
-                    select new DeleteIfVersionOperation(badPK, GoodRow.Version,
+                .Concat(from badOpt in BadPutOpOptions
+                    select new PutIfAbsentOperation(ParentFixture.Table.Name,
+                        GoodRow, badOpt, false))
+                .Concat(from badOpt in BadPutOpOptions
+                    select new PutIfPresentOperation(ParentFixture.Table.Name,
+                        GoodRow, badOpt, true))
+                .Concat(from badOpt in BadPutOpOptions
+                    select new PutIfVersionOperation(ParentFixture.Table.Name,
+                        GoodRow, GoodRow.Version, badOpt, false))
+                .Append(new PutIfVersionOperation(ParentFixture.Table.Name,
+                    GoodRow, null, null, false))
+                .Concat(from badPK in GetBadPrimaryKeys(ParentFixture.Table,
+                        GoodPK)
+                    select new DeleteOperation(ParentFixture.Table.Name,
+                        badPK, null, false))
+                .Concat(from badPK in GetBadPrimaryKeys(ParentFixture.Table,
+                        GoodPK)
+                    select new DeleteOperation(ParentFixture.Table.Name, badPK,
+                        new DeleteOptions
+                        {
+                            MatchVersion = GoodRow.Version
+                        }, false))
+                .Concat(from badPK in GetBadPrimaryKeys(ParentFixture.Table,
+                        GoodPK)
+                    select new DeleteIfVersionOperation(
+                        ParentFixture.Table.Name, badPK, GoodRow.Version,
                         null, false))
                 .Concat(from badOpt in BadDeleteOpOptions
-                    select new DeleteOperation(GoodPK, badOpt, false))
+                    select new DeleteOperation(ParentFixture.Table.Name,
+                        GoodPK, badOpt, false))
                 .Concat(from badOpt in BadDeleteOpOptions
-                    select new DeleteIfVersionOperation(GoodPK,
-                        GoodRow.Version, badOpt, true));
+                    select new DeleteIfVersionOperation(
+                        ParentFixture.Table.Name, GoodPK, GoodRow.Version,
+                        badOpt, true));
 
         private static IEnumerable<IEnumerable<IWriteOperation>>
             BadWriteManyOpLists =>
@@ -154,11 +177,11 @@ namespace Oracle.NoSQL.SDK.Tests
             Enumerable.Empty<IEnumerable<MapValue>>()
             .Append(null)
             .Append(Enumerable.Empty<MapValue>())
-            .Concat(from badRow in GetBadRows(Fixture.Table, GoodRow)
+            .Concat(from badRow in GetBadRows(ParentFixture.Table, GoodRow)
                 select new[] {badRow})
-            .Concat(from badRow in GetBadRows(Fixture.Table, GoodRow)
+            .Concat(from badRow in GetBadRows(ParentFixture.Table, GoodRow)
                 select new[] {GoodRow, badRow})
-            .Concat(from badRow in GetBadRows(Fixture.Table, GoodRow)
+            .Concat(from badRow in GetBadRows(ParentFixture.Table, GoodRow)
                 select new[] {GoodRow, badRow, GoodRow1})
             .Append(new MapValue[] {GoodRow, GoodRow})
             .Append(new MapValue[] {GoodRow1, GoodRowShard2});
@@ -168,28 +191,20 @@ namespace Oracle.NoSQL.SDK.Tests
             Enumerable.Empty<IEnumerable<MapValue>>()
             .Append(null)
             .Append(Enumerable.Empty<MapValue>())
-            .Concat(from badPK in GetBadPrimaryKeys(Fixture.Table, GoodPK)
+            .Concat(from badPK in GetBadPrimaryKeys(ParentFixture.Table, GoodPK)
                 select new[] {badPK})
-            .Concat(from badPK in GetBadPrimaryKeys(Fixture.Table, GoodPK)
+            .Concat(from badPK in GetBadPrimaryKeys(ParentFixture.Table, GoodPK)
                 select new[] {GoodPK, badPK})
-            .Concat(from badPK in GetBadPrimaryKeys(Fixture.Table, GoodPK)
+            .Concat(from badPK in GetBadPrimaryKeys(ParentFixture.Table, GoodPK)
                 select new[] {badPK, GoodPK1, GoodPK})
             .Append(new[] {GoodPK, GoodPK})
             .Append(new[] {GoodPK1, GoodPKShard2});
 
         private static IEnumerable<object[]> WriteManyNegativeDataSource =>
-            (from tableName in BadTableNames
+            (from badOpList in BadWriteManyOpLists
                 select new object[]
                 {
-                    tableName,
-                    GoodWriteOps,
-                    null
-                })
-            .Concat(
-                from badOpList in BadWriteManyOpLists
-                select new object[]
-                {
-                    Fixture.Table.Name,
+                    ParentFixture.Table.Name,
                     badOpList,
                     null
                 })
@@ -197,9 +212,56 @@ namespace Oracle.NoSQL.SDK.Tests
                 from badOpt in BadWriteManyOptions
                 select new object[]
                 {
-                    Fixture.Table.Name,
+                    ParentFixture.Table.Name,
                     GoodWriteOps,
                     badOpt
+                })
+            .Concat(from tableName in BadTableNames
+                select new object[]
+                {
+                    tableName,
+                    GoodWriteOps,
+                    null
+                });
+
+        private static IEnumerable<object[]>
+            MultiTableWriteManyNegativeDataSource =>
+            (from badOpList in BadWriteManyOpLists
+                select new object[]
+                {
+                    badOpList,
+                    null
+                })
+            .Concat(
+                from badOpt in BadWriteManyOptions
+                select new object[]
+                {
+                    GoodWriteOps,
+                    badOpt
+                })
+            .Concat(from tableName in BadTableNames
+                select new object[]
+                {
+                    new[]
+                    {
+                        new PutOperation(ParentFixture.Table.Name, GoodRow,
+                            null, false),
+                        new PutOperation(tableName, GoodRow, null, false)
+                    },
+                    null
+                })
+            .Concat(from tableName in BadTableNames
+                select new object[]
+                {
+                    new IWriteOperation[]
+                    {
+                        new DeleteOperation(ParentFixture.Table.Name, GoodPK,
+                            null, false),
+                        new DeleteOperation(tableName, GoodPK, null, false),
+                        new PutOperation(ParentFixture.Table.Name, GoodRow,
+                            null, true)
+                    },
+                    null
                 });
 
         private static IEnumerable<object[]> PutManyNegativeDataSource =>
@@ -214,7 +276,7 @@ namespace Oracle.NoSQL.SDK.Tests
                 from badRowList in BadRowLists
                 select new object[]
                 {
-                    Fixture.Table.Name,
+                    ParentFixture.Table.Name,
                     badRowList,
                     null
                 })
@@ -222,14 +284,14 @@ namespace Oracle.NoSQL.SDK.Tests
                 from badOpt in BadPutManyOptions
                 select new object[]
                 {
-                    Fixture.Table.Name,
+                    ParentFixture.Table.Name,
                     new [] { GoodRow, GoodRow1 },
                     badOpt
                 })
             .Append(new object[]
             {
                 // PutMany with ExactMatch and extra field in the row value
-                Fixture.Table.Name,
+                ParentFixture.Table.Name,
                 new [] {SetFieldValueInMap(GoodRow, "no_such_field", 1)},
                 new PutManyOptions
                 {
@@ -249,7 +311,7 @@ namespace Oracle.NoSQL.SDK.Tests
                 from badPKList in BadPrimaryKeyLists
                 select new object[]
                 {
-                    Fixture.Table.Name,
+                    ParentFixture.Table.Name,
                     badPKList,
                     null
                 })
@@ -257,84 +319,10 @@ namespace Oracle.NoSQL.SDK.Tests
                 from badOpt in BadDeleteManyOptions
                 select new object[]
                 {
-                    Fixture.Table.Name,
+                    ParentFixture.Table.Name,
                     new[] {GoodPK, GoodPK1},
                     badOpt
                 });
-
-        // This method will add the operations to the collection by using its
-        // Add methods and thus will test the collection.
-        private static WriteOperationCollection MakeWriteManyCollection(
-            IEnumerable<IWriteOperation> ops)
-        {
-            // Simulate null for negative tests.
-            if (ops == null)
-            {
-                return null;
-            }
-
-            var woc = new WriteOperationCollection();
-            WriteOperationCollection ret = null;
-
-            foreach(var op in ops)
-            {
-                switch (op)
-                {
-                    case PutIfAbsentOperation putOp:
-                        ret = woc.AddPutIfAbsent(putOp.Row, putOp.Options,
-                            putOp.AbortIfUnsuccessful);
-                        break;
-                    case PutIfPresentOperation putOp:
-                        ret = woc.AddPutIfPresent(putOp.Row, putOp.Options,
-                            putOp.AbortIfUnsuccessful);
-                        break;
-                    case PutIfVersionOperation putOp:
-                        ret = woc.AddPutIfVersion(putOp.Row,
-                            putOp.MatchVersion, putOp.Options,
-                            putOp.AbortIfUnsuccessful);
-                        break;
-                    case PutOperation putOp:
-                        ret = woc.AddPut(putOp.Row, putOp.Options,
-                            putOp.AbortIfUnsuccessful);
-                        break;
-                    case DeleteIfVersionOperation deleteOp:
-                        ret = woc.AddDeleteIfVersion(deleteOp.PrimaryKey,
-                            deleteOp.MatchVersion, deleteOp.Options,
-                            deleteOp.AbortIfUnsuccessful);
-                        break;
-                    case DeleteOperation deleteOp:
-                        ret = woc.AddDelete(deleteOp.PrimaryKey,
-                            deleteOp.Options, deleteOp.AbortIfUnsuccessful);
-                        break;
-                    default:
-                        Assert.IsNotNull(op); // test self-check
-                        Assert.Fail(
-                            "Unknown type of IWriteOperation: " +
-                            op.GetType().Name);
-                        break;
-                }
-
-                Assert.IsTrue(ReferenceEquals(woc, ret));
-            }
-
-            return woc;
-        }
-
-        [ClassInitialize]
-        public static async Task ClassInitializeAsync(TestContext testContext)
-        {
-            ClassInitialize(testContext);
-            await DropTableAsync(Fixture.Table);
-            await CreateTableAsync(Fixture.Table);
-            await PutRowsAsync(Fixture.Table, Fixture.Rows);
-        }
-
-        [ClassCleanup]
-        public static async Task ClassCleanupAsync()
-        {
-            await DropTableAsync(Fixture.Table);
-            ClassCleanup();
-        }
 
         [DataTestMethod]
         [DynamicData(nameof(WriteManyNegativeDataSource))]
@@ -347,11 +335,42 @@ namespace Oracle.NoSQL.SDK.Tests
         }
 
         [TestMethod]
+        public async Task TestWriteManyDuplicateTableAsync()
+        {
+            await Assert.ThrowsExceptionAsync<ArgumentException>(() =>
+                client.WriteManyAsync(ParentFixture.Table.Name,
+                    new WriteOperationCollection().AddPut(
+                        ParentFixture.Table.Name, GoodRow)));
+        }
+
+        [DataTestMethod]
+        [DynamicData(nameof(MultiTableWriteManyNegativeDataSource))]
+        public async Task TestMultiTableWriteManyNegativeAsync(
+            IEnumerable<IWriteOperation> ops, WriteManyOptions options)
+        {
+            CheckSupportsMultiTable();
+            await AssertThrowsDerivedAsync<ArgumentException>(() =>
+                client.WriteManyAsync(MakeWriteManyCollection(ops, true),
+                    options));
+        }
+
+        [TestMethod]
         public async Task TestWriteManyNonExistentTableAsync()
         {
             await Assert.ThrowsExceptionAsync<TableNotFoundException>(() =>
                 client.WriteManyAsync("noSuchTable",
                     new WriteOperationCollection().AddPut(GoodRow)));
+        }
+
+        [TestMethod]
+        public async Task TestMultiTableWriteManyNonExistentTableAsync()
+        {
+            CheckSupportsMultiTable();
+            await Assert.ThrowsExceptionAsync<TableNotFoundException>(() =>
+                client.WriteManyAsync(
+                    new WriteOperationCollection()
+                        .AddPut(ParentFixture.Table.Name, GoodRow)
+                        .AddPut("noSuchTable", GoodRow1)));
         }
 
         [TestMethod]
@@ -361,20 +380,50 @@ namespace Oracle.NoSQL.SDK.Tests
 
             var woc = MakeWriteManyCollection(
                 from rowIndex in Enumerable.Range(0,
-                    WriteManyRequest<RecordValue>.MaxOpCount + 1)
-                select new PutOperation(Fixture.MakeRowFromShard(
+                    WriteManyRequest.MaxOpCount + 1)
+                select new PutOperation(null, ParentFixture.MakeRowFromShard(
                     0, rowIndex), null, false));
             await Assert
                 .ThrowsExceptionAsync<BatchOperationNumberLimitException>(
-                    () => client.WriteManyAsync(Fixture.Table.Name, woc));
+                    () => client.WriteManyAsync(ParentFixture.Table.Name,
+                        woc));
 
             woc = MakeWriteManyCollection(from rowIndex in Enumerable.Range(0,
-                    WriteManyRequest<RecordValue>.MaxOpCount + 1)
-                select new DeleteOperation(MakePrimaryKey(Fixture.Table,
-                    Fixture.MakeRowFromShard(0, rowIndex)), null, false));
+                    WriteManyRequest.MaxOpCount + 1)
+                select new DeleteOperation(null, MakePrimaryKey(
+                        ParentFixture.Table,
+                        ParentFixture.MakeRowFromShard(0, rowIndex)), null,
+                    false));
             await Assert
                 .ThrowsExceptionAsync<BatchOperationNumberLimitException>(
-                    () => client.WriteManyAsync(Fixture.Table.Name, woc));
+                    () => client.WriteManyAsync(ParentFixture.Table.Name, woc));
+        }
+
+        [TestMethod]
+        public async Task TestMultiTableWriteManyBatchNumberLimitAsync()
+        {
+            CheckSupportsMultiTable();
+            CheckNotOnPrem();
+
+            var woc = MakeWriteManyCollection(
+                from rowIndex in Enumerable.Range(0,
+                    WriteManyRequest.MaxOpCount + 1)
+                select new PutOperation(ParentFixture.Table.Name,
+                    ParentFixture.MakeRowFromShard(0, rowIndex), null,
+                    false), true);
+            await Assert
+                .ThrowsExceptionAsync<BatchOperationNumberLimitException>(
+                    () => client.WriteManyAsync(woc));
+
+            woc = MakeWriteManyCollection(from rowIndex in Enumerable.Range(
+                    0, WriteManyRequest.MaxOpCount + 1)
+                select new DeleteOperation(ParentFixture.Table.Name,
+                    MakePrimaryKey(ParentFixture.Table,
+                        ParentFixture.MakeRowFromShard(0, rowIndex)), null,
+                    false), true);
+            await Assert
+                .ThrowsExceptionAsync<BatchOperationNumberLimitException>(
+                    () => client.WriteManyAsync(woc));
         }
 
         [DataTestMethod]
@@ -399,11 +448,11 @@ namespace Oracle.NoSQL.SDK.Tests
             CheckNotOnPrem();
 
             var rows = (from rowIndex in Enumerable.Range(0,
-                    WriteManyRequest<RecordValue>.MaxOpCount + 1)
-                select Fixture.MakeRowFromShard(0, rowIndex)).ToList();
+                    WriteManyRequest.MaxOpCount + 1)
+                select ParentFixture.MakeRowFromShard(0, rowIndex)).ToList();
             await Assert
                 .ThrowsExceptionAsync<BatchOperationNumberLimitException>(
-                    () => client.PutManyAsync(Fixture.Table.Name, rows));
+                    () => client.PutManyAsync(ParentFixture.Table.Name, rows));
         }
 
         [DataTestMethod]
@@ -429,12 +478,12 @@ namespace Oracle.NoSQL.SDK.Tests
             CheckNotOnPrem();
 
             var primaryKeys = (from pkIndex in Enumerable.Range(0,
-                    WriteManyRequest<RecordValue>.MaxOpCount + 1)
-                select MakePrimaryKey(Fixture.Table,
-                    Fixture.MakeRowFromShard(0, pkIndex))).ToList();
+                    WriteManyRequest.MaxOpCount + 1)
+                select MakePrimaryKey(ParentFixture.Table,
+                    ParentFixture.MakeRowFromShard(0, pkIndex))).ToList();
             await Assert
                 .ThrowsExceptionAsync<BatchOperationNumberLimitException>(
-                    () => client.DeleteManyAsync(Fixture.Table.Name,
+                    () => client.DeleteManyAsync(ParentFixture.Table.Name,
                         primaryKeys));
         }
 

@@ -10,10 +10,12 @@ namespace Oracle.NoSQL.SDK
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Threading;
 
     /// <summary>
     /// Represents a collection of Put and Delete operations for
-    /// <see cref="NoSQLClient.WriteManyAsync"/> API.
+    /// <see cref="NoSQLClient.WriteManyAsync(string, WriteOperationCollection, WriteManyOptions, CancellationToken)"/>
+    /// API.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -61,6 +63,30 @@ namespace Oracle.NoSQL.SDK
     /// listed above.
     /// </para>
     /// <para>
+    /// Note that the methods of <see cref="WriteOperationCollection"/> are
+    /// divided into two groups: those that take table name parameter and
+    /// those that don't.  Use as following:
+    /// <list type="bullet">
+    /// <item>
+    /// <description>
+    /// If this instance is passed to
+    /// <see cref="NoSQLClient.WriteManyAsync(WriteOperationCollection,WriteManyOptions,CancellationToken)"/>,
+    /// use the methods that take table name.  Failure to provide table name
+    /// for any operation will result in error.
+    /// </description>
+    /// </item>
+    /// <item>
+    /// <description>
+    /// If this instance is passed to
+    /// <see cref="NoSQLClient.WriteManyAsync(string,WriteOperationCollection,WriteManyOptions,CancellationToken)"/>,
+    /// table name is already passed as a parameter to this method and thus
+    /// must not be passed to <see cref="WriteOperationCollection"/> methods.
+    /// Providing table name for any operation will result in error.
+    /// </description>
+    /// </item>
+    /// </list>
+    /// </para>
+    /// <para>
     /// The methods of <see cref="WriteOperationCollection"/> return the
     /// instance itself so that their calls can be chained as shown in the
     /// example.  Validation is performed on the parameters before the
@@ -81,7 +107,8 @@ namespace Oracle.NoSQL.SDK
     /// </para>
     /// </remarks>
     /// <example>
-    /// Populating an instance of <see cref="WriteOperationCollection"/>.
+    /// Populating an instance of <see cref="WriteOperationCollection"/>
+    /// without providing table name.
     /// <code>
     /// var woc = new WriteOperationCollection()
     ///     .AddPut(row1, true)
@@ -94,7 +121,17 @@ namespace Oracle.NoSQL.SDK
     ///     .AddDeleteIfVersion(primaryKey4, version4, true));
     /// </code>
     /// </example>
-    /// <seealso cref="NoSQLClient.WriteManyAsync"/>
+    /// <example>
+    /// Populating an instance of <see cref="WriteOperationCollection"/>
+    /// with providing table names.
+    /// <code>
+    /// var woc = new WriteOperationCollection()
+    ///     .AddPut("myTable", row1, true)
+    ///     .AddPutIfVersion("myTable.childTable1", row2, version2)
+    ///     .AddDelete("myTable.childTable2", primaryKey3, true);
+    /// </code>
+    /// </example>
+    /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.WriteManyAsync*"/>
     /// <seealso cref="IWriteOperation"/>
     /// <seealso cref="PutOperation"/>
     /// <seealso cref="PutIfAbsentOperation"/>
@@ -102,14 +139,9 @@ namespace Oracle.NoSQL.SDK
     /// <seealso cref="PutIfVersionOperation"/>
     /// <seealso cref="DeleteOperation"/>
     /// <seealso cref="DeleteIfVersionOperation"/>
-    public partial class WriteOperationCollection :
+    public partial class WriteOperationCollection:
         IReadOnlyCollection<IWriteOperation>
     {
-        private readonly List<IWriteOperation> ops;
-
-        // Used by rate limiting.
-        internal bool DoesReads { get; private set; }
-
         /// <summary>
         /// Initializes a new empty instance of
         /// <see cref="WriteOperationCollection"/> with default initial
@@ -139,11 +171,300 @@ namespace Oracle.NoSQL.SDK
         /// <summary>
         /// Adds a <see cref="PutOperation"/> to the collection.
         /// </summary>
+        /// <param name="tableName">Table name.</param>
         /// <param name="row">Table row.</param>
         /// <param name="options">Options for the Put operation.</param>
         /// <param name="abortIfUnsuccessful">(Optional) If <c>true</c> and
         /// this Put operation fails, it will cause the entire transaction to
-        /// abort, see <see cref="NoSQLClient.WriteManyAsync"/>.</param>
+        /// abort, see
+        /// <see cref="NoSQLClient.WriteManyAsync(WriteOperationCollection, WriteManyOptions, CancellationToken)"/>.
+        /// </param>
+        /// <returns>A reference to this instance after the Put operation was
+        /// added.</returns>
+        /// <exception cref="ArgumentException">If
+        /// <paramref name="tableName"/> is <c>null</c> or invalid or
+        /// <paramref name="row"/> is <c>null</c> or
+        /// <paramref name="options"/> contains invalid values.
+        /// </exception>
+        public WriteOperationCollection AddPut(string tableName,
+            MapValue row, PutOptions options,
+            bool abortIfUnsuccessful = false)
+        {
+            return AddPut<MapValue>(tableName, row, options,
+                abortIfUnsuccessful);
+        }
+
+        /// <summary>
+        /// Adds a <see cref="PutOperation"/> to the collection.
+        /// </summary>
+        /// <param name="tableName">Table name.</param>
+        /// <param name="row">Table row.</param>
+        /// <param name="abortIfUnsuccessful">(Optional) If <c>true</c> and
+        /// this Put operation fails, it will cause the entire transaction to
+        /// abort, see
+        /// <see cref="NoSQLClient.WriteManyAsync(WriteOperationCollection, WriteManyOptions, CancellationToken)"/>.
+        /// </param>
+        /// <returns>A reference to this instance after the Put operation was
+        /// added.</returns>
+        /// <exception cref="ArgumentException">If
+        /// <paramref name="tableName"/> is <c>null</c> or invalid or
+        /// <paramref name="row"/> is <c>null</c>.
+        /// </exception>
+        public WriteOperationCollection AddPut(string tableName,
+            MapValue row, bool abortIfUnsuccessful = false)
+        {
+            return AddPut<MapValue>(tableName, row, abortIfUnsuccessful);
+        }
+
+        /// <summary>
+        /// Adds a <see cref="PutIfAbsentOperation"/> to the collection.
+        /// </summary>
+        /// <param name="tableName">Table name.</param>
+        /// <param name="row">Table row.</param>
+        /// <param name="options">Options for the Put operation.</param>
+        /// <param name="abortIfUnsuccessful">(Optional) If <c>true</c> and
+        /// this Put operation fails, it will cause the entire transaction to
+        /// abort, see
+        /// <see cref="NoSQLClient.WriteManyAsync(WriteOperationCollection, WriteManyOptions, CancellationToken)"/>.
+        /// </param>
+        /// <returns>A reference to this instance after the Put operation was
+        /// added.</returns>
+        /// <inheritdoc cref="AddPut(string, MapValue, PutOptions, bool)" path="exception"/>
+        public WriteOperationCollection AddPutIfAbsent(string tableName,
+            MapValue row, PutOptions options,
+            bool abortIfUnsuccessful = false)
+        {
+            return AddPutIfAbsent<MapValue>(tableName, row, options,
+                abortIfUnsuccessful);
+        }
+
+        /// <summary>
+        /// Adds a <see cref="PutIfAbsentOperation"/> to the collection.
+        /// </summary>
+        /// <param name="tableName">Table name.</param>
+        /// <param name="row">Table row.</param>
+        /// <param name="abortIfUnsuccessful">(Optional) If <c>true</c> and
+        /// this Put operation fails, it will cause the entire transaction to
+        /// abort, see
+        /// <see cref="NoSQLClient.WriteManyAsync(WriteOperationCollection, WriteManyOptions, CancellationToken)"/>.
+        /// </param>
+        /// <returns>A reference to this instance after the Put operation was
+        /// added.</returns>
+        /// <inheritdoc cref="AddPut(string, MapValue, bool)" path="exception"/>
+        public WriteOperationCollection AddPutIfAbsent(string tableName,
+            MapValue row, bool abortIfUnsuccessful = false)
+        {
+            return AddPutIfAbsent<MapValue>(tableName, row,
+                abortIfUnsuccessful);
+        }
+
+        /// <summary>
+        /// Adds a <see cref="PutIfPresentOperation"/> to the collection.
+        /// </summary>
+        /// <param name="tableName">Table name.</param>
+        /// <param name="row">Table row.</param>
+        /// <param name="options">Options for the Put operation.</param>
+        /// <param name="abortIfUnsuccessful">(Optional) If <c>true</c> and
+        /// this Put operation fails, it will cause the entire transaction to
+        /// abort, see
+        /// <see cref="NoSQLClient.WriteManyAsync(WriteOperationCollection, WriteManyOptions, CancellationToken)"/>.
+        /// </param>
+        /// <returns>A reference to this instance after the Put operation was
+        /// added.</returns>
+        /// <inheritdoc cref="AddPut(string, MapValue, PutOptions, bool)" path="exception"/>
+        public WriteOperationCollection AddPutIfPresent(string tableName,
+            MapValue row, PutOptions options,
+            bool abortIfUnsuccessful = false)
+        {
+            return AddPutIfPresent<MapValue>(tableName, row, options,
+                abortIfUnsuccessful);
+        }
+
+        /// <summary>
+        /// Adds a <see cref="PutIfPresentOperation"/> to the collection.
+        /// </summary>
+        /// <param name="tableName">Table name.</param>
+        /// <param name="row">Table row.</param>
+        /// <param name="abortIfUnsuccessful">(Optional) If <c>true</c> and
+        /// this Put operation fails, it will cause the entire transaction to
+        /// abort, see
+        /// <see cref="NoSQLClient.WriteManyAsync(WriteOperationCollection, WriteManyOptions, CancellationToken)"/>.
+        /// </param>
+        /// <returns>A reference to this instance after the Put operation was
+        /// added.</returns>
+        /// <inheritdoc cref="AddPut(string, MapValue, bool)" path="exception"/>
+        public WriteOperationCollection AddPutIfPresent(string tableName,
+            MapValue row, bool abortIfUnsuccessful = false)
+        {
+            return AddPutIfPresent<MapValue>(tableName, row, abortIfUnsuccessful);
+        }
+
+        /// <summary>
+        /// Adds a <see cref="PutIfVersionOperation"/> to the collection.
+        /// </summary>
+        /// <param name="tableName">Table name.</param>
+        /// <param name="row">Table row.</param>
+        /// <param name="version">Row version to match.</param>
+        /// <param name="options">Options for the Put operation.</param>
+        /// <param name="abortIfUnsuccessful">(Optional) If <c>true</c> and
+        /// this Put operation fails, it will cause the entire transaction to
+        /// abort, see
+        /// <see cref="NoSQLClient.WriteManyAsync(WriteOperationCollection, WriteManyOptions, CancellationToken)"/>.
+        /// </param>
+        /// <returns>A reference to this instance after the Put operation was
+        /// added.</returns>
+        /// <exception cref="ArgumentException">If
+        /// <paramref name="tableName"/> is <c>null</c> or invalid or
+        /// <paramref name="row"/> is <c>null</c> or
+        /// <paramref name="version"/> is <c>null</c> or
+        /// <paramref name="options"/> contains invalid values.
+        /// </exception>
+        public WriteOperationCollection AddPutIfVersion(string tableName,
+            MapValue row, RowVersion version, PutOptions options,
+            bool abortIfUnsuccessful = false)
+        {
+            return AddPutIfVersion<MapValue>(tableName, row, version, options,
+                abortIfUnsuccessful);
+        }
+
+        /// <summary>
+        /// Adds a <see cref="PutIfVersionOperation"/> to the collection.
+        /// </summary>
+        /// <param name="tableName">Table name.</param>
+        /// <param name="row">Table row.</param>
+        /// <param name="version">Row version to match.</param>
+        /// <param name="abortIfUnsuccessful">(Optional) If <c>true</c> and
+        /// this Put operation fails, it will cause the entire transaction to
+        /// abort, see
+        /// <see cref="NoSQLClient.WriteManyAsync(WriteOperationCollection, WriteManyOptions, CancellationToken)"/>.
+        /// </param>
+        /// <returns>A reference to this instance after the Put operation was
+        /// added.</returns>
+        /// <exception cref="ArgumentException">If
+        /// <paramref name="tableName"/> is <c>null</c> or invalid or
+        /// <paramref name="row"/> is <c>null</c> or
+        /// <paramref name="version"/> is <c>null</c>.
+        /// </exception>
+        public WriteOperationCollection AddPutIfVersion(string tableName,
+            MapValue row, RowVersion version,
+            bool abortIfUnsuccessful = false)
+        {
+            return AddPutIfVersion<MapValue>(tableName, row, version,
+                abortIfUnsuccessful);
+        }
+
+        /// <summary>
+        /// Adds a <see cref="DeleteOperation"/> to the collection.
+        /// </summary>
+        /// <param name="tableName">Table name.</param>
+        /// <param name="primaryKey">Primary key of the row to delete.</param>
+        /// <param name="options">Options for the Delete operation.</param>
+        /// <param name="abortIfUnsuccessful">(Optional) If <c>true</c> and
+        /// this Delete operation fails, it will cause the entire transaction
+        /// to abort, see
+        /// <see cref="NoSQLClient.WriteManyAsync(WriteOperationCollection, WriteManyOptions, CancellationToken)"/>.
+        /// </param>
+        /// <returns>A reference to this instance after the Delete operation
+        /// was added.</returns>
+        /// <exception cref="ArgumentException">If
+        /// <paramref name="tableName"/> is <c>null</c> or invalid or
+        /// <paramref name="primaryKey"/> is <c>null</c> or
+        /// <paramref name="options"/> contains invalid values.
+        /// </exception>
+        public WriteOperationCollection AddDelete(string tableName,
+            MapValue primaryKey, DeleteOptions options,
+            bool abortIfUnsuccessful = false)
+        {
+            return AddDelete(tableName, (object)primaryKey, options,
+                abortIfUnsuccessful);
+        }
+
+        /// <summary>
+        /// Adds a <see cref="DeleteOperation"/> to the collection.
+        /// </summary>
+        /// <param name="tableName">Table name.</param>
+        /// <param name="primaryKey">Primary key of the row to delete.</param>
+        /// <param name="abortIfUnsuccessful">(Optional) If <c>true</c> and
+        /// this Delete operation fails, it will cause the entire transaction
+        /// to abort, see
+        /// <see cref="NoSQLClient.WriteManyAsync(WriteOperationCollection, WriteManyOptions, CancellationToken)"/>.
+        /// </param>
+        /// <returns>A reference to this instance after the Delete operation
+        /// was added.</returns>
+        /// <exception cref="ArgumentException">If
+        /// <paramref name="tableName"/> is <c>null</c> or invalid or
+        /// <paramref name="primaryKey"/> is <c>null</c>.
+        /// </exception>
+        public WriteOperationCollection AddDelete(string tableName,
+            MapValue primaryKey, bool abortIfUnsuccessful = false)
+        {
+            return AddDelete(tableName, (object)primaryKey, abortIfUnsuccessful);
+        }
+
+        /// <summary>
+        /// Adds a <see cref="DeleteIfVersionOperation"/> to the collection.
+        /// </summary>
+        /// <param name="tableName">Table name.</param>
+        /// <param name="primaryKey">Primary key of the row to delete.</param>
+        /// <param name="version">Row version to match.</param>
+        /// <param name="options">Options for the Delete operation.</param>
+        /// <param name="abortIfUnsuccessful">(Optional) If <c>true</c> and
+        /// this Delete operation fails, it will cause the entire transaction
+        /// to abort, see
+        /// <see cref="NoSQLClient.WriteManyAsync(WriteOperationCollection, WriteManyOptions, CancellationToken)"/>.
+        /// </param>
+        /// <returns>A reference to this instance after the Delete operation
+        /// was added.</returns>
+        /// <exception cref="ArgumentException">If
+        /// <paramref name="tableName"/> is <c>null</c> or invalid or
+        /// <paramref name="primaryKey"/> is <c>null</c> or
+        /// <paramref name="version"/> is <c>null</c> or
+        /// <paramref name="options"/> contains invalid values.
+        /// </exception>
+        public WriteOperationCollection AddDeleteIfVersion(
+            string tableName, MapValue primaryKey, RowVersion version,
+            DeleteOptions options, bool abortIfUnsuccessful = false)
+        {
+            return AddDeleteIfVersion(tableName, (object)primaryKey, version,
+                options, abortIfUnsuccessful);
+        }
+
+        /// <summary>
+        /// Adds a <see cref="DeleteIfVersionOperation"/> to the collection.
+        /// </summary>
+        /// <param name="tableName">Table name.</param>
+        /// <param name="primaryKey">Primary key of the row to delete.</param>
+        /// <param name="version">Row version to match.</param>
+        /// <param name="abortIfUnsuccessful">(Optional) If <c>true</c> and
+        /// this Delete operation fails, it will cause the entire transaction
+        /// to abort, see
+        /// <see cref="NoSQLClient.WriteManyAsync(WriteOperationCollection, WriteManyOptions, CancellationToken)"/>.
+        /// </param>
+        /// <returns>A reference to this instance after the Delete operation
+        /// was added.</returns>
+        /// <exception cref="ArgumentException">If
+        /// <paramref name="tableName"/> is <c>null</c> or invalid or
+        /// <paramref name="primaryKey"/> is <c>null</c> or
+        /// <paramref name="version"/> is <c>null</c>.
+        /// </exception>
+        public WriteOperationCollection AddDeleteIfVersion(
+            string tableName, MapValue primaryKey, RowVersion version,
+            bool abortIfUnsuccessful = false)
+        {
+            return AddDeleteIfVersion(tableName, (object)primaryKey, version,
+                abortIfUnsuccessful);
+        }
+
+        /// <summary>
+        /// Adds a <see cref="PutOperation"/> to the collection.
+        /// </summary>
+        /// <param name="row">Table row.</param>
+        /// <param name="options">Options for the Put operation.</param>
+        /// <param name="abortIfUnsuccessful">(Optional) If <c>true</c> and
+        /// this Put operation fails, it will cause the entire transaction to
+        /// abort, see
+        /// <see cref="NoSQLClient.WriteManyAsync(string, WriteOperationCollection, WriteManyOptions, CancellationToken)"/>.
+        /// </param>
         /// <returns>A reference to this instance after the Put operation was
         /// added.</returns>
         /// <exception cref="ArgumentException">If <paramref name="row"/> is
@@ -161,7 +482,9 @@ namespace Oracle.NoSQL.SDK
         /// <param name="row">Table row.</param>
         /// <param name="abortIfUnsuccessful">(Optional) If <c>true</c> and
         /// this Put operation fails, it will cause the entire transaction to
-        /// abort, see <see cref="NoSQLClient.WriteManyAsync"/>.</param>
+        /// abort, see
+        /// <see cref="NoSQLClient.WriteManyAsync(string, WriteOperationCollection, WriteManyOptions, CancellationToken)"/>.
+        /// </param>
         /// <returns>A reference to this instance after the Put operation was
         /// added.</returns>
         /// <exception cref="ArgumentException">If <paramref name="row"/> is
@@ -180,7 +503,9 @@ namespace Oracle.NoSQL.SDK
         /// <param name="options">Options for the Put operation.</param>
         /// <param name="abortIfUnsuccessful">(Optional) If <c>true</c> and
         /// this Put operation fails, it will cause the entire transaction to
-        /// abort, see <see cref="NoSQLClient.WriteManyAsync"/>.</param>
+        /// abort, see
+        /// <see cref="NoSQLClient.WriteManyAsync(string, WriteOperationCollection, WriteManyOptions, CancellationToken)"/>.
+        /// </param>
         /// <returns>A reference to this instance after the Put operation was
         /// added.</returns>
         /// <inheritdoc cref="AddPut(MapValue, PutOptions, bool)" path="exception"/>
@@ -197,7 +522,9 @@ namespace Oracle.NoSQL.SDK
         /// <param name="row">Table row.</param>
         /// <param name="abortIfUnsuccessful">(Optional) If <c>true</c> and
         /// this Put operation fails, it will cause the entire transaction to
-        /// abort, see <see cref="NoSQLClient.WriteManyAsync"/>.</param>
+        /// abort, see
+        /// <see cref="NoSQLClient.WriteManyAsync(string, WriteOperationCollection, WriteManyOptions, CancellationToken)"/>.
+        /// </param>
         /// <returns>A reference to this instance after the Put operation was
         /// added.</returns>
         /// <inheritdoc cref="AddPut(MapValue, bool)" path="exception"/>
@@ -214,7 +541,9 @@ namespace Oracle.NoSQL.SDK
         /// <param name="options">Options for the Put operation.</param>
         /// <param name="abortIfUnsuccessful">(Optional) If <c>true</c> and
         /// this Put operation fails, it will cause the entire transaction to
-        /// abort, see <see cref="NoSQLClient.WriteManyAsync"/>.</param>
+        /// abort, see
+        /// <see cref="NoSQLClient.WriteManyAsync(string, WriteOperationCollection, WriteManyOptions, CancellationToken)"/>.
+        /// </param>
         /// <returns>A reference to this instance after the Put operation was
         /// added.</returns>
         /// <inheritdoc cref="AddPut(MapValue, PutOptions, bool)" path="exception"/>
@@ -231,7 +560,9 @@ namespace Oracle.NoSQL.SDK
         /// <param name="row">Table row.</param>
         /// <param name="abortIfUnsuccessful">(Optional) If <c>true</c> and
         /// this Put operation fails, it will cause the entire transaction to
-        /// abort, see <see cref="NoSQLClient.WriteManyAsync"/>.</param>
+        /// abort, see
+        /// <see cref="NoSQLClient.WriteManyAsync(string, WriteOperationCollection, WriteManyOptions, CancellationToken)"/>.
+        /// </param>
         /// <returns>A reference to this instance after the Put operation was
         /// added.</returns>
         /// <inheritdoc cref="AddPut(MapValue, bool)" path="exception"/>
@@ -249,7 +580,9 @@ namespace Oracle.NoSQL.SDK
         /// <param name="options">Options for the Put operation.</param>
         /// <param name="abortIfUnsuccessful">(Optional) If <c>true</c> and
         /// this Put operation fails, it will cause the entire transaction to
-        /// abort, see <see cref="NoSQLClient.WriteManyAsync"/>.</param>
+        /// abort, see
+        /// <see cref="NoSQLClient.WriteManyAsync(string, WriteOperationCollection, WriteManyOptions, CancellationToken)"/>.
+        /// </param>
         /// <returns>A reference to this instance after the Put operation was
         /// added.</returns>
         /// <exception cref="ArgumentException">If <paramref name="row"/> is
@@ -271,7 +604,9 @@ namespace Oracle.NoSQL.SDK
         /// <param name="version">Row version to match.</param>
         /// <param name="abortIfUnsuccessful">(Optional) If <c>true</c> and
         /// this Put operation fails, it will cause the entire transaction to
-        /// abort, see <see cref="NoSQLClient.WriteManyAsync"/>.</param>
+        /// abort, see
+        /// <see cref="NoSQLClient.WriteManyAsync(string, WriteOperationCollection, WriteManyOptions, CancellationToken)"/>.
+        /// </param>
         /// <returns>A reference to this instance after the Put operation was
         /// added.</returns>
         /// <exception cref="ArgumentException">If <paramref name="row"/> is
@@ -291,7 +626,9 @@ namespace Oracle.NoSQL.SDK
         /// <param name="options">Options for the Delete operation.</param>
         /// <param name="abortIfUnsuccessful">(Optional) If <c>true</c> and
         /// this Delete operation fails, it will cause the entire transaction
-        /// to abort, see <see cref="NoSQLClient.WriteManyAsync"/>.</param>
+        /// to abort, see
+        /// <see cref="NoSQLClient.WriteManyAsync(string, WriteOperationCollection, WriteManyOptions, CancellationToken)"/>.
+        /// </param>
         /// <returns>A reference to this instance after the Delete operation
         /// was added.</returns>
         /// <exception cref="ArgumentException">If
@@ -311,7 +648,9 @@ namespace Oracle.NoSQL.SDK
         /// <param name="primaryKey">Primary key of the row to delete.</param>
         /// <param name="abortIfUnsuccessful">(Optional) If <c>true</c> and
         /// this Delete operation fails, it will cause the entire transaction
-        /// to abort, see <see cref="NoSQLClient.WriteManyAsync"/>.</param>
+        /// to abort, see
+        /// <see cref="NoSQLClient.WriteManyAsync(string, WriteOperationCollection, WriteManyOptions, CancellationToken)"/>.
+        /// </param>
         /// <returns>A reference to this instance after the Delete operation
         /// was added.</returns>
         /// <exception cref="ArgumentException">If
@@ -324,14 +663,16 @@ namespace Oracle.NoSQL.SDK
         }
 
         /// <summary>
-        /// Adds a <see cref="DeleteOperation"/> to the collection.
+        /// Adds a <see cref="DeleteIfVersionOperation"/> to the collection.
         /// </summary>
         /// <param name="primaryKey">Primary key of the row to delete.</param>
         /// <param name="version">Row version to match.</param>
         /// <param name="options">Options for the Delete operation.</param>
         /// <param name="abortIfUnsuccessful">(Optional) If <c>true</c> and
         /// this Delete operation fails, it will cause the entire transaction
-        /// to abort, see <see cref="NoSQLClient.WriteManyAsync"/>.</param>
+        /// to abort, see
+        /// <see cref="NoSQLClient.WriteManyAsync(string, WriteOperationCollection, WriteManyOptions, CancellationToken)"/>.
+        /// </param>
         /// <returns>A reference to this instance after the Delete operation
         /// was added.</returns>
         /// <exception cref="ArgumentException">If
@@ -348,13 +689,15 @@ namespace Oracle.NoSQL.SDK
         }
 
         /// <summary>
-        /// Adds a <see cref="DeleteOperation"/> to the collection.
+        /// Adds a <see cref="DeleteIfVersionOperation"/> to the collection.
         /// </summary>
         /// <param name="primaryKey">Primary key of the row to delete.</param>
         /// <param name="version">Row version to match.</param>
         /// <param name="abortIfUnsuccessful">(Optional) If <c>true</c> and
         /// this Delete operation fails, it will cause the entire transaction
-        /// to abort, see <see cref="NoSQLClient.WriteManyAsync"/>.</param>
+        /// to abort, see
+        /// <see cref="NoSQLClient.WriteManyAsync(string, WriteOperationCollection, WriteManyOptions, CancellationToken)"/>.
+        /// </param>
         /// <returns>A reference to this instance after the Delete operation
         /// was added.</returns>
         /// <exception cref="ArgumentException">If
@@ -398,6 +741,14 @@ namespace Oracle.NoSQL.SDK
         {
             return ops.GetEnumerator();
         }
-    }
 
+        /// <summary>
+        /// Removes all elements from the collection.
+        /// </summary>
+        public void Clear()
+        {
+            ops.Clear();
+        }
+
+    }
 }
