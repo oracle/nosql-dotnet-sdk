@@ -254,7 +254,7 @@ namespace Oracle.NoSQL.SDK
 
         internal RateLimiterEntry InitRateLimiterEntry(Request request)
         {
-            var tableName = request.InternalTableName;
+            var tableName = request.TopTableName;
             if (tableName == null)
             {
                 return null;

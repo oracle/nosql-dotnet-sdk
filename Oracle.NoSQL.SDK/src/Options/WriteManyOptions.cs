@@ -11,15 +11,15 @@ namespace Oracle.NoSQL.SDK
     using static ValidateUtils;
 
     /// <summary>
-    /// Represents options passed to <see cref="NoSQLClient.WriteManyAsync"/>
-    /// API.
+    /// Represents options passed to
+    /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.WriteManyAsync*"/> APIs.
     /// </summary>
     /// <remarks>
     /// In addition to these options, you may also specify separate options
     /// for each Put and Delete operation when that operation is added to
     /// <see cref="WriteOperationCollection"/>.
     /// </remarks>
-    /// <seealso cref="NoSQLClient.WriteManyAsync"/>
+    /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.WriteManyAsync*"/>
     /// <seealso cref="WriteOperationCollection"/>
     public class WriteManyOptions : IWriteManyOptions
     {
@@ -40,12 +40,13 @@ namespace Oracle.NoSQL.SDK
         /// <para>
         /// If set to <c>true</c> and any Put or Delete operation fails, the
         /// entire transaction started by
-        /// <see cref="NoSQLClient.WriteManyAsync"/> will be aborted.
+        /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.WriteManyAsync*"/>
+        /// will be aborted.
         /// </para>
         /// <para>
         /// <c>true</c> value of this property overrides the value of
         /// <see cref="IWriteOperation.AbortIfUnsuccessful"/> property for any
-        /// operation in <see cref="WriteOperationCollection"/>.  <c>false</c>
+        /// operation in <see cref="WriteOperationCollection"/>. <c>false</c>
         /// value of this property has no effect on any value of
         /// <see cref="IWriteOperation.AbortIfUnsuccessful"/> property for the
         /// operations in <see cref="WriteOperationCollection"/>.

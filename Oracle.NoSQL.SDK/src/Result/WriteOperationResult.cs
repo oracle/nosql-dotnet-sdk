@@ -21,7 +21,7 @@ namespace Oracle.NoSQL.SDK
     /// </remarks>
     /// <inheritdoc cref="WriteManyResult{TRow}" path="typeparam"/>
     /// <seealso cref="WriteManyResult{TRow}"/>
-    /// <seealso cref="NoSQLClient.WriteManyAsync"/>
+    /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.WriteManyAsync*"/>
     /// <seealso cref="NoSQLClient.PutManyAsync"/>
     /// <seealso cref="NoSQLClient.DeleteManyAsync"/>
     public class WriteOperationResult<TRow> : IWriteResultWithId<TRow>

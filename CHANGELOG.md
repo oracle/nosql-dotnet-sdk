@@ -7,8 +7,12 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 ## Unreleased
 
 **Added**
-
 * New regions for cloud service: ord, tiw, bgy
+* Support for WriteMany with multiple tables that share the same shard key.
+Added new methods to WriteOperationCollection that take table name parameter.
+In addition, added new WriteManyAsync method that does not take table name
+parameter and expects table names be included in WriteOperationCollection
+instance.
 
 ## [5.1.4]
 

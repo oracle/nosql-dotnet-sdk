@@ -39,13 +39,13 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
             return false;
         }
 
-        public void ReadAndCheckError(MemoryStream stream)
+        public void ReadAndCheckError(MemoryStream stream, Request request)
         {
             var statusCode = ReadByte(stream);
             if (statusCode != 0)
             {
                 var message = ReadString(stream);
-                throw MapException((ErrorCode)statusCode, message);
+                throw MapException((ErrorCode)statusCode, message, request);
             }
         }
 

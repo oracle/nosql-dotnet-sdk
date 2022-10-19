@@ -155,8 +155,23 @@ namespace Oracle.NoSQL.SDK
         // Used by rate limiting.
         internal virtual bool DoesWrites => false;
 
-        // Used by rate limiting.
+        // Used by rate limiting via TopTableName.
         internal virtual string InternalTableName => null;
+
+        // Used by rate limiting.
+        internal string TopTableName
+        {
+            get
+            {
+                var tableName = InternalTableName;
+                if (tableName == null)
+                {
+                    return null;
+                }
+                var idx = tableName.IndexOf('.');
+                return idx < 0 ? tableName : tableName.Substring(0, idx);
+            }
+        }
 
         internal NoSQLConfig Config => Client.Config;
 

@@ -109,7 +109,8 @@ namespace Oracle.NoSQL.SDK
     /// variants, DeleteRange operations executed by
     /// <see cref="NoSQLClient.DeleteRangeAsync"/> and its variants and
     /// WriteMany operations executed by
-    /// <see cref="NoSQLClient.WriteManyAsync"/> and its variants.
+    /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.WriteManyAsync*"/> and its
+    /// variants.
     /// </remarks>
     /// <seealso cref="PutOptions.Durability"/>
     /// <seealso cref="DeleteOptions.Durability"/>

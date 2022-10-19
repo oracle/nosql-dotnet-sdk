@@ -73,6 +73,7 @@ namespace Oracle.NoSQL.SDK
         /// for the operation.
         /// </summary>
         /// <remarks>
+        /// <para>
         /// Valid only for <em>CREATE TABLE</em> operation
         /// executed via
         /// <see cref="NoSQLClient.ExecuteTableDDLAsync(string, TableDDLOptions, CancellationToken)"/>
@@ -81,6 +82,12 @@ namespace Oracle.NoSQL.SDK
         /// For <see cref="NoSQLClient.SetTableLimitsAsync"/> or
         /// <see cref="NoSQLClient.SetTableLimitsWithCompletionAsync"/>, supply
         /// table limits as separate parameter.
+        /// </para>
+        /// <para>
+        /// Note that you may not specify table limits when creating a child
+        /// table, because child/descendant tables share the table limits with
+        /// their parent/top level ancestor table.
+        /// </para>
         /// </remarks>
         /// <value>
         /// The table limits.

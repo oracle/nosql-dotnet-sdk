@@ -8,7 +8,6 @@
 namespace Oracle.NoSQL.SDK.BinaryProtocol
 {
     using System;
-    using System.Xml.Schema;
 
     internal enum ErrorCode
     {
@@ -66,8 +65,30 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
 
     internal static partial class Protocol
     {
+        // Special case for TABLE_NOT_FOUND errors on writeMany with multiple
+        // tables. Earlier server versions do not support this and will return
+        // a TABLE_NOT_FOUND error with the table names in a single string,
+        // separated by commas, with no brackets, like:
+        // table1,table2,table3
+        // Later versions may legitimately return TABLE_NOT_FOUND error, but
+        // table names will be inside a bracketed list, like:
+        // [table1, table2, table3]
+        private static Exception HandleWriteManyTableNotFound(
+            WriteManyRequest wmr, string message)
+        {
+            if (!wmr.IsSingleTable && message != null &&
+                message.Contains(',') && !message.Contains('['))
+            {
+                return new NotSupportedException(
+                    "WriteMany operation with multiple tables is not " +
+                    "supported by the version of the connected server");
+            }
+
+            return new TableNotFoundException(message);
+        }
+
         internal static Exception MapException(ErrorCode errorCode,
-            string message)
+            string message, Request request)
         {
             switch (errorCode)
             {
@@ -77,6 +98,10 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
                     return new NoSQLException(
                         $"Unknown operation: {message}");
                 case ErrorCode.TableNotFound:
+                    if (request is WriteManyRequest wmr)
+                    {
+                        return HandleWriteManyTableNotFound(wmr, message);
+                    }
                     return new TableNotFoundException(message);
                 case ErrorCode.IndexLimitExceeded:
                     return new IndexLimitException(message);

@@ -6,7 +6,7 @@
     <Company>Oracle Corporation</Company>
     <Product>Oracle NoSQL Database</Product>
     <Authors>Oracle Corporation</Authors>
-    <Copyright>Copyright (c) 2018, 2021 Oracle and/or its affiliates. All rights reserved.</Copyright>
+    <Copyright>Copyright (c) 2020, 2022 Oracle and/or its affiliates. All rights reserved.</Copyright>
     <Description>Oracle NoSQL .NET SDK</Description>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
 	<PackageReadmeFile>README.md</PackageReadmeFile>
@@ -18,11 +18,12 @@
     </PackageReleaseNotes>
     <PackageIcon>Icon.png</PackageIcon>
     <Version>5.1.4</Version>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DocumentationFile>C:\hg2\sk.csharp\Oracle.NoSQL.SDK\src\Oracle.NoSQL.SDK.xml</DocumentationFile>
-    <NoWarn>1701;1702;0419</NoWarn>
+	  <DocumentationFile></DocumentationFile>
+	  <NoWarn>1701;1702;0419</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

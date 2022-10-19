@@ -24,7 +24,7 @@ namespace Oracle.NoSQL.SDK {
     /// <see cref="NoSQLClient.PutAsync"/>,
     /// <see cref="NoSQLClient.DeleteAsync"/>,
     /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.DeleteRangeAsync*"/>,
-    /// <see cref="NoSQLClient.WriteManyAsync"/>,
+    /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.WriteManyAsync*"/>,
     /// <see cref="NoSQLClient.PrepareAsync"/>,
     /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.QueryAsync*"/> and their
     /// variants.  Rate limiting in the driver allows spreading the operations

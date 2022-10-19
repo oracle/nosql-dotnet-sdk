@@ -14,7 +14,8 @@ namespace Oracle.NoSQL.SDK
     /// </summary>
     /// <remarks>
     /// <para>
-    /// This class is the result of <see cref="NoSQLClient.WriteManyAsync"/>,
+    /// This class is the result of
+    /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.WriteManyAsync*"/>,
     /// <see cref="NoSQLClient.PutManyAsync"/> and
     /// <see cref="NoSQLClient.DeleteManyAsync"/> APIs.
     /// </para>
@@ -46,7 +47,7 @@ namespace Oracle.NoSQL.SDK
     /// <see cref="WriteOperationResult{TRow}.ExistingRow"/> of Put or Delete
     /// sub operation.  Must be a reference type.  Currently the only
     /// supported type is <see cref="RecordValue"/>.</typeparam>
-    /// <seealso cref="NoSQLClient.WriteManyAsync"/>
+    /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.WriteManyAsync*"/>
     /// <seealso cref="NoSQLClient.PutManyAsync"/>
     /// <seealso cref="NoSQLClient.DeleteManyAsync"/>
     /// <seealso cref="WriteOperationResult{TRow}"/>
