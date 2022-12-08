@@ -126,6 +126,12 @@ namespace Oracle.NoSQL.SDK
         private static readonly Realm OC14 = new Realm("oc14",
             "oraclecloud14.com");
 
+        private static readonly Realm OC16 = new Realm("oc16",
+            "oraclecloud16.com");
+
+        private static readonly Realm OC17 = new Realm("oc17",
+            "oraclecloud17.com");
+
         private readonly Realm realm;
 
         private Region(string regionId, string regionCode, Realm realm)
@@ -564,10 +570,58 @@ namespace Oracle.NoSQL.SDK
             "ap-dcc-canberra-1", "wga", OC10);
 
         /// <summary>
-        /// Realm: OC14, Italy (Milan)
+        /// Realm: OC14, Italy (Milan 1)
         /// </summary>
         public static readonly Region EU_DCC_MILAN_1 = new Region(
             "eu-dcc-milan-1", "bgy", OC14);
+
+        /// <summary>
+        /// Realm: OC14, Italy (Milan 2)
+        /// </summary>
+        public static readonly Region EU_DCC_MILAN_2 = new Region(
+            "eu-dcc-milan-2", "mxp", OC14);
+
+        /// <summary>
+        /// Realm: OC14, Ireland (Dublin 1)
+        /// </summary>
+        public static readonly Region EU_DCC_DUBLIN_1 = new Region(
+            "eu-dcc-dublin-1", "ork", OC14);
+
+        /// <summary>
+        /// Realm: OC14, Ireland (Dublin 2)
+        /// </summary>
+        public static readonly Region EU_DCC_DUBLIN_2 = new Region(
+            "eu-dcc-dublin-2", "snn", OC14);
+
+        /// <summary>
+        /// Realm: OC14, Germany (Rating 1)
+        /// </summary>
+        public static readonly Region EU_DCC_RATING_1 = new Region(
+            "eu-dcc-rating-1", "dus", OC14);
+
+        /// <summary>
+        /// Realm: OC14, Germany (Rating 2)
+        /// </summary>
+        public static readonly Region EU_DCC_RATING_2 = new Region(
+            "eu-dcc-rating-2", "dtm", OC14);
+
+        /// <summary>
+        /// Realm: OC16, US Midwest (Utah)
+        /// </summary>
+        public static readonly Region US_WESTJORDAN_1 = new Region(
+            "us-westjordan-1", "sgu", OC16);
+
+        /// <summary>
+        /// Realm: OC17, US West (Phoenix 1)
+        /// </summary>
+        public static readonly Region US_DCC_PHOENIX_1 = new Region(
+            "us-dcc-phoenix-1", "ifp", OC17);
+
+        /// <summary>
+        /// Realm: OC17, US West (Phoenix 2)
+        /// </summary>
+        public static readonly Region US_DCC_PHOENIX_2 = new Region(
+            "us-dcc-phoenix-2", "gcn", OC17);
 
     }
 }
