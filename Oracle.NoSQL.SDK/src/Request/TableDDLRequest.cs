@@ -18,8 +18,8 @@ namespace Oracle.NoSQL.SDK
     /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.ExecuteTableDDLWithCompletionAsync*"/>
     /// methods.
     /// </summary>
-    /// <seealso cref="NoSQLClient.ExecuteTableDDLAsync"/>
-    /// <seealso cref="NoSQLClient.ExecuteTableDDLWithCompletionAsync"/>
+    /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.ExecuteTableDDLAsync*"/>
+    /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.ExecuteTableDDLWithCompletionAsync*"/>
     /// <seealso cref="Request"/>
     public class TableDDLRequest : Request
     {

@@ -4,9 +4,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
-## Unreleased
+## [5.1.5]
 
 **Added**
+
 * New regions for cloud service: ord, tiw, bgy, mxp, ork, snn,
   dus, dtm, sgu, ifp, gcn
 * Support for WriteMany with multiple tables that share the same shard key.
@@ -14,6 +15,10 @@ Added new methods to WriteOperationCollection that take table name parameter.
 In addition, added new WriteManyAsync method that does not take table name
 parameter and expects table names be included in WriteOperationCollection
 instance.
+
+**Fixed**
+
+* Fixed CS0419 warnings in doc comments.
 
 ## [5.1.4]
 

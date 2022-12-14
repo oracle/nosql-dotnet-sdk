@@ -84,8 +84,8 @@ namespace Oracle.NoSQL.SDK
     /// </code>
     /// </example>
     /// <seealso cref="NoSQLClient.PrepareAsync"/>
-    /// <seealso cref="NoSQLClient.QueryAsync"/>
-    /// <seealso cref="NoSQLClient.GetQueryAsyncEnumerable"/>
+    /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.QueryAsync*"/>
+    /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.GetQueryAsyncEnumerable*"/>
     public class PreparedStatement : IDataResult
     {
         private TopologyInfo topologyInfo;

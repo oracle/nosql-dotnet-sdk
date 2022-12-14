@@ -31,9 +31,9 @@ namespace Oracle.NoSQL.SDK
     /// the key ordering is not required.  When the key ordering is required,
     /// e.g. for the results of operations such as
     /// <see cref="NoSQLClient.GetAsync"/> and
-    /// <see cref="NoSQLClient.QueryAsync"/>, <see cref="RecordValue"/> is
-    /// used which represents the ordered dictionary and is a subclass of this
-    /// class.
+    /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.QueryAsync*"/>,
+    /// <see cref="RecordValue"/> is used which represents the ordered
+    /// dictionary and is a subclass of this class.
     /// </para>
     /// <para>
     /// The instances of <see cref="MapValue"/> may have a nested structure

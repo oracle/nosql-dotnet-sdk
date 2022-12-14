@@ -85,7 +85,7 @@ namespace Oracle.NoSQL.SDK
     /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.GetDeleteRangeAsyncEnumerable*"/>.
     /// </para>
     /// </remarks>
-    /// <seealso cref="NoSQLClient.DeleteRangeAsync"/>
+    /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.DeleteRangeAsync*"/>
     /// <seealso cref="DeleteRangeResult"/>
     /// <seealso cref="DeleteRangeOptions"/>
     public class DeleteRangeContinuationKey

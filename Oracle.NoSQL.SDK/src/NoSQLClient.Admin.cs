@@ -25,7 +25,7 @@ namespace Oracle.NoSQL.SDK {
         /// The operations allowed are defined by Data Definition Language
         /// (DDL) portion of the query language that do not affect a specific
         /// table.For table-specific DLL operations use
-        /// <see cref="NoSQLClient.ExecuteTableDDLAsync"/>.
+        /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.ExecuteTableDDLAsync*"/>.
         /// </para>
         /// <para>
         /// Examples of statements passed to this method include:
@@ -76,8 +76,10 @@ namespace Oracle.NoSQL.SDK {
         /// When an admin DDL operation is completed, the status of the
         /// operation should be <see cref="AdminState.Complete"/>.  To get
         /// only the final result, instead of this API, call
-        /// <see cref="ExecuteAdminWithCompletionAsync"/>, which is
-        /// equivalent to calling <see cref="ExecuteAdminAsync"/> and then
+        /// <see cref="ExecuteAdminWithCompletionAsync(char[],AdminOptions,CancellationToken)"/>,
+        /// which is equivalent to calling
+        /// <see cref="ExecuteAdminAsync(char[],AdminOptions,CancellationToken)"/>
+        /// and then
         /// <see cref="AdminResult.WaitForCompletionAsync"/> (you can do this
         /// regardless of the type of the admin operation because
         /// <see cref="AdminResult.WaitForCompletionAsync"/> is a no-op if the
@@ -129,7 +131,7 @@ namespace Oracle.NoSQL.SDK {
         /// </summary>
         /// <remarks>
         /// This API is the same as
-        /// <see cref="ExecuteAdminAsync"/>
+        /// <see cref="ExecuteAdminAsync(char[],AdminOptions,CancellationToken)"/>
         /// but takes the <paramref name="statement"/> as a <c>string</c> and
         /// thus can be used if the statement does not contain sensitive
         /// information.
@@ -153,7 +155,7 @@ namespace Oracle.NoSQL.SDK {
         /// one of its subclasses is thrown if operation cannot be performed
         /// for any other reason.  See documentation for corresponding
         /// subclass of <see cref="NoSQLException"/>.</exception>
-        /// <seealso cref="ExecuteAdminAsync"/>
+        /// <seealso cref="ExecuteAdminAsync(char[],AdminOptions,CancellationToken)"/>
         public Task<AdminResult> ExecuteAdminAsync(
             string statement,
             AdminOptions options = null,
@@ -170,7 +172,8 @@ namespace Oracle.NoSQL.SDK {
         /// <remarks>
         /// <para>
         /// This method is equivalent to calling
-        /// <see cref="ExecuteAdminAsync"/> and then calling
+        /// <see cref="ExecuteAdminAsync(char[],AdminOptions,CancellationToken)"/>
+        /// and then calling
         /// <see cref="AdminResult.WaitForCompletionAsync"/> on the returned
         /// <see cref="AdminResult"/> object.  If the operation is successful,
         /// the state in the resulting <see cref="AdminResult"/> object should
@@ -210,7 +213,7 @@ namespace Oracle.NoSQL.SDK {
         /// one of its subclasses is thrown if operation cannot be performed
         /// for any other reason.  See documentation for corresponding
         /// subclass of <see cref="NoSQLException"/>.</exception>
-        /// <seealso cref="ExecuteAdminAsync"/>
+        /// <seealso cref="ExecuteAdminAsync(char[],AdminOptions,CancellationToken)"/>
         /// <seealso cref="AdminResult.WaitForCompletionAsync"/>
         public async Task<AdminResult> ExecuteAdminWithCompletionAsync(
             char[] statement,
@@ -242,7 +245,7 @@ namespace Oracle.NoSQL.SDK {
         /// </summary>
         /// <remarks>
         /// This API is the same as
-        /// <see cref="ExecuteAdminWithCompletionAsync"/>
+        /// <see cref="ExecuteAdminWithCompletionAsync(char[],AdminOptions,CancellationToken)"/>
         /// but takes the <paramref name="statement"/> as a <c>string</c> and
         /// thus can be used if the statement does not contain sensitive
         /// information.
@@ -283,7 +286,7 @@ namespace Oracle.NoSQL.SDK {
         /// one of its subclasses is thrown if operation cannot be performed
         /// for any other reason.  See documentation for corresponding
         /// subclass of <see cref="NoSQLException"/>.</exception>
-        /// <seealso cref="ExecuteAdminWithCompletionAsync"/>
+        /// <seealso cref="ExecuteAdminWithCompletionAsync(char[],AdminOptions,CancellationToken)"/>
         public Task<AdminResult> ExecuteAdminWithCompletionAsync(
             string statement,
             AdminOptions options = null,
@@ -295,20 +298,22 @@ namespace Oracle.NoSQL.SDK {
 
         /// <summary>
         /// On-premise only.  Gets the status of the operation performed by
-        /// <see cref="ExecuteAdminAsync"/>.
+        /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.ExecuteAdminAsync*"/>.
         /// </summary>
         /// <remarks>
         /// This API is used to get information about the current state of the
         /// admin DDL operation that was issued by
-        /// <see cref="ExecuteAdminAsync"/> and is performed by the service
+        /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.ExecuteAdminAsync*"/>
+        /// and is performed by the service
         /// asynchronously.  You do not need to use this API for the immediate
         /// operations or after calling
-        /// <see cref="ExecuteAdminWithCompletionAsync"/> because the
-        /// the returned <see cref="AdminResult"/> will already reflect the
-        /// final completed state.
+        /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.ExecuteAdminWithCompletionAsync*"/>
+        /// because the the returned <see cref="AdminResult"/> will already
+        /// reflect the final completed state.
         /// </remarks>
         /// <param name="adminResult">Result returned by
-        /// <see cref="ExecuteAdminAsync"/>.</param>
+        /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.ExecuteAdminAsync*"/>.
+        /// </param>
         /// <param name="options">(Optional) Options for this operation.
         /// If not specified or <c>null</c>, appropriate defaults
         /// will be used.  See <see cref="GetAdminStatusOptions"/>.</param>
@@ -328,7 +333,7 @@ namespace Oracle.NoSQL.SDK {
         /// one of its subclasses is thrown if operation cannot be performed
         /// for any other reason.  See documentation for corresponding
         /// subclass of <see cref="NoSQLException"/>.</exception>
-        /// <seealso cref="ExecuteAdminAsync"/>
+        /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.ExecuteAdminAsync*"/>
         /// <seealso cref="AdminResult"/>
         public async Task<AdminResult> GetAdminStatusAsync(
             AdminResult adminResult,
@@ -380,8 +385,8 @@ namespace Oracle.NoSQL.SDK {
         /// one of its subclasses is thrown if operation cannot be performed
         /// for any other reason.  See documentation for corresponding
         /// subclass of <see cref="NoSQLException"/>.</exception>
-        /// <see cref="ExecuteAdminAsync"/>
-        /// <see cref="UserInfo"/>
+        /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.ExecuteAdminAsync*"/>
+        /// <seealso cref="UserInfo"/>
         public async Task<IReadOnlyList<UserInfo>> ListUsersAsync(
             AdminOptions options = null,
             CancellationToken cancellationToken = default)
@@ -447,7 +452,7 @@ namespace Oracle.NoSQL.SDK {
         /// one of its subclasses is thrown if operation cannot be performed
         /// for any other reason.  See documentation for corresponding
         /// subclass of <see cref="NoSQLException"/>.</exception>
-        /// <see cref="ExecuteAdminAsync"/>
+        /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.ExecuteAdminAsync*"/>
         public async Task<IReadOnlyList<string>> ListNamespacesAsync(
             AdminOptions options = null,
             CancellationToken cancellationToken = default)
@@ -511,7 +516,7 @@ namespace Oracle.NoSQL.SDK {
         /// one of its subclasses is thrown if operation cannot be performed
         /// for any other reason.  See documentation for corresponding
         /// subclass of <see cref="NoSQLException"/>.</exception>
-        /// <see cref="ExecuteAdminAsync"/>
+        /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.ExecuteAdminAsync*"/>
         public async Task<IReadOnlyList<string>> ListRolesAsync(
             AdminOptions options = null,
             CancellationToken cancellationToken = default)

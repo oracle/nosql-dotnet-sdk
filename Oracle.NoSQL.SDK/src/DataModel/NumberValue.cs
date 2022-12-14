@@ -44,7 +44,7 @@ namespace Oracle.NoSQL.SDK
     /// <see cref="DoubleValue"/> is within the <c>decimal</c> range,
     /// otherwise the result of comparison is based on the sign of the
     /// <c>double</c> value.  See <see cref="FieldValue.CompareTo"/> and
-    /// <see cref="FieldValue.Equals"/> for more information.
+    /// <see cref="FieldValue.Equals(FieldValue)"/> for more information.
     /// </para>
     /// </remarks>
     /// <seealso cref="FieldValue"/>

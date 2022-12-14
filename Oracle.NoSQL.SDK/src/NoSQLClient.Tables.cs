@@ -42,17 +42,19 @@ namespace Oracle.NoSQL.SDK {
         /// <see cref="TableResult.WaitForCompletionAsync"/> on returned
         /// <see cref="TableResult"/> to asynchronously wait for the operation
         /// completion.  Alternatively, you may check the status of the
-        /// running DDL operation by calling <see cref="GetTableAsync"/>.
+        /// running DDL operation by calling
+        /// <see cref="GetTableAsync(TableResult,GetTableOptions,CancellationToken)"/>.
         /// </para>
         /// <para>
         /// When the DDL operation is completed, the table state should be
         /// either <see cref="TableState.Active"/> or
         /// <see cref="TableState.Dropped"/> (only if the operation was
         /// <em>DROP TABLE</em>).  To get only the final result, instead of
-        /// this API, call <see cref="ExecuteTableDDLWithCompletionAsync"/>,
+        /// this API, call
+        /// <see cref="ExecuteTableDDLWithCompletionAsync(string,TableDDLOptions,CancellationToken)"/>,
         /// which is equivalent to calling
-        /// <see cref="ExecuteTableDDLAsync"/> and then
-        /// <see cref="TableResult.WaitForCompletionAsync"/>.
+        /// <see cref="ExecuteTableDDLAsync(string,TableDDLOptions,CancellationToken)"/>
+        /// and then <see cref="TableResult.WaitForCompletionAsync"/>.
         /// </para>
         /// </remarks>
         /// <param name="statement">SQL statement.</param>
@@ -168,7 +170,8 @@ namespace Oracle.NoSQL.SDK {
         /// <remarks>
         /// <para>
         /// This method is equivalent to calling
-        /// <see cref="ExecuteTableDDLAsync"/> and then calling
+        /// <see cref="ExecuteTableDDLAsync(string,TableDDLOptions,CancellationToken)"/>
+        /// and then calling
         /// <see cref="TableResult.WaitForCompletionAsync"/> on the returned
         /// <see cref="TableResult"/> object.  If the operation is successful,
         /// the table state in the resulting <see cref="TableResult"/> object
@@ -329,7 +332,8 @@ namespace Oracle.NoSQL.SDK {
         /// where it is a no-op.
         /// </para>
         /// <para>
-        /// This method is similar to <see cref="ExecuteTableDDLAsync"/>,
+        /// This method is similar to
+        /// <see cref="ExecuteTableDDLAsync(string,TableDDLOptions,CancellationToken)"/>,
         /// so all considerations discussed  apply here, including long
         /// running DDL operations and the need to use
         /// <see cref="TableResult.WaitForCompletionAsync"/> to asynchronously
@@ -510,8 +514,9 @@ namespace Oracle.NoSQL.SDK {
         /// capacity and schema.  This method is similar to
         /// <see cref="GetTableAsync(string, GetTableOptions, CancellationToken)"/>
         /// but instead of table name it takes <see cref="TableResult"/>
-        /// object returned by <see cref="ExecuteTableDDLAsync"/>.  This
-        /// allows, in addition to table information, to retrieve error
+        /// object returned by
+        /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.ExecuteTableDDLAsync*"/>.
+        /// This allows, in addition to table information, to retrieve error
         /// information for the DDL operation.  If DDL operation represented
         /// by <paramref name="tableResult"/> failed, this follow-on call will
         /// throw exception containing the error information.
@@ -571,10 +576,10 @@ namespace Oracle.NoSQL.SDK {
         /// data operations after table DDL has been performed is to call
         /// <see cref="TableResult.WaitForCompletionAsync"/> on a
         /// <see cref="TableResult"/> object returned by
-        /// <see cref="ExecuteTableDDLAsync"/> representing ongoing table
-        /// DDL operation.  Use this API only in a rare use case where DDL
-        /// operation is performed outside your control and you don't have its
-        /// <see cref="TableResult"/>.
+        /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.ExecuteTableDDLAsync*"/>
+        /// representing ongoing table DDL operation.  Use this API only in a
+        /// rare use case where DDL operation is performed outside your
+        /// control and you don't have its <see cref="TableResult"/>.
         /// </para>
         /// <para>
         /// This API waits until the table has transitioned from an

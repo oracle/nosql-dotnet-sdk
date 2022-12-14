@@ -15,8 +15,8 @@ namespace Oracle.NoSQL.SDK
     /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.GetListTablesAsyncEnumerable*"/>
     /// APIs.
     /// </summary>
-    /// <seealso cref="NoSQLClient.ListTablesAsync"/>
-    /// <seealso cref="NoSQLClient.GetListTablesAsyncEnumerable"/>
+    /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.ListTablesAsync*"/>
+    /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.GetListTablesAsyncEnumerable*"/>
     /// <seealso cref="Request"/>
     /// <seealso cref="RequestWithTable" />
     public class ListTablesRequest : Request
@@ -42,8 +42,10 @@ namespace Oracle.NoSQL.SDK
         }
 
         /// <summary>
-        /// Gets the options for <see cref="NoSQLClient.ListTablesAsync"/>
-        /// and <see cref="NoSQLClient.GetListTablesAsyncEnumerable"/>
+        /// Gets the options for
+        /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.ListTablesAsync*"/>
+        /// and
+        /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.GetListTablesAsyncEnumerable*"/>
         /// operations.
         /// </summary>
         /// <value>

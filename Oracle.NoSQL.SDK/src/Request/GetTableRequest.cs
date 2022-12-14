@@ -11,9 +11,9 @@ namespace Oracle.NoSQL.SDK
 
     /// <summary>
     /// Represents information about operation performed by
-    /// <see cref="NoSQLClient.GetTableAsync"/> API.
+    /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.GetTableAsync*"/> API.
     /// </summary>
-    /// <seealso cref="NoSQLClient.GetTableAsync"/>
+    /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.GetTableAsync*"/>
     /// <seealso cref="Request"/>
     /// <seealso cref="RequestWithTable" />
     public class GetTableRequest : RequestWithTable
@@ -60,7 +60,8 @@ namespace Oracle.NoSQL.SDK
         }
 
         /// <summary>
-        /// Gets the options for <see cref="NoSQLClient.GetTableAsync"/>
+        /// Gets the options for
+        /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.GetTableAsync*"/>
         /// operation.
         /// </summary>
         /// <value>

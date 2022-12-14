@@ -32,8 +32,8 @@ namespace Oracle.NoSQL.SDK
     ///     });
     /// </code>
     /// </example>
-    /// <seealso cref="NoSQLClient.ExecuteAdminAsync"/>
-    /// <seealso cref="NoSQLClient.ExecuteAdminWithCompletionAsync"/>
+    /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.ExecuteAdminAsync*"/>
+    /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.ExecuteAdminWithCompletionAsync*"/>
     public class AdminOptions : IOptions
     {
         string IOptions.Compartment => null;

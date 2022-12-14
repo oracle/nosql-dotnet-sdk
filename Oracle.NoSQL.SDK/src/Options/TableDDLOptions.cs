@@ -35,8 +35,8 @@ namespace Oracle.NoSQL.SDK
     ///     });
     /// </code>
     /// </example>
-    /// <seealso cref="NoSQLClient.ExecuteTableDDLAsync"/>
-    /// <seealso cref="NoSQLClient.ExecuteTableDDLWithCompletionAsync"/>
+    /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.ExecuteTableDDLAsync*"/>
+    /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.ExecuteTableDDLWithCompletionAsync*"/>
     /// <seealso cref="NoSQLClient.SetTableLimitsAsync"/>
     /// <seealso cref="NoSQLClient.SetTableLimitsWithCompletionAsync"/>
     public class TableDDLOptions : IOptions

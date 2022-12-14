@@ -25,8 +25,8 @@ namespace Oracle.NoSQL.SDK
     /// alphabetically.
     /// </para>
     /// </remarks>
-    /// <seealso cref="NoSQLClient.ListTablesAsync"/>
-    /// <seealso cref="NoSQLClient.GetListTablesAsyncEnumerable"/>
+    /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.ListTablesAsync*"/>
+    /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.GetListTablesAsyncEnumerable*"/>
     public class ListTablesResult
     {
         /// <summary>

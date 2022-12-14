@@ -17,8 +17,8 @@ namespace Oracle.NoSQL.SDK
     /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.GetDeleteRangeAsyncEnumerable*"/>
     /// APIs.
     /// </summary>
-    /// <seealso cref="NoSQLClient.DeleteRangeAsync"/>
-    /// <seealso cref="NoSQLClient.GetDeleteRangeAsyncEnumerable"/>
+    /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.DeleteRangeAsync*"/>
+    /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.GetDeleteRangeAsyncEnumerable*"/>
     /// <seealso cref="Request"/>
     /// <seealso cref="RequestWithTable" />
     public class DeleteRangeRequest : RequestWithTable

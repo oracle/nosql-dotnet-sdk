@@ -76,7 +76,7 @@ namespace Oracle.NoSQL.SDK
     /// </code>
     /// </example>
     /// <seealso cref="DeleteRangeOptions"/>
-    /// <seealso cref="NoSQLClient.DeleteRangeAsync"/>
+    /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.DeleteRangeAsync*"/>
     public class FieldRange
     {
         /// <summary>

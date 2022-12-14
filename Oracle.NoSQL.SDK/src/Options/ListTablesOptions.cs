@@ -28,8 +28,8 @@ namespace Oracle.NoSQL.SDK
     /// using <see cref="ListTablesOptions.FromIndex"/> and
     /// <see cref="ListTablesOptions.Limit"/> properties as shown in the
     /// example below.  However, the recommended way is to call
-    /// <see cref="NoSQLClient.GetListTablesAsyncEnumerable"/> and iterate
-    /// over its result, in which case you only need to use the
+    /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.GetListTablesAsyncEnumerable*"/>
+    /// and iterate over its result, in which case you only need to use the
     /// <see cref="ListTablesOptions.Limit"/> property.
     /// </para>
     /// </remarks>
@@ -59,7 +59,7 @@ namespace Oracle.NoSQL.SDK
     /// </code>
     /// </example>
     /// <seealso cref="NoSQLClient.ListTablesAsync(ListTablesOptions, CancellationToken)"/>
-    /// <seealso cref="NoSQLClient.GetListTablesAsyncEnumerable"/>
+    /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.GetListTablesAsyncEnumerable*"/>
     public class ListTablesOptions : IOptions
     {
         /// <inheritdoc cref="GetOptions.Compartment"/>
@@ -103,7 +103,8 @@ namespace Oracle.NoSQL.SDK
         /// </para>
         /// <para>
         /// However, the recommended and more simple way to page table names
-        /// is to use <see cref="NoSQLClient.GetListTablesAsyncEnumerable"/>
+        /// is to use
+        /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.GetListTablesAsyncEnumerable*"/>
         /// in which case you need not use this property.
         /// </para>
         /// </remarks>
@@ -111,7 +112,7 @@ namespace Oracle.NoSQL.SDK
         /// Starting index to return table names.  Cannot be a negative value.
         /// The default is 0 (start from the beginning of the list).
         /// </value>
-        /// <seealso cref="NoSQLClient.GetListTablesAsyncEnumerable"/>
+        /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.GetListTablesAsyncEnumerable*"/>
         public int? FromIndex { get; set; }
 
         /// <summary>

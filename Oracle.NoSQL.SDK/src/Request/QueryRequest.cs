@@ -78,8 +78,8 @@ namespace Oracle.NoSQL.SDK
     /// <typeparam name="TRow">The type of value representing the rows
     /// returned by the Query operation.  Must be a reference type.  Currently
     /// the only supported type is <see cref="RecordValue"/>.</typeparam>
-    /// <seealso cref="NoSQLClient.QueryAsync"/>
-    /// <seealso cref="NoSQLClient.GetQueryAsyncEnumerable"/>
+    /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.QueryAsync*"/>
+    /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.GetQueryAsyncEnumerable*"/>
     /// <seealso cref="Request"/>
     public class QueryRequest<TRow> : QueryRequest
     {

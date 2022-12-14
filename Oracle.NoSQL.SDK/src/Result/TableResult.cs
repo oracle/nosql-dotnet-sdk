@@ -53,11 +53,11 @@ namespace Oracle.NoSQL.SDK
     /// state.
     /// </para>
     /// </remarks>
-    /// <seealso cref="NoSQLClient.ExecuteTableDDLAsync"/>
-    /// <seealso cref="NoSQLClient.ExecuteTableDDLWithCompletionAsync"/>
+    /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.ExecuteTableDDLAsync*"/>
+    /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.ExecuteTableDDLWithCompletionAsync*"/>
     /// <seealso cref="NoSQLClient.SetTableLimitsAsync"/>
     /// <seealso cref="NoSQLClient.SetTableLimitsWithCompletionAsync"/>
-    /// <seealso cref="NoSQLClient.GetTableAsync"/>
+    /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.GetTableAsync*"/>
     /// <seealso cref="TableResult.WaitForCompletionAsync"/>
     /// <seealso cref="NoSQLClient.WaitForTableStateAsync"/>
     public class TableResult

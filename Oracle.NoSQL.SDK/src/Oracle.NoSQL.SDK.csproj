@@ -17,13 +17,13 @@
     <PackageReleaseNotes>Initial release.
     </PackageReleaseNotes>
     <PackageIcon>Icon.png</PackageIcon>
-    <Version>5.1.4</Version>
+    <Version>5.1.5</Version>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
 	  <DocumentationFile></DocumentationFile>
-	  <NoWarn>1701;1702;0419</NoWarn>
+	  <NoWarn>1701;1702</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

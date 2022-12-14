@@ -107,7 +107,7 @@ namespace Oracle.NoSQL.SDK
     /// <see cref="NoSQLClient.PutAsync"/> and its variants, Delete
     /// operations, executed by <see cref="NoSQLClient.DeleteAsync"/> and its
     /// variants, DeleteRange operations executed by
-    /// <see cref="NoSQLClient.DeleteRangeAsync"/> and its variants and
+    /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.DeleteRangeAsync*"/> and its variants and
     /// WriteMany operations executed by
     /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.WriteManyAsync*"/> and its
     /// variants.
