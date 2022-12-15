@@ -206,7 +206,7 @@ results, such as <a class="xref" href="../api/Oracle.NoSQL.SDK.GetResult-1.html"
 thread-safe and async-safe and they are expected to be shared among threads.</p>
 <p><a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLClient.html">NoSQLClient</a> has memory and network
 resources associated with it. It implements
-<a class="xref" href="https://docs.microsoft.com/dotnet/api/system.idisposable">IDisposable</a> interface and must be disposed when
+<a class="xref" href="https://learn.microsoft.com/dotnet/api/system.idisposable">IDisposable</a> interface and must be disposed when
 the application is done using it via calling
 <a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLClient.Dispose.html#Oracle_NoSQL_SDK_NoSQLClient_Dispose">Dispose</a> method or via <em>using</em>
 statement.  Failure to dispose of the instance may cause an application to
@@ -229,7 +229,7 @@ properties may override the settings in
 <a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLConfig.html">NoSQLConfig</a> object used to create
 <a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLClient.html">NoSQLClient</a> instance.</p>
 <p>Most of the methods of <a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLClient.html">NoSQLClient</a>
-also take <a class="xref" href="https://docs.microsoft.com/dotnet/api/system.threading.cancellationtoken">CancellationToken</a> as an
+also take <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken">CancellationToken</a> as an
 optional last argument, which allows you to cancel an operation.  However,
 note that this is only a driver-side cancellation and provides no guarantees
 as to whether the operation was performed by the service.</p>
@@ -326,7 +326,7 @@ try
     var statement =
         &quot;CREATE TABLE IF NOT EXISTS users(id INTEGER, &quot; +
         &quot;name STRING, PRIMARY KEY(id))&quot;;
-        
+
     var result = await client.ExecuteTableDDLAsync(statement,
         new TableLimits(20, 10, 5));
 
@@ -504,7 +504,7 @@ try
             [&quot;id&quot;] = 1,
             [&quot;name&quot;] = &quot;Jane&quot;
         });
-    
+
     // Expected output: PutIfAbsentAsync failed.
     Console.WriteLine(&quot;PutIfAbsentAsync {0}.&quot;,
         result.Success ? &quot;succeeded&quot; : &quot;failed&quot;);
@@ -648,7 +648,7 @@ try
          {
             Consistency = Consistency.Absolute
          });
-    
+
     // The expected output will be:
     // { &quot;id&quot;: 2, &quot;name&quot;: &quot;Jack&quot; }
     Console.WriteLine(&quot;Got row with absolute consistency: {0}&quot;,
@@ -758,7 +758,7 @@ catch(Exception ex)
 <p>Another way to execute the query in a loop is to use
 <a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLClient.GetQueryAsyncEnumerable.html">GetQueryAsyncEnumerable</a>.
 It returns an instance of
-<a class="xref" href="https://docs.microsoft.com/dotnet/api/system.collections.generic.iasyncenumerable-1">IAsyncEnumerable</a>&lt;<a class="xref" href="../api/Oracle.NoSQL.SDK.QueryResult-1.html">QueryResult</a>&gt;
+<a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.iasyncenumerable-1">IAsyncEnumerable</a>&lt;<a class="xref" href="../api/Oracle.NoSQL.SDK.QueryResult-1.html">QueryResult</a>&gt;
 that can be iterated over.  Each iteration step returns a portion of the query
 results as <a class="xref" href="../api/Oracle.NoSQL.SDK.QueryResult-1.html">QueryResult</a>.  For more
 information on async enumerables, see
@@ -982,7 +982,7 @@ try
     // changed the row version, so the old version no longer matches.
     // The result will also contain existing row and its version because
     // we specified ReturnExisting in DeleteOptions.
-    
+
     deleteResult = await client.DeleteIfVersionAsync(tableName,
         primaryKey, version);
 
@@ -1073,7 +1073,7 @@ try
 {
     var result = await client.SetTableLimitsWithCompletionAsync(
         tableName, new TableLimits(40, 10, 5));
-    
+
     // Expected output: Table state is Active.
     Console.WriteLine(&quot;Table state is {0}.&quot;, result.TableState);
 
@@ -1148,18 +1148,18 @@ or when using methods and conversion operations of the
 class for many exceptions thrown by the driver.  However, in certain cases
 the driver uses standard exception types such as:</p>
 <ul>
-<li><a class="xref" href="https://docs.microsoft.com/dotnet/api/system.argumentexception">ArgumentException</a> and its subclasses such
-as <a class="xref" href="https://docs.microsoft.com/dotnet/api/system.argumentnullexception">ArgumentNullException</a>.  They are
+<li><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.argumentexception">ArgumentException</a> and its subclasses such
+as <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.argumentnullexception">ArgumentNullException</a>.  They are
 thrown when an invalid argument is passed to a method or when an invalid
 configuration (in code or in JSON) is passed to create
 <a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLClient.html">NoSQLClient</a> instance.</li>
-<li><a class="xref" href="https://docs.microsoft.com/dotnet/api/system.timeoutexception">TimeoutException</a> is thrown when an operation
+<li><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.timeoutexception">TimeoutException</a> is thrown when an operation
 issued by <a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLClient.html">NoSQLClient</a> has timed out.
 If you are getting many timeout exceptions, you may try to increase the
 timeout values in <a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLConfig.html">NoSQLConfig</a> or in
 <em>options</em> argument passed to the
 <a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLClient.html">NoSQLClient</a> method.</li>
-<li><a class="xref" href="https://docs.microsoft.com/dotnet/api/system.invalidoperationexception">InvalidOperationException</a> is thrown
+<li><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.invalidoperationexception">InvalidOperationException</a> is thrown
 when the service is an invalid state to perform an operation.  It may also
 be thrown if the query has failed be cause its processing exceeded the memory
 limit specifed in
@@ -1169,30 +1169,30 @@ or
 In this case, you may increase the corresponding memory limit.   Otherwise,
 you may retry the operation.  If it still fails, contact Oracle Support for
 assistance.</li>
-<li><a class="xref" href="https://docs.microsoft.com/dotnet/api/system.invalidcastexception">InvalidCastException</a> and
-<a class="xref" href="https://docs.microsoft.com/dotnet/api/system.overflowexception">OverflowException</a> may occur when working
+<li><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.invalidcastexception">InvalidCastException</a> and
+<a class="xref" href="https://learn.microsoft.com/dotnet/api/system.overflowexception">OverflowException</a> may occur when working
 with sublcasses of <a class="xref" href="../api/Oracle.NoSQL.SDK.FieldValue.html">FieldValue</a> and
 trying to cast a value to a type it doesn't support or cast a numeric value
 to a smaller type causing arithmetic overflow.  Check the validity of the
 conversion in question.  See <a class="xref" href="../api/Oracle.NoSQL.SDK.FieldValue.html">FieldValue</a>
 for details.</li>
-<li><a class="xref" href="https://docs.microsoft.com/dotnet/api/system.operationcanceledexception">OperationCanceledException</a> and
-<a class="xref" href="https://docs.microsoft.com/dotnet/api/system.threading.tasks.taskcanceledexception">TaskCanceledException</a>
+<li><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.operationcanceledexception">OperationCanceledException</a> and
+<a class="xref" href="https://learn.microsoft.com/dotnet/api/system.threading.tasks.taskcanceledexception">TaskCanceledException</a>
 if you issued a cancellation of the operation started by a method of
 <a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLClient.html">NoSQLClient</a> using the provided
-<a class="xref" href="https://docs.microsoft.com/dotnet/api/system.threading.cancellationtoken">CancellationToken</a>.</li>
+<a class="xref" href="https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken">CancellationToken</a>.</li>
 </ul>
 <p>Other exceptions thrown by the driver are subclasses of
 <a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLException.html">NoSQLException</a>.  See API
 documentation for more details.</p>
 <p>Note: for exceptions indicating that the operation has timed out or was
-canceled, such as <a class="xref" href="https://docs.microsoft.com/dotnet/api/system.timeoutexception">TimeoutException</a>,
-<a class="xref" href="https://docs.microsoft.com/dotnet/api/system.operationcanceledexception">OperationCanceledException</a> or
-<a class="xref" href="https://docs.microsoft.com/dotnet/api/system.threading.tasks.taskcanceledexception">TaskCanceledException</a>,
+canceled, such as <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.timeoutexception">TimeoutException</a>,
+<a class="xref" href="https://learn.microsoft.com/dotnet/api/system.operationcanceledexception">OperationCanceledException</a> or
+<a class="xref" href="https://learn.microsoft.com/dotnet/api/system.threading.tasks.taskcanceledexception">TaskCanceledException</a>,
 the driver cannot provide any guarantee whether the operation has or has not
 been executed by the service.  E.g. when using <em>Put</em> operation to insert a
 new row into a table, it is possible that
-<a class="xref" href="https://docs.microsoft.com/dotnet/api/system.timeoutexception">TimeoutException</a> has been thrown because the
+<a class="xref" href="https://learn.microsoft.com/dotnet/api/system.timeoutexception">TimeoutException</a> has been thrown because the
 service response could not reach the driver due to a network issue, even
 though the row has been already inserted into the table.</p>
 <p>In addition, exceptions may be split into two broad categories:</p>
@@ -1211,7 +1211,7 @@ retry.  They include exceptions such as
 <a class="xref" href="../api/Oracle.NoSQL.SDK.TableNotFoundException.html">TableNotFoundException</a>,
 <a class="xref" href="../api/Oracle.NoSQL.SDK.TableExistsException.html">TableExistsException</a> and
 others as well as standard exceptions discussed above such as
-<a class="xref" href="https://docs.microsoft.com/dotnet/api/system.argumentexception">ArgumentException</a>.</li>
+<a class="xref" href="https://learn.microsoft.com/dotnet/api/system.argumentexception">ArgumentException</a>.</li>
 </ul>
 <p>You can determine if a given instance of
 <a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLException.html">NoSQLException</a> is retryable by
@@ -1239,7 +1239,7 @@ operation and configured as one of timeout properties in
 <a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLConfig.html">NoSQLConfig</a> or in <em>options</em>
 passed to the <a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLClient.html">NoSQLClient</a>
 method.  If the operation or its retries have not succeded before the timeout
-is reached, <a class="xref" href="https://docs.microsoft.com/dotnet/api/system.timeoutexception">TimeoutException</a> is thrown.</p>
+is reached, <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.timeoutexception">TimeoutException</a> is thrown.</p>
 <p>By default, the driver uses
 <a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLRetryHandler.html">NoSQLRetryHandler</a> class
 which controls retires based on operation type, exception type and whether
@@ -1390,7 +1390,7 @@ of such statements include:</p>
 </ul>
 <p>Note that management of users and roles as in the last 3 examples above is
 available only when using
-<a href="https://docs.oracle.com/en/database/other-databases/nosql-database/21.1/security/index.html">secure kvstore</a>.</p>
+<a href="https://docs.oracle.com/en/database/other-databases/nosql-database/22.1/security/index.html">secure kvstore</a>.</p>
 <p>These methods optional options object as
 <a class="xref" href="../api/Oracle.NoSQL.SDK.AdminOptions.html">AdminOptions</a> and return
 <em>Task&lt;<a class="xref" href="../api/Oracle.NoSQL.SDK.AdminResult.html">AdminResult</a>&gt;</em>.
@@ -1429,7 +1429,7 @@ catch(Exception ex)
 <a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLClient.ExecuteAdminAsync.html">ExecuteAdminAsync</a>
 produces the result.  These are readonly operations that don't modify system
 state but only return back information, such as <em>SHOW</em> commands (see
-<a href="https://docs.oracle.com/en/database/other-databases/nosql-database/21.1/sqlfornosql/shell-utility-commands.html#GUID-70FA12B5-6AD3-4965-9163-FA9549078EC7">Shell Utility Commands</a>).</p>
+<a href="https://docs.oracle.com/en/database/other-databases/nosql-database/22.1/sqlfornosql/shell-utility-commands.html#GUID-70FA12B5-6AD3-4965-9163-FA9549078EC7">Shell Utility Commands</a>).</p>
 <p>Because some statements, such as <em>CREATE USER</em>, may include passwords, both
 <a class="xref" href="../api/Oracle.NoSQL.SDK.NoSQLClient.ExecuteAdminAsync.html">ExecuteAdminAsync</a>
 and

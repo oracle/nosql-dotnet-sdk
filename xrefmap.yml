@@ -1067,6 +1067,18 @@ references:
   commentId: Overload:Oracle.NoSQL.SDK.DeleteOperation.PrimaryKey
   fullName: Oracle.NoSQL.SDK.DeleteOperation.PrimaryKey
   nameWithType: DeleteOperation.PrimaryKey
+- uid: Oracle.NoSQL.SDK.DeleteOperation.TableName
+  name: TableName
+  href: api/Oracle.NoSQL.SDK.DeleteOperation.TableName.html#Oracle_NoSQL_SDK_DeleteOperation_TableName
+  commentId: P:Oracle.NoSQL.SDK.DeleteOperation.TableName
+  fullName: Oracle.NoSQL.SDK.DeleteOperation.TableName
+  nameWithType: DeleteOperation.TableName
+- uid: Oracle.NoSQL.SDK.DeleteOperation.TableName*
+  name: TableName
+  href: api/Oracle.NoSQL.SDK.DeleteOperation.TableName.html
+  commentId: Overload:Oracle.NoSQL.SDK.DeleteOperation.TableName
+  fullName: Oracle.NoSQL.SDK.DeleteOperation.TableName
+  nameWithType: DeleteOperation.TableName
 - uid: Oracle.NoSQL.SDK.DeleteOptions
   name: DeleteOptions
   href: api/Oracle.NoSQL.SDK.DeleteOptions.html
@@ -3732,6 +3744,18 @@ references:
   commentId: Overload:Oracle.NoSQL.SDK.IWriteOperation.AbortIfUnsuccessful
   fullName: Oracle.NoSQL.SDK.IWriteOperation.AbortIfUnsuccessful
   nameWithType: IWriteOperation.AbortIfUnsuccessful
+- uid: Oracle.NoSQL.SDK.IWriteOperation.TableName
+  name: TableName
+  href: api/Oracle.NoSQL.SDK.IWriteOperation.TableName.html#Oracle_NoSQL_SDK_IWriteOperation_TableName
+  commentId: P:Oracle.NoSQL.SDK.IWriteOperation.TableName
+  fullName: Oracle.NoSQL.SDK.IWriteOperation.TableName
+  nameWithType: IWriteOperation.TableName
+- uid: Oracle.NoSQL.SDK.IWriteOperation.TableName*
+  name: TableName
+  href: api/Oracle.NoSQL.SDK.IWriteOperation.TableName.html
+  commentId: Overload:Oracle.NoSQL.SDK.IWriteOperation.TableName
+  fullName: Oracle.NoSQL.SDK.IWriteOperation.TableName
+  nameWithType: IWriteOperation.TableName
 - uid: Oracle.NoSQL.SDK.JsonInputOptions
   name: JsonInputOptions
   href: api/Oracle.NoSQL.SDK.JsonInputOptions.html
@@ -5082,6 +5106,12 @@ references:
   commentId: Overload:Oracle.NoSQL.SDK.NoSQLClient.WaitForTableStateAsync
   fullName: Oracle.NoSQL.SDK.NoSQLClient.WaitForTableStateAsync
   nameWithType: NoSQLClient.WaitForTableStateAsync
+- uid: Oracle.NoSQL.SDK.NoSQLClient.WriteManyAsync(Oracle.NoSQL.SDK.WriteOperationCollection,Oracle.NoSQL.SDK.WriteManyOptions,System.Threading.CancellationToken)
+  name: WriteManyAsync(WriteOperationCollection, WriteManyOptions, CancellationToken)
+  href: api/Oracle.NoSQL.SDK.NoSQLClient.WriteManyAsync.html#Oracle_NoSQL_SDK_NoSQLClient_WriteManyAsync_Oracle_NoSQL_SDK_WriteOperationCollection_Oracle_NoSQL_SDK_WriteManyOptions_System_Threading_CancellationToken_
+  commentId: M:Oracle.NoSQL.SDK.NoSQLClient.WriteManyAsync(Oracle.NoSQL.SDK.WriteOperationCollection,Oracle.NoSQL.SDK.WriteManyOptions,System.Threading.CancellationToken)
+  fullName: Oracle.NoSQL.SDK.NoSQLClient.WriteManyAsync(Oracle.NoSQL.SDK.WriteOperationCollection, Oracle.NoSQL.SDK.WriteManyOptions, System.Threading.CancellationToken)
+  nameWithType: NoSQLClient.WriteManyAsync(WriteOperationCollection, WriteManyOptions, CancellationToken)
 - uid: Oracle.NoSQL.SDK.NoSQLClient.WriteManyAsync(System.String,Oracle.NoSQL.SDK.WriteOperationCollection,Oracle.NoSQL.SDK.WriteManyOptions,System.Threading.CancellationToken)
   name: WriteManyAsync(String, WriteOperationCollection, WriteManyOptions, CancellationToken)
   href: api/Oracle.NoSQL.SDK.NoSQLClient.WriteManyAsync.html#Oracle_NoSQL_SDK_NoSQLClient_WriteManyAsync_System_String_Oracle_NoSQL_SDK_WriteOperationCollection_Oracle_NoSQL_SDK_WriteManyOptions_System_Threading_CancellationToken_
@@ -6031,6 +6061,18 @@ references:
   commentId: Overload:Oracle.NoSQL.SDK.PutOperation.Row
   fullName: Oracle.NoSQL.SDK.PutOperation.Row
   nameWithType: PutOperation.Row
+- uid: Oracle.NoSQL.SDK.PutOperation.TableName
+  name: TableName
+  href: api/Oracle.NoSQL.SDK.PutOperation.TableName.html#Oracle_NoSQL_SDK_PutOperation_TableName
+  commentId: P:Oracle.NoSQL.SDK.PutOperation.TableName
+  fullName: Oracle.NoSQL.SDK.PutOperation.TableName
+  nameWithType: PutOperation.TableName
+- uid: Oracle.NoSQL.SDK.PutOperation.TableName*
+  name: TableName
+  href: api/Oracle.NoSQL.SDK.PutOperation.TableName.html
+  commentId: Overload:Oracle.NoSQL.SDK.PutOperation.TableName
+  fullName: Oracle.NoSQL.SDK.PutOperation.TableName
+  nameWithType: PutOperation.TableName
 - uid: Oracle.NoSQL.SDK.PutOptions
   name: PutOptions
   href: api/Oracle.NoSQL.SDK.PutOptions.html
@@ -6880,6 +6922,12 @@ references:
   commentId: F:Oracle.NoSQL.SDK.Region.EU_AMSTERDAM_1
   fullName: Oracle.NoSQL.SDK.Region.EU_AMSTERDAM_1
   nameWithType: Region.EU_AMSTERDAM_1
+- uid: Oracle.NoSQL.SDK.Region.EU_DCC_MILAN_1
+  name: EU_DCC_MILAN_1
+  href: api/Oracle.NoSQL.SDK.Region.EU_DCC_MILAN_1.html#Oracle_NoSQL_SDK_Region_EU_DCC_MILAN_1
+  commentId: F:Oracle.NoSQL.SDK.Region.EU_DCC_MILAN_1
+  fullName: Oracle.NoSQL.SDK.Region.EU_DCC_MILAN_1
+  nameWithType: Region.EU_DCC_MILAN_1
 - uid: Oracle.NoSQL.SDK.Region.EU_FRANKFURT_1
   name: EU_FRANKFURT_1
   href: api/Oracle.NoSQL.SDK.Region.EU_FRANKFURT_1.html#Oracle_NoSQL_SDK_Region_EU_FRANKFURT_1
@@ -7078,6 +7126,12 @@ references:
   commentId: F:Oracle.NoSQL.SDK.Region.US_ASHBURN_1
   fullName: Oracle.NoSQL.SDK.Region.US_ASHBURN_1
   nameWithType: Region.US_ASHBURN_1
+- uid: Oracle.NoSQL.SDK.Region.US_CHICAGO_1
+  name: US_CHICAGO_1
+  href: api/Oracle.NoSQL.SDK.Region.US_CHICAGO_1.html#Oracle_NoSQL_SDK_Region_US_CHICAGO_1
+  commentId: F:Oracle.NoSQL.SDK.Region.US_CHICAGO_1
+  fullName: Oracle.NoSQL.SDK.Region.US_CHICAGO_1
+  nameWithType: Region.US_CHICAGO_1
 - uid: Oracle.NoSQL.SDK.Region.US_GOV_ASHBURN_1
   name: US_GOV_ASHBURN_1
   href: api/Oracle.NoSQL.SDK.Region.US_GOV_ASHBURN_1.html#Oracle_NoSQL_SDK_Region_US_GOV_ASHBURN_1
@@ -7120,6 +7174,12 @@ references:
   commentId: F:Oracle.NoSQL.SDK.Region.US_SANJOSE_1
   fullName: Oracle.NoSQL.SDK.Region.US_SANJOSE_1
   nameWithType: Region.US_SANJOSE_1
+- uid: Oracle.NoSQL.SDK.Region.US_TACOMA_1
+  name: US_TACOMA_1
+  href: api/Oracle.NoSQL.SDK.Region.US_TACOMA_1.html#Oracle_NoSQL_SDK_Region_US_TACOMA_1
+  commentId: F:Oracle.NoSQL.SDK.Region.US_TACOMA_1
+  fullName: Oracle.NoSQL.SDK.Region.US_TACOMA_1
+  nameWithType: Region.US_TACOMA_1
 - uid: Oracle.NoSQL.SDK.Region.Values
   name: Values
   href: api/Oracle.NoSQL.SDK.Region.Values.html#Oracle_NoSQL_SDK_Region_Values
@@ -8797,6 +8857,12 @@ references:
   commentId: Overload:Oracle.NoSQL.SDK.WriteManyOptions.Timeout
   fullName: Oracle.NoSQL.SDK.WriteManyOptions.Timeout
   nameWithType: WriteManyOptions.Timeout
+- uid: Oracle.NoSQL.SDK.WriteManyRequest
+  name: WriteManyRequest
+  href: api/Oracle.NoSQL.SDK.WriteManyRequest.html
+  commentId: T:Oracle.NoSQL.SDK.WriteManyRequest
+  fullName: Oracle.NoSQL.SDK.WriteManyRequest
+  nameWithType: WriteManyRequest
 - uid: Oracle.NoSQL.SDK.WriteManyRequest`1
   name: WriteManyRequest<TRow>
   href: api/Oracle.NoSQL.SDK.WriteManyRequest-1.html
@@ -8854,6 +8920,22 @@ references:
   fullName.vb: Oracle.NoSQL.SDK.WriteManyRequest(Of TRow).PutManyOptions
   nameWithType: WriteManyRequest<TRow>.PutManyOptions
   nameWithType.vb: WriteManyRequest(Of TRow).PutManyOptions
+- uid: Oracle.NoSQL.SDK.WriteManyRequest`1.TableName
+  name: TableName
+  href: api/Oracle.NoSQL.SDK.WriteManyRequest-1.TableName.html#Oracle_NoSQL_SDK_WriteManyRequest_1_TableName
+  commentId: P:Oracle.NoSQL.SDK.WriteManyRequest`1.TableName
+  fullName: Oracle.NoSQL.SDK.WriteManyRequest<TRow>.TableName
+  fullName.vb: Oracle.NoSQL.SDK.WriteManyRequest(Of TRow).TableName
+  nameWithType: WriteManyRequest<TRow>.TableName
+  nameWithType.vb: WriteManyRequest(Of TRow).TableName
+- uid: Oracle.NoSQL.SDK.WriteManyRequest`1.TableName*
+  name: TableName
+  href: api/Oracle.NoSQL.SDK.WriteManyRequest-1.TableName.html
+  commentId: Overload:Oracle.NoSQL.SDK.WriteManyRequest`1.TableName
+  fullName: Oracle.NoSQL.SDK.WriteManyRequest<TRow>.TableName
+  fullName.vb: Oracle.NoSQL.SDK.WriteManyRequest(Of TRow).TableName
+  nameWithType: WriteManyRequest<TRow>.TableName
+  nameWithType.vb: WriteManyRequest(Of TRow).TableName
 - uid: Oracle.NoSQL.SDK.WriteManyRequest`1.WriteManyOptions
   name: WriteManyOptions
   href: api/Oracle.NoSQL.SDK.WriteManyRequest-1.WriteManyOptions.html#Oracle_NoSQL_SDK_WriteManyRequest_1_WriteManyOptions
@@ -9011,6 +9093,18 @@ references:
   commentId: M:Oracle.NoSQL.SDK.WriteOperationCollection.AddDelete(Oracle.NoSQL.SDK.MapValue,System.Boolean)
   fullName: Oracle.NoSQL.SDK.WriteOperationCollection.AddDelete(Oracle.NoSQL.SDK.MapValue, System.Boolean)
   nameWithType: WriteOperationCollection.AddDelete(MapValue, Boolean)
+- uid: Oracle.NoSQL.SDK.WriteOperationCollection.AddDelete(System.String,Oracle.NoSQL.SDK.MapValue,Oracle.NoSQL.SDK.DeleteOptions,System.Boolean)
+  name: AddDelete(String, MapValue, DeleteOptions, Boolean)
+  href: api/Oracle.NoSQL.SDK.WriteOperationCollection.AddDelete.html#Oracle_NoSQL_SDK_WriteOperationCollection_AddDelete_System_String_Oracle_NoSQL_SDK_MapValue_Oracle_NoSQL_SDK_DeleteOptions_System_Boolean_
+  commentId: M:Oracle.NoSQL.SDK.WriteOperationCollection.AddDelete(System.String,Oracle.NoSQL.SDK.MapValue,Oracle.NoSQL.SDK.DeleteOptions,System.Boolean)
+  fullName: Oracle.NoSQL.SDK.WriteOperationCollection.AddDelete(System.String, Oracle.NoSQL.SDK.MapValue, Oracle.NoSQL.SDK.DeleteOptions, System.Boolean)
+  nameWithType: WriteOperationCollection.AddDelete(String, MapValue, DeleteOptions, Boolean)
+- uid: Oracle.NoSQL.SDK.WriteOperationCollection.AddDelete(System.String,Oracle.NoSQL.SDK.MapValue,System.Boolean)
+  name: AddDelete(String, MapValue, Boolean)
+  href: api/Oracle.NoSQL.SDK.WriteOperationCollection.AddDelete.html#Oracle_NoSQL_SDK_WriteOperationCollection_AddDelete_System_String_Oracle_NoSQL_SDK_MapValue_System_Boolean_
+  commentId: M:Oracle.NoSQL.SDK.WriteOperationCollection.AddDelete(System.String,Oracle.NoSQL.SDK.MapValue,System.Boolean)
+  fullName: Oracle.NoSQL.SDK.WriteOperationCollection.AddDelete(System.String, Oracle.NoSQL.SDK.MapValue, System.Boolean)
+  nameWithType: WriteOperationCollection.AddDelete(String, MapValue, Boolean)
 - uid: Oracle.NoSQL.SDK.WriteOperationCollection.AddDelete*
   name: AddDelete
   href: api/Oracle.NoSQL.SDK.WriteOperationCollection.AddDelete.html
@@ -9029,6 +9123,18 @@ references:
   commentId: M:Oracle.NoSQL.SDK.WriteOperationCollection.AddDeleteIfVersion(Oracle.NoSQL.SDK.MapValue,Oracle.NoSQL.SDK.RowVersion,System.Boolean)
   fullName: Oracle.NoSQL.SDK.WriteOperationCollection.AddDeleteIfVersion(Oracle.NoSQL.SDK.MapValue, Oracle.NoSQL.SDK.RowVersion, System.Boolean)
   nameWithType: WriteOperationCollection.AddDeleteIfVersion(MapValue, RowVersion, Boolean)
+- uid: Oracle.NoSQL.SDK.WriteOperationCollection.AddDeleteIfVersion(System.String,Oracle.NoSQL.SDK.MapValue,Oracle.NoSQL.SDK.RowVersion,Oracle.NoSQL.SDK.DeleteOptions,System.Boolean)
+  name: AddDeleteIfVersion(String, MapValue, RowVersion, DeleteOptions, Boolean)
+  href: api/Oracle.NoSQL.SDK.WriteOperationCollection.AddDeleteIfVersion.html#Oracle_NoSQL_SDK_WriteOperationCollection_AddDeleteIfVersion_System_String_Oracle_NoSQL_SDK_MapValue_Oracle_NoSQL_SDK_RowVersion_Oracle_NoSQL_SDK_DeleteOptions_System_Boolean_
+  commentId: M:Oracle.NoSQL.SDK.WriteOperationCollection.AddDeleteIfVersion(System.String,Oracle.NoSQL.SDK.MapValue,Oracle.NoSQL.SDK.RowVersion,Oracle.NoSQL.SDK.DeleteOptions,System.Boolean)
+  fullName: Oracle.NoSQL.SDK.WriteOperationCollection.AddDeleteIfVersion(System.String, Oracle.NoSQL.SDK.MapValue, Oracle.NoSQL.SDK.RowVersion, Oracle.NoSQL.SDK.DeleteOptions, System.Boolean)
+  nameWithType: WriteOperationCollection.AddDeleteIfVersion(String, MapValue, RowVersion, DeleteOptions, Boolean)
+- uid: Oracle.NoSQL.SDK.WriteOperationCollection.AddDeleteIfVersion(System.String,Oracle.NoSQL.SDK.MapValue,Oracle.NoSQL.SDK.RowVersion,System.Boolean)
+  name: AddDeleteIfVersion(String, MapValue, RowVersion, Boolean)
+  href: api/Oracle.NoSQL.SDK.WriteOperationCollection.AddDeleteIfVersion.html#Oracle_NoSQL_SDK_WriteOperationCollection_AddDeleteIfVersion_System_String_Oracle_NoSQL_SDK_MapValue_Oracle_NoSQL_SDK_RowVersion_System_Boolean_
+  commentId: M:Oracle.NoSQL.SDK.WriteOperationCollection.AddDeleteIfVersion(System.String,Oracle.NoSQL.SDK.MapValue,Oracle.NoSQL.SDK.RowVersion,System.Boolean)
+  fullName: Oracle.NoSQL.SDK.WriteOperationCollection.AddDeleteIfVersion(System.String, Oracle.NoSQL.SDK.MapValue, Oracle.NoSQL.SDK.RowVersion, System.Boolean)
+  nameWithType: WriteOperationCollection.AddDeleteIfVersion(String, MapValue, RowVersion, Boolean)
 - uid: Oracle.NoSQL.SDK.WriteOperationCollection.AddDeleteIfVersion*
   name: AddDeleteIfVersion
   href: api/Oracle.NoSQL.SDK.WriteOperationCollection.AddDeleteIfVersion.html
@@ -9047,6 +9153,18 @@ references:
   commentId: M:Oracle.NoSQL.SDK.WriteOperationCollection.AddPut(Oracle.NoSQL.SDK.MapValue,System.Boolean)
   fullName: Oracle.NoSQL.SDK.WriteOperationCollection.AddPut(Oracle.NoSQL.SDK.MapValue, System.Boolean)
   nameWithType: WriteOperationCollection.AddPut(MapValue, Boolean)
+- uid: Oracle.NoSQL.SDK.WriteOperationCollection.AddPut(System.String,Oracle.NoSQL.SDK.MapValue,Oracle.NoSQL.SDK.PutOptions,System.Boolean)
+  name: AddPut(String, MapValue, PutOptions, Boolean)
+  href: api/Oracle.NoSQL.SDK.WriteOperationCollection.AddPut.html#Oracle_NoSQL_SDK_WriteOperationCollection_AddPut_System_String_Oracle_NoSQL_SDK_MapValue_Oracle_NoSQL_SDK_PutOptions_System_Boolean_
+  commentId: M:Oracle.NoSQL.SDK.WriteOperationCollection.AddPut(System.String,Oracle.NoSQL.SDK.MapValue,Oracle.NoSQL.SDK.PutOptions,System.Boolean)
+  fullName: Oracle.NoSQL.SDK.WriteOperationCollection.AddPut(System.String, Oracle.NoSQL.SDK.MapValue, Oracle.NoSQL.SDK.PutOptions, System.Boolean)
+  nameWithType: WriteOperationCollection.AddPut(String, MapValue, PutOptions, Boolean)
+- uid: Oracle.NoSQL.SDK.WriteOperationCollection.AddPut(System.String,Oracle.NoSQL.SDK.MapValue,System.Boolean)
+  name: AddPut(String, MapValue, Boolean)
+  href: api/Oracle.NoSQL.SDK.WriteOperationCollection.AddPut.html#Oracle_NoSQL_SDK_WriteOperationCollection_AddPut_System_String_Oracle_NoSQL_SDK_MapValue_System_Boolean_
+  commentId: M:Oracle.NoSQL.SDK.WriteOperationCollection.AddPut(System.String,Oracle.NoSQL.SDK.MapValue,System.Boolean)
+  fullName: Oracle.NoSQL.SDK.WriteOperationCollection.AddPut(System.String, Oracle.NoSQL.SDK.MapValue, System.Boolean)
+  nameWithType: WriteOperationCollection.AddPut(String, MapValue, Boolean)
 - uid: Oracle.NoSQL.SDK.WriteOperationCollection.AddPut*
   name: AddPut
   href: api/Oracle.NoSQL.SDK.WriteOperationCollection.AddPut.html
@@ -9065,6 +9183,18 @@ references:
   commentId: M:Oracle.NoSQL.SDK.WriteOperationCollection.AddPutIfAbsent(Oracle.NoSQL.SDK.MapValue,System.Boolean)
   fullName: Oracle.NoSQL.SDK.WriteOperationCollection.AddPutIfAbsent(Oracle.NoSQL.SDK.MapValue, System.Boolean)
   nameWithType: WriteOperationCollection.AddPutIfAbsent(MapValue, Boolean)
+- uid: Oracle.NoSQL.SDK.WriteOperationCollection.AddPutIfAbsent(System.String,Oracle.NoSQL.SDK.MapValue,Oracle.NoSQL.SDK.PutOptions,System.Boolean)
+  name: AddPutIfAbsent(String, MapValue, PutOptions, Boolean)
+  href: api/Oracle.NoSQL.SDK.WriteOperationCollection.AddPutIfAbsent.html#Oracle_NoSQL_SDK_WriteOperationCollection_AddPutIfAbsent_System_String_Oracle_NoSQL_SDK_MapValue_Oracle_NoSQL_SDK_PutOptions_System_Boolean_
+  commentId: M:Oracle.NoSQL.SDK.WriteOperationCollection.AddPutIfAbsent(System.String,Oracle.NoSQL.SDK.MapValue,Oracle.NoSQL.SDK.PutOptions,System.Boolean)
+  fullName: Oracle.NoSQL.SDK.WriteOperationCollection.AddPutIfAbsent(System.String, Oracle.NoSQL.SDK.MapValue, Oracle.NoSQL.SDK.PutOptions, System.Boolean)
+  nameWithType: WriteOperationCollection.AddPutIfAbsent(String, MapValue, PutOptions, Boolean)
+- uid: Oracle.NoSQL.SDK.WriteOperationCollection.AddPutIfAbsent(System.String,Oracle.NoSQL.SDK.MapValue,System.Boolean)
+  name: AddPutIfAbsent(String, MapValue, Boolean)
+  href: api/Oracle.NoSQL.SDK.WriteOperationCollection.AddPutIfAbsent.html#Oracle_NoSQL_SDK_WriteOperationCollection_AddPutIfAbsent_System_String_Oracle_NoSQL_SDK_MapValue_System_Boolean_
+  commentId: M:Oracle.NoSQL.SDK.WriteOperationCollection.AddPutIfAbsent(System.String,Oracle.NoSQL.SDK.MapValue,System.Boolean)
+  fullName: Oracle.NoSQL.SDK.WriteOperationCollection.AddPutIfAbsent(System.String, Oracle.NoSQL.SDK.MapValue, System.Boolean)
+  nameWithType: WriteOperationCollection.AddPutIfAbsent(String, MapValue, Boolean)
 - uid: Oracle.NoSQL.SDK.WriteOperationCollection.AddPutIfAbsent*
   name: AddPutIfAbsent
   href: api/Oracle.NoSQL.SDK.WriteOperationCollection.AddPutIfAbsent.html
@@ -9083,6 +9213,18 @@ references:
   commentId: M:Oracle.NoSQL.SDK.WriteOperationCollection.AddPutIfPresent(Oracle.NoSQL.SDK.MapValue,System.Boolean)
   fullName: Oracle.NoSQL.SDK.WriteOperationCollection.AddPutIfPresent(Oracle.NoSQL.SDK.MapValue, System.Boolean)
   nameWithType: WriteOperationCollection.AddPutIfPresent(MapValue, Boolean)
+- uid: Oracle.NoSQL.SDK.WriteOperationCollection.AddPutIfPresent(System.String,Oracle.NoSQL.SDK.MapValue,Oracle.NoSQL.SDK.PutOptions,System.Boolean)
+  name: AddPutIfPresent(String, MapValue, PutOptions, Boolean)
+  href: api/Oracle.NoSQL.SDK.WriteOperationCollection.AddPutIfPresent.html#Oracle_NoSQL_SDK_WriteOperationCollection_AddPutIfPresent_System_String_Oracle_NoSQL_SDK_MapValue_Oracle_NoSQL_SDK_PutOptions_System_Boolean_
+  commentId: M:Oracle.NoSQL.SDK.WriteOperationCollection.AddPutIfPresent(System.String,Oracle.NoSQL.SDK.MapValue,Oracle.NoSQL.SDK.PutOptions,System.Boolean)
+  fullName: Oracle.NoSQL.SDK.WriteOperationCollection.AddPutIfPresent(System.String, Oracle.NoSQL.SDK.MapValue, Oracle.NoSQL.SDK.PutOptions, System.Boolean)
+  nameWithType: WriteOperationCollection.AddPutIfPresent(String, MapValue, PutOptions, Boolean)
+- uid: Oracle.NoSQL.SDK.WriteOperationCollection.AddPutIfPresent(System.String,Oracle.NoSQL.SDK.MapValue,System.Boolean)
+  name: AddPutIfPresent(String, MapValue, Boolean)
+  href: api/Oracle.NoSQL.SDK.WriteOperationCollection.AddPutIfPresent.html#Oracle_NoSQL_SDK_WriteOperationCollection_AddPutIfPresent_System_String_Oracle_NoSQL_SDK_MapValue_System_Boolean_
+  commentId: M:Oracle.NoSQL.SDK.WriteOperationCollection.AddPutIfPresent(System.String,Oracle.NoSQL.SDK.MapValue,System.Boolean)
+  fullName: Oracle.NoSQL.SDK.WriteOperationCollection.AddPutIfPresent(System.String, Oracle.NoSQL.SDK.MapValue, System.Boolean)
+  nameWithType: WriteOperationCollection.AddPutIfPresent(String, MapValue, Boolean)
 - uid: Oracle.NoSQL.SDK.WriteOperationCollection.AddPutIfPresent*
   name: AddPutIfPresent
   href: api/Oracle.NoSQL.SDK.WriteOperationCollection.AddPutIfPresent.html
@@ -9101,12 +9243,36 @@ references:
   commentId: M:Oracle.NoSQL.SDK.WriteOperationCollection.AddPutIfVersion(Oracle.NoSQL.SDK.MapValue,Oracle.NoSQL.SDK.RowVersion,System.Boolean)
   fullName: Oracle.NoSQL.SDK.WriteOperationCollection.AddPutIfVersion(Oracle.NoSQL.SDK.MapValue, Oracle.NoSQL.SDK.RowVersion, System.Boolean)
   nameWithType: WriteOperationCollection.AddPutIfVersion(MapValue, RowVersion, Boolean)
+- uid: Oracle.NoSQL.SDK.WriteOperationCollection.AddPutIfVersion(System.String,Oracle.NoSQL.SDK.MapValue,Oracle.NoSQL.SDK.RowVersion,Oracle.NoSQL.SDK.PutOptions,System.Boolean)
+  name: AddPutIfVersion(String, MapValue, RowVersion, PutOptions, Boolean)
+  href: api/Oracle.NoSQL.SDK.WriteOperationCollection.AddPutIfVersion.html#Oracle_NoSQL_SDK_WriteOperationCollection_AddPutIfVersion_System_String_Oracle_NoSQL_SDK_MapValue_Oracle_NoSQL_SDK_RowVersion_Oracle_NoSQL_SDK_PutOptions_System_Boolean_
+  commentId: M:Oracle.NoSQL.SDK.WriteOperationCollection.AddPutIfVersion(System.String,Oracle.NoSQL.SDK.MapValue,Oracle.NoSQL.SDK.RowVersion,Oracle.NoSQL.SDK.PutOptions,System.Boolean)
+  fullName: Oracle.NoSQL.SDK.WriteOperationCollection.AddPutIfVersion(System.String, Oracle.NoSQL.SDK.MapValue, Oracle.NoSQL.SDK.RowVersion, Oracle.NoSQL.SDK.PutOptions, System.Boolean)
+  nameWithType: WriteOperationCollection.AddPutIfVersion(String, MapValue, RowVersion, PutOptions, Boolean)
+- uid: Oracle.NoSQL.SDK.WriteOperationCollection.AddPutIfVersion(System.String,Oracle.NoSQL.SDK.MapValue,Oracle.NoSQL.SDK.RowVersion,System.Boolean)
+  name: AddPutIfVersion(String, MapValue, RowVersion, Boolean)
+  href: api/Oracle.NoSQL.SDK.WriteOperationCollection.AddPutIfVersion.html#Oracle_NoSQL_SDK_WriteOperationCollection_AddPutIfVersion_System_String_Oracle_NoSQL_SDK_MapValue_Oracle_NoSQL_SDK_RowVersion_System_Boolean_
+  commentId: M:Oracle.NoSQL.SDK.WriteOperationCollection.AddPutIfVersion(System.String,Oracle.NoSQL.SDK.MapValue,Oracle.NoSQL.SDK.RowVersion,System.Boolean)
+  fullName: Oracle.NoSQL.SDK.WriteOperationCollection.AddPutIfVersion(System.String, Oracle.NoSQL.SDK.MapValue, Oracle.NoSQL.SDK.RowVersion, System.Boolean)
+  nameWithType: WriteOperationCollection.AddPutIfVersion(String, MapValue, RowVersion, Boolean)
 - uid: Oracle.NoSQL.SDK.WriteOperationCollection.AddPutIfVersion*
   name: AddPutIfVersion
   href: api/Oracle.NoSQL.SDK.WriteOperationCollection.AddPutIfVersion.html
   commentId: Overload:Oracle.NoSQL.SDK.WriteOperationCollection.AddPutIfVersion
   fullName: Oracle.NoSQL.SDK.WriteOperationCollection.AddPutIfVersion
   nameWithType: WriteOperationCollection.AddPutIfVersion
+- uid: Oracle.NoSQL.SDK.WriteOperationCollection.Clear
+  name: Clear()
+  href: api/Oracle.NoSQL.SDK.WriteOperationCollection.Clear.html#Oracle_NoSQL_SDK_WriteOperationCollection_Clear
+  commentId: M:Oracle.NoSQL.SDK.WriteOperationCollection.Clear
+  fullName: Oracle.NoSQL.SDK.WriteOperationCollection.Clear()
+  nameWithType: WriteOperationCollection.Clear()
+- uid: Oracle.NoSQL.SDK.WriteOperationCollection.Clear*
+  name: Clear
+  href: api/Oracle.NoSQL.SDK.WriteOperationCollection.Clear.html
+  commentId: Overload:Oracle.NoSQL.SDK.WriteOperationCollection.Clear
+  fullName: Oracle.NoSQL.SDK.WriteOperationCollection.Clear
+  nameWithType: WriteOperationCollection.Clear
 - uid: Oracle.NoSQL.SDK.WriteOperationCollection.Count
   name: Count
   href: api/Oracle.NoSQL.SDK.WriteOperationCollection.Count.html#Oracle_NoSQL_SDK_WriteOperationCollection_Count
