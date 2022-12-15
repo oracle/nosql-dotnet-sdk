@@ -46,14 +46,14 @@ namespace Oracle.NoSQL.SDK
         /// <description>
         /// A <see cref="BooleanValue"/> instance is comparable to another
         /// <see cref="BooleanValue"/> instance with values being compared
-        /// via <see cref="Boolean.CompareTo"/>.
+        /// via <see cref="Boolean.CompareTo(bool)"/>.
         /// </description>
         /// </item>
         /// <item>
         /// <description>
         /// A <see cref="TimestampValue"/> instance is comparable to another
         /// <see cref="TimestampValue"/> instance with values being compared
-        /// via <see cref="DateTime.CompareTo"/>.
+        /// via <see cref="DateTime.CompareTo(DateTime)"/>.
         /// </description>
         /// </item>
         /// </list>

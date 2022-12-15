@@ -18,8 +18,8 @@ namespace Oracle.NoSQL.SDK
     /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.ExecuteAdminWithCompletionAsync*"/>
     /// methods.
     /// </summary>
-    /// <seealso cref="NoSQLClient.ExecuteAdminAsync"/>
-    /// <seealso cref="NoSQLClient.ExecuteAdminWithCompletionAsync"/>
+    /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.ExecuteAdminAsync*"/>
+    /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.ExecuteAdminWithCompletionAsync*"/>
     /// <seealso cref="Request"/>
     public class AdminRequest : Request
     {

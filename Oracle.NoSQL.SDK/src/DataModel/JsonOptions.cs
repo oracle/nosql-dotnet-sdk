@@ -107,7 +107,7 @@ namespace Oracle.NoSQL.SDK
 
     /// <summary>
     /// Represents options passed to <see cref="FieldValue.FromJsonString"/>
-    /// and <see cref="FieldValue.DeserializeFromJson"/>.
+    /// and <see cref="FieldValue.DeserializeFromJson(ref Utf8JsonReader, JsonInputOptions)"/>.
     /// </summary>
     /// <remarks>
     /// These options allow you to customize how the JSON input is parsed to
@@ -116,7 +116,7 @@ namespace Oracle.NoSQL.SDK
     /// indicated below.
     /// </remarks>
     /// <seealso cref="FieldValue.FromJsonString"/>
-    /// <seealso cref="FieldValue.DeserializeFromJson"/>
+    /// <seealso cref="FieldValue.DeserializeFromJson(ref Utf8JsonReader, JsonInputOptions)"/>
     public class JsonInputOptions
     {
         /// <summary>
@@ -134,8 +134,8 @@ namespace Oracle.NoSQL.SDK
         /// </para>
         /// <para>
         /// This option does not apply to
-        /// <see cref="FieldValue.DeserializeFromJson"/> (instead use
-        /// <see cref="JsonReaderOptions"/> when creating
+        /// <see cref="FieldValue.DeserializeFromJson(ref Utf8JsonReader, JsonInputOptions)"/>
+        /// (instead use <see cref="JsonReaderOptions"/> when creating
         /// <see cref="Utf8JsonReader"/>).
         /// </para>
         /// </remarks>
@@ -173,8 +173,8 @@ namespace Oracle.NoSQL.SDK
         /// </para>
         /// <para>
         /// This option does not apply to
-        /// <see cref="FieldValue.DeserializeFromJson"/> (instead use
-        /// <see cref="JsonReaderOptions"/> when creating
+        /// <see cref="FieldValue.DeserializeFromJson(ref Utf8JsonReader, JsonInputOptions)"/>
+        /// (instead use <see cref="JsonReaderOptions"/> when creating
         /// <see cref="Utf8JsonReader"/>).
         /// </para>
         /// </remarks>

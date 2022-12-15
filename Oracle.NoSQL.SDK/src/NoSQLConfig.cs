@@ -400,7 +400,7 @@ namespace Oracle.NoSQL.SDK
         /// Timeout to wait for completion of a table DDL operation.  If not
         /// set, the default is no timeout (infinity).
         /// </value>
-        /// <seealso cref="NoSQLClient.ExecuteTableDDLAsync"/>
+        /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.ExecuteTableDDLAsync*"/>
         /// <seealso cref="TableResult.WaitForCompletionAsync"/>
         /// <seealso cref="NoSQLClient.WaitForTableStateAsync"/>
         public TimeSpan? TablePollTimeout { get; set; }
@@ -460,7 +460,7 @@ namespace Oracle.NoSQL.SDK
         /// Timeout to wait for completion of an admin DDL operation.  If not
         /// set, the default is no timeout (infinity).
         /// </value>
-        /// <seealso cref="NoSQLClient.ExecuteAdminAsync"/>
+        /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.ExecuteAdminAsync*"/>
         /// <seealso cref="AdminResult.WaitForCompletionAsync"/>
         public TimeSpan? AdminPollTimeout { get; set; }
 

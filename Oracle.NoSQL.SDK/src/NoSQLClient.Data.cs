@@ -519,21 +519,22 @@ namespace Oracle.NoSQL.SDK {
         /// and a continuation key (provided as
         /// <see cref="DeleteRangeResult.ContinuationKey"/>) can be used to
         /// continue the operation.  In this case, call
-        /// <see cref="NoSQLClient.DeleteRangeAsync"/> in a loop until
+        /// <see cref="NoSQLClient.DeleteRangeAsync(string,object,DeleteRangeOptions,CancellationToken)"/>
+        /// in a loop until
         /// <see cref="DeleteRangeResult.ContinuationKey"/> is <c>null</c> as
         /// shown in the example below.
         /// Alternatively, you can call
-        /// <see cref="NoSQLClient.GetDeleteRangeAsyncEnumerable"/>
+        /// <see cref="GetDeleteRangeAsyncEnumerable(string,object,DeleteRangeOptions,CancellationToken)"/>
         /// and iterate over resulting <see cref="IAsyncEnumerable{T}"/>.
         /// </para>
         /// <para>
         /// Note that when the DeleteRange operation requires multiple calls
         /// with the continuation key or iteration with
-        /// <see cref="NoSQLClient.GetDeleteRangeAsyncEnumerable"/>,
+        /// <see cref="GetDeleteRangeAsyncEnumerable(string,object,DeleteRangeOptions,CancellationToken)"/>,
         /// the operation is no longer atomic as a whole, although each call
-        /// to <see cref="NoSQLClient.DeleteRangeAsync"/>
+        /// to <see cref="DeleteRangeAsync(string,object,DeleteRangeOptions,CancellationToken)"/>
         /// and each iteration of the loop over
-        /// <see cref="NoSQLClient.GetDeleteRangeAsyncEnumerable"/>
+        /// <see cref="GetDeleteRangeAsyncEnumerable(string,object,DeleteRangeOptions,CancellationToken)"/>
         /// is still atomic.
         /// </para>
         /// </remarks>
@@ -585,7 +586,7 @@ namespace Oracle.NoSQL.SDK {
         /// subclass of <see cref="NoSQLException"/>.</exception>
         /// <seealso cref="DeleteRangeOptions"/>
         /// <seealso cref="DeleteRangeResult"/>
-        /// <seealso cref="GetDeleteRangeAsyncEnumerable"/>
+        /// <seealso cref="GetDeleteRangeAsyncEnumerable(string,object,DeleteRangeOptions,CancellationToken)"/>
         public async Task<DeleteRangeResult> DeleteRangeAsync(
             string tableName,
             object partialPrimaryKey,
@@ -714,18 +715,21 @@ namespace Oracle.NoSQL.SDK {
         /// </para>
         /// <para>
         /// This API is similar to
-        /// <see cref="DeleteRangeAsync(string, object, DeleteRangeOptions, CancellationToken)"/>
+        /// <see cref="DeleteRangeAsync(string,object,DeleteRangeOptions,CancellationToken)"/>
         /// but creates <see cref="IAsyncEnumerable{T}"/> that allows you to
         /// delete range of rows in multiple successive atomic operations
         /// using <c>await foreach</c> construct, when the DeleteRange
         /// operation cannot be performed in one atomic operation because of
         /// the limitations discussed above.  Each iteration is equivalent to
-        /// calling <see cref="DeleteRangeAsync"/> with a continuation key
+        /// calling
+        /// <see cref="DeleteRangeAsync(string,object,DeleteRangeOptions,CancellationToken)"/>
+        /// with a continuation key
         /// and returns <see cref="DeleteRangeResult"/> containing the number
         /// of deleted rows during this iteration.  The quantity of rows
         /// deleted during each iteration is thus determined in the same way
-        /// as for <see cref="DeleteRangeAsync"/>, using either
-        /// <see cref="DeleteRangeOptions.MaxWriteKB"/> or the system default.
+        /// as for <see cref="DeleteRangeAsync(string,object,DeleteRangeOptions,CancellationToken)"/>,
+        /// using either <see cref="DeleteRangeOptions.MaxWriteKB"/> or
+        /// the system default.
         /// </para>
         /// <para>
         /// Note that this method itself may only throw
@@ -736,7 +740,7 @@ namespace Oracle.NoSQL.SDK {
         /// </remarks>
         /// <example>
         /// Asynchronously iterating over
-        /// <see cref="GetDeleteRangeAsyncEnumerable"/>.
+        /// <see cref="GetDeleteRangeAsyncEnumerable(string,object,DeleteRangeOptions,CancellationToken)"/>.
         /// <code>
         /// var partialPrimaryKey =
         /// var options = new DeleteRangeOptions
@@ -779,7 +783,7 @@ namespace Oracle.NoSQL.SDK {
         /// one of its subclasses is thrown if operation cannot be performed
         /// for any other reason.  See documentation for corresponding
         /// subclass of <see cref="NoSQLException"/>.</exception>
-        /// <seealso cref="NoSQLClient.DeleteRangeAsync"/>
+        /// <seealso cref="NoSQLClient.DeleteRangeAsync(string,object,DeleteRangeOptions,CancellationToken)"/>
         /// <seealso cref="DeleteRangeOptions"/>
         /// <seealso cref="DeleteRangeResult"/>
         /// <seealso href="https://docs.microsoft.com/en-us/archive/msdn-magazine/2019/november/csharp-iterating-with-async-enumerables-in-csharp-8">

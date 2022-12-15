@@ -88,8 +88,8 @@ namespace Oracle.NoSQL.SDK
     /// <typeparam name="TRow">The type of value representing the returned
     /// rows.  Must be a reference type.  Currently the only supported type is
     /// <see cref="RecordValue"/>.</typeparam>
-    /// <seealso cref="NoSQLClient.QueryAsync"/>
-    /// <seealso cref="NoSQLClient.GetQueryAsyncEnumerable"/>
+    /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.QueryAsync*"/>
+    /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.GetQueryAsyncEnumerable*"/>
     public class QueryResult<TRow> : IDataResult
     {
         ConsumedCapacity IDataResult.ConsumedCapacity
@@ -157,7 +157,7 @@ namespace Oracle.NoSQL.SDK
     /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.GetQueryAsyncEnumerable*"/>.
     /// </para>
     /// </remarks>
-    /// <seealso cref="NoSQLClient.QueryAsync"/>
+    /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.QueryAsync*"/>
     /// <seealso cref="QueryResult{TRow}"/>
     /// <seealso cref="QueryOptions"/>
     public class QueryContinuationKey

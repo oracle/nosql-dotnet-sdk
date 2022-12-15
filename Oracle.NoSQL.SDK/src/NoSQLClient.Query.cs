@@ -23,11 +23,11 @@ namespace Oracle.NoSQL.SDK {
         /// direct execution of query strings is highly recommended.
         /// </para>
         /// <para>
-        /// See <see cref="NoSQLClient.QueryAsync"/> for general information
-        /// and restrictions.  Prepared queries are implemented as
-        /// <see cref="PreparedStatement"/>  which supports bind variables
-        /// in queries which can be used to more easily reuse a query by
-        /// parameterization.
+        /// See <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.QueryAsync*"/>
+        /// for general information and restrictions.  Prepared queries are
+        /// implemented as <see cref="PreparedStatement"/>  which supports
+        /// bind variables in queries which can be used to more easily reuse a
+        /// query by parameterization.
         /// </para>
         /// </remarks>
         /// <param name="statement">Query SQL statement.</param>
@@ -75,8 +75,9 @@ namespace Oracle.NoSQL.SDK {
         /// <para>
         /// DDL-style queries such as "CREATE TABLE ..." or "DROP TABLE .."
         /// are not supported by this API.  Those operations must be performed
-        /// using <see cref="ExecuteTableDDLAsync"/> and
-        /// similar APIs.
+        /// using
+        /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.ExecuteTableDDLAsync*"/>
+        /// and similar APIs.
         /// </para>
         /// <para>
         /// For performance reasons prepared queries are preferred for queries
@@ -102,13 +103,14 @@ namespace Oracle.NoSQL.SDK {
         /// results, until <see cref="QueryResult{TRow}.ContinuationKey"/> is
         /// <c>null</c>, indicating that the query is done.  Inside the loop
         /// the continuation key is applied to
-        /// <see cref="QueryAsync"/> by setting
-        /// <see cref="QueryOptions.ContinuationKey"/>.  The example shows
-        /// this pattern.
+        /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.QueryAsync*"/> by
+        /// setting <see cref="QueryOptions.ContinuationKey"/>.  The example
+        /// shows this pattern.
         /// </para>
         /// <para>
         /// Alternatively to this method, you may call
-        /// <see cref="GetQueryAsyncEnumerable"/> and iterate over resulting
+        /// <see cref="GetQueryAsyncEnumerable(string,QueryOptions,CancellationToken)"/>
+        /// and iterate over resulting
         /// <see cref="IAsyncEnumerable{T}"/>.  This is
         /// equivalent to the loop described above but allows you to avoid
         /// dealing with the continuation key explicitly.
@@ -165,7 +167,7 @@ namespace Oracle.NoSQL.SDK {
         /// subclass of <see cref="NoSQLException"/>.</exception>
         /// <seealso cref="QueryResult{TRow}"/>
         /// <seealso cref="PrepareAsync"/>
-        /// <seealso cref="GetQueryAsyncEnumerable"/>
+        /// <seealso cref="GetQueryAsyncEnumerable(string,QueryOptions,CancellationToken)"/>
         public Task<QueryResult<RecordValue>> QueryAsync(
             string statement,
             QueryOptions options = null,
@@ -226,11 +228,12 @@ namespace Oracle.NoSQL.SDK {
         /// <remarks>
         /// <para>
         /// This API facilitates iteration over the query results and is
-        /// equivalent to executing <see cref="QueryAsync"/> in a loop with
-        /// the continuation key.  The iteration over query results is
-        /// necessary because of the limitations on the amount of data read
-        /// during each query request as described in
-        /// <see cref="QueryAsync"/>.
+        /// equivalent to executing
+        /// <see cref="QueryAsync(string, QueryOptions, CancellationToken)"/>
+        /// in a loop with the continuation key.  The iteration over query
+        /// results is necessary because of the limitations on the amount of
+        /// data read during each query request as described in
+        /// <see cref="QueryAsync(string, QueryOptions, CancellationToken)"/>.
         /// </para>
         /// <para>
         /// Use this API with <c>await foreach</c> construct to iterate over
@@ -249,7 +252,7 @@ namespace Oracle.NoSQL.SDK {
         /// </remarks>
         /// <example>
         /// Asynchronously iterating over
-        /// <see cref="GetQueryAsyncEnumerable"/>.
+        /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.GetQueryAsyncEnumerable*"/>.
         /// <code>
         /// await foreach(var result in client.GetQueryAsyncEnumerable(
         ///     "SELECT * FROM myTable"))
@@ -283,7 +286,7 @@ namespace Oracle.NoSQL.SDK {
         /// one of its subclasses is thrown if operation cannot be performed
         /// for any other reason.  See documentation for corresponding
         /// subclass of <see cref="NoSQLException"/>.</exception>
-        /// <seealso cref="QueryAsync"/>
+        /// <seealso cref="QueryAsync(string,QueryOptions,CancellationToken)"/>
         /// <seealso href="https://docs.microsoft.com/en-us/archive/msdn-magazine/2019/november/csharp-iterating-with-async-enumerables-in-csharp-8">
         /// Iterating with Async Enumerables in C# 8
         /// </seealso>
@@ -331,7 +334,7 @@ namespace Oracle.NoSQL.SDK {
         /// one of its subclasses is thrown if operation cannot be performed
         /// for any other reason.  See documentation for corresponding
         /// subclass of <see cref="NoSQLException"/>.</exception>
-        /// <seealso cref="QueryAsync"/>
+        /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.QueryAsync*"/>
         public IAsyncEnumerable<QueryResult<RecordValue>>
             GetQueryAsyncEnumerable(
             PreparedStatement preparedStatement,

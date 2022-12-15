@@ -49,8 +49,8 @@ namespace Oracle.NoSQL.SDK
     /// }
     /// </code>
     /// </example>
-    /// <seealso cref="NoSQLClient.QueryAsync"/>
-    /// <seealso cref="NoSQLClient.GetQueryAsyncEnumerable"/>
+    /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.QueryAsync*"/>
+    /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.GetQueryAsyncEnumerable*"/>
     public class QueryOptions : IReadOptions
     {
         internal const int MaxReadKBLimit = 2048;

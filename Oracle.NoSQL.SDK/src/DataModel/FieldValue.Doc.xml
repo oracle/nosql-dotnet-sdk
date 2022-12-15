@@ -170,7 +170,8 @@ https://oss.oracle.com/licenses/upl/
             are represented by instances of <see cref="RecordValue"/>.
             However, on input, when providing table rows to operations such as
             <see cref="NoSQLClient.PutAsync"/> and
-            <see cref="NoSQLClient.WriteManyAsync"/> the field ordering is not
+            <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.WriteManyAsync*"/>
+            the field ordering is not
             required, so you may use either <see cref="MapValue"/> or
             <see cref="RecordValue"/> to provide table rows.  Primary key
             values are only used as input to operations such as

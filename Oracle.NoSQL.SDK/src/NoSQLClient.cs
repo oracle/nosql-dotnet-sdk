@@ -79,7 +79,7 @@ namespace Oracle.NoSQL.SDK {
     /// <see cref="NoSQLClient"/> has memory and network resources
     /// associated with it.  It implements <see cref="IDisposable" />
     /// interface and must be disposed when application is done using it via
-    /// calling <see cref="Dispose"/> or via <c>using</c> statement.
+    /// calling <see cref="Dispose()"/> or via <c>using</c> statement.
     /// In most cases, an application only needs to create
     /// <see cref="NoSQLClient"/> instance once and dispose of it in the end.
     /// To minimize network activity as well as resource allocation and

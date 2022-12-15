@@ -28,7 +28,7 @@ namespace Oracle.NoSQL.SDK
     ///     });
     /// </code>
     /// </example>
-    /// <seealso cref="NoSQLClient.GetTableAsync"/>
+    /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.GetTableAsync*"/>
     public class GetTableOptions : IOptions
     {
         /// <inheritdoc cref="GetOptions.Compartment"/>

@@ -53,8 +53,8 @@ namespace Oracle.NoSQL.SDK
     ///     });
     /// </code>
     /// </example>
-    /// <seealso cref="NoSQLClient.DeleteRangeAsync"/>
-    /// <seealso cref="NoSQLClient.GetDeleteRangeAsyncEnumerable"/>
+    /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.DeleteRangeAsync*"/>
+    /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.GetDeleteRangeAsyncEnumerable*"/>
     /// <seealso cref="FieldRange"/>
     /// <seealso cref="DeleteRangeContinuationKey"/>
     public class DeleteRangeOptions : IOptions

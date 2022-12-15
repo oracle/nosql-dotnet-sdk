@@ -42,8 +42,8 @@ namespace Oracle.NoSQL.SDK
     /// receive the current status of the admin DDL operation.
     /// </para>
     /// </remarks>
-    /// <seealso cref="NoSQLClient.ExecuteAdminAsync"/>
-    /// <seealso cref="NoSQLClient.ExecuteAdminWithCompletionAsync"/>
+    /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.ExecuteAdminAsync*"/>
+    /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.ExecuteAdminWithCompletionAsync*"/>
     /// <seealso cref="NoSQLClient.GetAdminStatusAsync"/>
     /// <seealso cref="AdminState"/>
     public class AdminResult

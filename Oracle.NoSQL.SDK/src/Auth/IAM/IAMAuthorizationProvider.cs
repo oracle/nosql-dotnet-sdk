@@ -283,7 +283,7 @@ namespace Oracle.NoSQL.SDK
         /// </para>
         /// </remarks>
         /// <value>The delegation token provider.</value>
-        /// <seealso cref="CreateWithInstancePrincipalForDelegation"/>
+        /// <seealso cref="CreateWithInstancePrincipalForDelegation(Func{CancellationToken,Task{string}},string)"/>
         public Func<CancellationToken, Task<string>> DelegationTokenProvider
         { get; set; }
 

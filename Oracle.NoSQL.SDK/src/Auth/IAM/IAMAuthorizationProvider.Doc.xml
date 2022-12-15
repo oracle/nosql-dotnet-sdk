@@ -55,7 +55,7 @@ https://oss.oracle.com/licenses/upl/
                         Instance Principal by setting
                         <see cref="UseInstancePrincipal"/> to <c>true</c> or
                         calling <see cref="CreateWithInstancePrincipal"/> or
-                        <see cref="CreateWithInstancePrincipalForDelegation"/>.
+                        <see cref="M:Oracle.NoSQL.SDK.IAMAuthorizationProvider.CreateWithInstancePrincipalForDelegation*"/>.
                     </description>
                 </item>
                 <item>
