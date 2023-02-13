@@ -31,7 +31,7 @@ to download Oracle NoSQL Database.  See
 [Oracle NoSQL Database Documentation](https://docs.oracle.com/en/database/other-databases/nosql-database/index.html)
 to get started with Oracle NoSQL Database.
 In particular, see the
-[Administrator Guide](https://docs.oracle.com/en/database/other-databases/nosql-database/22.1/admin/index.html)
+[Administrator Guide](https://docs.oracle.com/en/database/other-databases/nosql-database/22.3/admin/index.html)
 on how to install, configure and run Oracle NoSQL Database Service.
 * Optionally, [Visual Studio 2019](https://visualstudio.microsoft.com/downloads/)
 or later, or [Visual Studio Code](https://code.visualstudio.com/).
@@ -252,7 +252,7 @@ You can run the examples
 * Against the Oracle NoSQL Database Cloud Service using your Oracle Cloud
 account and credentials.
 * Locally using the
-[Oracle NoSQL Database Cloud Simulator](https://docs.oracle.com/en/cloud/paas/nosql-cloud/csnsd/develop-oracle-nosql-cloud-simulator.html).
+[Oracle NoSQL Database Cloud Simulator](https://www.oracle.com/downloads/cloud/nosql-cloud-sdk-downloads.html).
 * Against On-Premise Oracle NoSQL Database via the proxy.
 
 Each example takes one command line argument which is the path to the

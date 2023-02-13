@@ -12,7 +12,7 @@ to download Oracle NoSQL Database. See
 [Oracle NoSQL Database Documentation](https://docs.oracle.com/en/database/other-databases/nosql-database/index.html)
 to get started with Oracle NoSQL Database.
 In particular, see the
-[Administrator Guide](https://docs.oracle.com/en/database/other-databases/nosql-database/22.1/admin/index.html)
+[Administrator Guide](https://docs.oracle.com/en/database/other-databases/nosql-database/22.3/admin/index.html)
 on how to install, configure and run Oracle NoSQL Database Service.
 * [.NET Core](https://dotnet.microsoft.com/download) 3.1 or later, including
 [.NET 5.0](https://dotnet.microsoft.com/download/dotnet/5.0) or later version
@@ -56,14 +56,14 @@ components:
 1. Running instance of Oracle NoSQL Database.  See [Prerequisites](#prereq).
 2. Oracle NoSQL Database Proxy.  The proxy is the middle tier that lets Oracle
 NoSQL Database drivers communicate with the database.  See
-[Oracle NoSQL Database Proxy](https://docs.oracle.com/en/database/other-databases/nosql-database/22.1/admin/proxy.html) for information on how to configure and run the proxy.
+[Oracle NoSQL Database Proxy](https://docs.oracle.com/en/database/other-databases/nosql-database/22.3/admin/proxy.html) for information on how to configure and run the proxy.
 
 A Oracle NoSQL Database instance may be configured and run in secure or
 non-secure mode.  Secure mode is recommended.  See
-[Oracle NoSQL Database Security Guide](https://docs.oracle.com/en/database/other-databases/nosql-database/22.1/security/index.html)
+[Oracle NoSQL Database Security Guide](https://docs.oracle.com/en/database/other-databases/nosql-database/22.3/security/index.html)
 on security concepts and configuration.  Correspondingly, the proxy can be
-configured and used with [secure kvstore](https://docs.oracle.com/en/database/other-databases/nosql-database/22.1/admin/secure-proxy.html) or
-[non-secure kvstore](https://docs.oracle.com/en/database/other-databases/nosql-database/22.1/admin/non-secure-proxy.html).
+configured and used with [secure kvstore](https://docs.oracle.com/en/database/other-databases/nosql-database/22.3/admin/secure-proxy.html) or
+[non-secure kvstore](https://docs.oracle.com/en/database/other-databases/nosql-database/22.3/admin/non-secure-proxy.html).
 
 Your application  will connect and use a running NoSQL database via
 the proxy service.  The following sections describe information required in non-secure
@@ -72,7 +72,7 @@ and secure modes.
 ### <a name="non_secure"></a>Configuring the SDK for non-secure kvstore
 
 See
-[Using the Proxy in a Non-Secure kvstore](https://docs.oracle.com/en/database/other-databases/nosql-database/22.1/admin/non-secure-proxy.html)
+[Using the Proxy in a Non-Secure kvstore](https://docs.oracle.com/en/database/other-databases/nosql-database/22.3/admin/non-secure-proxy.html)
 on how to configure and start the proxy in a non-secure mode.
 
 In non-secure mode, the driver communicates with the proxy via the HTTP protocol.
@@ -100,7 +100,7 @@ non-secure store.
 ### <a name="secure"></a>Configuring the SDK for a Secure Store
 
 See
-[Using the Proxy in a Secure kvstore](https://docs.oracle.com/en/database/other-databases/nosql-database/22.1/admin/secure-proxy.html)
+[Using the Proxy in a Secure kvstore](https://docs.oracle.com/en/database/other-databases/nosql-database/22.3/admin/secure-proxy.html)
 on how to configure and start the proxy in a secure mode.
 
 In secure mode, the driver communicates with the proxy via HTTPS protocol.
@@ -131,14 +131,14 @@ for the *driver_user* user. In this example, the user *driver_user* is granted
 *READWRITE* role, which allows the application to perform only read and
 write operations.
 See
-[Configuring Authentication](https://docs.oracle.com/en/database/other-databases/nosql-database/22.1/security/configuring-authentication.html)
+[Configuring Authentication](https://docs.oracle.com/en/database/other-databases/nosql-database/22.3/security/configuring-authentication.html)
 on how to create and modify users.
 See
-[Configuring Authorization](https://docs.oracle.com/en/database/other-databases/nosql-database/22.1/security/configuring-authorization.html)
+[Configuring Authorization](https://docs.oracle.com/en/database/other-databases/nosql-database/22.3/security/configuring-authorization.html)
 on how to assign roles and privileges to users.
 
 You can use
-[Oracle NoSQL Database Shell](https://docs.oracle.com/en/database/other-databases/nosql-database/22.1/sqlfornosql/introduction-sql-shell.html)
+[Oracle NoSQL Database Shell](https://docs.oracle.com/en/database/other-databases/nosql-database/22.3/sqlfornosql/introduction-sql-shell.html)
 to connect to secure kvstore in order to create the user.  For example:
 
 ```bash
@@ -152,13 +152,13 @@ sql-> GRANT READWRITE TO USER John
 
 (The password shown above is for example purpose only.  All user passwords
 should follow the password security policies.  See
-[Password Complexity Policies](https://docs.oracle.com/en/database/other-databases/nosql-database/22.1/security/password-complexity-policies.html))
+[Password Complexity Policies](https://docs.oracle.com/en/database/other-databases/nosql-database/22.3/security/password-complexity-policies.html))
 
 The driver requires user name and password created above to authenticate with
 a secure store via the proxy.
 
 3. In secure mode the proxy requires SSL
-[Certificate and Private key](https://docs.oracle.com/en/database/other-databases/nosql-database/22.1/security/generating-certificate-and-private-key-proxy.html).
+[Certificate and Private key](https://docs.oracle.com/en/database/other-databases/nosql-database/22.3/security/generating-certificate-and-private-key-proxy.html).
 If the root certificate authority (CA) for your proxy certificate is not one
 of the trusted root CAs, e.g. if you are using a self-signed certificate or a
 custom CA, the driver needs to trust that CA/certificate in order to connect
