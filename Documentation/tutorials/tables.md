@@ -161,9 +161,9 @@ and
 Before creating a table, learn about:
 
 * Table design for the Oracle NoSQL Database. See
-[Table Design](https://docs.oracle.com/en/cloud/paas/nosql-cloud/csnsd/table-design.html#GUID-7A409201-F240-4DE5-A0C1-545ADFCBFB77).
+[Table Design](https://docs.oracle.com/en/cloud/paas/nosql-cloud/dtons/index.html).
 * Cloud limits. See
-[Oracle NoSQL Database Cloud Limits](https://docs.oracle.com/pls/topic/lookup?ctx=en/cloud/paas/nosql-cloud&id=CSNSD-GUID-30129AB3-906B-4E71-8EFB-8E0BBCD67144).
+[Oracle NoSQL Database Cloud Limits](https://docs.oracle.com/en/cloud/paas/nosql-cloud/fkdyw/index.html).
 
 Examples of DDL statements are:
 
@@ -1445,7 +1445,7 @@ of such statements include:
 
 Note that management of users and roles as in the last 3 examples above is
 available only when using
-[secure kvstore](https://docs.oracle.com/en/database/other-databases/nosql-database/22.1/security/index.html).
+[secure kvstore](https://docs.oracle.com/en/database/other-databases/nosql-database/22.3/security/index.html).
 
 These methods optional options object as
 [AdminOptions](xref:Oracle.NoSQL.SDK.AdminOptions) and return
@@ -1490,7 +1490,7 @@ Some other operations are immediate and are completed when
 [ExecuteAdminAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.ExecuteAdminAsync*)
 produces the result.  These are readonly operations that don't modify system
 state but only return back information, such as *SHOW* commands (see
-[Shell Utility Commands](https://docs.oracle.com/en/database/other-databases/nosql-database/22.1/sqlfornosql/shell-utility-commands.html#GUID-70FA12B5-6AD3-4965-9163-FA9549078EC7)).
+[Shell Utility Commands](https://docs.oracle.com/en/database/other-databases/nosql-database/22.3/sqlfornosql/shell-utility-commands.html#GUID-70FA12B5-6AD3-4965-9163-FA9549078EC7)).
 
 Because some statements, such as *CREATE USER*, may include passwords, both
 [ExecuteAdminAsync](xref:Oracle.NoSQL.SDK.NoSQLClient.ExecuteAdminAsync*)
