@@ -87,7 +87,7 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
         internal static void WriteVersion(MemoryStream stream,
             RowVersion version)
         {
-            WriteByteArray(stream, version.data);
+            WriteByteArray(stream, version.Bytes);
         }
 
         internal static void WriteOpcode(MemoryStream stream, Opcode opcode,
@@ -185,6 +185,20 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
             }
         }
 
+        internal static int GetDurabilityInternal(Durability? durability)
+        {
+            if (!durability.HasValue)
+            {
+                return 0;
+            }
+
+            var masterSync = (int)durability.Value.MasterSync + 1;
+            var replicaSync = (int)durability.Value.ReplicaSync + 1;
+            var replicaAck = (int)durability.Value.ReplicaAck + 1;
+
+            return masterSync | (replicaSync << 2) | (replicaAck << 4);
+        }
+
         internal static void WriteDurability(MemoryStream stream,
             Durability? durability, short serialVersion)
         {
@@ -193,18 +207,7 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
                 return;
             }
 
-            if (!durability.HasValue)
-            {
-                WriteByte(stream, 0);
-                return;
-            }
-
-            var masterSync = (int)durability.Value.MasterSync + 1;
-            var replicaSync = (int)durability.Value.ReplicaSync + 1;
-            var replicaAck = (int)durability.Value.ReplicaAck + 1;
-
-            var value = masterSync | (replicaSync << 2) | (replicaAck << 4);
-            WriteByte(stream, (byte)value);
+            WriteByte(stream, (byte)GetDurabilityInternal(durability));
         }
 
         internal static void SerializeRequest(MemoryStream stream,

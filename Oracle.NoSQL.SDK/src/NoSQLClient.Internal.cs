@@ -23,7 +23,7 @@ namespace Oracle.NoSQL.SDK
 
         internal NoSQLConfig Config { get; private set; }
 
-        internal IRequestSerializer Serializer { get; private set; }
+        internal ProtocolHandler ProtocolHandler { get; private set; }
 
         internal RateLimitingHandler RateLimitingHandler { get; private set; }
 
@@ -65,7 +65,7 @@ namespace Oracle.NoSQL.SDK
 
             while (true)
             {
-                var serialVersion = Serializer.SerialVersion;
+                var serialVersion = ProtocolHandler.SerialVersion;
                 try
                 {
                     if (rlReq != null)
@@ -97,11 +97,11 @@ namespace Oracle.NoSQL.SDK
                     var endTime = startTime + timeout;
                     var now = DateTime.UtcNow;
 
-                    if (ex is UnsupportedProtocolException && now < endTime &&
+                    if (ex is UnsupportedProtocolException &&
+                        !Config.DisableProtocolFallback && now < endTime &&
                         // We should always retry if some other concurrent
                         // request has already decremented serial version.
-                        (serialVersion != Serializer.SerialVersion ||
-                         Serializer.DecrementSerialVersion()))
+                        ProtocolHandler.DecrementSerialVersion(serialVersion))
                     {
                         continue;
                     }
@@ -410,6 +410,46 @@ namespace Oracle.NoSQL.SDK
             request.Validate();
 
             return GetListTablesAsyncEnumerableInternal(request,
+                cancellationToken);
+        }
+
+        private async IAsyncEnumerable<TableUsageResult>
+            GetTableUsageAsyncEnumerableInternal(
+                GetTableUsageRequest request,
+                [EnumeratorCancellation] CancellationToken cancellationToken)
+        {
+            var options = request.Options;
+            Debug.Assert(options != null);
+
+            TableUsageResult result;
+
+            do
+            {
+                result = (TableUsageResult)await ExecuteValidatedRequestAsync(
+                    request, cancellationToken);
+                if (result.UsageRecords.Count == 0)
+                {
+                    yield break;
+                }
+
+                options.FromIndex = result.NextIndex;
+                yield return result;
+            } while (options.Limit.HasValue &&
+                     result.UsageRecords.Count == options.Limit.Value);
+        }
+
+        // We split into 2 methods to ensure that the request validation is
+        // not deferred.
+        private IAsyncEnumerable<TableUsageResult>
+            GetTableUsageAsyncEnumerableWithOptions(
+                string tableName,
+                GetTableUsageOptions options,
+                CancellationToken cancellationToken)
+        {
+            var request = new GetTableUsageRequest(this, tableName, options);
+            request.Validate();
+
+            return GetTableUsageAsyncEnumerableInternal(request,
                 cancellationToken);
         }
 

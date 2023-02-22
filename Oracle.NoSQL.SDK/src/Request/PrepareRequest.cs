@@ -77,5 +77,7 @@ namespace Oracle.NoSQL.SDK
         public PrepareOptions Options { get; internal set; }
 
         internal bool GetQueryPlan => Options != null && Options.GetQueryPlan;
+
+        internal bool GetResultSchema => Options != null && Options.GetResultSchema;
     }
 }

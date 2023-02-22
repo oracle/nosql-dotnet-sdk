@@ -322,8 +322,9 @@ namespace Oracle.NoSQL.SDK {
         }
 
         /// <summary>
-        /// Cloud Service Only.  Sets new limits of throughput and storage for
-        /// existing table.
+        /// Cloud Service Only.
+        /// Sets new limits of throughput and storage for existing table.
+        /// </summary>
         /// <remarks>
         /// <para>
         /// Note: this method is supported with the Cloud Service and Cloud
@@ -340,7 +341,6 @@ namespace Oracle.NoSQL.SDK {
         /// wait for operation completion.
         /// </para>
         /// </remarks>
-        /// </summary>
         /// <param name="tableName">Name of the table.</param>
         /// <param name="tableLimits">The new table limits.</param>
         /// <param name="options">(Optional) Options for the operation.
@@ -379,7 +379,7 @@ namespace Oracle.NoSQL.SDK {
 
         /// <summary>
         /// Cloud Service Only.  Sets table limits on existing table and
-        /// asynchronously waits for the operation completion completion.
+        /// asynchronously waits for the operation completion.
         /// </summary>
         /// <remarks>
         /// <para>
@@ -461,6 +461,158 @@ namespace Oracle.NoSQL.SDK {
         {
             return DoTableDDLWithCompletionAsync(
                 new TableLimitsRequest(this, tableName, tableLimits, options),
+                cancellationToken);
+        }
+
+        /// <summary>
+        /// Cloud Service Only.
+        /// Sets defined and free-form tags on existing table.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Note: this method is supported with the Cloud Service and Cloud
+        /// Simulator but is not supported with on-premise NoSQL database (see
+        /// <see cref="SDK.ServiceType.KVStore">ServiceType.KVStore</see>),
+        /// where it is a no-op.
+        /// </para>
+        /// <para>
+        /// See <see cref="TableDDLOptions.DefinedTags"/> and
+        /// <see cref="TableDDLOptions.FreeFormTags"/> for more information on
+        /// tagging.
+        /// </para>
+        /// <para>
+        /// This method is similar to
+        /// <see cref="ExecuteTableDDLAsync(string,TableDDLOptions,CancellationToken)"/>,
+        /// so all considerations discussed  apply here, including long
+        /// running DDL operations and the need to use
+        /// <see cref="TableResult.WaitForCompletionAsync"/> to asynchronously
+        /// wait for operation completion.
+        /// </para>
+        /// <para>
+        /// To set only free-form tags, you may pass <c>null</c> for
+        /// <paramref name="definedTags"/> parameter.  At least one of
+        /// <paramref name="definedTags"/> and <paramref name="freeFormTags"/>
+        /// must not be <c>null</c>.
+        /// </para>
+        /// </remarks>
+        /// <param name="tableName">Name of the table.</param>
+        /// <param name="definedTags">Defined tags, see
+        /// <see cref="TableDDLOptions.DefinedTags"/></param>
+        /// <param name="freeFormTags">Free-form tags, see
+        /// <see cref="TableDDLOptions.FreeFormTags"/></param>
+        /// <param name="options">(Optional) Options for the operation.
+        /// If not specified or <c>null</c>, appropriate defaults
+        /// will be used.  This parameter should not be used to specify
+        /// defined or free-form tags, use <paramref name="definedTags"/> and
+        /// <paramref name="freeFormTags"/> parameters instead.
+        /// </param>
+        /// <param name="cancellationToken">(Optional) Cancellation token.
+        /// </param>
+        /// <returns>Task returning <see cref="TableResult"/>.</returns>
+        /// <exception cref="ArgumentException">If
+        /// <paramref name="tableName"/> is <c>null</c> or invalid or
+        /// both <paramref name="definedTags"/> and
+        /// <paramref name="freeFormTags"/> are <c>null</c> or invalid or
+        /// <paramref name="options"/> contains invalid values.</exception>
+        /// <exception cref="TimeoutException">Operation has timed out.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">The table or the
+        /// service is not in a valid state to perform this operation.
+        /// </exception>
+        /// <exception cref="NoSQLException"><see cref="NoSQLException"/> or
+        /// one of its subclasses is thrown if operation cannot be performed
+        /// for any other reason.  See documentation for corresponding
+        /// subclass of <see cref="NoSQLException"/>.</exception>
+        /// <seealso cref="ExecuteTableDDLAsync(string, TableDDLOptions, CancellationToken)"/>
+        /// <seealso cref="TableDDLOptions"/>
+        /// <seealso cref="TableResult"/>
+        public async Task<TableResult> SetTableTagsAsync(
+            string tableName,
+            IDictionary<string, IDictionary<string, string>> definedTags,
+            IDictionary<string, string> freeFormTags = null,
+            TableDDLOptions options = null,
+            CancellationToken cancellationToken = default)
+        {
+            return (TableResult)await ExecuteRequestAsync(
+                new TableTagsRequest(this, tableName, definedTags,
+                    freeFormTags, options),
+                cancellationToken);
+        }
+
+        /// <summary>
+        /// Cloud Service Only.  Sets defined and free-form tags on existing
+        /// table and asynchronously waits for the operation completion.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// This method is equivalent to
+        /// calling <see cref="SetTableTagsAsync"/> and then calling
+        /// <see cref="TableResult.WaitForCompletionAsync"/> on the returned
+        /// <see cref="TableResult"/> object.  If the operation is successful,
+        /// the table state in the resulting <see cref="TableResult"/> object
+        /// should be <see cref="TableState.Active"/>.
+        /// </para>
+        /// <para>
+        /// Note: this method is supported with the Cloud Service and Cloud
+        /// Simulator but is not supported with on-premise NoSQL database (see
+        /// <see cref="SDK.ServiceType.KVStore">ServiceType.KVStore</see>),
+        /// where it is a no-op.
+        /// </para>
+        /// <para>
+        /// For this operation, <see cref="TableDDLOptions.Timeout"/> covers
+        /// the total time interval including waiting for the DDL operation
+        /// completion.  If not specified, separate default timeouts are used
+        /// for issuing the DDL operation and waiting for its completion, with
+        /// values of <see cref="NoSQLConfig.TableDDLTimeout"/> and
+        /// <see cref="NoSQLConfig.TablePollTimeout"/> correspondingly (the
+        /// latter defaults to no timeout if
+        /// <see cref="NoSQLConfig.TablePollTimeout"/> is not set).
+        /// Note that as with <see cref="TableResult.WaitForCompletionAsync"/>
+        /// you may specify poll delay as
+        /// <see cref="TableDDLOptions.PollDelay"/> which otherwise defaults
+        /// to <see cref="NoSQLConfig.TablePollDelay"/>.
+        /// </para>
+        /// </remarks>
+        /// <param name="tableName">Name of the table.</param>
+        /// <param name="definedTags">Defined tags, see
+        /// <see cref="TableDDLOptions.DefinedTags"/></param>
+        /// <param name="freeFormTags">Free-form tags, see
+        /// <see cref="TableDDLOptions.FreeFormTags"/></param>
+        /// <param name="options">(Optional) Options for the operation.
+        /// If not specified or <c>null</c>, appropriate defaults
+        /// will be used.  This parameter should not be used to specify
+        /// defined or free-form tags, use <paramref name="definedTags"/> and
+        /// <paramref name="freeFormTags"/> parameters instead.
+        /// </param>
+        /// <param name="cancellationToken">(Optional) Cancellation token.
+        /// </param>
+        /// <returns>Task returning <see cref="TableResult"/>.</returns>
+        /// <exception cref="ArgumentException">If
+        /// <paramref name="tableName"/> is <c>null</c> or invalid or
+        /// both <paramref name="definedTags"/> and
+        /// <paramref name="freeFormTags"/> are <c>null</c> or invalid or
+        /// <paramref name="options"/> contains invalid values.</exception>
+        /// <exception cref="TimeoutException">Operation has timed out.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">The table or the
+        /// service is not in a valid state to perform this operation.
+        /// </exception>
+        /// <exception cref="NoSQLException"><see cref="NoSQLException"/> or
+        /// one of its subclasses is thrown if operation cannot be performed
+        /// for any other reason.  See documentation for corresponding
+        /// subclass of <see cref="NoSQLException"/>.</exception>
+        /// <seealso cref="SetTableTagsAsync"/>
+        /// <seealso cref="TableResult.WaitForCompletionAsync"/>
+        public Task<TableResult> SetTableTagsWithCompletionAsync(
+            string tableName,
+            IDictionary<string, IDictionary<string, string>> definedTags,
+            IDictionary<string, string> freeFormTags = null,
+            TableDDLOptions options = null,
+            CancellationToken cancellationToken = default)
+        {
+            return DoTableDDLWithCompletionAsync(
+                new TableTagsRequest(this, tableName, definedTags,
+                    freeFormTags, options),
                 cancellationToken);
         }
 
@@ -653,7 +805,8 @@ namespace Oracle.NoSQL.SDK {
         }
 
         /// <summary>
-        /// Cloud Service Only.  Retrieves dynamic information associated with
+        /// Cloud Service Only.
+        /// Retrieves dynamic information associated with
         /// a table in the form of <see cref="TableUsageResult"/>.
         /// </summary>
         /// <remarks>
@@ -727,6 +880,170 @@ namespace Oracle.NoSQL.SDK {
             return (TableUsageResult) await ExecuteRequestAsync(
                 new GetTableUsageRequest(this, tableName, options),
                 cancellationToken);
+        }
+
+        /// <summary>
+        /// Cloud Service only.
+        /// Returns <see cref="IAsyncEnumerable{T}"/> to list table usage
+        /// records.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Use this API when you need to retrieve a large number of table
+        /// usage records and you wish to page the results rather than
+        /// returning the whole list at once.
+        /// </para>
+        /// <para>
+        /// This API is similar to
+        /// <see cref="GetTableUsageAsync(string, GetTableUsageOptions, CancellationToken)"/>
+        /// but creates <see cref="IAsyncEnumerable{T}"/> that allows you to
+        /// iterate over the results using <c>await foreach</c>
+        /// construct.  Each of the results is <see cref="TableUsageResult"/>
+        /// containing partial list of table usage records.
+        /// </para>
+        /// <para>Note that you must specify a time range (at least one of
+        /// <see cref="GetTableUsageOptions.StartTime"/> and
+        /// <see cref="GetTableUsageOptions.EndTime"/>) for which to return
+        /// table usage records, otherwise only one (the most recent) table
+        /// usage record will be returned.
+        /// </para>
+        /// <para>
+        /// You may optionally specify a limit on the number of table usage
+        /// records returned in each partial result using
+        /// <see cref="GetTableUsageOptions.Limit"/>.  If not specified,
+        /// a default system limit will be used.
+        /// </para>
+        /// <para>
+        /// Note that this method may only throw
+        /// <see cref="ArgumentException"/>.  Other exceptions listed can only
+        /// be thrown during the iteration process as per deferred execution
+        /// semantics of enumerables.
+        /// </para>
+        /// </remarks>
+        /// <example>
+        /// Asynchronously paging table usage records.
+        /// <code>
+        /// var currentTime = DateTime.UtcNow;
+        /// var options = new TableUsageOptions
+        /// {
+        ///     StartTime = currentTime - TimeSpan.FromDays(1),
+        ///     EndTime = currentTime,
+        ///     Limit = 120
+        /// };
+        ///
+        /// await foreach(var result in client.GetTableUsageAsyncEnumerable(options))
+        /// {
+        ///     foreach(var usageRecord in result.UsageRecords)
+        ///     {
+        ///         Console.WriteLine(usageRecord);
+        ///     }
+        /// }
+        /// </code>
+        /// </example>
+        /// <param name="tableName">Name of the table.</param>
+        /// <param name="options">(Optional) Options for this operation, which
+        /// allow specify a time range for usage records, limit on the number
+        /// usage records returned and other parameters.  To retrieve multiple
+        /// table usage records, the options must specify a time range.
+        /// </param>
+        /// <param name="cancellationToken">(Optional) Cancellation token.
+        /// </param>
+        /// <returns>Async enumerable to iterate over
+        /// <see cref="TableUsageResult"/> objects.</returns>
+        /// <exception cref="ArgumentException">If
+        /// <paramref name="tableName"/> is <c>null</c> or invalid
+        /// or <paramref name="options"/> contains invalid values.</exception>
+        /// <exception cref="TimeoutException">Operation has timed out.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">The table or service
+        /// is not in a valid state to perform this operation.
+        /// </exception>
+        /// <exception cref="NotSupportedException">If this operation is
+        /// invoked on on-premise NoSQL database (see
+        /// <see cref="SDK.ServiceType.KVStore">ServiceType.KVStore</see>).
+        /// </exception>
+        /// <exception cref="NoSQLException"><see cref="NoSQLException"/> or
+        /// one of its subclasses is thrown if operation cannot be performed
+        /// for any other reason.  See documentation for corresponding
+        /// subclass of <see cref="NoSQLException"/>.</exception>
+        /// <seealso cref="GetTableUsageAsync(string, GetTableUsageOptions, CancellationToken)"/>
+        /// <seealso cref="GetTableUsageOptions"/>
+        /// <seealso cref="TableUsageResult"/>
+        /// <seealso href="https://docs.microsoft.com/en-us/archive/msdn-magazine/2019/november/csharp-iterating-with-async-enumerables-in-csharp-8">
+        /// Iterating with Async Enumerables in C#
+        /// </seealso>
+        public IAsyncEnumerable<TableUsageResult>
+            GetTableUsageAsyncEnumerable(
+            string tableName,
+            GetTableUsageOptions options,
+            CancellationToken cancellationToken = default)
+        {
+            return GetTableUsageAsyncEnumerableWithOptions(
+                tableName,
+                options != null
+                    ? options.Clone() :
+                    new GetTableUsageOptions(),
+                cancellationToken);
+        }
+
+        /// <summary>
+        /// Cloud Service only.
+        /// Returns <see cref="IAsyncEnumerable{T}"/> to list table usage
+        /// records.
+        /// </summary>
+        /// <remarks>
+        /// This API is a shorthand for
+        /// <see cref="GetTableUsageAsyncEnumerable(string,GetTableUsageOptions,CancellationToken)"/>
+        /// that allows you to pass time range and limit as arguments without
+        /// using <see cref="GetTableUsageOptions"/> when you do not require
+        /// any other options specified by <see cref="GetTableUsageOptions"/>
+        /// </remarks>
+        /// <param name="tableName">Name of the table.</param>
+        /// <param name="startTime">Start time for the time period from which
+        /// to return table usage records.</param>
+        /// <param name="endTime">(Optional) End time for the time period from which
+        /// to return table usage records.</param>
+        /// <param name="limit">(Optional) Limit on the number of table usage
+        /// records returned in each partial result of the iteration.</param>
+        /// <param name="cancellationToken">(Optional) Cancellation token.
+        /// </param>
+        /// <returns>Async enumerable to iterate over
+        /// <see cref="TableUsageResult"/> objects.</returns>
+        /// <exception cref="ArgumentException">If
+        /// <paramref name="tableName"/> is <c>null</c> or invalid
+        /// or <paramref name="startTime"/>, <paramref name="endTime"/> or
+        /// <paramref name="limit"/> contain invalid values.</exception>
+        /// <exception cref="TimeoutException">Operation has timed out.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">The table or service
+        /// is not in a valid state to perform this operation.
+        /// </exception>
+        /// <exception cref="NotSupportedException">If this operation is
+        /// invoked on on-premise NoSQL database (see
+        /// <see cref="SDK.ServiceType.KVStore">ServiceType.KVStore</see>).
+        /// </exception>
+        /// <exception cref="NoSQLException"><see cref="NoSQLException"/> or
+        /// one of its subclasses is thrown if operation cannot be performed
+        /// for any other reason.  See documentation for corresponding
+        /// subclass of <see cref="NoSQLException"/>.</exception>
+        /// <seealso cref="GetTableUsageAsyncEnumerable(string,GetTableUsageOptions,CancellationToken)"/>
+        /// <seealso cref="GetTableUsageOptions"/>
+        public IAsyncEnumerable<TableUsageResult>
+            GetTableUsageAsyncEnumerable(
+            string tableName,
+            DateTime? startTime,
+            DateTime? endTime = null,
+            int? limit = null,
+            CancellationToken cancellationToken = default)
+        {
+            return GetTableUsageAsyncEnumerable(
+                tableName,
+                new GetTableUsageOptions
+                {
+                    StartTime = startTime,
+                    EndTime = endTime,
+                    Limit = limit
+                }, cancellationToken);
         }
 
         /// <summary>

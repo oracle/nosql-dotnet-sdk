@@ -52,6 +52,18 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
             return value;
         }
 
+        internal static DateTime StringToDateTime(string value)
+        {
+            if (!DateTime.TryParse(value, out DateTime result))
+            {
+                throw new BadProtocolException(
+                    $"Received invalid DateTime string: {value}");
+            }
+
+            // Server should always send dates in UTC
+            return DateTime.SpecifyKind(result, DateTimeKind.Utc);
+        }
+
         internal static T[] ReadArray<T>(MemoryStream stream,
             Func<MemoryStream, T> readItem)
         {
@@ -227,18 +239,8 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
             return BitConverter.ToDouble(bytes, 0);
         }
 
-        internal static DateTime ReadDateTime(MemoryStream stream)
-        {
-            string dateTimeString = ReadString(stream);
-            if (!DateTime.TryParse(dateTimeString, out DateTime value))
-            {
-                throw new BadProtocolException(
-                    $"Received invalid DateTime string: {dateTimeString}");
-            }
-
-            // Server should always send dates in UTC
-            return DateTime.SpecifyKind(value, DateTimeKind.Utc);
-        }
+        internal static DateTime ReadDateTime(MemoryStream stream) =>
+            StringToDateTime(ReadString(stream));
 
         internal static string[] ReadStringArray(MemoryStream stream)
         {
@@ -248,6 +250,28 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
         internal static int[] ReadPackedInt32Array(MemoryStream stream)
         {
             return ReadArray(stream, ReadPackedInt32);
+        }
+
+        // Some values of type Number will not fit into decimal type because
+        // of the latter limited range.  In this case we try to parse them as
+        // double.  This might lose precision but there is no other choice at
+        // this time.
+        internal static FieldValue GetNumberValue(string stringValue)
+        {
+            if (decimal.TryParse(stringValue, NumberStyles.Any, null,
+                    out var decimalResult))
+            {
+                return decimalResult;
+            }
+
+            if (double.TryParse(stringValue, NumberStyles.Any, null,
+                    out var doubleResult))
+            {
+                return doubleResult;
+            }
+
+            throw new BadProtocolException(
+                $"Invalid number value string: {stringValue}");
         }
 
     }

@@ -14,17 +14,6 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
 
     internal partial class RequestSerializer
     {
-        private static Opcode GetPutOpcode(IPutOp op)
-        {
-            return Opcode.Put + (int)op.PutOpKind;
-        }
-
-        private static Opcode GetDeleteOpcode(IDeleteOp op)
-        {
-            return op.MatchVersion == null ?
-                Opcode.Delete : Opcode.DeleteIfVersion;
-        }
-
         private static void SerializePutOp(MemoryStream stream, IPutOp op)
         {
             WriteBoolean(stream, op.Options?.ExactMatch ?? false);
@@ -83,6 +72,17 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
 
             DeserializeWriteResponseWithId(stream, serialVersion, result);
             return result;
+        }
+
+        internal static Opcode GetPutOpcode(IPutOp op)
+        {
+            return Opcode.Put + (int)op.PutOpKind;
+        }
+
+        internal static Opcode GetDeleteOpcode(IDeleteOp op)
+        {
+            return op.MatchVersion == null ?
+                Opcode.Delete : Opcode.DeleteIfVersion;
         }
 
         public void SerializeGet<TRow>(MemoryStream stream,

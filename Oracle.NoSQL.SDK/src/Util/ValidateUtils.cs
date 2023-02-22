@@ -138,6 +138,16 @@ namespace Oracle.NoSQL.SDK
             }
         }
 
+        internal static void CheckReceivedEnumValue<T>(T value) where T :
+            struct, Enum
+        {
+            if (!Enum.IsDefined(typeof(T), value))
+            {
+                throw new BadProtocolException(
+                    $"Received invalid value for {typeof(T).Name}: {value}");
+            }
+        }
+
         internal static void CheckStringNotEmpty(string value, string name)
         {
             if (string.IsNullOrEmpty(value))

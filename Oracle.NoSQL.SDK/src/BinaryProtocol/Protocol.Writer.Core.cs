@@ -31,6 +31,9 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
             }
         }
 
+        internal static string DateTimeToString(DateTime value) =>
+            value.ToUniversalTime().ToString(TimestampFormat);
+
         internal static void WriteByte(MemoryStream stream, byte value)
         {
             stream.WriteByte(value);
@@ -143,8 +146,7 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
         internal static void WriteDateTime(MemoryStream stream,
             DateTime value)
         {
-            WriteString(stream, value.ToUniversalTime().ToString(
-                TimestampFormat));
+            WriteString(stream, DateTimeToString(value));
         }
 
     }

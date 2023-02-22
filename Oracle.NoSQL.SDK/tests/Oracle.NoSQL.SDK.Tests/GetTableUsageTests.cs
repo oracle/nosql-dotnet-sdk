@@ -206,6 +206,7 @@ namespace Oracle.NoSQL.SDK.Tests
                 Assert.IsTrue(record.ReadUnits >= 0);
                 Assert.IsTrue(record.WriteUnits >= 0);
                 Assert.IsTrue(record.StorageGB >= 0);
+                Assert.IsTrue(record.MaxShardUsagePercent >= 0);
                 Assert.AreEqual(0, record.ReadThrottleCount);
                 Assert.AreEqual(0, record.WriteThrottleCount);
                 Assert.AreEqual(0, record.StorageThrottleCount);

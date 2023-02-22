@@ -8,7 +8,6 @@
 namespace Oracle.NoSQL.SDK.Http
 {
     using System;
-    using System.Globalization;
     using System.IO;
     using System.Net;
     using System.Net.Http;
@@ -25,7 +24,7 @@ namespace Oracle.NoSQL.SDK.Http
             UriKind.Relative);
 
         private readonly NoSQLConfig config;
-        private readonly IRequestSerializer serializer;
+        private readonly ProtocolHandler protocolHandler;
         private readonly HttpClient client;
         private int requestId;
 
@@ -50,10 +49,10 @@ namespace Oracle.NoSQL.SDK.Http
                    IsHttpRequestExceptionRetryable(httpEx);
         }
 
-        internal Client(NoSQLConfig config, IRequestSerializer serializer)
+        internal Client(NoSQLConfig config, ProtocolHandler protocolHandler)
         {
             this.config = config;
-            this.serializer = serializer;
+            this.protocolHandler = protocolHandler;
 
             client = new HttpClient(CreateHandler(config.ConnectionOptions),
                 true)
@@ -64,7 +63,7 @@ namespace Oracle.NoSQL.SDK.Http
             client.DefaultRequestHeaders.Host = config.Uri.Host;
             client.DefaultRequestHeaders.Connection.Add("keep-alive");
             client.DefaultRequestHeaders.Accept.Add(
-                new MediaTypeWithQualityHeaderValue(serializer.ContentType));
+                new MediaTypeWithQualityHeaderValue(protocolHandler.ContentType));
             // Disable default timeout since we use our own timeout mechanism
             client.Timeout = Timeout.InfiniteTimeSpan;
         }
@@ -76,12 +75,13 @@ namespace Oracle.NoSQL.SDK.Http
                 dataPathUri);
 
             var stream = new MemoryStream();
-            request.Serialize(serializer, stream);
+            protocolHandler.StartWrite(stream, request);
+            request.Serialize(protocolHandler.Serializer, stream);
 
             message.Content = new ByteArrayContent(stream.GetBuffer(), 0,
                 (int)stream.Position);
             message.Content.Headers.ContentType = new MediaTypeHeaderValue(
-                serializer.ContentType);
+                protocolHandler.ContentType);
             message.Content.Headers.ContentLength = stream.Position;
 
             message.Headers.Add(RequestId, Convert.ToString(
@@ -107,8 +107,8 @@ namespace Oracle.NoSQL.SDK.Http
             // deserialization, so we have to use ReadAsByteArrayAsync().
             var buffer = await response.Content.ReadAsByteArrayAsync();
             stream = new MemoryStream(buffer, 0, buffer.Length, false, true);
-            serializer.ReadAndCheckError(stream, request);
-            return request.Deserialize(serializer, stream);
+            protocolHandler.StartRead(stream, request);
+            return request.Deserialize(protocolHandler.Serializer, stream);
         }
 
         public void Dispose()

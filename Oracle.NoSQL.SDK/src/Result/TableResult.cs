@@ -8,6 +8,7 @@
 namespace Oracle.NoSQL.SDK
 {
     using System;
+    using System.Collections.Generic;
     using System.Text.RegularExpressions;
     using System.Threading;
     using System.Threading.Tasks;
@@ -85,6 +86,28 @@ namespace Oracle.NoSQL.SDK
         /// </value>
         public string CompartmentId { get; internal set; }
 
+        /// <summary>
+        /// On-premise NoSQL database only. Gets the namespace of the table.
+        /// </summary>
+        /// <remarks>
+        /// Note that the table name is prefixed with the namespace as well if
+        /// it is in a namespace.
+        /// </remarks>
+        /// <value>
+        /// The namespace name or <c>null</c> if the table is not in a
+        /// namespace.
+        /// </value>
+        public string Namespace => CompartmentId;
+
+        /// <summary>
+        /// Cloud Service only.
+        /// Gets the OCID of the table.
+        /// </summary>
+        /// <value>
+        /// The table OCID or <c>null</c> if using on-premises service.
+        /// </value>
+        public string TableOCID { get; internal set; }
+
         // Tests should check that TableState value is set to correct enum
         // value upon being returned.
 
@@ -114,6 +137,24 @@ namespace Oracle.NoSQL.SDK
         public string TableSchema { get; internal set; }
 
         /// <summary>
+        /// Gets the DDL (CREATE TABLE) statement used to create this table if
+        /// available.
+        /// </summary>
+        /// <remarks>
+        /// If the table has been altered since initial creation, the
+        /// statement is also altered to reflect the current table schema.
+        /// This value, when non-null, is functionally equivalent to the
+        /// schema returned by <see cref="TableSchema"/>. The most reliable
+        /// way to get the DDL statement is using
+        /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.GetTableAsync*"/> on an
+        /// existing table.
+        /// </remarks>
+        /// <value>
+        /// The create table statement.
+        /// </value>
+        public string TableDDL { get; internal set; }
+
+        /// <summary>
         /// Gets the throughput and capacity limits for the table.
         /// </summary>
         /// <remarks>
@@ -124,6 +165,53 @@ namespace Oracle.NoSQL.SDK
         /// Table limits.
         /// </value>
         public TableLimits TableLimits { get; internal set; }
+
+        /// <summary>
+        /// Cloud Service only.
+        /// Gets the entity tag associated with the table.
+        /// </summary>
+        /// <remarks>
+        /// The ETag is an opaque value that represents the current version of
+        /// the table itself and can be used in future table modification
+        /// operations to only perform them if the ETag for the table has
+        /// not changed. This is an optimistic concurrency control mechanism.
+        /// </remarks>
+        /// <value>
+        /// The entity tag associated with the table, or <c>null</c>
+        /// when using on-premises service.
+        /// </value>
+        /// <seealso cref="TableDDLOptions.MatchETag"/>
+        public string ETag { get; internal set; }
+
+        /// <summary>
+        /// Gets defined tags associated with this table.
+        /// </summary>
+        /// <remarks>
+        /// See <see cref="TableDDLOptions.DefinedTags"/> for more information
+        /// on defined tags.
+        /// </remarks>
+        /// <value>
+        /// Defined tags for this table if available, otherwise <c>null</c>.
+        /// </value>
+        /// <seealso cref="TableDDLOptions.DefinedTags"/>
+        public IDictionary<string, IDictionary<string, string>> DefinedTags
+        {
+            get;
+            internal set;
+        }
+
+        /// <summary>
+        /// Gets free-form tags associated with this table.
+        /// </summary>
+        /// <remarks>
+        /// See <see cref="TableDDLOptions.FreeFormTags"/> for more information
+        /// on free-form tags.
+        /// </remarks>
+        /// <value>
+        /// Free-form tags for this table if available, otherwise <c>null</c>.
+        /// </value>
+        /// <seealso cref="TableDDLOptions.FreeFormTags"/>
+        public IDictionary<string, string> FreeFormTags { get; internal set; }
 
         /// <summary>
         /// Asynchronously waits for completion of table DDL operations.

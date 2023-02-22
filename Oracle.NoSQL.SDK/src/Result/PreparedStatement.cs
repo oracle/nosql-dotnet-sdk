@@ -14,9 +14,13 @@ namespace Oracle.NoSQL.SDK
 
     internal class TopologyInfo
     {
-        internal int SequenceNumber { get; }
+        internal int SequenceNumber { get; set; }
 
-        internal int[] ShardIds { get; }
+        internal int[] ShardIds { get; set; }
+
+        internal TopologyInfo()
+        {
+        }
 
         internal TopologyInfo(int sequenceNumber, int[] shardIds)
         {
@@ -131,6 +135,18 @@ namespace Oracle.NoSQL.SDK
         /// </value>
         /// <seealso cref="PrepareOptions.GetQueryPlan"/>
         public string QueryPlan { get; internal set; }
+
+        /// <summary>
+        /// Gets the JSON string representing the schema of the query result
+        /// if it was requested.
+        /// </summary>
+        /// <value>
+        /// JSON representation of the query result schema if
+        /// <see cref="NoSQLClient.PrepareAsync"/> was called with
+        /// <see cref="PrepareOptions.GetResultSchema"/> set to <c>true</c>,
+        /// otherwise <c>null</c>.
+        /// </value>
+        public string ResultSchema { get; internal set; }
 
         /// <summary>
         /// Gets the bind variables.
@@ -296,6 +312,8 @@ namespace Oracle.NoSQL.SDK
         internal byte[] ProxyStatement { get; set; }
 
         internal PlanStep DriverQueryPlan { get; set; }
+
+        internal bool IsSimpleQuery => DriverQueryPlan == null;
 
         internal int RegisterCount { get; set; }
 

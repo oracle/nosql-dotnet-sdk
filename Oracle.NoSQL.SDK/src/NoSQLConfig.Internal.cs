@@ -161,6 +161,10 @@ namespace Oracle.NoSQL.SDK
 
         internal Uri Uri { get; set; }
 
+        // For testing: to make sure we are really testing current protocol
+        // and the driver did not fall back to previous protocol.
+        internal bool DisableProtocolFallback { get; set; } = false;
+
         static NoSQLConfig()
         {
             JsonSerializerOptions = new JsonSerializerOptions

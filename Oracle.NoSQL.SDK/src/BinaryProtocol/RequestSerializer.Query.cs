@@ -15,9 +15,9 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
     internal partial class RequestSerializer
     {
 
-        private const int MathContextCustom = 5;
-        private const int DecimalPrecision = 29;
-        private const int DecimalRounding = 6; // Half-even
+        internal const int MathContextCustom = 5;
+        internal const int DecimalPrecision = 29;
+        internal const int DecimalRounding = 6; // Half-even
 
         // Extract the table name, namespace and opcode from the prepared
         // query. This dips into the portion of the prepared query that is

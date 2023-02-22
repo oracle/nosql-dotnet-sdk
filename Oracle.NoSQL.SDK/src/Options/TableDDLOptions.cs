@@ -8,6 +8,7 @@
 namespace Oracle.NoSQL.SDK
 {
     using System;
+    using System.Collections.Generic;
     using System.Threading;
     using static ValidateUtils;
 
@@ -15,8 +16,10 @@ namespace Oracle.NoSQL.SDK
     /// Represents options for table DDL passed to methods
     /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.ExecuteTableDDLAsync*"/>
     /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.ExecuteTableDDLWithCompletionAsync*"/>,
-    /// <see cref="NoSQLClient.SetTableLimitsAsync"/> and
-    /// <see cref="NoSQLClient.SetTableLimitsWithCompletionAsync"/>.
+    /// <see cref="NoSQLClient.SetTableLimitsAsync"/>,
+    /// <see cref="NoSQLClient.SetTableLimitsWithCompletionAsync"/>,
+    /// <see cref="NoSQLClient.SetTableTagsAsync"/> and
+    /// <see cref="NoSQLClient.SetTableTagsWithCompletionAsync"/>,
     /// </summary>
     /// <remarks>
     /// For properties not specified or <c>null</c>,
@@ -110,6 +113,130 @@ namespace Oracle.NoSQL.SDK
         /// the timeout.
         /// </value>
         public TimeSpan? PollDelay { get; set; }
+
+        /// <summary>
+        /// Cloud Service only.
+        /// Gets or sets the entity tag that must be matched for operation to
+        /// proceed.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The ETag is an opaque value that represents the current version of
+        /// the table itself and can be used in table modification operations
+        /// to only perform them if the ETag for the table has not changed.
+        /// This is an optimistic concurrency control mechanism allowing
+        /// an application to ensure no unexpected modifications have been
+        /// made to the table.
+        /// </para>
+        /// <para>
+        /// The value of the ETag must be the value returned in a previous
+        /// <see cref="TableResult"></see>.  If set for on-premises service,
+        /// the ETag is silently ignored.
+        /// </para>
+        /// </remarks>
+        /// <value>The value of the entity tag for the table.</value>
+        /// <seealso cref="TableResult.ETag"/>
+        public string MatchETag { get; set; }
+
+        /// <summary>
+        /// Cloud Service Only.
+        /// Gets or sets defined tags to use for the operation.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// See chapter <em>Tagging Overview</em> in Oracle Cloud
+        /// Infrastructure documentation. Defined tags represent metadata
+        /// managed by an administrator.  Users can apply these tags to a
+        /// table by identifying the tag and supplying its value.
+        /// </para>
+        /// <para>
+        /// Each defined tag belongs to a namespace, where a namespace
+        /// serves as a container for tag keys.  The type of
+        /// <see cref="DefinedTags"/> is a compound dictionary, with outer
+        /// dictionary keys representing tag namespaces and the inner
+        /// dictionary representing tag keys and values for a particular
+        /// namespace.
+        /// </para>
+        /// <para>
+        /// Defined tags are used only in these cases: table creation
+        /// operations executed by
+        /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.ExecuteTableDDLAsync*"/> or
+        /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.ExecuteTableDDLWithCompletionAsync*"/>
+        /// with <em>CREATE TABLE</em> SQL statement and table tag
+        /// modification operations executed by
+        /// <see cref="NoSQLClient.SetTableTagsAsync"/> or
+        /// <see cref="NoSQLClient.SetTableTagsWithCompletionAsync"/>.  They
+        /// are not used for other table DDL operations.
+        /// </para>
+        /// </remarks>
+        /// <example>
+        /// Specifying defined tags.
+        /// <code>
+        /// var options = new TableDDLOptions
+        /// {
+        ///     DefinedTags = new Dictionary&lt;string, IDictionary&lt;string, string&gt;&gt;
+        ///     {
+        ///         ["Oracle-Tags"] = new Dictionary&lt;string, string&gt;
+        ///         {
+        ///             ["CreatedBy"] = "NosqlUser",
+        ///             ["CreatedOn"] = "2023-01-01T00:00:00Z"
+        ///         }
+        ///     }
+        /// };
+        /// </code>
+        /// </example>
+        /// <value>
+        /// Namespace-scoped dictionary of defined tags.  If set for an
+        /// on-premises service, they are silently ignored.
+        /// </value>
+        public IDictionary<string, IDictionary<string, string>> DefinedTags
+        {
+            get;
+            internal set;
+        }
+
+        /// <summary>
+        /// Cloud Service Only.
+        /// Gets or sets free-form tags to use for the operation.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// See chapter <em>Tagging Overview</em> in Oracle Cloud
+        /// Infrastructure documentation. Free-form tags represent an
+        /// unmanaged metadata created and applied by the user. Free-form tags
+        /// do not use namespaces.  <see cref="FreeFormTags"/> is a dictionary
+        /// representing tag keys and values.
+        /// </para>
+        /// <para>
+        /// Free-form tags are used only in these cases: table creation
+        /// operations executed by
+        /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.ExecuteTableDDLAsync*"/> or
+        /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.ExecuteTableDDLWithCompletionAsync*"/>
+        /// with <em>CREATE TABLE</em> SQL statement and table tag
+        /// modification operations executed by
+        /// <see cref="NoSQLClient.SetTableTagsAsync"/> or
+        /// <see cref="NoSQLClient.SetTableTagsWithCompletionAsync"/>.  They
+        /// are not used for other table DDL operations.
+        /// </para>
+        /// </remarks>
+        /// <example>
+        /// Specifying free-form tags.
+        /// <code>
+        /// var options = new TableDDLOptions
+        /// {
+        ///     FreeFormTags = new Dictionary&lt;string, string&gt;
+        ///     {
+        ///         ["createdBy"] = "NosqlUser",
+        ///         ["purpose"] = "MyApp"
+        ///     }
+        /// };
+        /// </code>
+        /// </example>
+        /// <value>
+        /// Dictionary of free-form tags.  If set for an on-premises service,
+        /// they are silently ignored.
+        /// </value>
+        public IDictionary<string, string> FreeFormTags { get; internal set; }
 
         void IOptions.Validate()
         {

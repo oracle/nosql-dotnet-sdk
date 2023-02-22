@@ -25,6 +25,8 @@ namespace Oracle.NoSQL.SDK
 
         internal const string RequestId = "x-nosql-request-id";
 
+        internal const string DriverProtocolVersion = "x-nosql-serde-version";
+
         internal const string DataPathName = "data";
 
         internal const string NoSQLVersion = "V2";

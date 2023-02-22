@@ -38,6 +38,24 @@ namespace Oracle.NoSQL.SDK
         /// List of field names.
         /// </value>
         public IReadOnlyList<string> Fields { get; internal set; }
+
+        // It would be better to encapsulate field name and type into a
+        // FieldInfo object, however we have to keep Fields property as it is
+        // for backward compatibility.
+
+        /// <summary>
+        /// Gets the list of field types corresponding to the list of field
+        /// names.
+        /// </summary>
+        /// <remarks>
+        /// The type in the list is only non-null if the index is on a field
+        /// of type JSON and is explicitly typed. If using a server that does
+        /// not support this information, this property will be <c>null</c>.
+        /// </remarks>
+        /// <value>
+        /// The list of field types.
+        /// </value>
+        public IReadOnlyList<string> FieldTypes { get; internal set; }
     }
 
 }

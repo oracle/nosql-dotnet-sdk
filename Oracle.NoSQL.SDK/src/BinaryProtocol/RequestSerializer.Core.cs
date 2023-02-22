@@ -29,8 +29,11 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
 
         public short SerialVersion => serialVersion;
 
-        public bool DecrementSerialVersion()
+        public bool DecrementSerialVersion(short versionUsed)
         {
+            // versionUsed already handled by
+            // ProtocolHandler.DecrementSerialVersion()
+
             if (serialVersion == V3) {
                 serialVersion = V2;
                 return true;
@@ -39,7 +42,7 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
             return false;
         }
 
-        public void ReadAndCheckError(MemoryStream stream, Request request)
+        public void StartRead(MemoryStream stream, Request request)
         {
             var statusCode = ReadByte(stream);
             if (statusCode != 0)

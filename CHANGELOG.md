@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## Unpublished
+
+**Added**
+* Implemented version 4 of the serialization protocol.
+* Added new features enabled in V4 protocol such as cloud tagging, table ETag,
+table usage request paging and new fields in TableResult.
+
 ## [5.1.5]
 
 **Added**

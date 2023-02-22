@@ -8,6 +8,7 @@
 namespace Oracle.NoSQL.SDK
 {
     using System;
+    using System.Threading;
     using static ValidateUtils;
 
     /// <summary>
@@ -74,6 +75,15 @@ namespace Oracle.NoSQL.SDK
     /// </description>
     /// </item>
     /// </list>
+    /// <para>
+    /// Because the number of table usage records can be very large, you may
+    /// page the results over multiple calls to
+    /// <see cref="NoSQLClient.GetTableUsageAsync(string,GetTableUsageOptions, CancellationToken)"/>
+    /// using <see cref="FromIndex"/> and <see cref="Limit"/> properties as
+    /// shown in the example below.  However, the recommended way is to call
+    /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.GetTableUsageAsyncEnumerable*"/>
+    /// and iterate over its result.
+    /// </para>
     /// </remarks>
     /// <example>
     /// Executing GetTableUsage operation with provided
@@ -88,7 +98,34 @@ namespace Oracle.NoSQL.SDK
     ///     });
     /// </code>
     /// </example>
+    /// <example>
+    /// Paging over table usage records using
+    /// <see cref="NoSQLClient.GetTableUsageAsync(string,GetTableUsageOptions,CancellationToken)"/>
+    /// and <see cref="FromIndex"/> and <see cref="Limit"/> properties.  We
+    /// iterate until the number of returned table usage records becomes less
+    /// than the limit (and possibly 0), which means that the last partial
+    /// result has been received.
+    /// <code>
+    /// var currentTime = DateTime.UtcNow;
+    /// var options = new GetTableUsageOptions
+    /// {
+    ///     StartTime = currentTime - TimeSpan.FromDays(2),
+    ///     EndTime = currentTime - TimeSpan.FromDays(1)
+    ///     Limit = 100
+    /// };
+    /// do
+    /// {
+    ///     var result = await client.GetTableUsageAsync("MyTable", options);
+    ///     foreach(var usageRecord in result.UsageRecords)
+    ///     {
+    ///         Console.WriteLine(usageRecord);
+    ///     }
+    ///     options.FromIndex = result.NextIndex;
+    /// } while(result.UsageRecords.Count == options.Limit);
+    /// </code>
+    /// </example>
     /// <seealso cref="NoSQLClient.GetTableUsageAsync"/>
+    /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.GetTableUsageAsyncEnumerable*"/>
     public class GetTableUsageOptions : IOptions
     {
         /// <inheritdoc cref="GetOptions.Compartment"/>
@@ -124,6 +161,35 @@ namespace Oracle.NoSQL.SDK
         /// </value>
         public int? Limit { get; set; }
 
+        /// <summary>
+        /// Gets or sets the index at which to start returning table usage
+        /// records.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// This property can be used to page table usage records over
+        /// multiple calls to
+        /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.GetTableUsageAsync*"/>
+        /// in order to avoid returning a very large list in a single result.
+        /// To page table usage records, set this value to
+        /// <see cref="ListTablesResult.NextIndex"/> returned from previous
+        /// call on subsequent calls to
+        /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.GetTableUsageAsync*"/>.
+        /// These operations are best done in a loop.
+        /// </para>
+        /// <para>
+        /// However, the recommended and more simple way to page table usage
+        /// records is to use
+        /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.GetTableUsageAsyncEnumerable*"/>
+        /// in which case you need not use this property.
+        /// </para>
+        /// </remarks>
+        /// <value>
+        /// Start index at which to start returning table usage records.  If
+        /// not set, defaults to <c>0</c>.
+        /// </value>
+        public int? FromIndex { get; set; }
+
         void IOptions.Validate()
         {
             CheckTimeout(Timeout);
@@ -153,6 +219,7 @@ namespace Oracle.NoSQL.SDK
             }
 
             CheckPositiveInt32(Limit, nameof(Limit));
+            CheckNonNegativeInt32(FromIndex, nameof(FromIndex));
 
             if (Limit.HasValue && !StartTime.HasValue && !EndTime.HasValue)
             {
@@ -161,6 +228,9 @@ namespace Oracle.NoSQL.SDK
                     "range (use StartTime and/or EndTime");
             }
         }
+
+        internal GetTableUsageOptions Clone() =>
+            (GetTableUsageOptions)MemberwiseClone();
 
     }
 
