@@ -207,7 +207,8 @@ namespace Oracle.NoSQL.SDK.Tests
             do
             {
                 var count = random.Next(fixture.FirstShardCount) + 1;
-                var startIdx = random.Next(fixture.FirstShardCount - count + 1);
+                var startIdx = random.Next(
+                    fixture.FirstShardCount - count + 1);
                 var endIdx = startIdx + count - 1;
                 var partialPK = new MapValue
                 {
@@ -645,7 +646,7 @@ namespace Oracle.NoSQL.SDK.Tests
 
         [DataTestMethod]
         [DynamicData(nameof(TableTestDataSource))]
-        public async Task TestMultiTableWriteManyLoop(TestCase testCase)
+        public async Task TestMultiTableWriteManyLoopAsync(TestCase testCase)
         {
             CheckBasicOnly(testCase);
             CheckSupportsChildTables();

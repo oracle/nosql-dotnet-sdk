@@ -103,6 +103,16 @@ namespace Oracle.NoSQL.SDK
                         // request has already decremented serial version.
                         ProtocolHandler.DecrementSerialVersion(serialVersion))
                     {
+                        if (request.MinProtocolVersion >
+                            ProtocolHandler.SerialVersion)
+                        {
+                            throw new NotSupportedException(
+                                "This operation requires minimum protocol " +
+                                $"version {request.MinProtocolVersion} and " +
+                                "cannot be performed by the service " +
+                                "running protocol version " +
+                                ProtocolHandler.SerialVersion);
+                        }
                         continue;
                     }
 
@@ -446,7 +456,8 @@ namespace Oracle.NoSQL.SDK
                 GetTableUsageOptions options,
                 CancellationToken cancellationToken)
         {
-            var request = new GetTableUsageRequest(this, tableName, options);
+            var request = new GetTableUsageRequest(this, tableName,
+                options, 4);
             request.Validate();
 
             return GetTableUsageAsyncEnumerableInternal(request,

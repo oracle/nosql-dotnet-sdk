@@ -5,8 +5,6 @@
  *  https://oss.oracle.com/licenses/upl/
  */
 
-using System.Xml.Linq;
-
 namespace Oracle.NoSQL.SDK.NsonProtocol
 {
     using System;
@@ -104,10 +102,8 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                 case NsonType.Empty:
                     return FieldValue.Empty;
                 default:
-                    Debug.Assert(false,
-                        "Unknown Nson type in ReadFieldValue: " +
-                        reader.NsonType);
-                    return null;
+                    throw new BadProtocolException(
+                        $"Read unknown Nson type code: {reader.NsonType}");
             }
         }
 
@@ -151,8 +147,8 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             ReadArray(reader, () => readElement(reader));
 
         // processField() takes field name as an argument.  It returns true
-        // if the field was read and process, false if the field was ignored,
-        // in which case we will skip it.
+        // if the field was read and processed or false if the field was
+        // ignored, in which case we will skip it.
         // We assume processField() gets any other needed info (including the
         // NsonReader instance) from the closure context, as this is more
         // convenient, but we may add other overloads if required.

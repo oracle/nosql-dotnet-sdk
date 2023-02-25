@@ -52,7 +52,7 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
         {
             if (NsonType != expectedType)
             {
-                throw new InvalidOperationException(
+                throw new BadProtocolException(
                     $"Cannot read value of type {NsonType} as type " +
                     expectedType);
             }
@@ -106,8 +106,8 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
         // the caller to keep track of this if needed.
         internal string FieldName { get; private set; }
 
-        // Start reading the next element and return its Nson type.  For
-        // atomic values, the stream will be positioned to call one of
+        // Start reading the next element.  For atomic values, the stream
+        // will be positioned to call one of
         // Read...() methods to get the value.  For array or map, the caller
         // will need to call Next() again to read the elements or entries.
         // Note that if currently inside the map, this function will also
@@ -145,6 +145,9 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                 top.NumberRead++;
             }
 
+            // We let the caller to validate the value read when it is
+            // processed, to avoid bad performance of Enum.IsDefined,
+            // see ValidateUtils.IsEnumDefined.
             NsonType = (NsonType)BinaryProtocol.ReadByte(stream);
 
             // Start array or map.
@@ -276,6 +279,9 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                 case NsonType.Long:
                     BinaryProtocol.ReadPackedInt64(stream);
                     break;
+                default:
+                    throw new BadProtocolException(
+                        $"Trying to skip unknown Nson type code: {NsonType}");
             }
         }
 

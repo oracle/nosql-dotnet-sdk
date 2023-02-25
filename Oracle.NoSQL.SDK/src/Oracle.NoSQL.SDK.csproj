@@ -26,11 +26,7 @@
 	  <NoWarn>1701;1702</NoWarn>
   </PropertyGroup>
 
-  <ItemGroup>
-    <None Remove="NsonProtocol\qxuul2n4.2xo~" />
-  </ItemGroup>
-
-  <ItemGroup>
+	<ItemGroup>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
         <_Parameter1>Oracle.NoSQL.SDK.Tests</_Parameter1>
     </AssemblyAttribute>

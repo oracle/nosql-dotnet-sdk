@@ -143,13 +143,15 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             var definedTags = request.GetDefinedTags();
             if (definedTags != null)
             {
-                writer.WriteString(JsonSerializer.Serialize(definedTags));
+                writer.WriteString(FieldNames.DefinedTags,
+                    JsonSerializer.Serialize(definedTags));
             }
 
             var freeFormTags = request.GetFreeFormTags();
             if (freeFormTags != null)
             {
-                writer.WriteString(JsonSerializer.Serialize(freeFormTags));
+                writer.WriteString(FieldNames.FreeFormTags,
+                    JsonSerializer.Serialize(freeFormTags));
             }
 
             if (request.Options?.MatchETag != null)

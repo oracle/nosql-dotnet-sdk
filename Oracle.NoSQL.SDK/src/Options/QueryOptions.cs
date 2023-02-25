@@ -208,6 +208,7 @@ namespace Oracle.NoSQL.SDK
         {
             CheckTimeout(Timeout);
             CheckEnumValue(Consistency);
+            Durability?.Validate();
             CheckPositiveInt32(Limit, nameof(Limit));
             CheckPositiveInt32(MaxReadKB, nameof(MaxReadKB));
             CheckPositiveInt32(MaxWriteKB, nameof(MaxWriteKB));

@@ -17,7 +17,7 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
         // At this time this serializer only supports V4. To switch to earlier
         // protocol version, we have to switch serializer to
         // BinaryProtocol.RequestSerializer.
-        private const short DefaultSerialVersion = V4;
+        private const short DefaultSerialVersion = Protocol.SerialVersion;
 
         public short SerialVersion => DefaultSerialVersion;
 

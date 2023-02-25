@@ -169,6 +169,8 @@ namespace Oracle.NoSQL.SDK
         internal override IDictionary<string, string> GetFreeFormTags() =>
             FreeFormTags;
 
+        internal override short MinProtocolVersion => 4;
+
         /// <summary>
         /// Gets the table name.
         /// </summary>

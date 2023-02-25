@@ -2,10 +2,10 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
 {
     internal static partial class Protocol
     {
-        internal const int V3 = 3;
-        internal const int V4 = 4;
+        internal const short V3 = 3;
+        internal const short V4 = 4;
         
-        internal const int SerialVersion = V4;
+        internal const short SerialVersion = V4;
 
         internal static class FieldNames
         {

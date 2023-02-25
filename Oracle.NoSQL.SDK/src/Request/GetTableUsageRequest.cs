@@ -20,12 +20,16 @@ namespace Oracle.NoSQL.SDK
     public class GetTableUsageRequest : RequestWithTable
     {
         internal GetTableUsageRequest(NoSQLClient client, string tableName,
-            GetTableUsageOptions options) : base(client, tableName)
+            GetTableUsageOptions options, short minProtocolVersion = 0) :
+            base(client, tableName)
         {
             Options = options;
+            MinProtocolVersion = minProtocolVersion;
         }
 
         internal override IOptions BaseOptions => Options;
+
+        internal override short MinProtocolVersion { get; }
 
         internal override void Serialize(IRequestSerializer serializer,
             MemoryStream stream)

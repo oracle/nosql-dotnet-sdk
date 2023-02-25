@@ -120,9 +120,20 @@ namespace Oracle.NoSQL.SDK
             }
         }
 
+        internal static bool IsEnumDefined<T>(T value) where T : struct, Enum
+        {
+            // Non-generic IsDefined method has bad performance so we should
+            // use generic one when available.
+#if NET5_0_OR_GREATER
+            return Enum.IsDefined<T>(value);
+#else
+            return Enum.IsDefined(typeof(T), value);
+#endif
+        }
+
         internal static void CheckEnumValue<T>(T value) where T : struct, Enum
         {
-            if (!Enum.IsDefined(typeof(T), value))
+            if (!IsEnumDefined(value))
             {
                 throw new ArgumentException(
                     $"Invalid value for {typeof(T).Name}: {value}");
@@ -141,7 +152,7 @@ namespace Oracle.NoSQL.SDK
         internal static void CheckReceivedEnumValue<T>(T value) where T :
             struct, Enum
         {
-            if (!Enum.IsDefined(typeof(T), value))
+            if (!IsEnumDefined(value))
             {
                 throw new BadProtocolException(
                     $"Received invalid value for {typeof(T).Name}: {value}");

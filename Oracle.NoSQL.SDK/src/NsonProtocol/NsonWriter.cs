@@ -32,8 +32,10 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
         private void StartComplexValue()
         {
             var off = (int)stream.Position;
-            // 2 integers, byte size and number of elements
-            stream.Seek(8, SeekOrigin.Current);
+            // size in bytes
+            BinaryProtocol.WriteUnpackedInt32(stream, 0);
+            // number of elements
+            BinaryProtocol.WriteUnpackedInt32(stream, 0);
             offsetStack.Push(off);
             sizeStack.Push(0);
         }

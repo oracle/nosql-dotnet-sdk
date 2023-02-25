@@ -207,7 +207,7 @@ namespace Oracle.NoSQL.SDK.Tests
             {
                 action();
                 Assert.Fail(
-                    $"Expected exception {nameof(T)} but no exception was " +
+                    $"Expected exception {typeof(T)} but no exception was " +
                     "thrown");
             }
             catch (AssertFailedException)
@@ -217,7 +217,7 @@ namespace Oracle.NoSQL.SDK.Tests
             catch(Exception ex)
             {
                 Assert.IsTrue(ex is T,
-                    $"Expected exception {nameof(T)}, but exception " +
+                    $"Expected exception {typeof(T)}, but exception " +
                     $"{ex.GetType().FullName} was thrown");
             }
         }
@@ -229,7 +229,7 @@ namespace Oracle.NoSQL.SDK.Tests
             {
                 await func();
                 Assert.Fail(
-                    $"Expected exception {nameof(T)} but no exception was " +
+                    $"Expected exception {typeof(T)} but no exception was " +
                     "thrown");
             }
             catch (AssertFailedException)
@@ -239,7 +239,7 @@ namespace Oracle.NoSQL.SDK.Tests
             catch (Exception ex)
             {
                 Assert.IsTrue(ex is T,
-                    $"Expected exception {nameof(T)}, but exception " +
+                    $"Expected exception {typeof(T)}, but exception " +
                     $"{ex.GetType().FullName} was thrown");
             }
         }
