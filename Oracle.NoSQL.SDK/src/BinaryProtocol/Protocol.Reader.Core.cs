@@ -52,16 +52,22 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
             return value;
         }
 
+        // Server always sends timestamp in UTC.  However, old servers may
+        // send the string in ISO 8601 format but without ending "Z", e.g.
+        // 2017-07-15T15:18:59.123456.  New servers (V4 protocol) will include
+        // ending "Z".  We use DateTimeStyles flags below to make sure it
+        // works in both cases.
         internal static DateTime StringToDateTime(string value)
         {
-            if (!DateTime.TryParse(value, out DateTime result))
+            if (!DateTime.TryParse(value, CultureInfo.InvariantCulture,
+                    DateTimeStyles.AssumeUniversal |
+                    DateTimeStyles.AdjustToUniversal, out var result))
             {
                 throw new BadProtocolException(
                     $"Received invalid DateTime string: {value}");
             }
 
-            // Server should always send dates in UTC
-            return DateTime.SpecifyKind(result, DateTimeKind.Utc);
+            return result;
         }
 
         internal static T[] ReadArray<T>(MemoryStream stream,

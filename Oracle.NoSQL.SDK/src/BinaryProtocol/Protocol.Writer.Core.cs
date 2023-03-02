@@ -17,7 +17,7 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
     {
         // ISO 8601 format without "Z" suffix
         private const string TimestampFormat =
-            "yyyy'-'MM'-'dd'T'HH':'mm':'ss.fffffff";
+            "yyyy'-'MM'-'dd'T'HH':'mm':'ss.FFFFFFF'Z'";
 
         // Note that this may increase the stream.Length beyond the total
         // size of data.  We will use stream.Position to determine how much
