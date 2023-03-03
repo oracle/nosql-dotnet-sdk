@@ -128,6 +128,10 @@ namespace Oracle.NoSQL.SDK
     /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.GetTableUsageAsyncEnumerable*"/>
     public class GetTableUsageOptions : IOptions
     {
+        // Used as default in the iterator APIs. The value is set to 24 hours
+        // of 1-minute usage records.
+        internal const int DefaultLimit = 1440;
+
         /// <inheritdoc cref="GetOptions.Compartment"/>
         public string Compartment { get; set; }
 

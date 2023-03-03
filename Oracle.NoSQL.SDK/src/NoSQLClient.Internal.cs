@@ -431,6 +431,7 @@ namespace Oracle.NoSQL.SDK
             var options = request.Options;
             Debug.Assert(options != null);
 
+            var limit = options.Limit ?? GetTableUsageOptions.DefaultLimit;
             TableUsageResult result;
 
             do
@@ -444,8 +445,7 @@ namespace Oracle.NoSQL.SDK
 
                 options.FromIndex = result.NextIndex;
                 yield return result;
-            } while (options.Limit.HasValue &&
-                     result.UsageRecords.Count == options.Limit.Value);
+            } while (result.UsageRecords.Count == limit);
         }
 
         // We split into 2 methods to ensure that the request validation is

@@ -9,7 +9,6 @@ namespace Oracle.NoSQL.SDK.Tests
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.Reflection;
@@ -21,6 +20,7 @@ namespace Oracle.NoSQL.SDK.Tests
     [TestClass]
     public class NsonTests : TestBase
     {
+        // More test data to be added in future.
         private static readonly (string nson, FieldValue value)[]
             NsonCompatData =
         {
