@@ -136,6 +136,31 @@ namespace Oracle.NoSQL.SDK.Tests
             Assert.IsNotNull(result);
             Assert.AreEqual(index.Name, result.IndexName);
             AssertDeepEqual(index.FieldNames, result.Fields);
+
+            if (IsProtocolV4OrAbove)
+            {
+                if (result.FieldTypes == null)
+                {
+                    Assert.IsNull(index.FieldTypes);
+                    return;
+                }
+
+                // Verify JSON typed index fields if any.
+                Assert.AreEqual(index.FieldNames.Length, result.FieldTypes.Count);
+                for (var i = 0; i < index.FieldNames.Length; i++)
+                {
+                    var expected = index.FieldTypes?[i];
+                    var actual = result.FieldTypes[i];
+                    if (actual == null)
+                    {
+                        Assert.IsNull(expected);
+                        continue;
+                    }
+
+                    Assert.IsNotNull(expected);
+                    Assert.AreEqual(expected.ToUpper(), actual.ToUpper());
+                }
+            }
         }
 
         private static void VerifyIndexes(IReadOnlyList<IndexResult> result,

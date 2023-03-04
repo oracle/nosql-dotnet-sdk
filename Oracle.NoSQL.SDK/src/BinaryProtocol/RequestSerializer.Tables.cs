@@ -74,7 +74,7 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
                     WriteByte(stream, (byte)tableLimits.CapacityMode);
                 }
 
-                var tableName = request.GetTableName();
+                var tableName = request.InternalTableName;
                 if (tableName != null)
                 {
                     WriteBoolean(stream, true);

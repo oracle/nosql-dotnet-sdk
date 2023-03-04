@@ -41,7 +41,10 @@ namespace Oracle.NoSQL.SDK.Tests
         internal static readonly IndexInfo[] SimpleTableIndexes =
         {
             new IndexInfo("idx_name", new[] {"lastName", "firstName"}),
-            new IndexInfo("idx_start_date", new[] {"startDate"})
+            new IndexInfo("idx_start_date", new[] {"startDate"}),
+            new IndexInfo("idx_info_address",
+                new[] { "info.street", "info.bldgNo" },
+                new [] { "String", "Integer" })
         };
 
         internal static TableInfo GetSimpleTableWithName(string name) =>

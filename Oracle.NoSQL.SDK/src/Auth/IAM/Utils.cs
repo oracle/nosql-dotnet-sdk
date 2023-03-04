@@ -8,15 +8,11 @@
 namespace Oracle.NoSQL.SDK {
 
     using System;
-    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Security.Cryptography;
     using System.Security.Cryptography.X509Certificates;
     using System.Text;
-    using System.Text.Json;
-    using System.Text.Json.Serialization;
     using System.Text.RegularExpressions;
-    using static DateTimeUtils;
 
     internal static class Utils
     {

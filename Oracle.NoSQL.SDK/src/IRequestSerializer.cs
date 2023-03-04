@@ -18,17 +18,23 @@ namespace Oracle.NoSQL.SDK {
         // version if the service does not support the current version.
         // Returns true if the fallback was successful.  The implementation
         // depends on the protocol versions in use and is specific to the
-        // protocol.  This method may be called concurrently so it must be
+        // protocol.
+        // This method can be call concurrently by multiple threads, however
+        // we already handle synchronization and race conditions in
+        // ProtocolHandler.DecrementSerialVersion() which calls this method.
+        // If used outside of ProtocolHandler, this method would need to be
         // thread-safe.
-        bool DecrementSerialVersion();
+        bool DecrementSerialVersion(short versionUsed) => false;
 
-        // It is possible that this method should not be exposed in this
-        // interface and called by the client, but only called internally
-        // in the beginning of each Deserialize... method in BinaryProtocol,
-        // since in a different protocol more than just a status code may
-        // be read.  This can be addressed if/when we introduce a new
-        // type of protocol.
-        void ReadAndCheckError(MemoryStream stream, Request request);
+        // Called before the request is serialized.
+        void StartWrite(MemoryStream stream, Request request)
+        {
+        }
+
+        // Called before the response is deserialized.
+        void StartRead(MemoryStream stream, Request request)
+        {
+        }
 
         void SerializeTableDDL(MemoryStream stream, TableDDLRequest request);
 

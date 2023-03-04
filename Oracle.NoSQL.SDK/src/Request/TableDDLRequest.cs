@@ -8,6 +8,7 @@
 namespace Oracle.NoSQL.SDK
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using static ValidateUtils;
 
@@ -57,7 +58,13 @@ namespace Oracle.NoSQL.SDK
 
         internal virtual TableLimits GetTableLimits() => Options?.TableLimits;
 
-        internal string GetTableName() => tableName;
+        internal virtual IDictionary<string, IDictionary<string, string>>
+            GetDefinedTags() => Options?.DefinedTags;
+
+        internal virtual IDictionary<string, string> GetFreeFormTags() =>
+            Options?.FreeFormTags;
+
+        internal override string InternalTableName => tableName;
 
         internal override void ApplyResult(object result)
         {
@@ -84,6 +91,7 @@ namespace Oracle.NoSQL.SDK
     }
 
     /// <summary>
+    /// Cloud Service Only.
     /// Represents information about operation performed by
     /// <see cref="NoSQLClient.SetTableLimitsAsync"/> and
     /// <see cref="NoSQLClient.SetTableLimitsWithCompletionAsync"/>
@@ -107,7 +115,7 @@ namespace Oracle.NoSQL.SDK
         /// <value>
         /// Table name.
         /// </value>
-        public string TableName => GetTableName();
+        public string TableName => InternalTableName;
 
         /// <summary>
         /// Gets the table limits for the operation.
@@ -131,6 +139,75 @@ namespace Oracle.NoSQL.SDK
             }
 
             TableLimits.Validate();
+        }
+    }
+
+    /// <summary>
+    /// Cloud Service Only.
+    /// Represents information about operation performed by
+    /// <see cref="NoSQLClient.SetTableTagsAsync"/> and
+    /// <see cref="NoSQLClient.SetTableTagsWithCompletionAsync"/>
+    /// methods.
+    /// </summary>
+    /// <seealso cref="NoSQLClient.SetTableTagsAsync"/>
+    /// <seealso cref="NoSQLClient.SetTableTagsWithCompletionAsync"/>
+    /// <seealso cref="Request"/>
+    public class TableTagsRequest : TableDDLRequest
+    {
+        internal TableTagsRequest(NoSQLClient client, string tableName,
+            IDictionary<string, IDictionary<string, string>> definedTags,
+            IDictionary<string, string> freeFormTags, TableDDLOptions options) :
+            base(client, null, tableName, options)
+        {
+            DefinedTags = definedTags;
+            FreeFormTags = freeFormTags;
+        }
+
+        internal override IDictionary<string, IDictionary<string, string>>
+            GetDefinedTags() => DefinedTags;
+
+        internal override IDictionary<string, string> GetFreeFormTags() =>
+            FreeFormTags;
+
+        internal override short MinProtocolVersion => 4;
+
+        /// <summary>
+        /// Gets the table name.
+        /// </summary>
+        /// <value>
+        /// Table name.
+        /// </value>
+        public string TableName => InternalTableName;
+
+        /// <summary>
+        /// Gets defined tags for the operation.
+        /// </summary>
+        /// <value>
+        /// Defined tags.
+        /// </value>
+        public IDictionary<string, IDictionary<string, string>> DefinedTags
+        {
+            get;
+        }
+
+        /// <summary>
+        /// Gets free-form tags for the operation.
+        /// </summary>
+        /// <value>
+        /// Free-form tags.
+        /// </value>
+        public IDictionary<string, string> FreeFormTags { get; }
+
+        internal override void Validate()
+        {
+            base.Validate();
+            CheckTableName(TableName);
+
+            if (DefinedTags == null && FreeFormTags == null)
+            {
+                throw new ArgumentException(
+                    "Must set at least one of DefinedTags and FreeFormTags");
+            }
         }
     }
 

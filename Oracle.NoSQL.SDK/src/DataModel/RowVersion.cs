@@ -46,16 +46,16 @@ namespace Oracle.NoSQL.SDK
     /// </example>
     public class RowVersion
     {
-        internal byte[] data;
+        internal byte[] Bytes { get; }
 
         internal RowVersion(byte[] data)
         {
-            this.data = data;
+            Bytes = data;
         }
 
         // Used for testing
-        internal string Encoded => data != null ?
-            Convert.ToBase64String(data) : null;
+        internal string Encoded => Bytes != null ?
+            Convert.ToBase64String(Bytes) : null;
     }
 
 }

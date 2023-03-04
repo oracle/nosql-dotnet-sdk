@@ -107,15 +107,18 @@ namespace Oracle.NoSQL.SDK
     /// <see cref="NoSQLClient.PutAsync"/> and its variants, Delete
     /// operations, executed by <see cref="NoSQLClient.DeleteAsync"/> and its
     /// variants, DeleteRange operations executed by
-    /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.DeleteRangeAsync*"/> and its variants and
-    /// WriteMany operations executed by
+    /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.DeleteRangeAsync*"/> and its
+    /// variants, WriteMany operations executed by
     /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.WriteManyAsync*"/> and its
-    /// variants.
+    /// variants and Query operations executed by
+    /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.QueryAsync*"/> and its
+    /// variants for update queries.
     /// </remarks>
     /// <seealso cref="PutOptions.Durability"/>
     /// <seealso cref="DeleteOptions.Durability"/>
     /// <seealso cref="DeleteRangeOptions.Durability"/>
     /// <seealso cref="WriteManyOptions.Durability"/>
+    /// <seealso cref="QueryOptions.Durability"/>
     public readonly struct Durability : IEquatable<Durability>
     {
         // Save some space.

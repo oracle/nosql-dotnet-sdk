@@ -19,6 +19,7 @@ namespace Oracle.NoSQL.SDK.Tests
     using System.Threading.Tasks;
     using System.Windows.Markup;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using NsonProtocol;
     using static Utils;
 
     public static class TestSchemas
@@ -247,15 +248,20 @@ namespace Oracle.NoSQL.SDK.Tests
 
         public class IndexInfo
         {
-            internal IndexInfo(string name, string[] fieldNames)
+            internal IndexInfo(string name, string[] fieldNames,
+                string[] fieldTypes = null)
             {
                 Name = name;
                 FieldNames = fieldNames;
+                FieldTypes = fieldTypes;
             }
 
             internal string Name { get; }
 
             internal string[] FieldNames { get; }
+
+            // only for JSON typed indexes
+            internal string[] FieldTypes { get; }
         }
 
         internal const string FieldSeparator = ", ";
@@ -304,7 +310,16 @@ namespace Oracle.NoSQL.SDK.Tests
             IndexInfo index, bool ifNotExists = false)
         {
             var ifNotExistsStr = ifNotExists ? "IF NOT EXISTS " : string.Empty;
-            var fields = string.Join(FieldSeparator, index.FieldNames);
+            // support JSON typed indexes
+            var fieldInfos = index.FieldTypes == null
+                ? index.FieldNames
+                : (from i in Enumerable.Range(0, index.FieldNames.Length)
+                    select index.FieldTypes[i] == null
+                        ? index.FieldNames[i]
+                        : $"{index.FieldNames[i]} AS {index.FieldTypes[i]}")
+                .ToArray();
+
+            var fields = string.Join(FieldSeparator, fieldInfos);
             return $"CREATE INDEX {ifNotExistsStr}{index.Name} ON " +
                    $"{table.Name}({fields})";
         }

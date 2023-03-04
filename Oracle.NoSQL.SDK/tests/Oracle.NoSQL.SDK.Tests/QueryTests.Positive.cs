@@ -53,6 +53,13 @@ namespace Oracle.NoSQL.SDK.Tests
                 Assert.IsFalse(string.IsNullOrEmpty(
                     preparedStatement.QueryPlan));
             }
+
+            if (IsProtocolV4OrAbove &&
+                (options != null && options.GetResultSchema))
+            {
+                Assert.IsFalse(string.IsNullOrEmpty(
+                    preparedStatement.ResultSchema));
+            }
         }
 
         private static List<RecordValue> SortRows(
@@ -275,12 +282,18 @@ namespace Oracle.NoSQL.SDK.Tests
             },
             new PrepareOptions
             {
-                GetQueryPlan = true
+                GetQueryPlan = true,
+                GetResultSchema = true
             },
             new PrepareOptions
             {
                 Timeout = TimeSpan.FromSeconds(8),
                 GetQueryPlan = true
+            },
+            new PrepareOptions
+            {
+                Timeout = TimeSpan.FromSeconds(10),
+                GetResultSchema = true
             }
         };
 
@@ -329,6 +342,11 @@ namespace Oracle.NoSQL.SDK.Tests
                 yield return new QueryOptions
                 {
                     MaxWriteKB = Fixture.MaxRowKB + 1
+                };
+
+                yield return new QueryOptions
+                {
+                    Durability = Durability.CommitSync
                 };
             }
 

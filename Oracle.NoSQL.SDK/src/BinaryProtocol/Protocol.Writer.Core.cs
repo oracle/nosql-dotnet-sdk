@@ -17,7 +17,7 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
     {
         // ISO 8601 format without "Z" suffix
         private const string TimestampFormat =
-            "yyyy'-'MM'-'dd'T'HH':'mm':'ss.fffffff";
+            "yyyy'-'MM'-'dd'T'HH':'mm':'ss.FFFFFFF'Z'";
 
         // Note that this may increase the stream.Length beyond the total
         // size of data.  We will use stream.Position to determine how much
@@ -30,6 +30,9 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
                 stream.SetLength(totalLength);
             }
         }
+
+        internal static string DateTimeToString(DateTime value) =>
+            value.ToUniversalTime().ToString(TimestampFormat);
 
         internal static void WriteByte(MemoryStream stream, byte value)
         {
@@ -143,8 +146,7 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
         internal static void WriteDateTime(MemoryStream stream,
             DateTime value)
         {
-            WriteString(stream, value.ToUniversalTime().ToString(
-                TimestampFormat));
+            WriteString(stream, DateTimeToString(value));
         }
 
     }

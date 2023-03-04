@@ -42,6 +42,23 @@ namespace Oracle.NoSQL.SDK
         /// </value>
         public IReadOnlyList<TableUsageRecord> UsageRecords
             { get; internal set; }
+
+        /// <summary>
+        /// Gets the next index after the last table usage record returned.
+        /// </summary>
+        /// <remarks>
+        /// If you are paging table names manually with
+        /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.GetTableUsageAsync*"/>
+        /// assign this value to
+        /// <see cref="GetTableUsageOptions.FromIndex"/>. See the example in
+        /// <see cref="GetTableUsageOptions"/>.  This property is not needed if
+        /// you are using
+        /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.GetTableUsageAsyncEnumerable*"/>.
+        /// </remarks>
+        /// <value>
+        /// Next table name index.
+        /// </value>
+        public int NextIndex { get; internal set; }
     }
 
     /// <summary>
@@ -126,6 +143,33 @@ namespace Oracle.NoSQL.SDK
         /// </value>
         /// <seealso cref="TableSizeLimitException"/>
         public int StorageThrottleCount { get; internal set; }
+
+        /// <summary>
+        /// Gets the percentage of allowed storage usage for the shard with
+        /// the highest usage percentage across all table shards.
+        /// </summary>
+        /// <remarks>
+        /// This property can be used as a gauge of total storage available
+        /// as well as a hint for key distribution across shards.
+        /// </remarks>
+        /// <value>
+        /// Maximum shard usage percentage.
+        /// </value>
+        public int MaxShardUsagePercent { get; internal set; }
+
+        /// <summary>
+        /// Returns a string representing this table usage record.
+        /// </summary>
+        /// <returns>A string containing property names and values of this
+        /// table usage record.</returns>
+        public override string ToString() =>
+            $"Start time: {StartTime}, duration: {Duration}, " +
+            $"read units: {ReadUnits}, write units: {WriteUnits}, " +
+            $"storage: {StorageGB} GB, read throttle count: " +
+            $"{ReadThrottleCount}, write throttle count: " +
+            $"{WriteThrottleCount}, storage throttle count: " +
+            $"{StorageThrottleCount}, max shard usage: " +
+            $"{MaxShardUsagePercent}%";
     }
 
 }

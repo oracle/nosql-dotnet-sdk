@@ -37,6 +37,18 @@ namespace Oracle.NoSQL.SDK
         /// </value>
         public bool GetQueryPlan { get; set; }
 
+        /// <summary>
+        /// Gets or sets a value that determines whether the JSON value of the
+        /// query result schema will be included in the returned result.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> to return the JSON value of the query result schema,
+        /// otherwise <c>false</c>.  If <c>true</c>, the query result schema
+        /// will be available as <see cref="PreparedStatement.ResultSchema"/>
+        /// The default is <c>false</c>.
+        /// </value>
+        public bool GetResultSchema { get; set; }
+
         void IOptions.Validate()
         {
             CheckTimeout(Timeout);

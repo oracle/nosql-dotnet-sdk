@@ -50,6 +50,9 @@ namespace Oracle.NoSQL.SDK
         internal Consistency Consistency =>
             Options?.Consistency ?? Config.Consistency;
 
+        internal Durability? Durability =>
+            Options?.Durability ?? Config.Durability;
+
         internal long MaxMemory =>
             Options?.MaxMemory ?? Config.MaxMemoryMB * 0x100000;
 
@@ -67,6 +70,9 @@ namespace Oracle.NoSQL.SDK
 
         internal override string InternalTableName =>
             PreparedStatement?.TableName;
+
+        internal QueryContinuationKey ContinuationKey =>
+            Options?.ContinuationKey;
     }
 
     /// <summary>
@@ -94,9 +100,6 @@ namespace Oracle.NoSQL.SDK
         {
             IsPrepared = true;
         }
-
-        internal QueryContinuationKey ContinuationKey =>
-            Options?.ContinuationKey;
 
         /// <summary>
         /// Gets the query SQL statement.

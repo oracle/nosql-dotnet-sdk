@@ -175,6 +175,8 @@ namespace Oracle.NoSQL.SDK
 
         internal NoSQLConfig Config => Client.Config;
 
+        internal virtual short MinProtocolVersion => 0;
+
         /// <summary>
         /// Gets the list of exceptions that occurred while retrying the
         /// operation.

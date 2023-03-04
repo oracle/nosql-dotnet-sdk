@@ -66,6 +66,23 @@ namespace Oracle.NoSQL.SDK
         public Consistency? Consistency { get; set; }
 
         /// <summary>
+        /// On-premise only.
+        /// Gets or sets <see cref="Durability"/> value to use for the
+        /// update query operation.
+        /// </summary>
+        /// <remarks>
+        /// This option only applies for update queries, i.e. queries issued
+        /// via INSERT, UPDATE, UPSERT and DELETE statements.  For read-only
+        /// SELECT queries this option is ignored.
+        /// </remarks>
+        /// <value>
+        /// Durability used for the update query operation.  If not set,
+        /// defaults to <see cref="NoSQLConfig.Durability"/>.
+        /// </value>
+        /// <seealso cref="Durability"/>
+        public Durability? Durability { get; set; }
+
+        /// <summary>
         /// Gets or sets the limit on the number of rows returned by this
         /// operation.
         /// </summary>
@@ -191,6 +208,7 @@ namespace Oracle.NoSQL.SDK
         {
             CheckTimeout(Timeout);
             CheckEnumValue(Consistency);
+            Durability?.Validate();
             CheckPositiveInt32(Limit, nameof(Limit));
             CheckPositiveInt32(MaxReadKB, nameof(MaxReadKB));
             CheckPositiveInt32(MaxWriteKB, nameof(MaxWriteKB));

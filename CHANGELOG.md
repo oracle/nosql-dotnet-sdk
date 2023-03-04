@@ -4,6 +4,32 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## Unpublished
+
+**Added**
+
+* Support for new, flexible wire protocol (V4) has been added. The previous
+protocol is still supported for communication with servers that do not yet
+support V4. The version negotation is internal and automatic; however, use
+of new V4 features will not work at runtime when attempted with an older
+server: options new to V4 will be ignored, result properties new to V4 will be
+null or default and new APIs added in V4 will throw NotSupportedException.
+The following new features or interfaces depend on the new protocol version:
+ - added Durability to QueryOptions for queries that modify data
+ - added pagination properties to TableUsageResult and GetTableUsageOptions
+ - added new API GetTableUsageAsyncEnumerable to asynchronously iterate over
+table usage records
+ - added shard percent usage information to TableUsageResult
+ - added IndexResult.FieldTypes to return the type information on an index on
+a JSON field
+ - added the ability to ask for and receive the schema of a query using
+properties PrepareOptions.GetResultSchema and PreparedStatement.ResultSchema
+ - Cloud only: added use of etags, defined tags and free-form tags in APIs
+ExecuteTableDDLAsync and GetTableAsync (including their variants)
+ - Cloud only: added new APIs SetTableTagsAsync and
+SetTableTagsWithCompletionAsync to apply defined tags and free-form tags to a
+table
+
 ## [5.1.5]
 
 **Added**

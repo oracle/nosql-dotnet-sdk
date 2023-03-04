@@ -24,6 +24,7 @@ namespace Oracle.NoSQL.SDK.Tests
     using System.Diagnostics;
     using System.Security.Cryptography;
     using System.Text.Json;
+    using System.Text.RegularExpressions;
     using System.Threading;
     using System.Threading.Tasks;
     using static Utils;
@@ -153,13 +154,18 @@ namespace Oracle.NoSQL.SDK.Tests
         internal static bool IsCloudSim =>
             client.Config.ServiceType == ServiceType.CloudSim;
 
+        internal static bool IsCloud =>
+            client.Config.ServiceType == ServiceType.Cloud;
+
         internal static bool IsAbsoluteConsistency =>
             client.Config.Consistency == Consistency.Absolute;
 
         internal static short SerialVersion =>
-            client.Serializer.SerialVersion;
+            client.ProtocolHandler.SerialVersion;
 
         internal static bool IsProtocolV3OrAbove => SerialVersion >= 3;
+
+        internal static bool IsProtocolV4OrAbove => SerialVersion >= 4;
 
         internal static bool IsServerLocal => client.Config.Uri.IsLoopback;
 
@@ -346,12 +352,29 @@ namespace Oracle.NoSQL.SDK.Tests
 
             if (IsOnPrem)
             {
+                Assert.IsNull(result.TableOCID);
                 Assert.IsNull(result.TableLimits);
             }
-            else if (!ignoreTableLimits)
+            else
             {
-                VerifyTableLimits(newTableLimits ?? table.TableLimits,
-                    result.TableLimits);
+                if (IsProtocolV4OrAbove && IsCloud)
+                {
+                    Assert.IsNotNull(result.TableOCID);
+                    Assert.IsTrue(SDK.Utils.IsValidOCID(result.TableOCID));
+                }
+
+                if (!ignoreTableLimits)
+                {
+                    VerifyTableLimits(newTableLimits ?? table.TableLimits,
+                        result.TableLimits);
+                }
+            }
+
+            if (result.TableDDL != null)
+            {
+                Assert.IsTrue(Regex.IsMatch(result.TableDDL,
+                    @"^\s*CREATE\s+TABLE\s+",
+                    RegexOptions.IgnoreCase));
             }
 
             if (result.TableSchema != null)

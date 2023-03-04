@@ -24,24 +24,8 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
         // of the latter limited range.  In this case we try to parse them as
         // double.  This might lose precision but there is no other choice at
         // this time.
-        private static FieldValue ReadNumberValue(MemoryStream stream)
-        {
-            var stringValue = ReadString(stream);
-            if (decimal.TryParse(stringValue, NumberStyles.Any, null,
-                    out var decimalResult))
-            {
-                return decimalResult;
-            }
-
-            if (double.TryParse(stringValue, NumberStyles.Any, null,
-                    out var doubleResult))
-            {
-                return doubleResult;
-            }
-
-            throw new BadProtocolException(
-                $"Invalid number value string: {stringValue}");
-        }
+        private static FieldValue ReadNumberValue(MemoryStream stream) =>
+            GetNumberValue(ReadString(stream));
 
         private static void ReadMap(MemoryStream stream,
             MapValue mapValue)

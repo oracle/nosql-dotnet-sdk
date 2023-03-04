@@ -116,6 +116,12 @@ namespace Oracle.NoSQL.SDK.Tests
                     Consistency = consistency
                 })
             .Concat(
+                from durability in BadDurabilities
+                select new QueryOptions
+                {
+                    Durability = durability
+                })
+            .Concat(
                 from limit in BadPositiveInt32
                 select new QueryOptions
                 {
