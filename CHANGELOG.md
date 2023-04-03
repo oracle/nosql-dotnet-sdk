@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 **Added**
 
+* New regions for cloud service: mty, str, beg, vll, yum
+
 * Support for new, flexible wire protocol (V4) has been added. The previous
 protocol is still supported for communication with servers that do not yet
 support V4. The version negotation is internal and automatic; however, use
