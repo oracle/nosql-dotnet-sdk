@@ -132,6 +132,12 @@ namespace Oracle.NoSQL.SDK
         private static readonly Realm OC17 = new Realm("oc17",
             "oraclecloud17.com");
 
+        private static readonly Realm OC19 = new Realm("oc19",
+            "oraclecloud.eu");
+
+        private static readonly Realm OC20 = new Realm("oc20",
+            "oraclecloud20.com");
+
         private readonly Realm realm;
 
         private Region(string regionId, string regionCode, Realm realm)
@@ -431,6 +437,12 @@ namespace Oracle.NoSQL.SDK
             "mx-queretaro-1", "qro", OC1);
 
         /// <summary>
+        /// Realm: OC1, <location> (subloc)
+        /// </summary>
+        public static readonly Region MX_MONTERREY_1 = new Region(
+            "mx-monterrey-1", "mty", OC1);
+
+        /// <summary>
         /// Realm: OC1, Israel (Jerusalem)
         /// </summary>
         public static readonly Region IL_JERUSALEM_1 = new Region(
@@ -622,6 +634,30 @@ namespace Oracle.NoSQL.SDK
         /// </summary>
         public static readonly Region US_DCC_PHOENIX_2 = new Region(
             "us-dcc-phoenix-2", "gcn", OC17);
+
+        /// <summary>
+        /// Realm: OC17, US West (Phoenix)
+        /// </summary>
+        public static readonly Region US_DCC_PHOENIX_4 = new Region(
+            "us-dcc-phoenix-4", "yum", OC17);
+
+        /// <summary>
+        /// Realm: OC19, Germany (Frankfurt)
+        /// </summary>
+        public static readonly Region EU_FRANKFURT_2 = new Region(
+            "eu-frankfurt-2", "str", OC19);
+
+        /// <summary>
+        /// Realm: OC19, Spain (Madrid)
+        /// </summary>
+        public static readonly Region EU_MADRID_2 = new Region(
+            "eu-madrid-2", "vll", OC19);
+
+        /// <summary>
+        /// Realm: OC20, Serbia
+        /// </summary>
+        public static readonly Region EU_JOVANOVAC_1 = new Region(
+            "eu-jovanovac-1", "beg", OC20);
 
     }
 }
