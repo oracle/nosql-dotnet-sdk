@@ -60,7 +60,8 @@ See the
 [API and user guide documentation](https://oracle.github.io/nosql-dotnet-sdk/).
 
 ## Changes
-See [Changelog](./CHANGELOG.md) for changes in each release.
+See [Changelog](https://github.com/oracle/nosql-dotnet-sdk/blob/main/CHANGELOG.md)
+for changes in each release.
 
 ## Getting Started
 
@@ -385,7 +386,7 @@ This builds nuget package *Oracle.NoSQL.SDK.<version>.nupkg* in
 ## Help
 
 * Open an issue in the [Issues](https://github.com/oracle/nosql-dotnet-sdk/issues) page.
-* [Email to nosql\_sdk\_help\_grp@oracle.com](mailto:nosql_sdk_help_grp@oracle.com)
+* Email to <nosql_sdk_help_grp@oracle.com>.
 * [Oracle NoSQL Developer Forum](https://community.oracle.com/community/groundbreakers/database/nosql_database)
 
 When requesting help please be sure to include as much detail as possible,
@@ -393,21 +394,31 @@ including version of the SDK and **simple**, standalone example code as needed.
 
 ## License
 
-Please see the [LICENSE](LICENSE.txt) file included in the top-level directory of the
-package for a copy of the license and additional information.
+Please see the
+[LICENSE](https://github.com/oracle/nosql-dotnet-sdk/blob/main/LICENSE.txt)
+file included in the top-level directory of the package for a copy of the
+license and additional information.
 
-The [THIRD\_PARTY\_LICENSES](THIRD_PARTY_LICENSES.txt) file contains third
-party notices and licenses.
+The
+[THIRD\_PARTY\_LICENSES](https://github.com/oracle/nosql-dotnet-sdk/blob/main/THIRD_PARTY_LICENSES.txt)
+file contains third party notices and licenses.
 
-The [THIRD\_PARTY\_LICENSES\_DEV](THIRD_PARTY_LICENSES_DEV.txt) file contains third
-party notices and licenses for running the test programs.
+The
+[THIRD\_PARTY\_LICENSES\_DEV](https://github.com/oracle/nosql-dotnet-sdk/blob/main/THIRD_PARTY_LICENSES_DEV.txt)
+file contains third party notices and licenses for running the test programs.
 
 The *Documentation* directory contains the license files for the documentation.
 If you build and distribute a documentation bundle, these should be included in
 that bundle.
 
 ## Contributing
-See [CONTRIBUTING](./CONTRIBUTING.md) for details.
+
+See
+[CONTRIBUTING](https://github.com/oracle/nosql-dotnet-sdk/blob/main/CONTRIBUTING.md)
+for details.
 
 ## Security
-See [SECURITY](./SECURITY.md) for details.
+
+See
+[SECURITY](https://github.com/oracle/nosql-dotnet-sdk/blob/main/SECURITY.md)
+for details.
