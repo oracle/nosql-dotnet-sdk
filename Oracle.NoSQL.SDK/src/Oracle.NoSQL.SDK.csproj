@@ -17,7 +17,7 @@
     <PackageReleaseNotes>Initial release.
     </PackageReleaseNotes>
     <PackageIcon>Icon.png</PackageIcon>
-    <Version>5.1.5</Version>
+    <Version>5.2.0</Version>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
   </PropertyGroup>
 
