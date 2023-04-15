@@ -2940,6 +2940,18 @@ references:
   commentId: Overload:Oracle.NoSQL.SDK.GetTableUsageOptions.EndTime
   fullName: Oracle.NoSQL.SDK.GetTableUsageOptions.EndTime
   nameWithType: GetTableUsageOptions.EndTime
+- uid: Oracle.NoSQL.SDK.GetTableUsageOptions.FromIndex
+  name: FromIndex
+  href: api/Oracle.NoSQL.SDK.GetTableUsageOptions.FromIndex.html#Oracle_NoSQL_SDK_GetTableUsageOptions_FromIndex
+  commentId: P:Oracle.NoSQL.SDK.GetTableUsageOptions.FromIndex
+  fullName: Oracle.NoSQL.SDK.GetTableUsageOptions.FromIndex
+  nameWithType: GetTableUsageOptions.FromIndex
+- uid: Oracle.NoSQL.SDK.GetTableUsageOptions.FromIndex*
+  name: FromIndex
+  href: api/Oracle.NoSQL.SDK.GetTableUsageOptions.FromIndex.html
+  commentId: Overload:Oracle.NoSQL.SDK.GetTableUsageOptions.FromIndex
+  fullName: Oracle.NoSQL.SDK.GetTableUsageOptions.FromIndex
+  nameWithType: GetTableUsageOptions.FromIndex
 - uid: Oracle.NoSQL.SDK.GetTableUsageOptions.Limit
   name: Limit
   href: api/Oracle.NoSQL.SDK.GetTableUsageOptions.Limit.html#Oracle_NoSQL_SDK_GetTableUsageOptions_Limit
@@ -3510,6 +3522,18 @@ references:
   commentId: Overload:Oracle.NoSQL.SDK.IndexResult.Fields
   fullName: Oracle.NoSQL.SDK.IndexResult.Fields
   nameWithType: IndexResult.Fields
+- uid: Oracle.NoSQL.SDK.IndexResult.FieldTypes
+  name: FieldTypes
+  href: api/Oracle.NoSQL.SDK.IndexResult.FieldTypes.html#Oracle_NoSQL_SDK_IndexResult_FieldTypes
+  commentId: P:Oracle.NoSQL.SDK.IndexResult.FieldTypes
+  fullName: Oracle.NoSQL.SDK.IndexResult.FieldTypes
+  nameWithType: IndexResult.FieldTypes
+- uid: Oracle.NoSQL.SDK.IndexResult.FieldTypes*
+  name: FieldTypes
+  href: api/Oracle.NoSQL.SDK.IndexResult.FieldTypes.html
+  commentId: Overload:Oracle.NoSQL.SDK.IndexResult.FieldTypes
+  fullName: Oracle.NoSQL.SDK.IndexResult.FieldTypes
+  nameWithType: IndexResult.FieldTypes
 - uid: Oracle.NoSQL.SDK.IndexResult.IndexName
   name: IndexName
   href: api/Oracle.NoSQL.SDK.IndexResult.IndexName.html#Oracle_NoSQL_SDK_IndexResult_IndexName
@@ -4905,6 +4929,27 @@ references:
   commentId: Overload:Oracle.NoSQL.SDK.NoSQLClient.GetTableUsageAsync
   fullName: Oracle.NoSQL.SDK.NoSQLClient.GetTableUsageAsync
   nameWithType: NoSQLClient.GetTableUsageAsync
+- uid: Oracle.NoSQL.SDK.NoSQLClient.GetTableUsageAsyncEnumerable(System.String,Oracle.NoSQL.SDK.GetTableUsageOptions,System.Threading.CancellationToken)
+  name: GetTableUsageAsyncEnumerable(String, GetTableUsageOptions, CancellationToken)
+  href: api/Oracle.NoSQL.SDK.NoSQLClient.GetTableUsageAsyncEnumerable.html#Oracle_NoSQL_SDK_NoSQLClient_GetTableUsageAsyncEnumerable_System_String_Oracle_NoSQL_SDK_GetTableUsageOptions_System_Threading_CancellationToken_
+  commentId: M:Oracle.NoSQL.SDK.NoSQLClient.GetTableUsageAsyncEnumerable(System.String,Oracle.NoSQL.SDK.GetTableUsageOptions,System.Threading.CancellationToken)
+  fullName: Oracle.NoSQL.SDK.NoSQLClient.GetTableUsageAsyncEnumerable(System.String, Oracle.NoSQL.SDK.GetTableUsageOptions, System.Threading.CancellationToken)
+  nameWithType: NoSQLClient.GetTableUsageAsyncEnumerable(String, GetTableUsageOptions, CancellationToken)
+- uid: Oracle.NoSQL.SDK.NoSQLClient.GetTableUsageAsyncEnumerable(System.String,System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Nullable{System.Int32},System.Threading.CancellationToken)
+  name: GetTableUsageAsyncEnumerable(String, Nullable<DateTime>, Nullable<DateTime>, Nullable<Int32>, CancellationToken)
+  href: api/Oracle.NoSQL.SDK.NoSQLClient.GetTableUsageAsyncEnumerable.html#Oracle_NoSQL_SDK_NoSQLClient_GetTableUsageAsyncEnumerable_System_String_System_Nullable_System_DateTime__System_Nullable_System_DateTime__System_Nullable_System_Int32__System_Threading_CancellationToken_
+  commentId: M:Oracle.NoSQL.SDK.NoSQLClient.GetTableUsageAsyncEnumerable(System.String,System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.Nullable{System.Int32},System.Threading.CancellationToken)
+  name.vb: GetTableUsageAsyncEnumerable(String, Nullable(Of DateTime), Nullable(Of DateTime), Nullable(Of Int32), CancellationToken)
+  fullName: Oracle.NoSQL.SDK.NoSQLClient.GetTableUsageAsyncEnumerable(System.String, System.Nullable<System.DateTime>, System.Nullable<System.DateTime>, System.Nullable<System.Int32>, System.Threading.CancellationToken)
+  fullName.vb: Oracle.NoSQL.SDK.NoSQLClient.GetTableUsageAsyncEnumerable(System.String, System.Nullable(Of System.DateTime), System.Nullable(Of System.DateTime), System.Nullable(Of System.Int32), System.Threading.CancellationToken)
+  nameWithType: NoSQLClient.GetTableUsageAsyncEnumerable(String, Nullable<DateTime>, Nullable<DateTime>, Nullable<Int32>, CancellationToken)
+  nameWithType.vb: NoSQLClient.GetTableUsageAsyncEnumerable(String, Nullable(Of DateTime), Nullable(Of DateTime), Nullable(Of Int32), CancellationToken)
+- uid: Oracle.NoSQL.SDK.NoSQLClient.GetTableUsageAsyncEnumerable*
+  name: GetTableUsageAsyncEnumerable
+  href: api/Oracle.NoSQL.SDK.NoSQLClient.GetTableUsageAsyncEnumerable.html
+  commentId: Overload:Oracle.NoSQL.SDK.NoSQLClient.GetTableUsageAsyncEnumerable
+  fullName: Oracle.NoSQL.SDK.NoSQLClient.GetTableUsageAsyncEnumerable
+  nameWithType: NoSQLClient.GetTableUsageAsyncEnumerable
 - uid: Oracle.NoSQL.SDK.NoSQLClient.ListNamespacesAsync(Oracle.NoSQL.SDK.AdminOptions,System.Threading.CancellationToken)
   name: ListNamespacesAsync(AdminOptions, CancellationToken)
   href: api/Oracle.NoSQL.SDK.NoSQLClient.ListNamespacesAsync.html#Oracle_NoSQL_SDK_NoSQLClient_ListNamespacesAsync_Oracle_NoSQL_SDK_AdminOptions_System_Threading_CancellationToken_
@@ -5094,6 +5139,36 @@ references:
   commentId: Overload:Oracle.NoSQL.SDK.NoSQLClient.SetTableLimitsWithCompletionAsync
   fullName: Oracle.NoSQL.SDK.NoSQLClient.SetTableLimitsWithCompletionAsync
   nameWithType: NoSQLClient.SetTableLimitsWithCompletionAsync
+- uid: Oracle.NoSQL.SDK.NoSQLClient.SetTableTagsAsync(System.String,System.Collections.Generic.IDictionary{System.String,System.Collections.Generic.IDictionary{System.String,System.String}},System.Collections.Generic.IDictionary{System.String,System.String},Oracle.NoSQL.SDK.TableDDLOptions,System.Threading.CancellationToken)
+  name: SetTableTagsAsync(String, IDictionary<String, IDictionary<String, String>>, IDictionary<String, String>, TableDDLOptions, CancellationToken)
+  href: api/Oracle.NoSQL.SDK.NoSQLClient.SetTableTagsAsync.html#Oracle_NoSQL_SDK_NoSQLClient_SetTableTagsAsync_System_String_System_Collections_Generic_IDictionary_System_String_System_Collections_Generic_IDictionary_System_String_System_String___System_Collections_Generic_IDictionary_System_String_System_String__Oracle_NoSQL_SDK_TableDDLOptions_System_Threading_CancellationToken_
+  commentId: M:Oracle.NoSQL.SDK.NoSQLClient.SetTableTagsAsync(System.String,System.Collections.Generic.IDictionary{System.String,System.Collections.Generic.IDictionary{System.String,System.String}},System.Collections.Generic.IDictionary{System.String,System.String},Oracle.NoSQL.SDK.TableDDLOptions,System.Threading.CancellationToken)
+  name.vb: SetTableTagsAsync(String, IDictionary(Of String, IDictionary(Of String, String)), IDictionary(Of String, String), TableDDLOptions, CancellationToken)
+  fullName: Oracle.NoSQL.SDK.NoSQLClient.SetTableTagsAsync(System.String, System.Collections.Generic.IDictionary<System.String, System.Collections.Generic.IDictionary<System.String, System.String>>, System.Collections.Generic.IDictionary<System.String, System.String>, Oracle.NoSQL.SDK.TableDDLOptions, System.Threading.CancellationToken)
+  fullName.vb: Oracle.NoSQL.SDK.NoSQLClient.SetTableTagsAsync(System.String, System.Collections.Generic.IDictionary(Of System.String, System.Collections.Generic.IDictionary(Of System.String, System.String)), System.Collections.Generic.IDictionary(Of System.String, System.String), Oracle.NoSQL.SDK.TableDDLOptions, System.Threading.CancellationToken)
+  nameWithType: NoSQLClient.SetTableTagsAsync(String, IDictionary<String, IDictionary<String, String>>, IDictionary<String, String>, TableDDLOptions, CancellationToken)
+  nameWithType.vb: NoSQLClient.SetTableTagsAsync(String, IDictionary(Of String, IDictionary(Of String, String)), IDictionary(Of String, String), TableDDLOptions, CancellationToken)
+- uid: Oracle.NoSQL.SDK.NoSQLClient.SetTableTagsAsync*
+  name: SetTableTagsAsync
+  href: api/Oracle.NoSQL.SDK.NoSQLClient.SetTableTagsAsync.html
+  commentId: Overload:Oracle.NoSQL.SDK.NoSQLClient.SetTableTagsAsync
+  fullName: Oracle.NoSQL.SDK.NoSQLClient.SetTableTagsAsync
+  nameWithType: NoSQLClient.SetTableTagsAsync
+- uid: Oracle.NoSQL.SDK.NoSQLClient.SetTableTagsWithCompletionAsync(System.String,System.Collections.Generic.IDictionary{System.String,System.Collections.Generic.IDictionary{System.String,System.String}},System.Collections.Generic.IDictionary{System.String,System.String},Oracle.NoSQL.SDK.TableDDLOptions,System.Threading.CancellationToken)
+  name: SetTableTagsWithCompletionAsync(String, IDictionary<String, IDictionary<String, String>>, IDictionary<String, String>, TableDDLOptions, CancellationToken)
+  href: api/Oracle.NoSQL.SDK.NoSQLClient.SetTableTagsWithCompletionAsync.html#Oracle_NoSQL_SDK_NoSQLClient_SetTableTagsWithCompletionAsync_System_String_System_Collections_Generic_IDictionary_System_String_System_Collections_Generic_IDictionary_System_String_System_String___System_Collections_Generic_IDictionary_System_String_System_String__Oracle_NoSQL_SDK_TableDDLOptions_System_Threading_CancellationToken_
+  commentId: M:Oracle.NoSQL.SDK.NoSQLClient.SetTableTagsWithCompletionAsync(System.String,System.Collections.Generic.IDictionary{System.String,System.Collections.Generic.IDictionary{System.String,System.String}},System.Collections.Generic.IDictionary{System.String,System.String},Oracle.NoSQL.SDK.TableDDLOptions,System.Threading.CancellationToken)
+  name.vb: SetTableTagsWithCompletionAsync(String, IDictionary(Of String, IDictionary(Of String, String)), IDictionary(Of String, String), TableDDLOptions, CancellationToken)
+  fullName: Oracle.NoSQL.SDK.NoSQLClient.SetTableTagsWithCompletionAsync(System.String, System.Collections.Generic.IDictionary<System.String, System.Collections.Generic.IDictionary<System.String, System.String>>, System.Collections.Generic.IDictionary<System.String, System.String>, Oracle.NoSQL.SDK.TableDDLOptions, System.Threading.CancellationToken)
+  fullName.vb: Oracle.NoSQL.SDK.NoSQLClient.SetTableTagsWithCompletionAsync(System.String, System.Collections.Generic.IDictionary(Of System.String, System.Collections.Generic.IDictionary(Of System.String, System.String)), System.Collections.Generic.IDictionary(Of System.String, System.String), Oracle.NoSQL.SDK.TableDDLOptions, System.Threading.CancellationToken)
+  nameWithType: NoSQLClient.SetTableTagsWithCompletionAsync(String, IDictionary<String, IDictionary<String, String>>, IDictionary<String, String>, TableDDLOptions, CancellationToken)
+  nameWithType.vb: NoSQLClient.SetTableTagsWithCompletionAsync(String, IDictionary(Of String, IDictionary(Of String, String)), IDictionary(Of String, String), TableDDLOptions, CancellationToken)
+- uid: Oracle.NoSQL.SDK.NoSQLClient.SetTableTagsWithCompletionAsync*
+  name: SetTableTagsWithCompletionAsync
+  href: api/Oracle.NoSQL.SDK.NoSQLClient.SetTableTagsWithCompletionAsync.html
+  commentId: Overload:Oracle.NoSQL.SDK.NoSQLClient.SetTableTagsWithCompletionAsync
+  fullName: Oracle.NoSQL.SDK.NoSQLClient.SetTableTagsWithCompletionAsync
+  nameWithType: NoSQLClient.SetTableTagsWithCompletionAsync
 - uid: Oracle.NoSQL.SDK.NoSQLClient.WaitForTableStateAsync(System.String,Oracle.NoSQL.SDK.TableState,Oracle.NoSQL.SDK.TableCompletionOptions,System.Threading.CancellationToken)
   name: WaitForTableStateAsync(String, TableState, TableCompletionOptions, CancellationToken)
   href: api/Oracle.NoSQL.SDK.NoSQLClient.WaitForTableStateAsync.html#Oracle_NoSQL_SDK_NoSQLClient_WaitForTableStateAsync_System_String_Oracle_NoSQL_SDK_TableState_Oracle_NoSQL_SDK_TableCompletionOptions_System_Threading_CancellationToken_
@@ -5790,6 +5865,18 @@ references:
   commentId: Overload:Oracle.NoSQL.SDK.PreparedStatement.QueryPlan
   fullName: Oracle.NoSQL.SDK.PreparedStatement.QueryPlan
   nameWithType: PreparedStatement.QueryPlan
+- uid: Oracle.NoSQL.SDK.PreparedStatement.ResultSchema
+  name: ResultSchema
+  href: api/Oracle.NoSQL.SDK.PreparedStatement.ResultSchema.html#Oracle_NoSQL_SDK_PreparedStatement_ResultSchema
+  commentId: P:Oracle.NoSQL.SDK.PreparedStatement.ResultSchema
+  fullName: Oracle.NoSQL.SDK.PreparedStatement.ResultSchema
+  nameWithType: PreparedStatement.ResultSchema
+- uid: Oracle.NoSQL.SDK.PreparedStatement.ResultSchema*
+  name: ResultSchema
+  href: api/Oracle.NoSQL.SDK.PreparedStatement.ResultSchema.html
+  commentId: Overload:Oracle.NoSQL.SDK.PreparedStatement.ResultSchema
+  fullName: Oracle.NoSQL.SDK.PreparedStatement.ResultSchema
+  nameWithType: PreparedStatement.ResultSchema
 - uid: Oracle.NoSQL.SDK.PreparedStatement.SetVariable(System.Int32,Oracle.NoSQL.SDK.FieldValue)
   name: SetVariable(Int32, FieldValue)
   href: api/Oracle.NoSQL.SDK.PreparedStatement.SetVariable.html#Oracle_NoSQL_SDK_PreparedStatement_SetVariable_System_Int32_Oracle_NoSQL_SDK_FieldValue_
@@ -5874,6 +5961,18 @@ references:
   commentId: Overload:Oracle.NoSQL.SDK.PrepareOptions.GetQueryPlan
   fullName: Oracle.NoSQL.SDK.PrepareOptions.GetQueryPlan
   nameWithType: PrepareOptions.GetQueryPlan
+- uid: Oracle.NoSQL.SDK.PrepareOptions.GetResultSchema
+  name: GetResultSchema
+  href: api/Oracle.NoSQL.SDK.PrepareOptions.GetResultSchema.html#Oracle_NoSQL_SDK_PrepareOptions_GetResultSchema
+  commentId: P:Oracle.NoSQL.SDK.PrepareOptions.GetResultSchema
+  fullName: Oracle.NoSQL.SDK.PrepareOptions.GetResultSchema
+  nameWithType: PrepareOptions.GetResultSchema
+- uid: Oracle.NoSQL.SDK.PrepareOptions.GetResultSchema*
+  name: GetResultSchema
+  href: api/Oracle.NoSQL.SDK.PrepareOptions.GetResultSchema.html
+  commentId: Overload:Oracle.NoSQL.SDK.PrepareOptions.GetResultSchema
+  fullName: Oracle.NoSQL.SDK.PrepareOptions.GetResultSchema
+  nameWithType: PrepareOptions.GetResultSchema
 - uid: Oracle.NoSQL.SDK.PrepareOptions.Timeout
   name: Timeout
   href: api/Oracle.NoSQL.SDK.PrepareOptions.Timeout.html#Oracle_NoSQL_SDK_PrepareOptions_Timeout
@@ -6461,6 +6560,18 @@ references:
   commentId: Overload:Oracle.NoSQL.SDK.QueryOptions.ContinuationKey
   fullName: Oracle.NoSQL.SDK.QueryOptions.ContinuationKey
   nameWithType: QueryOptions.ContinuationKey
+- uid: Oracle.NoSQL.SDK.QueryOptions.Durability
+  name: Durability
+  href: api/Oracle.NoSQL.SDK.QueryOptions.Durability.html#Oracle_NoSQL_SDK_QueryOptions_Durability
+  commentId: P:Oracle.NoSQL.SDK.QueryOptions.Durability
+  fullName: Oracle.NoSQL.SDK.QueryOptions.Durability
+  nameWithType: QueryOptions.Durability
+- uid: Oracle.NoSQL.SDK.QueryOptions.Durability*
+  name: Durability
+  href: api/Oracle.NoSQL.SDK.QueryOptions.Durability.html
+  commentId: Overload:Oracle.NoSQL.SDK.QueryOptions.Durability
+  fullName: Oracle.NoSQL.SDK.QueryOptions.Durability
+  nameWithType: QueryOptions.Durability
 - uid: Oracle.NoSQL.SDK.QueryOptions.Limit
   name: Limit
   href: api/Oracle.NoSQL.SDK.QueryOptions.Limit.html#Oracle_NoSQL_SDK_QueryOptions_Limit
@@ -6922,12 +7033,42 @@ references:
   commentId: F:Oracle.NoSQL.SDK.Region.EU_AMSTERDAM_1
   fullName: Oracle.NoSQL.SDK.Region.EU_AMSTERDAM_1
   nameWithType: Region.EU_AMSTERDAM_1
+- uid: Oracle.NoSQL.SDK.Region.EU_DCC_DUBLIN_1
+  name: EU_DCC_DUBLIN_1
+  href: api/Oracle.NoSQL.SDK.Region.EU_DCC_DUBLIN_1.html#Oracle_NoSQL_SDK_Region_EU_DCC_DUBLIN_1
+  commentId: F:Oracle.NoSQL.SDK.Region.EU_DCC_DUBLIN_1
+  fullName: Oracle.NoSQL.SDK.Region.EU_DCC_DUBLIN_1
+  nameWithType: Region.EU_DCC_DUBLIN_1
+- uid: Oracle.NoSQL.SDK.Region.EU_DCC_DUBLIN_2
+  name: EU_DCC_DUBLIN_2
+  href: api/Oracle.NoSQL.SDK.Region.EU_DCC_DUBLIN_2.html#Oracle_NoSQL_SDK_Region_EU_DCC_DUBLIN_2
+  commentId: F:Oracle.NoSQL.SDK.Region.EU_DCC_DUBLIN_2
+  fullName: Oracle.NoSQL.SDK.Region.EU_DCC_DUBLIN_2
+  nameWithType: Region.EU_DCC_DUBLIN_2
 - uid: Oracle.NoSQL.SDK.Region.EU_DCC_MILAN_1
   name: EU_DCC_MILAN_1
   href: api/Oracle.NoSQL.SDK.Region.EU_DCC_MILAN_1.html#Oracle_NoSQL_SDK_Region_EU_DCC_MILAN_1
   commentId: F:Oracle.NoSQL.SDK.Region.EU_DCC_MILAN_1
   fullName: Oracle.NoSQL.SDK.Region.EU_DCC_MILAN_1
   nameWithType: Region.EU_DCC_MILAN_1
+- uid: Oracle.NoSQL.SDK.Region.EU_DCC_MILAN_2
+  name: EU_DCC_MILAN_2
+  href: api/Oracle.NoSQL.SDK.Region.EU_DCC_MILAN_2.html#Oracle_NoSQL_SDK_Region_EU_DCC_MILAN_2
+  commentId: F:Oracle.NoSQL.SDK.Region.EU_DCC_MILAN_2
+  fullName: Oracle.NoSQL.SDK.Region.EU_DCC_MILAN_2
+  nameWithType: Region.EU_DCC_MILAN_2
+- uid: Oracle.NoSQL.SDK.Region.EU_DCC_RATING_1
+  name: EU_DCC_RATING_1
+  href: api/Oracle.NoSQL.SDK.Region.EU_DCC_RATING_1.html#Oracle_NoSQL_SDK_Region_EU_DCC_RATING_1
+  commentId: F:Oracle.NoSQL.SDK.Region.EU_DCC_RATING_1
+  fullName: Oracle.NoSQL.SDK.Region.EU_DCC_RATING_1
+  nameWithType: Region.EU_DCC_RATING_1
+- uid: Oracle.NoSQL.SDK.Region.EU_DCC_RATING_2
+  name: EU_DCC_RATING_2
+  href: api/Oracle.NoSQL.SDK.Region.EU_DCC_RATING_2.html#Oracle_NoSQL_SDK_Region_EU_DCC_RATING_2
+  commentId: F:Oracle.NoSQL.SDK.Region.EU_DCC_RATING_2
+  fullName: Oracle.NoSQL.SDK.Region.EU_DCC_RATING_2
+  nameWithType: Region.EU_DCC_RATING_2
 - uid: Oracle.NoSQL.SDK.Region.EU_FRANKFURT_1
   name: EU_FRANKFURT_1
   href: api/Oracle.NoSQL.SDK.Region.EU_FRANKFURT_1.html#Oracle_NoSQL_SDK_Region_EU_FRANKFURT_1
@@ -7132,6 +7273,18 @@ references:
   commentId: F:Oracle.NoSQL.SDK.Region.US_CHICAGO_1
   fullName: Oracle.NoSQL.SDK.Region.US_CHICAGO_1
   nameWithType: Region.US_CHICAGO_1
+- uid: Oracle.NoSQL.SDK.Region.US_DCC_PHOENIX_1
+  name: US_DCC_PHOENIX_1
+  href: api/Oracle.NoSQL.SDK.Region.US_DCC_PHOENIX_1.html#Oracle_NoSQL_SDK_Region_US_DCC_PHOENIX_1
+  commentId: F:Oracle.NoSQL.SDK.Region.US_DCC_PHOENIX_1
+  fullName: Oracle.NoSQL.SDK.Region.US_DCC_PHOENIX_1
+  nameWithType: Region.US_DCC_PHOENIX_1
+- uid: Oracle.NoSQL.SDK.Region.US_DCC_PHOENIX_2
+  name: US_DCC_PHOENIX_2
+  href: api/Oracle.NoSQL.SDK.Region.US_DCC_PHOENIX_2.html#Oracle_NoSQL_SDK_Region_US_DCC_PHOENIX_2
+  commentId: F:Oracle.NoSQL.SDK.Region.US_DCC_PHOENIX_2
+  fullName: Oracle.NoSQL.SDK.Region.US_DCC_PHOENIX_2
+  nameWithType: Region.US_DCC_PHOENIX_2
 - uid: Oracle.NoSQL.SDK.Region.US_GOV_ASHBURN_1
   name: US_GOV_ASHBURN_1
   href: api/Oracle.NoSQL.SDK.Region.US_GOV_ASHBURN_1.html#Oracle_NoSQL_SDK_Region_US_GOV_ASHBURN_1
@@ -7180,6 +7333,12 @@ references:
   commentId: F:Oracle.NoSQL.SDK.Region.US_TACOMA_1
   fullName: Oracle.NoSQL.SDK.Region.US_TACOMA_1
   nameWithType: Region.US_TACOMA_1
+- uid: Oracle.NoSQL.SDK.Region.US_WESTJORDAN_1
+  name: US_WESTJORDAN_1
+  href: api/Oracle.NoSQL.SDK.Region.US_WESTJORDAN_1.html#Oracle_NoSQL_SDK_Region_US_WESTJORDAN_1
+  commentId: F:Oracle.NoSQL.SDK.Region.US_WESTJORDAN_1
+  fullName: Oracle.NoSQL.SDK.Region.US_WESTJORDAN_1
+  nameWithType: Region.US_WESTJORDAN_1
 - uid: Oracle.NoSQL.SDK.Region.Values
   name: Values
   href: api/Oracle.NoSQL.SDK.Region.Values.html#Oracle_NoSQL_SDK_Region_Values
@@ -7930,6 +8089,42 @@ references:
   commentId: Overload:Oracle.NoSQL.SDK.TableDDLOptions.Compartment
   fullName: Oracle.NoSQL.SDK.TableDDLOptions.Compartment
   nameWithType: TableDDLOptions.Compartment
+- uid: Oracle.NoSQL.SDK.TableDDLOptions.DefinedTags
+  name: DefinedTags
+  href: api/Oracle.NoSQL.SDK.TableDDLOptions.DefinedTags.html#Oracle_NoSQL_SDK_TableDDLOptions_DefinedTags
+  commentId: P:Oracle.NoSQL.SDK.TableDDLOptions.DefinedTags
+  fullName: Oracle.NoSQL.SDK.TableDDLOptions.DefinedTags
+  nameWithType: TableDDLOptions.DefinedTags
+- uid: Oracle.NoSQL.SDK.TableDDLOptions.DefinedTags*
+  name: DefinedTags
+  href: api/Oracle.NoSQL.SDK.TableDDLOptions.DefinedTags.html
+  commentId: Overload:Oracle.NoSQL.SDK.TableDDLOptions.DefinedTags
+  fullName: Oracle.NoSQL.SDK.TableDDLOptions.DefinedTags
+  nameWithType: TableDDLOptions.DefinedTags
+- uid: Oracle.NoSQL.SDK.TableDDLOptions.FreeFormTags
+  name: FreeFormTags
+  href: api/Oracle.NoSQL.SDK.TableDDLOptions.FreeFormTags.html#Oracle_NoSQL_SDK_TableDDLOptions_FreeFormTags
+  commentId: P:Oracle.NoSQL.SDK.TableDDLOptions.FreeFormTags
+  fullName: Oracle.NoSQL.SDK.TableDDLOptions.FreeFormTags
+  nameWithType: TableDDLOptions.FreeFormTags
+- uid: Oracle.NoSQL.SDK.TableDDLOptions.FreeFormTags*
+  name: FreeFormTags
+  href: api/Oracle.NoSQL.SDK.TableDDLOptions.FreeFormTags.html
+  commentId: Overload:Oracle.NoSQL.SDK.TableDDLOptions.FreeFormTags
+  fullName: Oracle.NoSQL.SDK.TableDDLOptions.FreeFormTags
+  nameWithType: TableDDLOptions.FreeFormTags
+- uid: Oracle.NoSQL.SDK.TableDDLOptions.MatchETag
+  name: MatchETag
+  href: api/Oracle.NoSQL.SDK.TableDDLOptions.MatchETag.html#Oracle_NoSQL_SDK_TableDDLOptions_MatchETag
+  commentId: P:Oracle.NoSQL.SDK.TableDDLOptions.MatchETag
+  fullName: Oracle.NoSQL.SDK.TableDDLOptions.MatchETag
+  nameWithType: TableDDLOptions.MatchETag
+- uid: Oracle.NoSQL.SDK.TableDDLOptions.MatchETag*
+  name: MatchETag
+  href: api/Oracle.NoSQL.SDK.TableDDLOptions.MatchETag.html
+  commentId: Overload:Oracle.NoSQL.SDK.TableDDLOptions.MatchETag
+  fullName: Oracle.NoSQL.SDK.TableDDLOptions.MatchETag
+  nameWithType: TableDDLOptions.MatchETag
 - uid: Oracle.NoSQL.SDK.TableDDLOptions.PollDelay
   name: PollDelay
   href: api/Oracle.NoSQL.SDK.TableDDLOptions.PollDelay.html#Oracle_NoSQL_SDK_TableDDLOptions_PollDelay
@@ -8206,6 +8401,66 @@ references:
   commentId: Overload:Oracle.NoSQL.SDK.TableResult.CompartmentId
   fullName: Oracle.NoSQL.SDK.TableResult.CompartmentId
   nameWithType: TableResult.CompartmentId
+- uid: Oracle.NoSQL.SDK.TableResult.DefinedTags
+  name: DefinedTags
+  href: api/Oracle.NoSQL.SDK.TableResult.DefinedTags.html#Oracle_NoSQL_SDK_TableResult_DefinedTags
+  commentId: P:Oracle.NoSQL.SDK.TableResult.DefinedTags
+  fullName: Oracle.NoSQL.SDK.TableResult.DefinedTags
+  nameWithType: TableResult.DefinedTags
+- uid: Oracle.NoSQL.SDK.TableResult.DefinedTags*
+  name: DefinedTags
+  href: api/Oracle.NoSQL.SDK.TableResult.DefinedTags.html
+  commentId: Overload:Oracle.NoSQL.SDK.TableResult.DefinedTags
+  fullName: Oracle.NoSQL.SDK.TableResult.DefinedTags
+  nameWithType: TableResult.DefinedTags
+- uid: Oracle.NoSQL.SDK.TableResult.ETag
+  name: ETag
+  href: api/Oracle.NoSQL.SDK.TableResult.ETag.html#Oracle_NoSQL_SDK_TableResult_ETag
+  commentId: P:Oracle.NoSQL.SDK.TableResult.ETag
+  fullName: Oracle.NoSQL.SDK.TableResult.ETag
+  nameWithType: TableResult.ETag
+- uid: Oracle.NoSQL.SDK.TableResult.ETag*
+  name: ETag
+  href: api/Oracle.NoSQL.SDK.TableResult.ETag.html
+  commentId: Overload:Oracle.NoSQL.SDK.TableResult.ETag
+  fullName: Oracle.NoSQL.SDK.TableResult.ETag
+  nameWithType: TableResult.ETag
+- uid: Oracle.NoSQL.SDK.TableResult.FreeFormTags
+  name: FreeFormTags
+  href: api/Oracle.NoSQL.SDK.TableResult.FreeFormTags.html#Oracle_NoSQL_SDK_TableResult_FreeFormTags
+  commentId: P:Oracle.NoSQL.SDK.TableResult.FreeFormTags
+  fullName: Oracle.NoSQL.SDK.TableResult.FreeFormTags
+  nameWithType: TableResult.FreeFormTags
+- uid: Oracle.NoSQL.SDK.TableResult.FreeFormTags*
+  name: FreeFormTags
+  href: api/Oracle.NoSQL.SDK.TableResult.FreeFormTags.html
+  commentId: Overload:Oracle.NoSQL.SDK.TableResult.FreeFormTags
+  fullName: Oracle.NoSQL.SDK.TableResult.FreeFormTags
+  nameWithType: TableResult.FreeFormTags
+- uid: Oracle.NoSQL.SDK.TableResult.Namespace
+  name: Namespace
+  href: api/Oracle.NoSQL.SDK.TableResult.Namespace.html#Oracle_NoSQL_SDK_TableResult_Namespace
+  commentId: P:Oracle.NoSQL.SDK.TableResult.Namespace
+  fullName: Oracle.NoSQL.SDK.TableResult.Namespace
+  nameWithType: TableResult.Namespace
+- uid: Oracle.NoSQL.SDK.TableResult.Namespace*
+  name: Namespace
+  href: api/Oracle.NoSQL.SDK.TableResult.Namespace.html
+  commentId: Overload:Oracle.NoSQL.SDK.TableResult.Namespace
+  fullName: Oracle.NoSQL.SDK.TableResult.Namespace
+  nameWithType: TableResult.Namespace
+- uid: Oracle.NoSQL.SDK.TableResult.TableDDL
+  name: TableDDL
+  href: api/Oracle.NoSQL.SDK.TableResult.TableDDL.html#Oracle_NoSQL_SDK_TableResult_TableDDL
+  commentId: P:Oracle.NoSQL.SDK.TableResult.TableDDL
+  fullName: Oracle.NoSQL.SDK.TableResult.TableDDL
+  nameWithType: TableResult.TableDDL
+- uid: Oracle.NoSQL.SDK.TableResult.TableDDL*
+  name: TableDDL
+  href: api/Oracle.NoSQL.SDK.TableResult.TableDDL.html
+  commentId: Overload:Oracle.NoSQL.SDK.TableResult.TableDDL
+  fullName: Oracle.NoSQL.SDK.TableResult.TableDDL
+  nameWithType: TableResult.TableDDL
 - uid: Oracle.NoSQL.SDK.TableResult.TableLimits
   name: TableLimits
   href: api/Oracle.NoSQL.SDK.TableResult.TableLimits.html#Oracle_NoSQL_SDK_TableResult_TableLimits
@@ -8230,6 +8485,18 @@ references:
   commentId: Overload:Oracle.NoSQL.SDK.TableResult.TableName
   fullName: Oracle.NoSQL.SDK.TableResult.TableName
   nameWithType: TableResult.TableName
+- uid: Oracle.NoSQL.SDK.TableResult.TableOCID
+  name: TableOCID
+  href: api/Oracle.NoSQL.SDK.TableResult.TableOCID.html#Oracle_NoSQL_SDK_TableResult_TableOCID
+  commentId: P:Oracle.NoSQL.SDK.TableResult.TableOCID
+  fullName: Oracle.NoSQL.SDK.TableResult.TableOCID
+  nameWithType: TableResult.TableOCID
+- uid: Oracle.NoSQL.SDK.TableResult.TableOCID*
+  name: TableOCID
+  href: api/Oracle.NoSQL.SDK.TableResult.TableOCID.html
+  commentId: Overload:Oracle.NoSQL.SDK.TableResult.TableOCID
+  fullName: Oracle.NoSQL.SDK.TableResult.TableOCID
+  nameWithType: TableResult.TableOCID
 - uid: Oracle.NoSQL.SDK.TableResult.TableSchema
   name: TableSchema
   href: api/Oracle.NoSQL.SDK.TableResult.TableSchema.html#Oracle_NoSQL_SDK_TableResult_TableSchema
@@ -8341,6 +8608,48 @@ references:
   commentId: F:Oracle.NoSQL.SDK.TableState.value__
   fullName: Oracle.NoSQL.SDK.TableState.value__
   nameWithType: TableState.value__
+- uid: Oracle.NoSQL.SDK.TableTagsRequest
+  name: TableTagsRequest
+  href: api/Oracle.NoSQL.SDK.TableTagsRequest.html
+  commentId: T:Oracle.NoSQL.SDK.TableTagsRequest
+  fullName: Oracle.NoSQL.SDK.TableTagsRequest
+  nameWithType: TableTagsRequest
+- uid: Oracle.NoSQL.SDK.TableTagsRequest.DefinedTags
+  name: DefinedTags
+  href: api/Oracle.NoSQL.SDK.TableTagsRequest.DefinedTags.html#Oracle_NoSQL_SDK_TableTagsRequest_DefinedTags
+  commentId: P:Oracle.NoSQL.SDK.TableTagsRequest.DefinedTags
+  fullName: Oracle.NoSQL.SDK.TableTagsRequest.DefinedTags
+  nameWithType: TableTagsRequest.DefinedTags
+- uid: Oracle.NoSQL.SDK.TableTagsRequest.DefinedTags*
+  name: DefinedTags
+  href: api/Oracle.NoSQL.SDK.TableTagsRequest.DefinedTags.html
+  commentId: Overload:Oracle.NoSQL.SDK.TableTagsRequest.DefinedTags
+  fullName: Oracle.NoSQL.SDK.TableTagsRequest.DefinedTags
+  nameWithType: TableTagsRequest.DefinedTags
+- uid: Oracle.NoSQL.SDK.TableTagsRequest.FreeFormTags
+  name: FreeFormTags
+  href: api/Oracle.NoSQL.SDK.TableTagsRequest.FreeFormTags.html#Oracle_NoSQL_SDK_TableTagsRequest_FreeFormTags
+  commentId: P:Oracle.NoSQL.SDK.TableTagsRequest.FreeFormTags
+  fullName: Oracle.NoSQL.SDK.TableTagsRequest.FreeFormTags
+  nameWithType: TableTagsRequest.FreeFormTags
+- uid: Oracle.NoSQL.SDK.TableTagsRequest.FreeFormTags*
+  name: FreeFormTags
+  href: api/Oracle.NoSQL.SDK.TableTagsRequest.FreeFormTags.html
+  commentId: Overload:Oracle.NoSQL.SDK.TableTagsRequest.FreeFormTags
+  fullName: Oracle.NoSQL.SDK.TableTagsRequest.FreeFormTags
+  nameWithType: TableTagsRequest.FreeFormTags
+- uid: Oracle.NoSQL.SDK.TableTagsRequest.TableName
+  name: TableName
+  href: api/Oracle.NoSQL.SDK.TableTagsRequest.TableName.html#Oracle_NoSQL_SDK_TableTagsRequest_TableName
+  commentId: P:Oracle.NoSQL.SDK.TableTagsRequest.TableName
+  fullName: Oracle.NoSQL.SDK.TableTagsRequest.TableName
+  nameWithType: TableTagsRequest.TableName
+- uid: Oracle.NoSQL.SDK.TableTagsRequest.TableName*
+  name: TableName
+  href: api/Oracle.NoSQL.SDK.TableTagsRequest.TableName.html
+  commentId: Overload:Oracle.NoSQL.SDK.TableTagsRequest.TableName
+  fullName: Oracle.NoSQL.SDK.TableTagsRequest.TableName
+  nameWithType: TableTagsRequest.TableName
 - uid: Oracle.NoSQL.SDK.TableUsageRecord
   name: TableUsageRecord
   href: api/Oracle.NoSQL.SDK.TableUsageRecord.html
@@ -8371,6 +8680,18 @@ references:
   commentId: Overload:Oracle.NoSQL.SDK.TableUsageRecord.Duration
   fullName: Oracle.NoSQL.SDK.TableUsageRecord.Duration
   nameWithType: TableUsageRecord.Duration
+- uid: Oracle.NoSQL.SDK.TableUsageRecord.MaxShardUsagePercent
+  name: MaxShardUsagePercent
+  href: api/Oracle.NoSQL.SDK.TableUsageRecord.MaxShardUsagePercent.html#Oracle_NoSQL_SDK_TableUsageRecord_MaxShardUsagePercent
+  commentId: P:Oracle.NoSQL.SDK.TableUsageRecord.MaxShardUsagePercent
+  fullName: Oracle.NoSQL.SDK.TableUsageRecord.MaxShardUsagePercent
+  nameWithType: TableUsageRecord.MaxShardUsagePercent
+- uid: Oracle.NoSQL.SDK.TableUsageRecord.MaxShardUsagePercent*
+  name: MaxShardUsagePercent
+  href: api/Oracle.NoSQL.SDK.TableUsageRecord.MaxShardUsagePercent.html
+  commentId: Overload:Oracle.NoSQL.SDK.TableUsageRecord.MaxShardUsagePercent
+  fullName: Oracle.NoSQL.SDK.TableUsageRecord.MaxShardUsagePercent
+  nameWithType: TableUsageRecord.MaxShardUsagePercent
 - uid: Oracle.NoSQL.SDK.TableUsageRecord.ReadThrottleCount
   name: ReadThrottleCount
   href: api/Oracle.NoSQL.SDK.TableUsageRecord.ReadThrottleCount.html#Oracle_NoSQL_SDK_TableUsageRecord_ReadThrottleCount
@@ -8431,6 +8752,18 @@ references:
   commentId: Overload:Oracle.NoSQL.SDK.TableUsageRecord.StorageThrottleCount
   fullName: Oracle.NoSQL.SDK.TableUsageRecord.StorageThrottleCount
   nameWithType: TableUsageRecord.StorageThrottleCount
+- uid: Oracle.NoSQL.SDK.TableUsageRecord.ToString
+  name: ToString()
+  href: api/Oracle.NoSQL.SDK.TableUsageRecord.ToString.html#Oracle_NoSQL_SDK_TableUsageRecord_ToString
+  commentId: M:Oracle.NoSQL.SDK.TableUsageRecord.ToString
+  fullName: Oracle.NoSQL.SDK.TableUsageRecord.ToString()
+  nameWithType: TableUsageRecord.ToString()
+- uid: Oracle.NoSQL.SDK.TableUsageRecord.ToString*
+  name: ToString
+  href: api/Oracle.NoSQL.SDK.TableUsageRecord.ToString.html
+  commentId: Overload:Oracle.NoSQL.SDK.TableUsageRecord.ToString
+  fullName: Oracle.NoSQL.SDK.TableUsageRecord.ToString
+  nameWithType: TableUsageRecord.ToString
 - uid: Oracle.NoSQL.SDK.TableUsageRecord.WriteThrottleCount
   name: WriteThrottleCount
   href: api/Oracle.NoSQL.SDK.TableUsageRecord.WriteThrottleCount.html#Oracle_NoSQL_SDK_TableUsageRecord_WriteThrottleCount
@@ -8473,6 +8806,18 @@ references:
   commentId: Overload:Oracle.NoSQL.SDK.TableUsageResult.#ctor
   fullName: Oracle.NoSQL.SDK.TableUsageResult.TableUsageResult
   nameWithType: TableUsageResult.TableUsageResult
+- uid: Oracle.NoSQL.SDK.TableUsageResult.NextIndex
+  name: NextIndex
+  href: api/Oracle.NoSQL.SDK.TableUsageResult.NextIndex.html#Oracle_NoSQL_SDK_TableUsageResult_NextIndex
+  commentId: P:Oracle.NoSQL.SDK.TableUsageResult.NextIndex
+  fullName: Oracle.NoSQL.SDK.TableUsageResult.NextIndex
+  nameWithType: TableUsageResult.NextIndex
+- uid: Oracle.NoSQL.SDK.TableUsageResult.NextIndex*
+  name: NextIndex
+  href: api/Oracle.NoSQL.SDK.TableUsageResult.NextIndex.html
+  commentId: Overload:Oracle.NoSQL.SDK.TableUsageResult.NextIndex
+  fullName: Oracle.NoSQL.SDK.TableUsageResult.NextIndex
+  nameWithType: TableUsageResult.NextIndex
 - uid: Oracle.NoSQL.SDK.TableUsageResult.TableName
   name: TableName
   href: api/Oracle.NoSQL.SDK.TableUsageResult.TableName.html#Oracle_NoSQL_SDK_TableUsageResult_TableName
