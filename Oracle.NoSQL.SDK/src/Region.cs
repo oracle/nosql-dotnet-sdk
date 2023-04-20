@@ -437,7 +437,7 @@ namespace Oracle.NoSQL.SDK
             "mx-queretaro-1", "qro", OC1);
 
         /// <summary>
-        /// Realm: OC1, <location> (subloc)
+        /// Realm: OC1, Mexico (Monterrey)
         /// </summary>
         public static readonly Region MX_MONTERREY_1 = new Region(
             "mx-monterrey-1", "mty", OC1);
