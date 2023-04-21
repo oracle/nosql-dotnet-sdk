@@ -32,6 +32,11 @@ ExecuteTableDDLAsync and GetTableAsync (including their variants)
 SetTableTagsWithCompletionAsync to apply defined tags and free-form tags to a
 table
 
+**Fixed**
+
+* Removed EOL target framework warnings from all projects, including samples.
+* Fixed Region class comments spelling warnings.
+
 ## [5.1.5]
 
 **Added**

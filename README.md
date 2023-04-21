@@ -12,7 +12,7 @@ and the [On-Premise Oracle NoSQL Database](https://docs.oracle.com/en/database/o
 ## Prerequisites
 
 * [.NET Core](https://dotnet.microsoft.com/download) 3.1 or later, including
-.NET 5.0 and later running on Windows, Linux, or Mac.
+.NET 5.0, .NET 6.0 and later running on Windows, Linux, or Mac.
 * Optionally,
 [Nuget Package Manager](https://docs.microsoft.com/en-us/nuget/consume-packages/install-use-packages-nuget-cli)
 if you wish to install the SDK independently of your project.
@@ -241,7 +241,7 @@ Console.WriteLine("Table {0} dropped, table state is {1}",
     tableName, tableResult.TableState);
 ```
 
-## <a name="examples"></a>Examples
+## Examples
 
 Examples are located under *Oracle.NoSQL.SDK.Samples* directory.  In Visual
 Studio, you can open the examples solution *Oracle.NoSQL.SDK.Samples.sln*.
@@ -291,7 +291,8 @@ dotnet run -f <target-framework> [-- /path/to/config.json]
 ```
 
 where *<example>* is the example directory and *<target-framework>* is the
-target framework moniker, supported values are *net5.0* and *netcoreapp3.1*.
+target framework moniker, supported values are *net7.0*, *net6.0*, *net5.0*
+and *netcoreapp3.1*.
 The command above will build and run the example.
 
 For example:
@@ -300,88 +301,6 @@ For example:
 cd Oracle.NoSQL.SDK.Samples/BasicExample
 dotnet run -f net5.0 -- my_config.json
 ```
-
-## Building Documentation
-
-The documentation is build with [DocFX](https://dotnet.github.io/docfx/).  It
-encompasses the API documentation and the tutorials.  The doc build also
-requires
-[memberpage plugin](https://dotnet.github.io/docfx/templates-and-plugins/plugins-dashboard.html)
-in order to have separate pages describing each method and property.
-
-*docfx.json* is located under *Documentation* directory.  The tutorials
-are located under *Documentation/tutorials*.
-
-Before building documentation, make sure you have built the driver in Debug
-mode for .NET Core 3.1.  DocFX build uses this dll:
-
-*Oracle.NoSQL.SDK/src/bin/Debug/netcoreapp3.1/Oracle.NoSQL.SDK.dll*
-
-Afterwards, follow these steps:
-
-1. Install [docfx.console](https://www.nuget.org/packages/docfx.console/)
-package. You may use
-[nuget.exe CLI](https://docs.microsoft.com/en-us/nuget/install-nuget-client-tools#cli-tools)
-for this.  Note that to run on Linux and Mac,
-[Mono](https://www.mono-project.com/) is required.  For more information, see
-[Getting Started with DocFX](https://dotnet.github.io/docfx/tutorial/docfx_getting_started.html).
-Alternatively to *docfx.console*, *docfx* can be installed as indicated in the
-link above.
-
-2. Install [memberpage](https://www.nuget.org/packages/memberpage/) package.
-
-3. Run DocFX as follows:
-
-```bash
-cd nosql-dotnet-sdk/Documentation
-/path/to/docfx.console/<docfx-version>/tools/docfx.exe -t statictoc,template,/path/to/memberpage/<memberpage-version>/content
-```
-
-In the above:
-* */path/to/docfx.console/<docfx-version>/tools/docfx.exe* is the location of
-*docfx.exe*, may be different if using *docfx* instead of *docfx.console*
-* */path/to/memberpage* is the installation location of the *memberpage*
-plugin.  You must provide the path to its *content* directory.
-
-An example for Windows:
-
-```bash
-cd nosql-dotnet-sdk\Documentation
-%USERPROFILE%\.nuget\packages\docfx.console\2.58.0\tools\docfx.exe -t statictoc,template,%USERPROFILE%\.nuget\packages\memberpage\2.58.0\content
-```
-
-Other templates used are *statictoc* and *template* (the later is custom
-template included in the build).
-[statictoc](https://dotnet.github.io/docfx/templates-and-plugins/templates-dashboard.html)
-is used to build a static website browsable from the file system.  It is
-required to publish the documentation.
-
-The generated documentation is located in *Documentation/_site* directory.
-(There are also intermediate build files in *Documentation/obj* directory.)
-
-For faster builds, you may use *default* template instead of *statictoc* but
-the website would only be viewable when using *docfx serve* command:
-
-```bash
-/path/to/docfx.console/<docfx-version>/tools/docfx.exe -t default,template,/path/to/memberpage/<memberpage-version>/content
-/path/to/docfx.console/<docfx-version>/tools/docfx.exe serve -p <port>
-```
-
-Use *docfx.exe help* for more details.
-
-## Build Nuget Package
-
-To build the nuget package, use *dotnet pack* command:
-
-```bash
-cd Oracle.NoSQL.SDK/src
-dotnet clean -c Release
-dotnet build -c Release
-dotnet pack -c Release
-```
-
-This builds nuget package *Oracle.NoSQL.SDK.<version>.nupkg* in
-*Oracle.NoSQL.SDK/src/bin/Release* directory.
 
 ## Help
 
