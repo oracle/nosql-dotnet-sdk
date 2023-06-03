@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## Unreleased
+
+**Added**
+
+* Public constructor and methods to access contents of RowVersion class in
+order to use it with queries via row_version SQL function.
+
 ## [5.2.0]
 
 **Added**
