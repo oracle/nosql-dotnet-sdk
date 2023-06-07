@@ -164,6 +164,33 @@ namespace Oracle.NoSQL.SDK.Tests
             VerifyGetResult(result, Fixture.Table, null,
                 Consistency.Absolute);
         }
+
+        [TestMethod]
+        public async Task TestGetRowVersion()
+        {
+            var primaryKey = MakePrimaryKey(Fixture.Table, Fixture.Rows[0]);
+            var getResult = await client.GetAsync(Fixture.Table.Name, primaryKey);
+            VerifyGetResult(getResult, Fixture.Table, Fixture.Rows[0]);
+
+            // Get version of the same row from query and compare version
+            // values as binary and as string, should be equal.
+            var queryResult = await client.QueryAsync(
+                "SELECT row_version($t) AS versionBytes, " +
+                "CAST(row_version($t) AS String) AS versionString FROM " +
+                $"{Fixture.Table.Name} $t " +
+                $"WHERE shardId = {primaryKey["shardId"].AsInt32} AND " +
+                $"pkString = '{primaryKey["pkString"].AsString}'");
+            Assert.AreEqual(1, queryResult.Rows.Count);
+            Assert.IsNull(queryResult.ContinuationKey);
+            
+            var versionBytes = queryResult.Rows[0]["versionBytes"];
+            Assert.IsTrue(versionBytes is BinaryValue);
+            AssertDeepEqual(getResult.Version.Bytes, versionBytes.AsByteArray);
+
+            var versionString = queryResult.Rows[0]["versionString"];
+            Assert.IsTrue(versionString is StringValue);
+            Assert.AreEqual(getResult.Version.ToString(), versionString.AsString);
+        }
     }
 
 }

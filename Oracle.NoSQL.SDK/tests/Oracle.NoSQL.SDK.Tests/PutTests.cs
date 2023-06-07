@@ -30,12 +30,12 @@ namespace Oracle.NoSQL.SDK.Tests
 
         private static IEnumerable<object[]> PutNegativeDataSource =>
             (from tableName in BadTableNames
-             select new object[]
-             {
+                select new object[]
+                {
                     tableName,
                     GoodRow,
                     null
-             })
+                })
             .Concat(
                 from row in GetBadRows(Fixture.Table, GoodRow)
                 select new object[]
@@ -156,11 +156,12 @@ namespace Oracle.NoSQL.SDK.Tests
         }
 
         private static IEnumerable<object[]> PutNewRowDataSource =>
-            from row in Fixture.Rows select new object[]
-                {
-                    Fixture.Table,
-                    Fixture.MakeRow(row.Id + Fixture.RowIdEnd)
-                };
+            from row in Fixture.Rows
+            select new object[]
+            {
+                Fixture.Table,
+                Fixture.MakeRow(row.Id + Fixture.RowIdEnd)
+            };
 
         private static IEnumerable<object[]> PutExistingRowDataSource =>
             from row in Fixture.Rows
@@ -331,7 +332,8 @@ namespace Oracle.NoSQL.SDK.Tests
                 : null;
             var result = await client.PutIfAbsentAsync(table.Name,
                 (MapValue)row, options);
-            await VerifyPutAsync(result, table, row, options, isConditional:true);
+            await VerifyPutAsync(result, table, row, options,
+                isConditional: true);
         }
 
         [DataTestMethod]
@@ -349,7 +351,8 @@ namespace Oracle.NoSQL.SDK.Tests
             };
             var result = await client.PutAsync(table.Name,
                 (MapValue)modifiedRow, options);
-            await VerifyPutAsync(result, table, modifiedRow, options, false, row);
+            await VerifyPutAsync(result, table, modifiedRow, options, false,
+                row);
         }
 
         [DataTestMethod]
@@ -361,7 +364,7 @@ namespace Oracle.NoSQL.SDK.Tests
             var result = await client.PutIfAbsentAsync(table.Name,
                 (MapValue)row);
             await VerifyPutAsync(result, table, row, null, false, row,
-                isConditional:true);
+                isConditional: true);
         }
 
         [DataTestMethod]
@@ -377,8 +380,9 @@ namespace Oracle.NoSQL.SDK.Tests
             };
             var result = await client.PutIfAbsentAsync(table.Name,
                 (MapValue)modifiedRow, options);
-            await VerifyPutAsync(result, table, modifiedRow, options, false, row,
-                isConditional:true);
+            await VerifyPutAsync(result, table, modifiedRow, options, false,
+                row,
+                isConditional: true);
         }
 
         [DataTestMethod]
@@ -425,7 +429,7 @@ namespace Oracle.NoSQL.SDK.Tests
             var result = await client.PutIfPresentAsync(table.Name,
                 (MapValue)modifiedRow, options);
             await VerifyPutAsync(result, table, modifiedRow, options,
-                isConditional:true);
+                isConditional: true);
         }
 
         [DataTestMethod]
@@ -442,7 +446,8 @@ namespace Oracle.NoSQL.SDK.Tests
             };
             var result = await client.PutIfPresentAsync(table.Name,
                 (MapValue)row, options);
-            await VerifyPutAsync(result, table, row, options, isConditional:true);
+            await VerifyPutAsync(result, table, row, options,
+                isConditional: true);
         }
 
         [DataTestMethod]
@@ -468,12 +473,12 @@ namespace Oracle.NoSQL.SDK.Tests
         {
             SetForCleanup(null, row);
             var options = row.TTL.HasValue
-                ? new PutOptions {TTL = row.TTL}
+                ? new PutOptions { TTL = row.TTL }
                 : null;
             var result = await client.PutIfPresentAsync(table.Name,
                 (MapValue)row, options);
             await VerifyPutAsync(result, table, row, options, false,
-                isConditional:true);
+                isConditional: true);
         }
 
         [DataTestMethod]
@@ -490,7 +495,7 @@ namespace Oracle.NoSQL.SDK.Tests
             var result = await client.PutIfPresentAsync(table.Name,
                 (MapValue)row, options);
             await VerifyPutAsync(result, table, row, options, false,
-                isConditional:true);
+                isConditional: true);
         }
 
         [DataTestMethod]
@@ -519,7 +524,8 @@ namespace Oracle.NoSQL.SDK.Tests
             // (current) version
             result = await client.PutAsync(table.Name, (MapValue)modifiedRow,
                 options);
-            await VerifyPutAsync(result, table, modifiedRow, options, false, row);
+            await VerifyPutAsync(result, table, modifiedRow, options, false,
+                row);
         }
 
         [DataTestMethod]
@@ -529,7 +535,7 @@ namespace Oracle.NoSQL.SDK.Tests
             SetForCleanup(row, null);
             var modifiedRow = Fixture.MakeModifiedRow(row);
             var options = row.TTL.HasValue
-                ? new PutOptions {TTL = row.TTL}
+                ? new PutOptions { TTL = row.TTL }
                 : null;
             var version = row.Version;
 
@@ -551,7 +557,7 @@ namespace Oracle.NoSQL.SDK.Tests
             result = await client.PutIfVersionAsync(table.Name,
                 (MapValue)modifiedRow2, version, options);
             await VerifyPutAsync(result, table, modifiedRow2, options, false,
-                modifiedRow, isConditional:true);
+                modifiedRow, isConditional: true);
         }
 
         [DataTestMethod]
@@ -582,6 +588,32 @@ namespace Oracle.NoSQL.SDK.Tests
             var result = await client.PutIfVersionAsync(table.Name,
                 (MapValue)newRow, existingRow.Version);
             await VerifyPutAsync(result, table, newRow, null, false,
+                isConditional: true);
+        }
+
+        [TestMethod]
+        public async Task TestPutIfVersionFromQueryAsync()
+        {
+            var row = Fixture.Rows[0];
+            SetForCleanup(row, null);
+            var primaryKey = MakePrimaryKey(Fixture.Table, row);
+            var queryResult = await client.QueryAsync(
+                "SELECT row_version($t) AS version FROM " +
+                $"{Fixture.Table.Name} $t " +
+                $"WHERE shardId = {primaryKey["shardId"].AsInt32} AND " +
+                $"pkString = '{primaryKey["pkString"].AsString}'");
+            Assert.AreEqual(1, queryResult.Rows.Count);
+            Assert.IsNull(queryResult.ContinuationKey);
+            
+            var binaryVersion = queryResult.Rows[0]["version"];
+            Assert.IsTrue(binaryVersion is BinaryValue);
+
+            // Create RowVersion from binary value above to use in
+            // PutIfVersionAsync, should be successful.
+            var modifiedRow = Fixture.MakeModifiedRow(row);
+            var putResult = await client.PutIfVersionAsync(Fixture.Table.Name,
+                (MapValue)modifiedRow, new RowVersion(binaryVersion.AsByteArray));
+            await VerifyPutAsync(putResult, Fixture.Table, modifiedRow,
                 isConditional: true);
         }
 
