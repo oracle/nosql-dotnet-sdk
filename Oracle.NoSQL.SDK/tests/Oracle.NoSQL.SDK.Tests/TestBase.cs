@@ -141,6 +141,9 @@ namespace Oracle.NoSQL.SDK.Tests
         private const string KVVersionProp = "kvVersion";
 
         // ReSharper disable once StaticMemberInGenericType
+        internal static NoSQLConfig config;
+
+        // ReSharper disable once StaticMemberInGenericType
         internal static NoSQLClient client;
 
         internal static string Compartment => client.Config.Compartment;
@@ -180,6 +183,11 @@ namespace Oracle.NoSQL.SDK.Tests
         internal static bool AllowEventualConsistency =>
             client.Config.Consistency != Consistency.Absolute;
 
+        // Currently the driver performs only shallow copy of NoSQLConfig,
+        // which would be a problem if we want to instantiate multiple
+        // clients.
+        internal static NoSQLConfig CopyConfig() => DeepCopy(config);
+
         internal static void CheckOnPrem()
         {
             if (!IsOnPrem)
@@ -217,7 +225,7 @@ namespace Oracle.NoSQL.SDK.Tests
                 var configFile =
                     (string)staticContext.Properties[ConfigFileProp];
                 Debug.Assert(configFile != null);
-                client = new NoSQLClient(configFile);
+                config = NoSQLConfig.FromJsonFile(configFile);
             }
             else
             {
@@ -237,12 +245,14 @@ namespace Oracle.NoSQL.SDK.Tests
                     Debug.Assert(endpoint != null);
                 }
 
-                client = new NoSQLClient(new NoSQLConfig
+                config = new NoSQLConfig
                 {
                     ServiceType = serviceType,
                     Endpoint = endpoint
-                });
+                };
             }
+
+            client = new NoSQLClient(CopyConfig());
 
             if (staticContext.Properties.Contains(KVVersionProp))
             {
@@ -311,8 +321,26 @@ namespace Oracle.NoSQL.SDK.Tests
 
         internal static async Task DropTableAsync(TableInfo table)
         {
-            await client.ExecuteTableDDLWithCompletionAsync(
-                MakeDropTable(table, true));
+            try
+            {
+                await client.ExecuteTableDDLWithCompletionAsync(
+                    MakeDropTable(table, true));
+            }
+            catch (Exception)
+            {
+                if (table.DependentTableNames == null)
+                {
+                    throw;
+                }
+
+                foreach (var tableName in table.DependentTableNames)
+                {
+                    await client.ExecuteTableDDLWithCompletionAsync(
+                        $"DROP TABLE IF EXISTS {tableName}");
+                }
+                await client.ExecuteTableDDLWithCompletionAsync(
+                    MakeDropTable(table, true));
+            }
         }
 
         internal static void VerifyTableLimits(TableLimits expected,

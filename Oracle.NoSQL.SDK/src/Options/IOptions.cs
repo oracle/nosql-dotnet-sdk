@@ -13,6 +13,8 @@ namespace Oracle.NoSQL.SDK
     {
         string Compartment { get; }
 
+        string Namespace { get; }
+
         TimeSpan? Timeout { get; }
 
         void Validate();

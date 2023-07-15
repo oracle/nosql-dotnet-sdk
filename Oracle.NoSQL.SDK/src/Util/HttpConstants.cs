@@ -35,6 +35,8 @@ namespace Oracle.NoSQL.SDK
 
         internal const string CompartmentId = "x-nosql-compartment-id";
 
+        internal const string Namespace = "x-nosql-default-ns";
+
         internal const string RequestTarget = "(request-target)";
 
         internal const string ContentSHA256 = "x-content-sha256";

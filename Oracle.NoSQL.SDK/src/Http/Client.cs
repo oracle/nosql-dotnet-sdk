@@ -94,6 +94,11 @@ namespace Oracle.NoSQL.SDK.Http
                     request, message.Headers, cancellationToken);
             }
 
+            if (request.Namespace is var ns && ns != null)
+            {
+                message.Headers.Add(Namespace, ns);
+            }
+
             var response = await SendWithTimeoutAsync(client, message,
                 request.RequestTimeoutMillis, cancellationToken);
             if (response.StatusCode != HttpStatusCode.OK)

@@ -51,8 +51,10 @@ namespace Oracle.NoSQL.SDK.Tests
             new TableInfo(name, SimpleTable.TableLimits, SimpleTable.Fields,
                 SimpleTable.PrimaryKey);
 
+        private const string AllTypesTableName = TableNamePrefix + "AllTypes";
+
         internal static readonly TableInfo AllTypesTable = new TableInfo(
-            TableNamePrefix + "AllTypes",
+            AllTypesTableName,
             DefaultTableLimits,
             new[]
             {
@@ -92,8 +94,18 @@ namespace Oracle.NoSQL.SDK.Tests
             1
         )
         {
-            TTL = TimeToLive.OfDays(3)
+            TTL = TimeToLive.OfDays(3),
+            DependentTableNames = new [] { $"{AllTypesTableName}.childTable" }
         };
+
+        internal static TableInfo GetAllTypesTableWithName(string name) =>
+            new TableInfo(name, AllTypesTable.TableLimits,
+                AllTypesTable.Fields, AllTypesTable.PrimaryKey,
+                AllTypesTable.ShardKeySize)
+            {
+                TTL = AllTypesTable.TTL,
+                DependentTableNames = AllTypesTable.DependentTableNames
+            };
 
         internal static readonly TableInfo AllTypesChildTable = new TableInfo(
             AllTypesTable, AllTypesTable.Name + ".childTable", new[]

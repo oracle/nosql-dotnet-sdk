@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 **Added**
 
+* On-prem only: allow to specify namespace as a configuration option or in
+options for each operation.
 * Public constructor and methods to access contents of RowVersion class in
 order to use it with queries via row_version SQL function.
 

@@ -98,9 +98,11 @@ namespace Oracle.NoSQL.SDK
     /// or <see cref="DeleteOptions"/> parameters as the options for the
     /// operation. Properties such as <see cref="PutOptions.Compartment"/>,
     /// <see cref="PutOptions.Timeout"/>, <see cref="PutOptions.Durability"/>,
+    /// <see cref="PutOptions.Namespace"/>,
     /// <see cref="DeleteOptions.Compartment"/>,
-    /// <see cref="DeleteOptions.Timeout"/> and
-    /// <see cref="DeleteOptions.Durability"/> are ignored as they are not
+    /// <see cref="DeleteOptions.Timeout"/>,
+    /// <see cref="DeleteOptions.Durability"/> and
+    /// <see cref="DeleteOptions.Namespace"/> are ignored as they are not
     /// relevant for a single operation in the collection.  Instead, use
     /// <see cref="WriteManyOptions.Compartment"/> and
     /// <see cref="WriteManyOptions.Timeout"/>.
