@@ -47,6 +47,13 @@ namespace Oracle.NoSQL.SDK
         /// <inheritdoc cref="GetOptions.Compartment"/>
         public string Compartment { get; set; }
 
+        /// <inheritdoc cref="GetOptions.Namespace"/>
+        public string Namespace
+        {
+            get => Compartment;
+            set => Compartment = value;
+        }
+
         /// <summary>
         /// Gets or sets the timeout for the operation.
         /// </summary>

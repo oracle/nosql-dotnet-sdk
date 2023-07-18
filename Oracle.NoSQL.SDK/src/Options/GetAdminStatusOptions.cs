@@ -23,6 +23,8 @@ namespace Oracle.NoSQL.SDK
     {
         string IOptions.Compartment => null;
 
+        string IOptions.Namespace => null;
+
         /// <inheritdoc cref="GetOptions.Timeout"/>
         public TimeSpan? Timeout { get; set; }
 

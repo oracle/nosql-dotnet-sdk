@@ -49,6 +49,31 @@ namespace Oracle.NoSQL.SDK
         public string Compartment { get; set; }
 
         /// <summary>
+        /// On-premises only.
+        /// Gets or sets the optional namespace.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// This value overrides default namespace set with
+        /// <see cref="NoSQLConfig.Namespace"/>.
+        /// </para>
+        /// <para>
+        /// Note: if a namespace is specified in the table name for the
+        /// request (using the <c>namespace:table_name</c> format), that
+        /// value will override this setting.
+        /// </para>
+        /// </remarks>
+        /// <value>
+        /// The namespace to use for the operation. If not set, defaults to
+        /// <see cref="NoSQLConfig.Namespace"/>.
+        /// </value>
+        public string Namespace
+        {
+            get => Compartment;
+            set => Compartment = value;
+        }
+
+        /// <summary>
         /// Gets or sets the timeout for the request.
         /// </summary>
         /// <value>

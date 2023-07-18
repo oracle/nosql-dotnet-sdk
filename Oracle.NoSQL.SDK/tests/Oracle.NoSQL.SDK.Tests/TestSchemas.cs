@@ -227,6 +227,14 @@ namespace Oracle.NoSQL.SDK.Tests
 
             internal RecordFieldType RecordType { get; }
 
+            // Some tests use child tables, if they are terminated before
+            // finished, the next run of an unrelated test (without child
+            // tables) may not be able to drop its table because the child
+            // tables are still present.  This property is to resolve this
+            // situation. It should include all possible descendants listed in
+            // the order they should be dropped.
+            internal string[] DependentTableNames { get; set; }
+
             internal TableField GetField(string name)
             {
                 var result = Array.Find(Fields, elem => elem.Name == name);

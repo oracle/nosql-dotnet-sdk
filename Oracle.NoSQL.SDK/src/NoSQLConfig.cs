@@ -571,6 +571,33 @@ namespace Oracle.NoSQL.SDK
         public string Compartment { get; set; }
 
         /// <summary>
+        /// On-premises only.
+        /// Gets or sets the default namespace for operations with this
+        /// <see cref="NoSQLClient"/> instance.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// This property serves a a default value of <c>Namespace</c>
+        /// property of all operation options classes. Any non-namespace
+        /// qualified table name in requests and/or SQL statements will be
+        /// resolved/qualified to the specified namespace.
+        /// </para>
+        /// <para>
+        /// Note: if a namespace is specified in the table name for the
+        /// request (using the <c>namespace:table_name</c> format), that
+        /// value will override this setting.
+        /// </para>
+        /// </remarks>
+        /// <value>
+        /// Default namespace to use.
+        /// </value>
+        public string Namespace
+        {
+            get => Compartment;
+            set => Compartment = value;
+        }
+
+        /// <summary>
         /// Gets or sets the handler for operation retries.
         /// </summary>
         /// <remarks>

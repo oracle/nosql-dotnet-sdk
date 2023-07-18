@@ -38,6 +38,8 @@ namespace Oracle.NoSQL.SDK
     {
         string IOptions.Compartment => null;
 
+        string IOptions.Namespace => null;
+
         /// <summary>
         /// Gets or sets the timeout for the operation.
         /// </summary>

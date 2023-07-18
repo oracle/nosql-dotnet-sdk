@@ -437,7 +437,8 @@ namespace Oracle.NoSQL.SDK.Tests
             internal StatsRetryHandler(IRetryHandler retryHandler,
                 Stats stats)
             {
-                this.retryHandler = retryHandler;
+                this.retryHandler = retryHandler ?? new NoSQLRetryHandler();
+                        ;
                 this.stats = stats;
             }
 
@@ -453,22 +454,22 @@ namespace Oracle.NoSQL.SDK.Tests
 
         private static NoSQLConfig MakeConfig(TestCase testCase, Stats stats)
         {
-            var config = client.Config.Clone();
+            var configCopy = CopyConfig();
 
-            config.RateLimitingEnabled = true;
-            config.RateLimiterPercent = testCase.RateLimiterPercent;
-            config.RateLimiterCreator = testCase.RateLimiterCreator;
+            configCopy.RateLimitingEnabled = true;
+            configCopy.RateLimiterPercent = testCase.RateLimiterPercent;
+            configCopy.RateLimiterCreator = testCase.RateLimiterCreator;
 
-            if (config.ServiceType == ServiceType.CloudSim)
+            if (configCopy.ServiceType == ServiceType.CloudSim)
             {
-                config.AuthorizationProvider = null;
+                configCopy.AuthorizationProvider = null;
             }
 
-            config.RetryHandler = new StatsRetryHandler(config.RetryHandler,
-                stats);
-            config.Timeout = TimeSpan.FromMinutes(1);
+            configCopy.RetryHandler = new StatsRetryHandler(
+                configCopy.RetryHandler, stats);
+            configCopy.Timeout = TimeSpan.FromMinutes(1);
 
-            return config;
+            return configCopy;
         }
 
         private static async Task TestTableLoopAsync(
