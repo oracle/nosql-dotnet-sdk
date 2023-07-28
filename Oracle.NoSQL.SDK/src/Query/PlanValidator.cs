@@ -226,6 +226,18 @@ namespace Oracle.NoSQL.SDK.Query
             CheckStepIsSync(step.InputStep, "input", step);
         }
 
+        internal static void ValidateFuncCollectStep(FuncCollectStep step)
+        {
+            ValidateBase(step);
+            CheckStepIsSync(step.InputStep, "input", step);
+        }
+
+        internal static void ValidateFuncSizeStep(FuncSizeStep step)
+        {
+            ValidateBase(step);
+            CheckStepIsSync(step.InputStep, "input", step);
+        }
+
         internal static void ValidateGroupStep(GroupStep step)
         {
             ValidateBase(step);

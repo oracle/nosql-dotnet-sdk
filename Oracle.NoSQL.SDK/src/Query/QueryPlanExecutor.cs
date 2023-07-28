@@ -75,6 +75,8 @@ namespace Oracle.NoSQL.SDK.Query {
             }
         }
 
+        internal bool IsForTest => Request?.Options?.IsForTest ?? false;
+
         internal QueryRuntime(NoSQLClient client,
             PreparedStatement preparedStatement)
         {

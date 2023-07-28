@@ -180,6 +180,35 @@ namespace Oracle.NoSQL.SDK
                 "Missing EndObject token for MapValue");
         }
 
+        internal static int QueryCompareMapValues(MapValue value1,
+            MapValue value2, int nullRank)
+        {
+            using var enum1 = new SortedSet<string>(value1.Keys).GetEnumerator();
+            using var enum2 = new SortedSet<string>(value2.Keys).GetEnumerator();
+
+            while (enum1.MoveNext() && enum2.MoveNext())
+            {
+                Debug.Assert(enum1.Current != null);
+                Debug.Assert(enum2.Current != null);
+
+                var result = string.Compare(enum1.Current, enum2.Current,
+                    StringComparison.Ordinal);
+                if (result != 0)
+                {
+                    return result;
+                }
+
+                result = value1[enum1.Current].QueryCompareTotalOrder(
+                    value2[enum2.Current], nullRank);
+                if (result != 0)
+                {
+                    return result;
+                }
+            }
+
+            return value1.Count.CompareTo(value2.Count);
+        }
+
         /// <summary>
         /// Gets or sets the value associated with the specified key.
         /// </summary>
@@ -409,6 +438,8 @@ namespace Oracle.NoSQL.SDK
             writer.WriteEndObject();
         }
 
+        internal override bool IsAtomic => false;
+
         internal override bool SupportsComparison => false;
 
         internal override bool QueryEquals(FieldValue other)
@@ -435,6 +466,11 @@ namespace Oracle.NoSQL.SDK
 
             return true;
         }
+
+        internal override int QueryCompareTotalOrder(FieldValue other,
+            int nullRank) => other.DbType == DbType.Map
+            ? QueryCompareMapValues(this, other.AsMapValue, nullRank)
+            : (other.DbType == DbType.Array ? -1 : 1);
 
         internal override int QueryHashCode()
         {

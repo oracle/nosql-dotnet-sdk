@@ -17,21 +17,31 @@ namespace Oracle.NoSQL.SDK.Query {
     internal class GroupIterator : PlanAsyncIterator,
         IEqualityComparer<FieldValue[]>
     {
-        private static readonly IntegerValue One = new IntegerValue(1);
-
         private readonly GroupStep step;
         private readonly PlanAsyncIterator inputIterator;
-        private readonly Dictionary<FieldValue[], FieldValue[]> groupMap;
+        private readonly Dictionary<FieldValue[], ValueAggregator[]> groupMap;
         private readonly FieldValue[] groupTuple;
-        private IEnumerator<KeyValuePair<FieldValue[], FieldValue[]>>
+        private IEnumerator<KeyValuePair<FieldValue[], ValueAggregator[]>>
             resultEnumerator;
+
+        private static long GetMemorySize(ValueAggregator[] aggregatorArray)
+        {
+            long result = ArrayOverhead +
+                          IntPtr.Size * aggregatorArray.Length;
+            foreach (var value in aggregatorArray)
+            {
+                result += value.GetMemorySize();
+            }
+
+            return result;
+        }
 
         internal GroupIterator(QueryRuntime runtime, GroupStep step) :
             base(runtime)
         {
             this.step = step;
             inputIterator = step.InputStep.CreateAsyncIterator(runtime);
-            groupMap = new Dictionary<FieldValue[], FieldValue[]>(this);
+            groupMap = new Dictionary<FieldValue[], ValueAggregator[]>(this);
             groupTuple = new FieldValue[step.GroupingColumnCount];
         }
 
@@ -84,96 +94,73 @@ namespace Oracle.NoSQL.SDK.Query {
             return true;
         }
 
-        private FieldValue[] CreateAggregateTuple()
+        private ValueAggregator[] CreateAggregateTuple()
         {
-            var aggregateTuple = new FieldValue[step.ColumnNames.Length -
-                                                step.GroupingColumnCount];
+            var aggregateTuple = new ValueAggregator[step.ColumnNames.Length -
+                step.GroupingColumnCount];
+
             for (var i = 0; i < aggregateTuple.Length; i++)
             {
-                aggregateTuple[i] = IsCountFunc(step.AggregateFuncCodes[i]) ?
-                    new IntegerValue(0) : (FieldValue)FieldValue.Null;
+                switch (step.AggregateFuncCodes[i])
+                {
+                    case SQLFuncCode.CountStar:
+                        aggregateTuple[i] = new CountStarAggregator();
+                        break;
+                    case SQLFuncCode.Count:
+                        aggregateTuple[i] = new CountAggregator();
+                        break;
+                    case SQLFuncCode.CountNumbers:
+                        aggregateTuple[i] = new CountNumbersAggregator();
+                        break;
+                    case SQLFuncCode.Min:
+                        aggregateTuple[i] = new MinValueAggregator();
+                        break;
+                    case SQLFuncCode.Max:
+                        aggregateTuple[i] = new MaxValueAggregator();
+                        break;
+                    case SQLFuncCode.Sum:
+                        aggregateTuple[i] = new SumAggregator();
+                        break;
+                    case SQLFuncCode.ArrayCollect:
+                        aggregateTuple[i] =
+                            new CollectAggregator(runtime.IsForTest);
+                        break;
+                    case SQLFuncCode.ArrayCollectDistinct:
+                        aggregateTuple[i] =
+                            new CollectDistinctAggregator(runtime.IsForTest);
+                        break;
+                    default:
+                        // this is already checked in DeserializeSQLFuncCode
+                        Debug.Fail("Unexpected SQLFuncCode: " +
+                                   step.AggregateFuncCodes[i]);
+                        break;
+                }
             }
 
             return aggregateTuple;
         }
 
-        private static bool IsMinMax(SQLFuncCode code, int result)
-        {
-            return code == SQLFuncCode.Min ? result < 0 : result > 0;
-        }
-
-        private void AggregateColumn(ref FieldValue aggregate,
-            SQLFuncCode funcCode, FieldValue newValue)
-        {
-            var oldValue = aggregate;
-            switch (funcCode)
-            {
-                case SQLFuncCode.Min: case SQLFuncCode.Max:
-                    if (!newValue.SupportsComparison || newValue.IsSpecial)
-                    {
-                        break;
-                    }
-
-                    if (aggregate == FieldValue.Null || IsMinMax(funcCode,
-                        newValue.QueryCompare(aggregate)))
-                    {
-                        aggregate = newValue;
-                    }
-                    break;
-                case SQLFuncCode.Sum:
-                    if (!newValue.IsNumeric)
-                    {
-                        break;
-                    }
-
-                    aggregate = aggregate == FieldValue.Null ?
-                        newValue : aggregate.QueryAdd(newValue);
-
-                    break;
-                case SQLFuncCode.CountStar:
-                    aggregate = aggregate.QueryAdd(One);
-                    break;
-                case SQLFuncCode.Count:
-                    if (!newValue.IsSpecial)
-                    {
-                        aggregate = aggregate.QueryAdd(One);
-                    }
-
-                    break;
-                case SQLFuncCode.CountNumbers:
-                    if (newValue.IsNumeric)
-                    {
-                        aggregate = aggregate.QueryAdd(One);
-                    }
-
-                    break;
-                default:
-                    Debug.Assert(false);
-                    break;
-            }
-
-            // Add() will return the same FieldValue if it's type has not
-            // changed, in which case we don't need to update the memory.
-            if (aggregate != oldValue)
-            {
-                runtime.TotalMemory += aggregate.GetMemorySize() -
-                                       oldValue.GetMemorySize();
-            }
-        }
-
-        private void Aggregate(FieldValue[] aggregateTuple, RecordValue row)
+        private void Aggregate(ValueAggregator[] aggregateTuple,
+            RecordValue row)
         {
             for (var i = 0; i < aggregateTuple.Length; i++)
             {
                 var value =
                     row[step.ColumnNames[step.GroupingColumnCount + i]];
-                AggregateColumn(ref aggregateTuple[i],
-                    step.AggregateFuncCodes[i], value);
+                if (step.CountMemory)
+                {
+                    runtime.TotalMemory +=
+                        aggregateTuple[i].Aggregate(value, true);
+                }
+                else
+                {
+                    aggregateTuple[i].Aggregate(value);
+                }
             }
         }
 
         private RecordValue MakeResult(FieldValue[] groupingTuple,
-            FieldValue[] aggregateTuple = null)
+            ValueAggregator[] aggregateTuple = null)
         {
             var result = new RecordValue();
             int i;
@@ -191,7 +178,7 @@ namespace Oracle.NoSQL.SDK.Query {
             for (; i < step.ColumnNames.Length; i++)
             {
                 result[step.ColumnNames[i]] =
-                    aggregateTuple[i - step.GroupingColumnCount];
+                    aggregateTuple[i - step.GroupingColumnCount].Result;
             }
 
             return result;
@@ -225,7 +212,7 @@ namespace Oracle.NoSQL.SDK.Query {
                         if (step.CountMemory)
                         {
                             runtime.TotalMemory += GetDictionaryEntrySize(
-                                GetMemorySize(groupTuple),
+                                SizeOf.GetMemorySize(groupTuple),
                                 aggregateTuple != null ? GetMemorySize(
                                     aggregateTuple) : 0);
                         }

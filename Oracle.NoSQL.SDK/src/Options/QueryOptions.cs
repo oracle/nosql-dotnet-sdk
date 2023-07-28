@@ -211,6 +211,8 @@ namespace Oracle.NoSQL.SDK
 
         internal int? TraceLevel { get; set; }
 
+        internal virtual bool IsForTest => false;
+
         void IOptions.Validate()
         {
             CheckTimeout(Timeout);
@@ -235,6 +237,8 @@ namespace Oracle.NoSQL.SDK
 
     internal class TestQueryOptions : QueryOptions
     {
+        internal override bool IsForTest => true;
+
         public long? MaxMemoryBytes { get; set; }
 
         internal override long? MaxMemory => MaxMemoryBytes ?? base.MaxMemory;

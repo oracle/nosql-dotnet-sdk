@@ -84,6 +84,12 @@ namespace Oracle.NoSQL.SDK
         internal static long GetDictionaryEntrySize(long keySize,
             long valueSize) => DictionaryEntryOverhead + keySize + valueSize;
 
+        internal static long GetListEntrySize(long size) =>
+            ListEntryOverhead + size;
+
+        internal static long GetListOverheadSize(int count) =>
+            ListOverhead + ListEntryOverhead * count;
+
         internal static long GetHashSetEntrySize(long size) =>
             HashSetEntryOverhead + size;
     }

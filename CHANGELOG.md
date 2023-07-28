@@ -8,10 +8,16 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 **Added**
 
+* Support for query array_collect and count(distinct) operators.
 * On-prem only: allow to specify namespace as a configuration option or in
 options for each operation.
 * Public constructor and methods to access contents of RowVersion class in
 order to use it with queries via row_version SQL function.
+
+**Fixed**
+
+* Fixed invalid sorting order between special and non-special values for
+order by in descending mode.
 
 ## [5.2.0]
 

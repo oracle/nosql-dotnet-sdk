@@ -174,4 +174,48 @@ namespace Oracle.NoSQL.SDK.Query {
         internal override PlanStep Step => step;
     }
 
+    internal class FuncSizeIterator : PlanSyncIterator
+    {
+        private readonly FuncSizeStep step;
+        private readonly PlanSyncIterator inputIterator;
+
+        internal FuncSizeIterator(QueryRuntime runtime, FuncSizeStep step) :
+            base(runtime)
+        {
+            this.step = step;
+            inputIterator = step.InputStep.CreateSyncIterator(runtime);
+        }
+
+        internal override bool Next()
+        {
+            if (!inputIterator.Next())
+            {
+                return false;
+            }
+
+            var result = inputIterator.Result;
+
+            if (result == FieldValue.Null)
+            {
+                Result = FieldValue.Null;
+            }
+            else if (!(result is ArrayValue) && !(result is MapValue))
+            {
+                throw new InvalidOperationException(
+                    "Query: input value in FuncSizeStep is not " +
+                    "ArrayValue, MapValue or RecordValue");
+            }
+
+            Result = result.Count;
+            return true;
+        }
+
+        internal override void Reset(bool resetResult = false)
+        {
+            inputIterator.Reset();
+        }
+
+        internal override PlanStep Step => step;
+    }
+
 }

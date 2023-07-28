@@ -9,6 +9,7 @@ namespace Oracle.NoSQL.SDK
 {
     using System;
     using System.Collections;
+    using System.Linq;
     using System.Text.Json;
     using static SizeOf;
 
@@ -26,11 +27,11 @@ namespace Oracle.NoSQL.SDK
     {
         private readonly byte[] value;
 
-        internal static bool ByteArraysEqual(byte[] array1, byte[] array2)
-        {
-            return StructuralComparisons.StructuralEqualityComparer.Equals(
-                array1, array2);
-        }
+        internal static bool ByteArraysEqual(byte[] array1, byte[] array2) =>
+            array1.SequenceEqual(array2);
+
+        internal static int CompareByteArrays(byte[] array1, byte[] array2) =>
+            ((ReadOnlySpan<byte>)array1).SequenceCompareTo(array2);
 
         internal static int GetByteArrayHashCode(byte[] array)
         {
@@ -80,6 +81,17 @@ namespace Oracle.NoSQL.SDK
         {
             return other.DbType == DbType.Binary &&
                    ByteArraysEqual(AsByteArray, other.AsByteArray);
+        }
+
+        internal override int QueryCompareTotalOrder(FieldValue other,
+            int nullRank)
+        {
+            if (other.DbType == DbType.Binary)
+            {
+                return CompareByteArrays(AsByteArray, other.AsByteArray);
+            }
+
+            return other.IsAtomic ? (other.IsSpecial ? -nullRank : 1) : -1;
         }
 
         internal override int QueryHashCode() => GetByteArrayHashCode(value);
