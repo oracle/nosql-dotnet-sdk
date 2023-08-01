@@ -10,6 +10,7 @@ namespace Oracle.NoSQL.SDK.Query.BinaryProtocol
     using System;
     using System.Diagnostics;
     using System.IO;
+    using System.IO.Pipes;
     using Query;
     using static SDK.BinaryProtocol.Protocol;
     using static PlanValidator;
@@ -27,10 +28,12 @@ namespace Oracle.NoSQL.SDK.Query.BinaryProtocol
             ExternalVarRef = 2,
             FieldStep = 11,
             ArithOp = 8,
+            FnSize = 15,
             FnSum = 39,
             FnMinMax = 41,
             Group = 65,
-            Sort2 = 66
+            Sort2 = 66,
+            FnCollect = 78
         }
 
         private static void DeserializeBase(MemoryStream stream,
@@ -52,18 +55,18 @@ namespace Oracle.NoSQL.SDK.Query.BinaryProtocol
         {
             var fields = ReadStringArray(stream);
             var fieldCount = fields?.Length ?? 0;
-            var sortSpecs = ReadArray(stream, memoryStream => new SortSpec
-            {
-                IsDescending = ReadBoolean(memoryStream),
-                NullsFirst = ReadBoolean(memoryStream)
-            });
-            var sortSpecCount = sortSpecs?.Length ?? 0;
-            if (fieldCount != sortSpecCount)
+            var specs = ReadArray<(bool isDesc, bool nullsFirst)>(
+                stream,
+                memoryStream => (ReadBoolean(memoryStream),
+                    ReadBoolean(memoryStream)));
+
+            var specCount = specs?.Length ?? 0;
+            if (fieldCount != specCount)
             {
                 throw new BadProtocolException(
                     "Query plan: received non-matching number of " +
                     $"sort fields {fieldCount} and " +
-                    $"sort attributes {sortSpecCount} in {parent.Name} step");
+                    $"sort attributes {specCount} in {parent.Name} step");
             }
 
             if (fieldCount == 0)
@@ -71,10 +74,13 @@ namespace Oracle.NoSQL.SDK.Query.BinaryProtocol
                 return null;
             }
 
+            Debug.Assert(fields != null && specs != null);
+
+            var sortSpecs = new SortSpec[fieldCount];
             for (var i = 0; i < fieldCount; i++)
             {
-                Debug.Assert(sortSpecs != null && fields != null);
-                sortSpecs[i].FieldName = fields[i];
+                sortSpecs[i] = new SortSpec(fields[i], specs[i].isDesc,
+                    specs[i].nullsFirst);
             }
 
             return sortSpecs;
@@ -215,6 +221,26 @@ namespace Oracle.NoSQL.SDK.Query.BinaryProtocol
             return step;
         }
 
+        private static FuncSizeStep DeserializeFuncSizeStep(MemoryStream stream)
+        {
+            var step = new FuncSizeStep();
+            DeserializeBase(stream, step);
+            step.InputStep = DeserializeStep(stream);
+            ValidateFuncSizeStep(step);
+            return step;
+        }
+
+        private static FuncCollectStep DeserializeFuncCollectStep(
+            MemoryStream stream)
+        {
+            var step = new FuncCollectStep();
+            DeserializeBase(stream, step);
+            step.IsDistinct = ReadBoolean(stream);
+            step.InputStep = DeserializeStep(stream);
+            ValidateFuncCollectStep(step);
+            return step;
+        }
+
         private static GroupStep DeserializeGroupStep(MemoryStream stream)
         {
             var step = new GroupStep();
@@ -283,6 +309,10 @@ namespace Oracle.NoSQL.SDK.Query.BinaryProtocol
                     return DeserializeFuncSumStep(stream);
                 case StepType.FnMinMax:
                     return DeserializeFuncMinMaxStep(stream);
+                case StepType.FnSize:
+                    return DeserializeFuncSizeStep(stream);
+                case StepType.FnCollect:
+                    return DeserializeFuncCollectStep(stream);
                 case StepType.Group:
                     return DeserializeGroupStep(stream);
                 default:

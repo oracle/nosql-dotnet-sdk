@@ -107,11 +107,43 @@ namespace Oracle.NoSQL.SDK
                 {
                     return value;
                 }
+
                 value.Add(FieldValue.DeserializeFromJson(ref reader, options,
                     true));
             }
+
             throw new JsonException(
                 "Missing EndArray token for ArrayValue");
+        }
+
+        internal static int QueryCompareArrayValues(ArrayValue value1,
+            ArrayValue value2, int nullRank)
+        {
+            using var enum1 =
+                ((IEnumerable<FieldValue>)value1).GetEnumerator();
+            using var enum2 =
+                ((IEnumerable<FieldValue>)value2).GetEnumerator();
+
+            while (enum1.MoveNext() && enum2.MoveNext())
+            {
+                Debug.Assert(enum1.Current != null);
+                var result = enum1.Current.QueryCompareTotalOrder(
+                    enum2.Current, nullRank);
+                if (result != 0)
+                {
+                    return result;
+                }
+            }
+
+            return value1.Count.CompareTo(value2.Count);
+        }
+
+        internal void Sort(Comparison<FieldValue> comparison)
+        {
+            // We use List.Sort() to sort in place. This code will need to
+            // change if the type of arrayValue changes.
+            Debug.Assert(arrayValue is List<FieldValue>);
+            ((List<FieldValue>)arrayValue).Sort(comparison);
         }
 
         /// <summary>
@@ -338,6 +370,8 @@ namespace Oracle.NoSQL.SDK
             writer.WriteEndArray();
         }
 
+        internal override bool IsAtomic => false;
+
         internal override bool SupportsComparison => false;
 
         internal override bool QueryEquals(FieldValue other)
@@ -363,6 +397,11 @@ namespace Oracle.NoSQL.SDK
 
             return true;
         }
+
+        internal override int QueryCompareTotalOrder(FieldValue other,
+            int nullRank) => other.DbType == DbType.Array
+            ? QueryCompareArrayValues(this, other.AsArrayValue, nullRank)
+            : 1;
 
         internal override int QueryHashCode()
         {

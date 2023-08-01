@@ -29,7 +29,9 @@ namespace Oracle.NoSQL.SDK.Query
         CountNumbers = 44,
         Sum = 45,
         Min = 47,
-        Max = 48
+        Max = 48,
+        ArrayCollect = 91,
+        ArrayCollectDistinct = 92
     }
 
     internal struct ExpressionLocation
@@ -43,19 +45,29 @@ namespace Oracle.NoSQL.SDK.Query
         internal int EndColumn { get; set; }
     }
 
-    internal struct SortSpec
+    internal readonly struct SortSpec
     {
-        internal string FieldName { get; set; }
 
-        internal bool IsDescending { get; set; }
-
-        internal sbyte NullRank { get; set; }
-
-        internal bool NullsFirst
+        // Note: IsDescending will reverse the whole sorted order, including
+        // special values, which happens after NullRank was applied. To
+        // account for this, we reverse the value of NullRank if IsDescending
+        // is true.
+        
+        internal SortSpec(string fieldName, bool isDescending,
+            bool nullsFirst)
         {
-            get => NullRank == -1;
-            set => NullRank = value ? (sbyte)-1 : (sbyte)1;
+            FieldName = fieldName;
+            IsDescending = isDescending;
+            NullRank = nullsFirst ^ IsDescending ? (sbyte)-1 : (sbyte)1;
         }
+
+        internal string FieldName { get; }
+
+        internal bool IsDescending { get; }
+
+        internal sbyte NullRank { get; }
+
+        internal bool NullsFirst => (NullRank == -1) ^ IsDescending;
     }
 
     internal abstract class PlanStep
@@ -256,6 +268,32 @@ namespace Oracle.NoSQL.SDK.Query
         }
     }
 
+    internal class FuncCollectStep : AggregateFuncStep
+    {
+        internal override string Name =>
+            "FN_ARRAY_COLLECT" + (IsDistinct ? "_DISTINCT" : "");
+
+        internal bool IsDistinct { get; set; }
+
+        internal override PlanSyncIterator CreateSyncIterator(
+            QueryRuntime runtime)
+        {
+            return new FuncCollectIterator(runtime, this);
+        }
+    }
+
+    internal class FuncSizeStep : PlanSyncStep
+    {
+        internal override string Name => "FN_SIZE";
+
+        internal PlanStep InputStep { get; set; }
+
+        internal override PlanSyncIterator CreateSyncIterator(
+            QueryRuntime runtime)
+        {
+            return new FuncSizeIterator(runtime, this);
+        }
+    }
     internal class GroupStep : PlanAsyncStep
     {
         internal override string Name => "GROUP";

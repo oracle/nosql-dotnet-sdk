@@ -106,6 +106,8 @@ namespace Oracle.NoSQL.SDK
 
         internal virtual bool IsNumeric => false;
 
+        internal virtual bool IsAtomic => true;
+
         internal Exception ComparisonNotSupported(FieldValue other)
         {
             return new NotSupportedException(
@@ -116,6 +118,24 @@ namespace Oracle.NoSQL.SDK
             throw ComparisonNotSupported(other);
 
         internal int QueryCompare(FieldValue other) => QueryCompare(other, 1);
+
+        // Includes comparison of complex types, such as arrays and maps, as
+        // well as binary. The order between different types is
+        // Arrays > Maps > Atomic values, and Binary values (which are atomic)
+        // are greater than any other atomic values except special values
+        // (NullValue, JsonNullValue, EmptyValue), for which nullRank is used.
+        // Below implementation is only for atomic non-binary types. This
+        // should be overriden for BinaryValue, ArrayValue and MapValue.
+        internal virtual int QueryCompareTotalOrder(FieldValue other,
+            int nullRank) =>
+            other.IsAtomic
+                ? (other.DbType == DbType.Binary
+                    ? (IsSpecial ? nullRank : -1)
+                    : QueryCompare(other, nullRank))
+                : -1;
+
+        internal int QueryCompareTotalOrder(FieldValue other) =>
+            QueryCompareTotalOrder(other, 1);
 
         internal virtual bool QueryEquals(FieldValue other) =>
             throw new NotSupportedException(

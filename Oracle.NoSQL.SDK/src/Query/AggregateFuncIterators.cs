@@ -7,11 +7,16 @@
 
 namespace Oracle.NoSQL.SDK.Query {
     using System;
+    using System.Collections;
+    using System.Collections.Generic;
     using System.Diagnostics;
+    using static SizeOf;
 
     internal abstract class AggregateFuncIterator : PlanSyncIterator
     {
         protected internal readonly PlanSyncIterator inputIterator;
+
+        protected internal abstract ValueAggregator Aggregator { get; }
 
         internal AggregateFuncIterator(QueryRuntime runtime,
             AggregateFuncStep step) : base(runtime)
@@ -21,14 +26,31 @@ namespace Oracle.NoSQL.SDK.Query {
 
         // We don't use result register since aggregate function result is
         // never shared between iterators
-        internal override FieldValue Result { get; set; }
+        internal override FieldValue Result
+        {
+            get => Aggregator.Result;
+            set => throw new NotSupportedException();
+        }
+
+        internal override bool Next()
+        {
+            for (;;)
+            {
+                if (!inputIterator.Next())
+                {
+                    return true;
+                }
+
+                Aggregator.Aggregate(inputIterator.Result);
+            }
+        }
 
         internal override void Reset(bool resetResult = false)
         {
             inputIterator.Reset(resetResult);
             if (resetResult)
             {
-                Result = null;
+                Aggregator.Clear();
             }
         }
     }
@@ -37,86 +59,83 @@ namespace Oracle.NoSQL.SDK.Query {
     {
         private readonly FuncMinMaxStep step;
 
+        protected internal override ValueAggregator Aggregator { get; }
+
         internal FuncMinMaxIterator(QueryRuntime runtime,
             FuncMinMaxStep step) : base(runtime, step)
         {
             this.step = step;
+            Aggregator = step.IsMin
+                ? (ValueAggregator)new MinValueAggregator()
+                : new MaxValueAggregator();
         }
 
         internal override PlanStep Step => step;
-
-        internal override bool Next()
-        {
-            for (;;)
-            {
-                if (!inputIterator.Next())
-                {
-                    return true;
-                }
-
-                var result = inputIterator.Result;
-                Debug.Assert(result != null);
-
-                if (result == FieldValue.Null || result == FieldValue.Empty)
-                {
-                    continue;
-                }
-
-                if (Result == null)
-                {
-                    Result = result;
-                }
-                else
-                {
-                    var compareResult = result.QueryCompare(Result);
-                    if (step.IsMin)
-                    {
-                        if (compareResult < 0)
-                        {
-                            Result = result;
-                        }
-                    }
-                    else if (compareResult > 0)
-                    {
-                        Result = result;
-                    }
-                }
-            }
-
-        }
     }
 
     internal class FuncSumIterator : AggregateFuncIterator
     {
         private readonly FuncSumStep step;
 
+        protected internal override ValueAggregator Aggregator { get; }
+
         internal FuncSumIterator(QueryRuntime runtime, FuncSumStep step) :
             base(runtime, step)
         {
             this.step = step;
+            Aggregator = new SumAggregator();
+        }
+
+        internal override PlanStep Step => step;
+    }
+
+    internal class FuncCollectIterator : AggregateFuncIterator
+    {
+        private readonly FuncCollectStep step;
+        private long memory;
+
+        protected internal override ValueAggregator Aggregator { get; }
+
+        internal FuncCollectIterator(QueryRuntime runtime,
+            FuncCollectStep step) : base(runtime, step)
+        {
+            this.step = step;
+            Aggregator = step.IsDistinct
+                ? (ValueAggregator)new CollectDistinctAggregator(
+                    runtime.IsForTest)
+                : new CollectAggregator(runtime.IsForTest);
         }
 
         internal override PlanStep Step => step;
 
         internal override bool Next()
         {
+            long mem = 0;
             for (;;)
             {
                 if (!inputIterator.Next())
                 {
-                    return true;
+                    break;
                 }
 
-                var result = inputIterator.Result;
-                Debug.Assert(result != null);
+                mem += Aggregator.Aggregate(inputIterator.Result, true);
+            }
 
-                if (result == FieldValue.Null || result == FieldValue.Empty)
-                {
-                    continue;
-                }
+            memory += mem;
+            runtime.TotalMemory += mem;
 
-                Result = Result == null ? result : Result.QueryAdd(result);
+            return true;
+        }
+
+        internal override void Reset(bool resetResult = false)
+        {
+            base.Reset(resetResult);
+            if (resetResult)
+            {
+                runtime.TotalMemory -= memory;
+                memory = 0;
             }
         }
     }
+
 }

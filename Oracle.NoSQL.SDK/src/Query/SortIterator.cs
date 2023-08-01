@@ -12,6 +12,7 @@ namespace Oracle.NoSQL.SDK.Query {
     using System.Threading;
     using System.Threading.Tasks;
     using static Utils;
+    using static SizeOf;
 
     internal class SortIterator : PlanAsyncIterator, IComparer<RecordValue>
     {
@@ -49,7 +50,8 @@ namespace Oracle.NoSQL.SDK.Query {
                     rows.Add(row);
                     if (step.CountMemory)
                     {
-                        runtime.TotalMemory += row.GetMemorySize();
+                        runtime.TotalMemory +=
+                            GetListEntrySize(row.GetMemorySize());
                     }
                 }
 
