@@ -16,6 +16,8 @@ order to use it with queries via row_version SQL function.
 
 **Fixed**
 
+* Fixed behavior of MIN, MAX and SUM aggregate functions according to SQL
+for NoSQL spec.
 * Fixed invalid sorting order between special and non-special values for
 order by in descending mode.
 
