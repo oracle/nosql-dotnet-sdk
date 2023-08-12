@@ -71,7 +71,7 @@ namespace Oracle.NoSQL.SDK.Query
         internal override void AggregateInternal(FieldValue value)
         {
             Debug.Assert(value != null);
-            if (value == FieldValue.Null || value == FieldValue.Empty)
+            if (value.IsSpecial || !value.SupportsComparison)
             {
                 return;
             }
@@ -107,7 +107,7 @@ namespace Oracle.NoSQL.SDK.Query
     {
         internal override void AggregateInternal(FieldValue value)
         {
-            if (value == FieldValue.Null || value == FieldValue.Empty)
+            if (!value.IsNumeric)
             {
                 return;
             }
