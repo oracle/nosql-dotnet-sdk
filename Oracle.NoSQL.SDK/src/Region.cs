@@ -138,6 +138,12 @@ namespace Oracle.NoSQL.SDK
         private static readonly Realm OC20 = new Realm("oc20",
             "oraclecloud20.com");
 
+        private static readonly Realm OC22 = new Realm("oc22",
+            "oraclecloud22.com");
+
+        private static readonly Realm OC24 = new Realm("oc24",
+            "oraclecloud24.com");
+
         private readonly Realm realm;
 
         private Region(string regionId, string regionCode, Realm realm)
@@ -479,6 +485,12 @@ namespace Oracle.NoSQL.SDK
             "ord", OC1);
 
         /// <summary>
+        /// Realm: OC1, US West (Salt Lake)
+        /// </summary>
+        public static readonly Region US_SALTLAKE_2 = new Region(
+            "us-saltlake-2", "aga", OC1);
+
+        /// <summary>
         /// Realm: OC1, Canada Southeast (Toronto)
         /// </summary>
         public static readonly Region CA_TORONTO_1 = new Region("ca-toronto-1",
@@ -491,6 +503,12 @@ namespace Oracle.NoSQL.SDK
             "ca-montreal-1", "yul", OC1);
 
         /// <summary>
+        /// Realm: OC1, Columbia (Bogota)
+        /// </summary>
+        public static readonly Region SA_BOGOTA_1 = new Region(
+            "sa-bogota-1", "bog", OC1);
+
+        /// <summary>
         /// Realm: OC1, Brazil East (Sao Paulo)
         /// </summary>
         public static readonly Region SA_SAOPAULO_1 = new Region(
@@ -501,6 +519,12 @@ namespace Oracle.NoSQL.SDK
         /// </summary>
         public static readonly Region SA_SANTIAGO_1 = new Region(
             "sa-santiago-1", "scl", OC1);
+
+        /// <summary>
+        /// Realm: OC1, Chile (Valparaiso)
+        /// </summary>
+        public static readonly Region SA_VALPARAISO_1 = new Region(
+            "sa-valparaiso-1", "vap", OC1);
 
         /// <summary>
         /// Realm: OC1, Brazil (Vinhedo)
@@ -658,6 +682,18 @@ namespace Oracle.NoSQL.SDK
         /// </summary>
         public static readonly Region EU_JOVANOVAC_1 = new Region(
             "eu-jovanovac-1", "beg", OC20);
+
+        /// <summary>
+        /// Realm: OC22, Italy Dedicated (Rome)
+        /// </summary>
+        public static readonly Region EU_DCC_ROME_1 = new Region(
+            "eu-dcc-rome-1", "nap", OC22);
+
+        /// <summary>
+        /// Realm: OC24, Switzerland Dedicated (Zurich)
+        /// </summary>
+        public static readonly Region EU_DCC_ZURICH_1 = new Region(
+            "eu-dcc-zurich-1", "avz", OC24);
 
     }
 }
