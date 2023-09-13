@@ -193,7 +193,7 @@ namespace Oracle.NoSQL.SDK
         /// retries.  For the number of retries, use <see cref="RetryCount"/>.
         /// </remarks>
         /// <value>
-        /// The list of exceptions occured during the operation retries.
+        /// The list of exceptions occurred during the operation retries.
         /// </value>
         /// <see cref="NoSQLConfig.RetryHandler"/>
         public IReadOnlyList<Exception> Exceptions => exceptions;

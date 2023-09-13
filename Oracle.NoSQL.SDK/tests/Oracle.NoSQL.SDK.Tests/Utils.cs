@@ -20,7 +20,7 @@ namespace Oracle.NoSQL.SDK.Tests
     using DeepEqual.Syntax;
     using System.Security.Cryptography;
 
-    internal sealed class TempFileCache : IDisposable
+    internal sealed class TempFileCache
     {
         private HashSet<string> files = new HashSet<string>();
 
@@ -55,7 +55,7 @@ namespace Oracle.NoSQL.SDK.Tests
             files.Remove(fileName);
         }
 
-        public void Dispose()
+        public void Clear()
         {
             if (files != null)
             {

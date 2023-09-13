@@ -140,10 +140,10 @@ namespace Oracle.NoSQL.SDK
                     nameof(TenantId));
             }
 
-            if (Fingerprint == null)
+            if (string.IsNullOrEmpty(Fingerprint))
             {
-                throw new ArgumentNullException(nameof(Fingerprint),
-                    "Fingerprint cannot be null");
+                throw new ArgumentException(
+                    "Fingerprint cannot be null or empty");
             }
 
             if (PrivateKey == null && PrivateKeyFile == null &&
@@ -161,6 +161,11 @@ namespace Oracle.NoSQL.SDK
                 throw new ArgumentException(
                     "Only one of PrivateKey, PrivateKeyFile or " +
                     "PrivateKeyPEM may be specified");
+            }
+
+            if (Passphrase != null && Passphrase.Length == 0)
+            {
+                throw new ArgumentException("Passphrase cannot be empty");
             }
         }
 

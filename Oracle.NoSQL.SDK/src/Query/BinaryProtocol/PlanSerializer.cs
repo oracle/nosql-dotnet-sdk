@@ -10,7 +10,6 @@ namespace Oracle.NoSQL.SDK.Query.BinaryProtocol
     using System;
     using System.Diagnostics;
     using System.IO;
-    using System.IO.Pipes;
     using Query;
     using static SDK.BinaryProtocol.Protocol;
     using static PlanValidator;

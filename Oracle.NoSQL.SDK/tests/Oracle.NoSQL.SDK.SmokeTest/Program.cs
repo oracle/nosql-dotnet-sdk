@@ -5,20 +5,6 @@
  *  https://oss.oracle.com/licenses/upl/
  */
 
-/*
- * A simple example that
- *   - creates a table
- *   - inserts a row using the put() operation
- *   - reads a row using the get() operation
- *   - drops the table
- *
- * To run against the cloud simulator:
- *     node basic_example.js cloudsim.json
- *
- * To run against the cloud service:
- *     node basic_example.js config.json
- */
-
 namespace Oracle.NoSQL.SDK.SmokeTest
 {
     using System;
@@ -36,14 +22,14 @@ namespace Oracle.NoSQL.SDK.SmokeTest
                 Indented = true
             };
 
-        // <Main>
         public static async Task Main(string[] args)
         {
             // Console.ReadLine();
-            var configFile = args[0];
             try
             {
-                using var client = new NoSQLClient(configFile);
+                using var client = args.Length != 0
+                    ? new NoSQLClient(args[0])
+                    : new NoSQLClient();
                 Console.WriteLine("Created NoSQLClient instance");
                 await RunSmokeTest(client);
                 Console.WriteLine("Success!");
