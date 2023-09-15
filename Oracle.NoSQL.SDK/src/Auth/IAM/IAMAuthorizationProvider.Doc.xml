@@ -81,6 +81,42 @@ https://oss.oracle.com/licenses/upl/
                         calling <see cref="CreateWithResourcePrincipal"/>.
                     </description>
                 </item>
+                <item>
+                    <description>
+                        Session Token.<br/>
+                        <see href="https://docs.oracle.com/en-us/iaas/Content/API/Concepts/sdk_authentication_methods.htm#sdk_authentication_methods_session_token">
+                            Session Token-Based Authentication
+                        </see> uses temporary session token read from a token
+                        file. The path of the token file is read from a
+                        profile in OCI configuration file as the value of
+                        field <em>security_token_file</em>. See
+                        <see href="https://docs.oracle.com/en-us/iaas/Content/API/Concepts/sdkconfig.htm">
+                            SDK Configuration File
+                        </see> for details of the file's contents and format.
+                        <br/>
+                        For session token-based authentication, the properties
+                        required in the OCI config file by the driver are
+                        <em>tenancy</em> for tenant OCID,
+                        <em>security_token_file</em> for security token file
+                        and <em>key_file</em> for private key file. You may
+                        also specify <em>pass_phrase</em> and <em>region</em>
+                        properties. The same considerations apply as described
+                        below when using OCI config file with specific user's
+                        identity.
+                        <br/>
+                        You can use the OCI CLI to authenticate and create a
+                        session token (together with the profile in OCI config
+                        file that uses that session token), see
+                        <see href="https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/clitoken.htm">
+                            Token-based Authentication for the CLI
+                        </see>.
+                        Use Session Token by setting
+                        <see cref="UseSessionToken"/> to <c>true</c> or
+                        calling one of
+                        <see cref="M:Oracle.NoSQL.SDK.IAMAuthorizationProvider.CreateWithSessionToken*"/>
+                        methods.
+                    </description>
+                </item>
             </list>
         </para>
         <para>
@@ -221,6 +257,20 @@ https://oss.oracle.com/licenses/upl/
                         set <see cref="NoSQLConfig.AuthorizationProvider"/>.
                         Note that the driver will load the credentials from
                         the OCI configuration file only once.
+                        <br/>
+                        Note that if using an OCI configuration file, you may
+                        also specify region identifier in the same profile as
+                        your credentials. In this case, you need not specify
+                        either region or endpoint in
+                        <see cref="NoSQLConfig"/>. In particular, if you use
+                        the default OCI config file (<em>~/.oci/config</em>)
+                        and default profile name (<em>DEFAULT</em>) and do not
+                        need to customize any other configuration properties,
+                        you may create <see cref="NoSQLClient"/> instance
+                        without providing any arguments to the
+                        <see cref="NoSQLClient"/> constructor. See
+                        <see cref="NoSQLClient(NoSQLConfig)"/> for more
+                        information.
                     </description>
                 </item>
                 <item>
@@ -330,7 +380,7 @@ https://oss.oracle.com/licenses/upl/
         <code>
             ...
             public static async Task&lt;IAMCredentials&gt; LoadCredentialsAsync(
-            CancellationToken cancellationToken)
+                CancellationToken cancellationToken)
             {
                 // Load the credentials from a secure location.
                 return new IAMCredentials
@@ -358,7 +408,7 @@ https://oss.oracle.com/licenses/upl/
                 Region = Region.SA_SAOPAULO_1,
                 AuthorizationProvider =
                     IAMAuthorizationProvider.CreateWithInstancePrincipal()
-            }
+            };
         </code>
     </example>
     <example>
@@ -375,6 +425,38 @@ https://oss.oracle.com/licenses/upl/
     </example>
     <example>
         Instantiating <see cref="IAMAuthorizationProvider"/> using
+        instance principal with delegation token.
+        <code>
+            // Obtain delegation token somehow.
+            var delegationToken = GetDelegationToken();
+            var config = new NoSQLConfig
+            {
+                Region = Region.SA_SAOPAULO_1,
+                AuthorizationProvider =
+                    IAMAuthorizationProvider
+                        .CreateWithInstancePrincipalForDelegation(
+                            delegationToken);
+            };
+        </code>
+    </example>
+    <example>
+        Specifying <see cref="IAMAuthorizationProvider"/> using instance
+        principal with delegation token in JSON configuration file (the
+        delegation token is stored in a separate file
+        "delegation_token_file").
+        <code>
+        {
+            "Region": "sa-saopaulo-1",
+            "AuthorizationProvider": {
+                "AuthorizationType": "IAM",
+                "UseInstancePrincipal": true,
+                "DelegationTokenFile": "path/to/delegation_token_file"
+            }
+        }
+        </code>
+    </example>
+    <example>
+        Instantiating <see cref="IAMAuthorizationProvider"/> using
         resource principal.
         <code>
             var config = new NoSQLConfig
@@ -382,11 +464,11 @@ https://oss.oracle.com/licenses/upl/
                 Region = Region.SA_SAOPAULO_1,
                 AuthorizationProvider =
                     IAMAuthorizationProvider.CreateWithResourcePrincipal()
-            }
+            };
         </code>
     </example>
     <example>
-        Specifying <see cref="IAMAuthorizationProvider"/> using instance
+        Specifying <see cref="IAMAuthorizationProvider"/> using resource
         principal in JSON configuration file.
         <code>
         {
@@ -394,6 +476,34 @@ https://oss.oracle.com/licenses/upl/
             "AuthorizationProvider": {
                 "AuthorizationType": "IAM",
                 "UseResourcePrincipal": true
+            }
+        }
+        </code>
+    </example>
+    <example>
+        Instantiating <see cref="IAMAuthorizationProvider"/> using session
+        token.
+        <code>
+            var config = new NoSQLConfig
+            {
+                Region = Region.AP_SYDNEY_1,
+                AuthorizationProvider =
+                    IAMAuthorizationProvider.CreateWithSessionToken(
+                        "~/my_app/.oci/config", "Jane")
+            };
+        </code>
+    </example>
+    <example>
+        Specifying <see cref="IAMAuthorizationProvider"/> using session token
+        in JSON configuration file.
+        <code>
+        {
+            "Region": "ap-sydney-1",
+            "AuthorizationProvider": {
+                "AuthorizationType": "IAM",
+                "UseSessionToken": true,
+                "ConfigFile": "~/my_app/.oci/config",
+                "ProfileName": "Jane"
             }
         }
         </code>

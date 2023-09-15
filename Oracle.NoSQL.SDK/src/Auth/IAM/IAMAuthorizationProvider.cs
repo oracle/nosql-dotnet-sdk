@@ -10,176 +10,14 @@ namespace Oracle.NoSQL.SDK
     using System;
     using System.Diagnostics;
     using System.Net.Http.Headers;
-    using System.Security.Cryptography;
     using System.Threading;
     using System.Threading.Tasks;
     using static HttpConstants;
-    using static Utils;
 
     /// <include file="IAMAuthorizationProvider.Doc.xml" path="IAMAuthorizationProvider/*"/>
-    public class IAMAuthorizationProvider : IAuthorizationProvider,
+    public partial class IAMAuthorizationProvider : IAuthorizationProvider,
         IDisposable
     {
-        private static readonly TimeSpan MaxEntryLifetime =
-            TimeSpan.FromSeconds(300);
-        private static readonly TimeSpan DefaultRefreshAhead =
-            TimeSpan.FromSeconds(10);
-        private static readonly TimeSpan DefaultRequestTimeout =
-            TimeSpan.FromSeconds(120);
-
-        private const string SigningHeaders = "(request-target) host date";
-
-        private const string SigningHeadersWithOBO =
-            SigningHeaders + " " + OBOTokenHeader;
-
-        internal const string DefaultProfileName = "DEFAULT";
-
-        private AuthenticationProfileProvider profileProvider;
-        private string serviceHost;
-        private string delegationToken;
-        private SignatureDetails signatureDetails;
-        private TimeSpan renewInterval;
-        private CancellationTokenSource renewCancelSource;
-
-        // Optimization to avoid async lock for common case where signature
-        // refresh is not required.
-        private readonly object providerLock = new object();
-        // Used to obtain AuthenticationProfile.
-        private readonly SemaphoreSlim providerAsyncLock =
-            new SemaphoreSlim(1, 1);
-
-        private bool disposed;
-
-        private class SignatureDetails
-        {
-            internal DateTime Time { get; }
-            internal string DateStr { get; }
-            internal string Header { get; }
-            internal string TenantId { get; }
-
-            internal SignatureDetails(DateTime time, string dateStr,
-                string header, string tenantId)
-            {
-                Time = time;
-                DateStr = dateStr;
-                Header = header;
-                TenantId = tenantId;
-            }
-        }
-        private string GetSigningContent(string dateStr,
-            string currentDelegationToken)
-        {
-            var content =
-                $"{RequestTarget}: post /{NoSQLDataPath}\n" +
-                $"{Host}: {serviceHost}\n" +
-                $"{Date}: {dateStr}";
-
-            if (currentDelegationToken != null)
-            {
-                content += $"\n{OBOTokenHeader}: {currentDelegationToken}";
-            }
-
-            return content;
-        }
-
-        private async Task<SignatureDetails> CreateSignatureDetails(
-            bool forceProfileRefresh, string currentDelegationToken,
-            CancellationToken cancellationToken)
-        {
-            AuthenticationProfile profile;
-
-            // This simplification allows to avoid managing thread safety in
-            // all various profile providers (since signature creation is
-            // an infrequent operation).
-            await providerAsyncLock.WaitAsync(cancellationToken);
-            try
-            {
-                profile = await profileProvider.GetProfileAsync(
-                    forceProfileRefresh, cancellationToken);
-            }
-            finally
-            {
-                providerAsyncLock.Release();
-            }
-
-            var dateTime = DateTime.UtcNow;
-            var dateStr = dateTime.ToString("r");
-
-            string signature;
-            try
-            {
-                signature = CreateSignature(
-                    GetSigningContent(dateStr, currentDelegationToken),
-                    profile.PrivateKey);
-            }
-            catch (CryptographicException ex)
-            {
-                throw new InvalidOperationException(
-                    $"Error signing request: {ex.Message}", ex);
-            }
-
-            var header = GetSignatureHeader(
-                currentDelegationToken == null ?
-                    SigningHeaders : SigningHeadersWithOBO,
-                profile.KeyId, signature);
-
-            return new SignatureDetails(dateTime, dateStr, header,
-                profile.TenantId);
-        }
-
-        private async Task RefreshSignatureDetails(
-            bool forceProfileRefresh, CancellationToken cancellationToken)
-        {
-            // If there is no DelegationTokenProvider, delegationToken was
-            // initialized in the constructor.
-            var currentDelegationToken = DelegationTokenProvider != null ?
-                await DelegationTokenProvider(cancellationToken) :
-                delegationToken;
-
-            var currentSignatureDetails = await CreateSignatureDetails(
-                forceProfileRefresh, currentDelegationToken,
-                cancellationToken);
-
-            lock (providerLock)
-            {
-                delegationToken = currentDelegationToken;
-                signatureDetails = currentSignatureDetails;
-            }
-        }
-
-        private void ScheduleRenew()
-        {
-            renewCancelSource?.Cancel();
-            renewCancelSource = new CancellationTokenSource();
-            Task.Run(async () =>
-            {
-                await Task.Delay(renewInterval, renewCancelSource.Token);
-                try
-                {
-                    await RefreshSignatureDetails(false, renewCancelSource.Token);
-                }
-                catch (Exception)
-                {
-                    // This exception will not be handled so we don't rethrow
-                    // but only log the error somehow and return without
-                    // rescheduling. The user will get the error when
-                    // CreateSignatureDetails() is called again by
-                    // called again by GetAuthorizationPropertiesAsync().
-                    return;
-                }
-                ScheduleRenew();
-            });
-        }
-
-        private bool NeedSignatureRefresh()
-        {
-            lock (providerLock)
-            {
-                return signatureDetails == null || DateTime.UtcNow >
-                    signatureDetails.Time + CacheDuration;
-            }
-        }
-
         /// <summary>
         /// Gets or sets the credentials for the specific user identity.
         /// </summary>
@@ -187,8 +25,9 @@ namespace Oracle.NoSQL.SDK
         /// The credentials for the specific user identity.  This property is
         /// exclusive with <see cref="ConfigFile"/>,
         /// <see cref="ProfileName"/>, <see cref="CredentialsProvider"/>,
-        /// <see cref="UseInstancePrincipal"/> and
-        /// <see cref="UseResourcePrincipal"/>.
+        /// <see cref="UseInstancePrincipal"/>,
+        /// <see cref="UseResourcePrincipal"/> and
+        /// <see cref="UseSessionToken"/>.
         /// </value>
         public IAMCredentials Credentials { get; set; }
 
@@ -230,8 +69,9 @@ namespace Oracle.NoSQL.SDK
         /// the specific user's identity.   This property is
         /// exclusive with <see cref="Credentials"/>,
         /// <see cref="ConfigFile"/>, <see cref="ProfileName"/>,
-        /// <see cref="UseInstancePrincipal"/> and
-        /// <see cref="UseResourcePrincipal"/>.
+        /// <see cref="UseInstancePrincipal"/>,
+        /// <see cref="UseResourcePrincipal"/> and
+        /// <see cref="UseSessionToken"/>
         /// </value>
         public Func<CancellationToken, Task<IAMCredentials>>
             CredentialsProvider { get; set; }
@@ -244,8 +84,9 @@ namespace Oracle.NoSQL.SDK
         /// <c>true</c> to use an instance principal, otherwise <c>false</c>.
         /// The default is <c>false</c>.  The <c>true</c> value is exclusive
         /// with <see cref="Credentials"/>, <see cref="ConfigFile"/>,
-        /// <see cref="ProfileName"/>, <see cref="CredentialsProvider"/> and
-        /// <see cref="UseResourcePrincipal"/>.
+        /// <see cref="ProfileName"/>, <see cref="CredentialsProvider"/>,
+        /// <see cref="UseResourcePrincipal"/> and
+        /// <see cref="UseSessionToken"/>.
         /// </value>
         public bool UseInstancePrincipal { get; set; }
 
@@ -272,20 +113,52 @@ namespace Oracle.NoSQL.SDK
         /// </summary>
         /// <remarks>
         /// <para>
-        /// This property is used only with instance principal and ignored
-        /// otherwise.  The delegation token allows the instance to assume the
-        /// privileges of the user for which the token was created and act on
-        /// behalf of that user.
+        /// This property can only be used only with instance principal. The
+        /// delegation token allows the instance to assume the privileges of
+        /// the user for which the token was created and act on behalf of that
+        /// user.
         /// </para>
         /// <para>
         /// The delegation token provider delegate is called to obtain the
         /// delegation token each time the request signature is renewed.
         /// </para>
         /// </remarks>
-        /// <value>The delegation token provider.</value>
+        /// <value>
+        /// The delegation token file path (absolute or relative to current
+        /// directory). This property is exclusive with both
+        /// <see cref="DelegationTokenFile"/> property and providing
+        /// delegation token directly via
+        /// <see cref="CreateWithInstancePrincipalForDelegation(string,string)"/>.
+        /// </value>
         /// <seealso cref="CreateWithInstancePrincipalForDelegation(Func{CancellationToken,Task{string}},string)"/>
         public Func<CancellationToken, Task<string>> DelegationTokenProvider
         { get; set; }
+
+        /// <summary>
+        /// Gets or sets the delegation token file path.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// This property can only be used only with instance principal. The
+        /// delegation token allows the instance to assume the privileges of
+        /// the user for which the token was created and act on behalf of that
+        /// user.
+        /// </para>
+        /// <para>
+        /// The delegation token file is read each time the request signature
+        /// is renewed. You may also use the property in JSON configuration
+        /// file (see examples).
+        /// </para>
+        /// </remarks>
+        /// <value>
+        /// The delegation token file path (absolute or relative to current
+        /// directory). This property is exclusive with both
+        /// <see cref="DelegationTokenProvider"/> property and providing
+        /// delegation token directly via
+        /// <see cref="CreateWithInstancePrincipalForDelegation(string,string)"/>.
+        /// </value>
+        /// <seealso cref="CreateWithInstancePrincipalForDelegationFromFile(string,string)"/>
+        public string DelegationTokenFile { get; set; }
 
         /// <summary>
         /// Gets or sets the value that determines whether to use a resource
@@ -295,10 +168,32 @@ namespace Oracle.NoSQL.SDK
         /// <c>true</c> to use a resource principal, otherwise <c>false</c>.
         /// The default is <c>false</c>.  The <c>true</c> value is exclusive
         /// with <see cref="Credentials"/>, <see cref="ConfigFile"/>,
-        /// <see cref="ProfileName"/>, <see cref="CredentialsProvider"/> and
-        /// <see cref="UseResourcePrincipal"/>.
+        /// <see cref="ProfileName"/>, <see cref="CredentialsProvider"/>,
+        /// <see cref="UseInstancePrincipal"/> and
+        /// <see cref="UseSessionToken"/>.
         /// </value>
         public bool UseResourcePrincipal { get; set; }
+
+        /// <summary>
+        /// Gets or sets the value that determines whether to use a session
+        /// token.
+        /// </summary>
+        /// <remarks>
+        /// Because this method uses OCI Configuration File, you may specify
+        /// the path to the configuration file and the profile within the
+        /// configuration file using one of the
+        /// <see cref="M:Oracle.NoSQL.SDK.IAMAuthorizationProvider.CreateWithSessionToken*"/>
+        /// methods or properties <see cref="ConfigFile"/> and
+        /// <see cref="ProfileName"/>. The same defaults apply.
+        /// </remarks>
+        /// <value>
+        /// <c>true</c> to use session token, otherwise <c>false</c>.
+        /// The default is <c>false</c>.  The <c>true</c> value is exclusive
+        /// with <see cref="Credentials"/>, <see cref="CredentialsProvider"/>,
+        /// <see cref="UseInstancePrincipal"/> and
+        /// <see cref="UseResourcePrincipal"/>.
+        /// </value>
+        public bool UseSessionToken { get; set; }
 
         /// <summary>
         /// Gets or sets the duration of the request signature in the cache.
@@ -388,7 +283,10 @@ namespace Oracle.NoSQL.SDK
         /// <param name="configFile">The path (absolute or relative) to the
         /// OCI configuration file.</param>
         /// <param name="profileName">Name of the profile within the OCI
-        /// configuration file.</param>
+        /// configuration file. If <c>null</c>, default profile name will be
+        /// used (see <see cref="ProfileName"/>).</param>
+        /// <seealso cref="ConfigFile"/>
+        /// <seealso cref="ProfileName"/>
         public IAMAuthorizationProvider(string configFile,
             string profileName)
         {
@@ -511,121 +409,93 @@ namespace Oracle.NoSQL.SDK
             };
 
         /// <summary>
-        /// Validates and configures the authorization provider.
+        /// Creates a new instance of <see cref="IAMAuthorizationProvider"/>
+        /// using an instance principal with a delegation token using the
+        /// specified delegation file.
         /// </summary>
         /// <remarks>
-        /// This method will be called when <see cref="NoSQLClient"/> instance
-        /// is created.  You do not need to call this method.
+        /// The delegation token allows the instance to assume the privileges
+        /// of the user for which the token was created.  The delegation token
+        /// file will be read to obtain the delegation token each time the
+        /// request signature is renewed.
         /// </remarks>
-        /// <param name="config">The initial configuration.</param>
-        /// <exception cref="ArgumentException">If any mutually exclusive
-        /// properties are set together or any of the credentials set as
-        /// <see cref="Credentials"/> or in OCI configuration file are invalid
-        /// or missing.</exception>
-        /// <seealso cref="IAuthorizationProvider.ConfigureAuthorization"/>
-        public void ConfigureAuthorization(NoSQLConfig config)
-        {
-            if (UseResourcePrincipal)
+        /// <param name="delegationTokenFile">Path to the delegation token
+        /// file.</param>
+        /// <param name="federationEndpoint">(Optional) The federation
+        /// endpoint.  If not specified, the federation endpoint is
+        /// auto-detected.  Most applications do not need to specify this
+        /// parameter.</param>
+        /// <returns>A new instance of <see cref="IAMAuthorizationProvider"/>
+        /// that uses the instance principal and the specified delegation
+        /// token file.</returns>
+        /// <seealso cref="DelegationTokenFile"/>
+        public static IAMAuthorizationProvider
+            CreateWithInstancePrincipalForDelegationFromFile(
+                string delegationTokenFile,
+                string federationEndpoint = null) =>
+            new IAMAuthorizationProvider
             {
-                if (UseInstancePrincipal || Credentials != null ||
-                    ConfigFile != null || ProfileName != null ||
-                    CredentialsProvider != null)
-                {
-                    throw new ArgumentException(
-                        "Cannot specify UseInstancePrincipal, Credentials, " +
-                        "ConfigFile, ProfileName or CredentialsProvider " +
-                        "properties together with UseResourcePrincipal " +
-                        "property");
-                }
-                profileProvider = new ResourcePrincipalProvider();
-            }
-            else if (UseInstancePrincipal)
-            {
-                if (Credentials != null || ConfigFile != null ||
-                    ProfileName != null || CredentialsProvider != null)
-                {
-                    throw new ArgumentException(
-                        "Cannot specify Credentials, ConfigFile, " +
-                        "ProfileName or CredentialsProvider properties " +
-                        "together with UseResourcePrincipal property");
-                }
-                profileProvider = new InstancePrincipalProvider(
-                    FederationEndpoint, RequestTimeout,
-                    config.ConnectionOptions);
-            }
-            else if (Credentials != null)
-            {
-                if (ConfigFile != null || ProfileName != null ||
-                    CredentialsProvider != null)
-                {
-                    throw new ArgumentException(
-                        "Cannot specify ConfigFile, ProfileName or " +
-                        "CredentialsProvider properties together with " +
-                        "Credentials property");
-                }
+                UseInstancePrincipal = true,
+                DelegationTokenFile = delegationTokenFile,
+                FederationEndpoint = federationEndpoint
+            };
 
-                profileProvider = new CredentialsProfileProvider(Credentials);
-            }
-            else if (CredentialsProvider != null)
+        /// <summary>
+        /// Creates a new instance of <see cref="IAMAuthorizationProvider"/>
+        /// using session token-based authentication with the default OCI
+        /// configuration file and the default profile name.
+        /// </summary>
+        /// <returns>A new instance of <see cref="IAMAuthorizationProvider"/>
+        /// that uses session-token based authentication.</returns>
+        /// <seealso cref="ConfigFile"/>
+        /// <seealso cref="ProfileName"/>
+        /// <seealso cref="UseSessionToken"/>
+        public static IAMAuthorizationProvider CreateWithSessionToken() =>
+            new IAMAuthorizationProvider
             {
-                if (ConfigFile != null || ProfileName != null)
-                {
-                    throw new ArgumentException(
-                        "Cannot specify ConfigFile or ProfileName " +
-                        "properties together with CredentialsProvider " +
-                        "property");
-                }
+                UseSessionToken = true
+            };
 
-                profileProvider = new UserProfileProvider(
-                    CredentialsProvider);
-            }
-            else
+        /// <summary>
+        /// Creates a new instance of <see cref="IAMAuthorizationProvider"/>
+        /// using session token-based authentication with the default OCI
+        /// configuration file and the specified profile name.
+        /// </summary>
+        /// <param name="profileName">Name of the profile within the OCI
+        /// configuration file.</param>
+        /// <returns>A new instance of <see cref="IAMAuthorizationProvider"/>
+        /// that uses session-token based authentication.</returns>
+        /// <seealso cref="ConfigFile"/>
+        /// <seealso cref="ProfileName"/>
+        /// <seealso cref="UseSessionToken"/>
+        public static IAMAuthorizationProvider CreateWithSessionToken(
+            string profileName) =>
+            new IAMAuthorizationProvider(profileName)
             {
-                profileProvider = new OCIConfigProfileProvider(ConfigFile,
-                    ProfileName);
-            }
+                UseSessionToken = true
+            };
 
-            if (CacheDuration <= TimeSpan.Zero ||
-                CacheDuration > MaxEntryLifetime)
+        /// <summary>
+        /// Creates a new instance of <see cref="IAMAuthorizationProvider"/>
+        /// using session token-based authentication with the specified OCI
+        /// configuration file and profile name.
+        /// </summary>
+        /// <param name="configFile">The path (absolute or relative) to the
+        /// OCI configuration file.</param>
+        /// <param name="profileName">Name of the profile within the OCI
+        /// configuration file. If <c>null</c>, default profile name will be
+        /// used (see <see cref="ProfileName"/>).</param>
+        /// <returns>A new instance of <see cref="IAMAuthorizationProvider"/>
+        /// that uses session-token based authentication.</returns>
+        /// <seealso cref="ConfigFile"/>
+        /// <seealso cref="ProfileName"/>
+        /// <seealso cref="UseSessionToken"/>
+        public static IAMAuthorizationProvider CreateWithSessionToken(
+            string configFile, string profileName) =>
+            new IAMAuthorizationProvider(configFile, profileName)
             {
-                throw new ArgumentException(
-                    "Invalid CacheDuration value: " +
-                    $"{CacheDuration.TotalSeconds} seconds, must be " +
-                    "positive and no greater than " +
-                    $"{MaxEntryLifetime.TotalSeconds} seconds",
-                    nameof(CacheDuration));
-            }
-
-            if (RefreshAhead != TimeSpan.Zero)
-            {
-                if (RefreshAhead < TimeSpan.Zero)
-                {
-                    throw new ArgumentException(
-                        "Invalid RefreshAhead value: " +
-                        $"{RefreshAhead.TotalSeconds}, cannot be negative",
-                        nameof(RefreshAhead));
-                }
-
-                if (RefreshAhead < CacheDuration)
-                {
-                    renewInterval = CacheDuration - RefreshAhead;
-                }
-            }
-
-            // Special case for cloud where the region may be specified in OCI
-            // config file or as part of resource principal environment.  In
-            // this case we try to get the region from the auth provider and
-            // retry getting the uri from this region.
-            if (config.Uri == null)
-            {
-                Debug.Assert(config.Region == null);
-                config.Region = Region.FromRegionId(profileProvider.Region);
-                config.InitUri();
-            }
-
-            // config.Init() will throw if Uri is still null
-            serviceHost = config.Uri?.Host;
-        }
+                UseSessionToken = true
+            };
 
         /// <summary>
         /// Obtains and adds the required HTTP headers for authorization with
@@ -684,7 +554,6 @@ namespace Oracle.NoSQL.SDK
                 {
                     headers.Add(OBOTokenHeader, delegationToken);
                 }
-
 
                 /*
                  * If request doesn't has compartment id, set the tenant id as

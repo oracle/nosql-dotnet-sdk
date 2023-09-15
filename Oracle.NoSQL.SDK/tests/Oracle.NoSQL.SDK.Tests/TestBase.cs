@@ -129,7 +129,7 @@ namespace Oracle.NoSQL.SDK.Tests
         public new static void ClassCleanup()
         {
             TestBase.ClassCleanup();
-            TempFileCache.Dispose();
+            TempFileCache.Clear();
         }
     }
 

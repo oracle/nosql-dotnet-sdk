@@ -14,6 +14,21 @@ namespace Oracle.NoSQL.SDK {
     using System.Security.Cryptography;
     using System.Threading;
     using System.Threading.Tasks;
+    using static Utils;
+    using static OCIConfigFileConstants;
+
+    internal static class OCIConfigFileConstants
+    {
+        internal const string DefaultProfile =
+            IAMAuthorizationProvider.DefaultProfileName;
+        internal const string TenancyProp = "tenancy";
+        internal const string UserProp = "user";
+        internal const string FingerprintProp = "fingerprint";
+        internal const string KeyFileProp = "key_file";
+        internal const string PassphraseProp = "pass_phrase";
+        internal const string RegionProp = "region";
+        internal const string SessionTokenFileProp = "security_token_file";
+    }
 
     internal class AuthenticationProfile
     {
@@ -73,6 +88,20 @@ namespace Oracle.NoSQL.SDK {
             this.credentials.Validate();
             keyId = $"{credentials.TenantId}/{credentials.UserId}/" +
                 credentials.Fingerprint;
+        }
+
+        // from OCI config file
+        internal CredentialsProfileProvider(Dictionary<string, string> profile)
+            : this(new IAMCredentials
+            {
+                TenantId = profile.GetValueOrDefault(TenancyProp),
+                UserId = profile.GetValueOrDefault(UserProp),
+                PrivateKeyFile = profile.GetValueOrDefault(KeyFileProp),
+                Fingerprint = profile.GetValueOrDefault(FingerprintProp),
+                Passphrase = profile.GetValueOrDefault(
+                    PassphraseProp)?.ToCharArray()
+            }, true)
+        {
         }
 
         // Erase sensitive info when no longer needed.
@@ -138,21 +167,122 @@ namespace Oracle.NoSQL.SDK {
 
     }
 
+    internal class SessionTokenProfileProvider : AuthenticationProfileProvider
+    {
+        private readonly string tenantId;
+        private readonly string privateKeyFile;
+        private readonly string sessionTokenFile;
+        private char[] passphrase;
+        private RSA privateKey;
+        private bool disposed;
+
+        internal SessionTokenProfileProvider(
+            Dictionary<string, string> profile)
+        {
+            tenantId = profile.GetValueOrDefault(TenancyProp);
+
+            if (string.IsNullOrEmpty(tenantId))
+            {
+                throw new ArgumentException("Missing tenant id");
+            }
+
+            if (!IsValidOCID(tenantId))
+            {
+                throw new ArgumentException(
+                    $"Tenant id is not a valid OCID: {tenantId}",
+                    nameof(tenantId));
+            }
+
+            privateKeyFile = profile.GetValueOrDefault(KeyFileProp);
+
+
+            if (string.IsNullOrEmpty(privateKeyFile))
+            {
+                throw new ArgumentException("Missing private key file name");
+            }
+
+            passphrase = profile.GetValueOrDefault(PassphraseProp)
+                ?.ToCharArray();
+
+            sessionTokenFile = profile.GetValueOrDefault(
+                SessionTokenFileProp);
+
+            if (string.IsNullOrEmpty(sessionTokenFile))
+            {
+                throw new ArgumentException(
+                    "Missing session token file name");
+            }
+        }
+
+        // Erase sensitive info when no longer needed.
+        private void CheckEraseCredentials()
+        {
+            if (passphrase != null)
+            {
+                Array.Clear(passphrase, 0, passphrase.Length);
+                passphrase = null;
+            }
+        }
+
+        internal override async Task<AuthenticationProfile> GetProfileAsync(
+            bool forceRefresh, CancellationToken cancellationToken)
+        {
+            if (privateKey == null)
+            {
+                try
+                {
+                    privateKey =
+                        await PemPrivateKeyUtils.GetFromFileAsync(
+                            privateKeyFile, passphrase, cancellationToken);
+                }
+                finally
+                {
+                    CheckEraseCredentials();
+                }
+            }
+
+            string sessionToken;
+            try
+            {
+                sessionToken = string.Join("", await File.ReadAllLinesAsync(
+                    sessionTokenFile, cancellationToken));
+            }
+            catch (Exception ex)
+            {
+                throw new ArgumentException(
+                    "Failed to retrieve security token from file " +
+                    $"{sessionTokenFile}: {ex.Message}");
+            }
+
+            if (sessionToken.Length == 0)
+            {
+                throw new ArgumentException(
+                    $"Security token from file {sessionTokenFile} is empty");
+            }
+
+            return new AuthenticationProfile("ST$" + sessionToken, privateKey,
+                tenantId);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && !disposed)
+            {
+                privateKey?.Clear();
+                CheckEraseCredentials();
+                disposed = true;
+            }
+        }
+    }
+
     internal class OCIConfigProfileProvider : AuthenticationProfileProvider
     {
-        private const string DefaultProfile =
-            IAMAuthorizationProvider.DefaultProfileName;
-        private const string TenancyProp = "tenancy";
-        private const string UserProp = "user";
-        private const string FingerprintProp = "fingerprint";
-        private const string KeyFileProp = "key_file";
-        private const string PassphraseProp = "pass_phrase";
-        private const string RegionProp = "region";
-
-        private readonly CredentialsProfileProvider provider;
+        private readonly AuthenticationProfileProvider provider;
 
         internal OCIConfigProfileProvider(string configFile,
-            string profileName)
+            string profileName,
+            Func<Dictionary<string,string>, AuthenticationProfileProvider>
+                createProviderFunc)
         {
             if (configFile == null)
             {
@@ -185,15 +315,7 @@ namespace Oracle.NoSQL.SDK {
 
             try
             {
-                provider = new CredentialsProfileProvider(new IAMCredentials
-                {
-                    TenantId = profile.GetValueOrDefault(TenancyProp),
-                    UserId = profile.GetValueOrDefault(UserProp),
-                    PrivateKeyFile = profile.GetValueOrDefault(KeyFileProp),
-                    Fingerprint = profile.GetValueOrDefault(FingerprintProp),
-                    Passphrase = profile.GetValueOrDefault(
-                        PassphraseProp)?.ToCharArray()
-                }, true);
+                provider = createProviderFunc(profile);
             }
             catch (Exception ex)
             {
@@ -203,6 +325,12 @@ namespace Oracle.NoSQL.SDK {
             }
 
             Region = profile.GetValueOrDefault(RegionProp);
+        }
+
+        internal OCIConfigProfileProvider(string configFile,
+            string profileName) : this(configFile, profileName,
+            profile => new CredentialsProfileProvider(profile))
+        {
         }
 
         internal override Task<AuthenticationProfile> GetProfileAsync(

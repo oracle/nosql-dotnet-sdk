@@ -8,6 +8,9 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 **Added**
 
+* Cloud only: support for session token-based authentication.
+* Cloud only: support for using delegation token stored in file.
+* Cloud only: unit tests for IAM authentication.
 * Support for query array_collect and count(distinct) operators.
 * On-prem only: allow to specify namespace as a configuration option or in
 options for each operation.
