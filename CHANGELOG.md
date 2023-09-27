@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 options for each operation.
 * Public constructor and methods to access contents of RowVersion class in
 order to use it with queries via row_version SQL function.
+* New regions for cloud service: ozz, drs
 
 **Fixed**
 
@@ -23,6 +24,7 @@ order to use it with queries via row_version SQL function.
 for NoSQL spec.
 * Fixed invalid sorting order between special and non-special values for
 order by in descending mode.
+* Fixed incorrect domain for OC22 realm
 
 ## [5.2.0]
 
