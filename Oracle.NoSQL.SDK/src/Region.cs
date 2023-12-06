@@ -144,6 +144,12 @@ namespace Oracle.NoSQL.SDK
         private static readonly Realm OC24 = new Realm("oc24",
             "oraclecloud24.com");
 
+        private static readonly Realm OC25 = new Realm("oc25",
+            "nricloud.jp");
+
+        private static readonly Realm OC26 = new Realm("oc26",
+            "oraclecloud26.com");
+
         private static readonly Realm OC27 = new Realm("oc27",
             "oraclecloud27.com");
 
@@ -700,6 +706,18 @@ namespace Oracle.NoSQL.SDK
         /// </summary>
         public static readonly Region EU_DCC_ZURICH_1 = new Region(
             "eu-dcc-zurich-1", "avz", OC24);
+
+        /// <summary>
+        /// Realm: OC25, Japan Dedicated (Tokyo)
+        /// </summary>
+        public static readonly Region AP_DCC_TOKYO_1 = new Region(
+            "ap-dcc-tokyo-1", "tyo", OC25);
+
+        /// <summary>
+        /// Realm: OC26, Abudhabi
+        /// </summary>
+        public static readonly Region ME_ABUDHABI_3 = new Region(
+            "me-abudhabi-3", "ahu", OC26);
 
         /// <summary>
         /// Realm: OC27, SWJordan (Utah)
