@@ -126,6 +126,9 @@ namespace Oracle.NoSQL.SDK
         private static readonly Realm OC14 = new Realm("oc14",
             "oraclecloud14.com");
 
+        private static readonly Realm OC15 = new Realm("oc15",
+            "oraclecloud15.com");
+
         private static readonly Realm OC16 = new Realm("oc16",
             "oraclecloud16.com");
 
@@ -137,6 +140,9 @@ namespace Oracle.NoSQL.SDK
 
         private static readonly Realm OC20 = new Realm("oc20",
             "oraclecloud20.com");
+
+        private static readonly Realm OC21 = new Realm("oc21",
+            "oraclecloud21.com");
 
         private static readonly Realm OC22 = new Realm("oc22",
             "psn-pco.it");
@@ -654,6 +660,12 @@ namespace Oracle.NoSQL.SDK
             "eu-dcc-rating-2", "dtm", OC14);
 
         /// <summary>
+        /// Realm: OC15, Gazipur (Bangladesh)
+        /// </summary>
+        public static readonly Region AP_DCC_GAZIPUR_1 = new Region(
+            "ap-dcc-gazipur-1", "dac", OC15);
+
+        /// <summary>
         /// Realm: OC16, US Midwest (Utah)
         /// </summary>
         public static readonly Region US_WESTJORDAN_1 = new Region(
@@ -694,6 +706,12 @@ namespace Oracle.NoSQL.SDK
         /// </summary>
         public static readonly Region EU_JOVANOVAC_1 = new Region(
             "eu-jovanovac-1", "beg", OC20);
+
+        /// <summary>
+        /// Realm: OC21, Qatar
+        /// </summary>
+        public static readonly Region ME_DCC_DOHA_1 = new Region(
+            "me-dcc-doha-1", "doh", OC21);
 
         /// <summary>
         /// Realm: OC22, Italy Dedicated (Rome)
