@@ -162,6 +162,9 @@ namespace Oracle.NoSQL.SDK
         private static readonly Realm OC28 = new Realm("oc28",
             "oraclecloud28.com");
 
+        private static readonly Realm OC31 = new Realm("oc31",
+            "sovereigncloud.nz");
+
         private readonly Realm realm;
 
         private Region(string regionId, string regionCode, Realm realm)
@@ -748,6 +751,12 @@ namespace Oracle.NoSQL.SDK
         /// </summary>
         public static readonly Region US_DCC_SWJORDAN_2 = new Region(
             "us-dcc-swjordan-2", "drs", OC28);
+
+        /// <summary>
+        /// Realm: OC31, Hobsonville (New Zealand)
+        /// </summary>
+        public static readonly Region AP_HOBSONVILLE_1 = new Region(
+            "ap-hobsonville-1", "izq", OC31);
 
     }
 }

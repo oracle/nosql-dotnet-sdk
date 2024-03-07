@@ -16,7 +16,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 options for each operation.
 * Public constructor and methods to access contents of RowVersion class in
 order to use it with queries via row_version SQL function.
-* New regions for cloud service: ozz, drs, tyo, ahu, dac, doh
+* New regions for cloud service: ozz, drs, tyo, ahu, dac, doh, izq
 
 **Fixed**
 
