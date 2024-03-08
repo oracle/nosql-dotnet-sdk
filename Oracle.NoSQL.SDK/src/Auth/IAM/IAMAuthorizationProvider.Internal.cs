@@ -10,6 +10,7 @@ namespace Oracle.NoSQL.SDK
     using System;
     using System.Diagnostics;
     using System.IO;
+    using System.Net.Http;
     using System.Net.Http.Headers;
     using System.Security.Cryptography;
     using System.Threading;
@@ -27,16 +28,15 @@ namespace Oracle.NoSQL.SDK
             TimeSpan.FromSeconds(120);
 
         private const string SigningHeaders = "(request-target) host date";
-
-        private const string SigningHeadersWithOBO =
-            SigningHeaders + " " + OBOTokenHeader;
+        private const string ContentHeaders =
+            "content-length content-type x-content-sha256";
 
         internal const string DefaultProfileName = "DEFAULT";
 
         private AuthenticationProfileProvider profileProvider;
         private string serviceHost;
         private string delegationToken;
-        private SignatureDetails signatureDetails;
+        private SignatureDetails internalSignatureDetails;
         private TimeSpan renewInterval;
         private CancellationTokenSource renewCancelSource;
 
@@ -49,81 +49,81 @@ namespace Oracle.NoSQL.SDK
 
         private bool disposed;
 
+        // We could also use volatile field, but in general using a lock is
+        // recommended. This can be changed if needed.
+        private SignatureDetails CachedSignatureDetails
+        {
+            get
+            {
+                lock (providerLock)
+                {
+                    return internalSignatureDetails;
+                }
+            }
+            set
+            {
+                lock (providerLock)
+                {
+                    internalSignatureDetails = value;
+                }
+            }
+        }
+
         private class SignatureDetails
         {
             internal DateTime Time { get; }
             internal string DateStr { get; }
             internal string Header { get; }
             internal string TenantId { get; }
+            internal string DelegationToken { get; }
+            // SHA256 digest of request content needed for potential
+            // cross-region requests.
+            internal string Digest { get; }
 
             internal SignatureDetails(DateTime time, string dateStr,
-                string header, string tenantId)
+                string header, string tenantId, string delegationToken,
+                string digest)
             {
                 Time = time;
                 DateStr = dateStr;
                 Header = header;
                 TenantId = tenantId;
+                Digest = digest;
+                DelegationToken = delegationToken;
             }
         }
-        private string GetSigningContent(string dateStr,
-            string currentDelegationToken)
+
+        private class ContentSigningInfo
         {
-            var content =
-                $"{RequestTarget}: post /{NoSQLDataPath}\n" +
-                $"{Host}: {serviceHost}\n" +
-                $"{Date}: {dateStr}";
+            internal string ContentType { get; }
+            internal long ContentLength { get; }
+            internal string Digest { get; }
 
-            if (currentDelegationToken != null)
+            private ContentSigningInfo(string contentType, long contentLength,
+                string digest)
             {
-                content += $"\n{OBOTokenHeader}: {currentDelegationToken}";
+                ContentType = contentType;
+                ContentLength = contentLength;
+                Digest = digest;
             }
 
-            return content;
-        }
-
-        private async Task<SignatureDetails> CreateSignatureDetails(
-            bool forceProfileRefresh, string currentDelegationToken,
-            CancellationToken cancellationToken)
-        {
-            AuthenticationProfile profile;
-
-            // This simplification allows to avoid managing thread safety in
-            // all various profile providers (since signature creation is
-            // an infrequent operation).
-            await providerAsyncLock.WaitAsync(cancellationToken);
-            try
+            internal static async Task<ContentSigningInfo> Create(
+                HttpRequestMessage message)
             {
-                profile = await profileProvider.GetProfileAsync(
-                    forceProfileRefresh, cancellationToken);
+                Debug.Assert(message.Content.Headers.ContentType != null);
+                var contentType =
+                    message.Content.Headers.ContentType.ToString();
+                Debug.Assert(message.Content.Headers.ContentLength.HasValue);
+                var contentLength =
+                    message.Content.Headers.ContentLength.Value;
+                // .Net Core 3.1 does not have HttpContent.ReadAsStream() or
+                // other sync methods to access content bytes, so we have to
+                // use the async method.
+                var stream = await message.Content.ReadAsStreamAsync();
+                var digest =
+                    Convert.ToBase64String(ComputeSHA256Digest(stream));
+                return new ContentSigningInfo(contentType, contentLength, digest);
             }
-            finally
-            {
-                providerAsyncLock.Release();
-            }
-
-            var dateTime = DateTime.UtcNow;
-            var dateStr = dateTime.ToString("r");
-
-            string signature;
-            try
-            {
-                signature = CreateSignature(
-                    GetSigningContent(dateStr, currentDelegationToken),
-                    profile.PrivateKey);
-            }
-            catch (CryptographicException ex)
-            {
-                throw new InvalidOperationException(
-                    $"Error signing request: {ex.Message}", ex);
-            }
-
-            var header = GetSignatureHeader(
-                currentDelegationToken == null ?
-                    SigningHeaders : SigningHeadersWithOBO,
-                profile.KeyId, signature);
-
-            return new SignatureDetails(dateTime, dateStr, header,
-                profile.TenantId);
         }
 
         private async Task<string> LoadDelegationToken(
@@ -143,7 +143,7 @@ namespace Oracle.NoSQL.SDK
 
                     return token;
                 }
-                
+
                 if (DelegationTokenFile != null)
                 {
                     var token = string.Join("",
@@ -172,9 +172,67 @@ namespace Oracle.NoSQL.SDK
             }
         }
 
-        private async Task RefreshSignatureDetails(
+        private static string GetSigningHeaders(bool hasContent, bool hasOBO)
+        {
+            var res = SigningHeaders;
+            if (hasContent)
+            {
+                res += ' ' + ContentHeaders;
+            }
+            if (hasOBO)
+            {
+                res += ' ' + OBOTokenHeader;
+            }
+            return res;
+        }
+
+        // The order of headers in GetSigningHeaders() and GetSigningContent()
+        // should match.
+        private string GetSigningContent(string dateStr,
+            string currentDelegationToken,
+            ContentSigningInfo contentSigningInfo)
+        {
+            var content =
+                $"{RequestTarget}: post /{NoSQLDataPath}\n" +
+                $"{Host}: {serviceHost}\n" +
+                $"{Date}: {dateStr}";
+
+            if (contentSigningInfo != null)
+            {
+                content +=
+                    $"\n{ContentLengthLowerCase}: {contentSigningInfo.ContentLength}\n" +
+                    $"{ContentTypeLowerCase}: {contentSigningInfo.ContentType}\n" +
+                    $"{ContentSHA256}: {contentSigningInfo.Digest}";
+            }
+
+            if (currentDelegationToken != null)
+            {
+                content += $"\n{OBOTokenHeader}: {currentDelegationToken}";
+            }
+
+            return content;
+        }
+
+        private async Task<SignatureDetails> CreateSignatureDetails(
+            Request request, HttpRequestMessage message,
             bool forceProfileRefresh, CancellationToken cancellationToken)
         {
+            AuthenticationProfile profile;
+
+            // This simplification allows to avoid managing thread safety in
+            // all various profile providers (since signature creation is
+            // an infrequent operation).
+            await providerAsyncLock.WaitAsync(cancellationToken);
+            try
+            {
+                profile = await profileProvider.GetProfileAsync(
+                    forceProfileRefresh, cancellationToken);
+            }
+            finally
+            {
+                providerAsyncLock.Release();
+            }
+
             // If there is no DelegationTokenProvider or DelegationTokenFile,
             // delegationToken could have been initialized in the constructor.
             var currentDelegationToken =
@@ -182,49 +240,90 @@ namespace Oracle.NoSQL.SDK
                     ? await LoadDelegationToken(cancellationToken)
                     : delegationToken;
 
-            var currentSignatureDetails = await CreateSignatureDetails(
-                forceProfileRefresh, currentDelegationToken,
-                cancellationToken);
-
-            lock (providerLock)
+            ContentSigningInfo contentSigningInfo = null;
+            if (request?.NeedsContentSigned ?? false)
             {
-                delegationToken = currentDelegationToken;
-                signatureDetails = currentSignatureDetails;
+                Debug.Assert(message != null);
+                contentSigningInfo = await ContentSigningInfo.Create(message);
             }
-        }
 
+            var dateTime = DateTime.UtcNow;
+            var dateStr = dateTime.ToString("r");
+
+            string signature;
+            try
+            {
+                signature = CreateSignature(
+                    GetSigningContent(dateStr, currentDelegationToken,
+                        contentSigningInfo),
+                    profile.PrivateKey);
+            }
+            catch (CryptographicException ex)
+            {
+                throw new InvalidOperationException(
+                    $"Error signing request: {ex.Message}", ex);
+            }
+
+            var header = GetSignatureHeader(
+                GetSigningHeaders(contentSigningInfo != null,
+                    currentDelegationToken != null),
+                profile.KeyId, signature);
+
+            return new SignatureDetails(dateTime, dateStr, header,
+                profile.TenantId, currentDelegationToken,
+                contentSigningInfo?.Digest);
+        }
+        
         private void ScheduleRenew()
         {
-            renewCancelSource?.Cancel();
-            renewCancelSource = new CancellationTokenSource();
-            Task.Run(async () =>
-            {
-                await Task.Delay(renewInterval, renewCancelSource.Token);
-                try
-                {
-                    await RefreshSignatureDetails(false, renewCancelSource.Token);
-                }
-                catch (Exception)
-                {
-                    // This exception will not be handled so we don't rethrow
-                    // but only log the error somehow and return without
-                    // rescheduling. The user will get the error when
-                    // CreateSignatureDetails() is called again by
-                    // called again by GetAuthorizationPropertiesAsync().
-                    return;
-                }
-                ScheduleRenew();
-            });
-        }
-
-        private bool NeedSignatureRefresh()
-        {
             lock (providerLock)
             {
-                return signatureDetails == null || DateTime.UtcNow >
-                    signatureDetails.Time + CacheDuration;
+                // If renewCancelSource.Cancel() has been called from
+                // Dispose(), make sure we don't schedule another renew.
+                if (renewCancelSource?.IsCancellationRequested ?? false)
+                {
+                    return;
+                }
+
+                renewCancelSource?.Cancel();
+                renewCancelSource = new CancellationTokenSource();
+
+                // This captures cancellation token to make sure the task
+                // below uses cancellation token from CancellationTokenSource
+                // created in this invocation of ScheduleRenew(). This ensures
+                // that this task will be cancelled on the next invocation of
+                // ScheduleRenew().
+                var cancellationToken = renewCancelSource.Token;
+
+                Task.Run(async () =>
+                {
+                    try
+                    {
+                        await Task.Delay(renewInterval, cancellationToken);
+                        CachedSignatureDetails = await CreateSignatureDetails(
+                            null, null, false, cancellationToken);
+                    }
+                    catch (Exception)
+                    {
+                        // Return if the task was canceled. If caused by
+                        // signature creation, we also return without
+                        // rescheduling because exception thrown here cannot
+                        // be handled by the user (although we could log it).
+                        // The user will likely get the same exception when
+                        // CreateSignatureDetails() is called again by
+                        // ApplyAuthorizationAsync().
+                        return;
+                    }
+
+                    ScheduleRenew();
+                }, cancellationToken);
             }
         }
+
+        private bool NeedSignatureRefresh(
+            SignatureDetails signatureDetails) =>
+            signatureDetails == null || DateTime.UtcNow >
+            signatureDetails.Time + CacheDuration;
 
         /// <summary>
         /// Validates and configures the authorization provider.

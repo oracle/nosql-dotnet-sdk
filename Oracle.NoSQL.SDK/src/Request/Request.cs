@@ -180,6 +180,11 @@ namespace Oracle.NoSQL.SDK
 
         internal virtual short MinProtocolVersion => 0;
 
+        // Cloud only. Requests that may require cross-region auth in the
+        // proxy have to have their content signed (via "x-content-sha256"
+        // header).
+        internal virtual bool NeedsContentSigned => false;
+
         /// <summary>
         /// Gets the list of exceptions that occurred while retrying the
         /// operation.

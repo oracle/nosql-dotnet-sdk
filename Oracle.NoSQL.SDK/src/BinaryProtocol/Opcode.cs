@@ -33,7 +33,11 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
         CreateIndex = 21,
         DropIndex = 22,
         SystemRequest = 23,
-        SystemStatusRequest = 24
+        SystemStatusRequest = 24,
+        // Added in V4
+        AddReplica = 33,
+        DropReplica = 34,
+        GetReplicaStats = 35
     }
 
 }

@@ -158,18 +158,10 @@ namespace Oracle.NoSQL.SDK
                     $"Received invalid value for {typeof(T).Name}: {value}");
             }
         }
-
-        internal static void CheckStringNotEmpty(string value, string name)
-        {
-            if (string.IsNullOrEmpty(value))
-            {
-                throw new ArgumentException($"Missing or empty {name}");
-            }
-        }
-
+        
         internal static void CheckTableName(string tableName)
         {
-            CheckStringNotEmpty(tableName, "table name");
+            CheckNotNullOrEmpty(tableName, "table name");
         }
     }
 

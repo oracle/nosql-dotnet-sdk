@@ -40,6 +40,10 @@ namespace Oracle.NoSQL.SDK
     /// <seealso cref="RowVersion"/>
     public class DeleteResult<TRow> : IWriteResult<TRow>, IDataResult
     {
+        internal DeleteResult()
+        {
+        }
+
         ConsumedCapacity IDataResult.ConsumedCapacity
         {
             get => ConsumedCapacity;

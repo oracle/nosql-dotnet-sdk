@@ -292,10 +292,11 @@ namespace Oracle.NoSQL.SDK.Tests
         }
 
         internal static async Task CreateTableAsync(TableInfo table,
-            IndexInfo[] indexes = null)
+            IndexInfo[] indexes = null, bool withSchemaFrozen = false)
         {
             await client.ExecuteTableDDLWithCompletionAsync(
-                MakeCreateTable(table, true), table.TableLimits);
+                MakeCreateTable(table, true, withSchemaFrozen),
+                table.TableLimits);
 
             if (indexes != null)
             {
@@ -388,7 +389,11 @@ namespace Oracle.NoSQL.SDK.Tests
                 if (IsProtocolV4OrAbove && IsCloud)
                 {
                     Assert.IsNotNull(result.TableOCID);
-                    Assert.IsTrue(SDK.Utils.IsValidOCID(result.TableOCID));
+                    // Work around for an issue where proxy returns OCID with
+                    // '_'s instead of '.'s. Replace below can be removed once
+                    // it is fixed.
+                    Assert.IsTrue(SDK.Utils.IsValidOCID(
+                        result.TableOCID.Replace('_', '.')));
                 }
 
                 if (!ignoreTableLimits)

@@ -53,6 +53,10 @@ namespace Oracle.NoSQL.SDK
     /// <seealso cref="WriteOperationResult{TRow}"/>
     public class WriteManyResult<TRow> : IDataResult
     {
+        internal WriteManyResult()
+        {
+        }
+
         ConsumedCapacity IDataResult.ConsumedCapacity
         {
             get => ConsumedCapacity;

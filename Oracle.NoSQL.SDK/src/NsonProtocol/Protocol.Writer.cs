@@ -198,6 +198,15 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             }
         }
 
+        internal static void OptionallyWriteString(NsonWriter writer,
+            string fieldName, string value)
+        {
+            if (value != null)
+            {
+                writer.WriteString(fieldName, value);
+            }
+        }
+
         // Somehow GetTableUsage request expects Nson strings instead of Nson
         // Timestamps for StartTime and EndTime parameters. 
         internal static void WriteDateTimeAsString(NsonWriter writer,

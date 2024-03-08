@@ -298,5 +298,10 @@ namespace Oracle.NoSQL.SDK.Tests
 
         internal static string RepeatString(string value, int count) =>
             string.Concat(Enumerable.Repeat(value, count));
+
+        internal static bool GetBooleanProperty(TestContext testContext,
+            string name) =>
+            ((string)testContext.Properties[name])?.ToLower() ==
+            "true";
     }
 }

@@ -51,6 +51,10 @@ namespace Oracle.NoSQL.SDK.Tests
             new TableInfo(name, SimpleTable.TableLimits, SimpleTable.Fields,
                 SimpleTable.PrimaryKey);
 
+        internal static TableInfo GetSimpleTableWithLimits(
+            TableLimits tableLimits) => new TableInfo(SimpleTable.Name,
+            tableLimits, SimpleTable.Fields, SimpleTable.PrimaryKey);
+
         private const string AllTypesTableName = TableNamePrefix + "AllTypes";
 
         internal static readonly TableInfo AllTypesTable = new TableInfo(

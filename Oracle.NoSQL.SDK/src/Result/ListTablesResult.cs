@@ -29,6 +29,10 @@ namespace Oracle.NoSQL.SDK
     /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.GetListTablesAsyncEnumerable*"/>
     public class ListTablesResult
     {
+        internal ListTablesResult()
+        {
+        }
+
         /// <summary>
         /// Gets the list of table names.
         /// </summary>

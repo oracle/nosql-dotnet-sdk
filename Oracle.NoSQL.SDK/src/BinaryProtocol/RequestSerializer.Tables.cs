@@ -225,5 +225,38 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
                 NextIndex = ReadPackedInt32(stream)
             };
         }
+
+        public void SerializeAddReplica(MemoryStream stream,
+            AddReplicaRequest request) => throw new NotSupportedException(
+            nameof(NoSQLClient.AddReplicaAsync) + NotSuppSerialVer +
+            SerialVersion);
+
+        public TableResult DeserializeAddReplica(MemoryStream stream,
+            AddReplicaRequest request) => throw new NotSupportedException(
+            nameof(NoSQLClient.AddReplicaAsync) + NotSuppSerialVer +
+            SerialVersion);
+
+        public void SerializeDropReplica(MemoryStream stream,
+            DropReplicaRequest request) => throw new NotSupportedException(
+            nameof(NoSQLClient.DropReplicaAsync) + NotSuppSerialVer +
+            SerialVersion);
+
+        public TableResult DeserializeDropReplica(MemoryStream stream,
+            DropReplicaRequest request) => throw new NotSupportedException(
+            nameof(NoSQLClient.DropReplicaAsync) + NotSuppSerialVer +
+            SerialVersion);
+
+        public void SerializeGetReplicaStats(MemoryStream stream,
+            GetReplicaStatsRequest request) =>
+            throw new NotSupportedException(
+                nameof(NoSQLClient.DropReplicaAsync) + NotSuppSerialVer +
+                SerialVersion);
+
+        public ReplicaStatsResult DeserializeGetReplicaStats(MemoryStream stream,
+            GetReplicaStatsRequest request) =>
+            throw new NotSupportedException(
+                nameof(NoSQLClient.DropReplicaAsync) + NotSuppSerialVer +
+                SerialVersion);
     }
+
 }

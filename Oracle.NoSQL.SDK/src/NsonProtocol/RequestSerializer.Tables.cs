@@ -8,9 +8,13 @@
 namespace Oracle.NoSQL.SDK.NsonProtocol
 {
     using System;
+    using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.IO;
     using System.Text.Json;
+    using Query;
     using static Protocol;
+    using static DateTimeUtils;
     using Opcode = BinaryProtocol.Opcode;
     using NsonType = DbType;
 
@@ -51,6 +55,30 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                         return true;
                     case FieldNames.MaxShardUsagePercent:
                         result.MaxShardUsagePercent = reader.ReadInt32();
+                        return true;
+                    default:
+                        return false;
+                }
+            });
+
+            return result;
+        }
+
+        private ReplicaStatsRecord DeserializeReplicaStatsRecord(
+            NsonReader reader)
+        {
+            var result = new ReplicaStatsRecord();
+            ReadMap(reader, field =>
+            {
+                switch (field)
+                {
+                    case FieldNames.Time:
+                        result.CollectionTime = UnixMillisToDateTime(
+                            reader.ReadInt64());
+                        return true;
+                    case FieldNames.ReplicaLag:
+                        result.ReplicaLag = TimeSpan.FromMilliseconds(
+                            reader.ReadInt32());
                         return true;
                     default:
                         return false;
@@ -122,10 +150,8 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             WriteHeader(writer, Opcode.TableRequest, request);
             writer.StartMap(FieldNames.Payload);
             
-            if (request.Statement != null)
-            {
-                writer.WriteString(FieldNames.Statement, request.Statement);
-            }
+            OptionallyWriteString(writer, FieldNames.Statement,
+                request.Statement);
             
             var tableLimits = request.GetTableLimits();
             if (tableLimits != null)
@@ -154,23 +180,62 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                     JsonSerializer.Serialize(freeFormTags));
             }
 
-            if (request.Options?.MatchETag != null)
-            {
-                writer.WriteString(FieldNames.Etag,
-                    request.Options.MatchETag);
-            }
+            OptionallyWriteString(writer, FieldNames.Etag,
+                request.Options?.MatchETag);
 
             writer.EndMap();
             writer.EndMap();
         }
 
         public TableResult DeserializeTableDDL(MemoryStream stream,
-            TableDDLRequest request)
+            TableDDLRequest request) =>
+            DeserializeTableResult(stream, request);
+
+        public void SerializeAddReplica(MemoryStream stream,
+            AddReplicaRequest request)
         {
-            var reader = GetNsonReader(stream);
-            var result = new TableResult(request);
-            return DeserializeTableResult(reader, request, result);
+            var writer = GetNsonWriter(stream);
+            writer.StartMap();
+            WriteHeader(writer, Opcode.AddReplica, request);
+            writer.StartMap(FieldNames.Payload);
+
+            OptionallyWriteString(writer, FieldNames.Region,
+                request.RegionId);
+            OptionallyWriteInt32(writer, FieldNames.ReadUnits,
+                request.Options?.ReadUnits);
+            OptionallyWriteInt32(writer, FieldNames.WriteUnits,
+                request.Options?.WriteUnits);
+            OptionallyWriteString(writer, FieldNames.Etag,
+                request.Options?.MatchETag);
+
+            writer.EndMap();
+            writer.EndMap();
         }
+
+        public TableResult DeserializeAddReplica(MemoryStream stream,
+            AddReplicaRequest request) =>
+            DeserializeTableResult(stream, request);
+
+        public void SerializeDropReplica(MemoryStream stream,
+            DropReplicaRequest request)
+        {
+            var writer = GetNsonWriter(stream);
+            writer.StartMap();
+            WriteHeader(writer, Opcode.DropReplica, request);
+            writer.StartMap(FieldNames.Payload);
+
+            OptionallyWriteString(writer, FieldNames.Region,
+                request.RegionId);
+            OptionallyWriteString(writer, FieldNames.Etag,
+                request.Options?.MatchETag);
+
+            writer.EndMap();
+            writer.EndMap();
+        }
+
+        public TableResult DeserializeDropReplica(MemoryStream stream,
+            DropReplicaRequest request) =>
+            DeserializeTableResult(stream, request);
 
         public void SerializeGetTable(MemoryStream stream,
             GetTableRequest request)
@@ -179,22 +244,15 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             writer.StartMap();
             WriteHeader(writer, Opcode.GetTable, request);
             writer.StartMap(FieldNames.Payload);
-            if (request.operationId != null)
-            {
-                writer.WriteString(FieldNames.OperationId,
-                    request.operationId);
-            }
+            OptionallyWriteString(writer, FieldNames.OperationId,
+                request.operationId);
             writer.EndMap();
             writer.EndMap();
         }
 
         public TableResult DeserializeGetTable(MemoryStream stream,
-            GetTableRequest request)
-        {
-            var reader = GetNsonReader(stream);
-            var result = new TableResult();
-            return DeserializeTableResult(reader, request, result);
-        }
+            GetTableRequest request) =>
+            DeserializeTableResult(stream, request);
 
         public void SerializeGetTableUsage(MemoryStream stream,
             GetTableUsageRequest request)
@@ -216,18 +274,10 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                     request.Options.EndTime.Value);
             }
 
-            if (request.Options?.Limit.HasValue ?? false)
-            {
-                writer.WriteInt32(FieldNames.ListMaxToRead,
-                    request.Options.Limit.Value);
-            }
-
-
-            if (request.Options?.FromIndex.HasValue ?? false)
-            {
-                writer.WriteInt32(FieldNames.ListStartIndex,
-                    request.Options.FromIndex.Value);
-            }
+            OptionallyWriteInt32(writer, FieldNames.ListMaxToRead,
+                request.Options?.Limit);
+            OptionallyWriteInt32(writer, FieldNames.ListStartIndex,
+                request.Options?.FromIndex);
 
             writer.EndMap();
             writer.EndMap();
@@ -260,6 +310,70 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             return result;
         }
 
+        public void SerializeGetReplicaStats(MemoryStream stream,
+            GetReplicaStatsRequest request)
+        {
+            var writer = GetNsonWriter(stream);
+            writer.StartMap();
+            WriteHeader(writer, Opcode.GetReplicaStats, request);
+            writer.StartMap(FieldNames.Payload);
+
+            OptionallyWriteString(writer, FieldNames.Region,
+                request.RegionId);
+
+            if (request.Options?.StartTime.HasValue ?? false)
+            {
+                WriteDateTimeAsString(writer, FieldNames.Start,
+                    request.Options.StartTime.Value);
+            }
+
+            OptionallyWriteInt32(writer, FieldNames.ListMaxToRead,
+                request.Options?.Limit);
+
+            writer.EndMap();
+            writer.EndMap();
+        }
+
+        public ReplicaStatsResult DeserializeGetReplicaStats(
+            MemoryStream stream, GetReplicaStatsRequest request)
+        {
+            var reader = GetNsonReader(stream);
+
+            var records =
+                new Dictionary<string, IReadOnlyList<ReplicaStatsRecord>>();
+            var result = new ReplicaStatsResult
+            {
+                StatsRecords = records
+            };
+
+            DeserializeResponse(reader, field =>
+            {
+                switch (field)
+                {
+                    case FieldNames.TableName:
+                        result.TableName = reader.ReadString();
+                        return true;
+                    case FieldNames.ReplicaStats:
+                    {
+                        ReadMap(reader, regionId =>
+                        {
+                            records[regionId] = ReadArray(reader,
+                                DeserializeReplicaStatsRecord);
+                            return true;
+                        });
+                        return true;
+                    }
+                    case FieldNames.NextStartTime:
+                        result.NextStartTime = UnixMillisToDateTime(
+                            reader.ReadInt64());
+                        return true;
+                    default:
+                        return false;
+                }
+            }, request, result);
+            return result;
+        }
+
         public void SerializeGetIndexes(MemoryStream stream,
             GetIndexesRequest request)
         {
@@ -267,12 +381,8 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             writer.StartMap();
             WriteHeader(writer, Opcode.GetIndexes, request);
             writer.StartMap(FieldNames.Payload);
-            var indexName = request.GetIndexName();
-            
-            if (indexName != null)
-            {
-                writer.WriteString(FieldNames.Index, indexName);
-            }
+            OptionallyWriteString(writer, FieldNames.Index,
+                request.GetIndexName());
 
             writer.EndMap();
             writer.EndMap();
@@ -310,12 +420,8 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                 request.Options?.FromIndex);
             OptionallyWriteInt32(writer, FieldNames.ListMaxToRead,
                 request.Options?.Limit);
-
-            if (request.Options?.Namespace != null)
-            {
-                writer.WriteString(FieldNames.Namespace,
-                    request.Options.Namespace);
-            }
+            OptionallyWriteString(writer, FieldNames.Namespace,
+                request.Options?.Namespace);
 
             writer.EndMap();
             writer.EndMap();

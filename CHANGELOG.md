@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 **Added**
 
+* Cloud only: added support for Global Active tables:
+  - added new methods to NoSQLClient: AddReplicaAsync, DropReplicaAsync,
+GetReplicaStatsAsync, WaitForLocalReplicaInitAsync
+  - added new properties to TableResult: IsSchemaFrozen, IsReplicated,
+IsLocalReplicaInitialized, Replicas
 * Cloud only: support for session token-based authentication.
 * Cloud only: support for using delegation token stored in file.
 * Cloud only: unit tests for IAM authentication.

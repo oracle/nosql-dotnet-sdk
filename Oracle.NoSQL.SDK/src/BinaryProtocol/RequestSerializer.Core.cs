@@ -14,6 +14,9 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
 
     internal partial class RequestSerializer : IRequestSerializer
     {
+        private const string NotSuppSerialVer =
+            " not supported for protocol serial version ";
+
         private const short DefaultSerialVersion = V3;
 
         private volatile short serialVersion = DefaultSerialVersion;

@@ -13,7 +13,11 @@ namespace Oracle.NoSQL.SDK
     {
         internal const string ContentType = "Content-Type";
 
+        internal const string ContentTypeLowerCase = "content-type";
+
         internal const string ContentLength = "Content-Length";
+
+        internal const string ContentLengthLowerCase = "content-length";
 
         internal const string ApplicationJson = "application/json";
 

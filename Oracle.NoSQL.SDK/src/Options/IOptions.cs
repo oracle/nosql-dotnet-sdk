@@ -20,6 +20,11 @@ namespace Oracle.NoSQL.SDK
         void Validate();
     }
 
+    internal interface ITableCompletionOptions : IOptions
+    {
+        TimeSpan? PollDelay { get; }
+    }
+
     internal interface IReadOptions : IOptions
     {
         Consistency? Consistency { get; }

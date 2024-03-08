@@ -27,6 +27,10 @@
 	  <NoWarn>1701;1702</NoWarn>
   </PropertyGroup>
 
+  <ItemGroup>
+    <None Remove="NoSQLClient.GAT.cs~RF9eba589.TMP" />
+  </ItemGroup>
+
 	<ItemGroup>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
         <_Parameter1>Oracle.NoSQL.SDK.Tests</_Parameter1>

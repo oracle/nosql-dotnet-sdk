@@ -439,10 +439,10 @@ namespace Oracle.NoSQL.SDK.Tests.IAM
             // At this time it doesn't matter what subclass of Request we
             // provide.
             var request = new GetTableRequest(client, "table", null);
-            var headers = new HttpRequestMessage().Headers;
+            var message = new HttpRequestMessage();
 
             await AssertThrowsDerivedAsync<ArgumentException>(() =>
-                iam.Provider.ApplyAuthorizationAsync(request, headers,
+                iam.Provider.ApplyAuthorizationAsync(request, message,
                     CancellationToken.None));
         }
 

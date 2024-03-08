@@ -220,7 +220,7 @@ namespace Oracle.NoSQL.SDK {
             TableDDLOptions options = null,
             CancellationToken cancellationToken = default)
         {
-            return DoTableDDLWithCompletionAsync(
+            return DoTableOpWithCompletionAsync(
                 new TableDDLRequest(this, statement, options),
                 cancellationToken);
         }
@@ -459,7 +459,7 @@ namespace Oracle.NoSQL.SDK {
             TableDDLOptions options = null,
             CancellationToken cancellationToken = default)
         {
-            return DoTableDDLWithCompletionAsync(
+            return DoTableOpWithCompletionAsync(
                 new TableLimitsRequest(this, tableName, tableLimits, options),
                 cancellationToken);
         }
@@ -610,7 +610,7 @@ namespace Oracle.NoSQL.SDK {
             TableDDLOptions options = null,
             CancellationToken cancellationToken = default)
         {
-            return DoTableDDLWithCompletionAsync(
+            return DoTableOpWithCompletionAsync(
                 new TableTagsRequest(this, tableName, definedTags,
                     freeFormTags, options),
                 cancellationToken);

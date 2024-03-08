@@ -10,7 +10,6 @@ namespace Oracle.NoSQL.SDK
     using System;
     using System.Collections.Generic;
     using System.IO;
-    using static ValidateUtils;
 
     /// <summary>
     /// Represents information about table DDL operation performed by
@@ -22,27 +21,27 @@ namespace Oracle.NoSQL.SDK
     /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.ExecuteTableDDLAsync*"/>
     /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.ExecuteTableDDLWithCompletionAsync*"/>
     /// <seealso cref="Request"/>
-    public class TableDDLRequest : Request
+    public class TableDDLRequest : TableOperationRequest
     {
-        internal string tableName;
-
         internal TableDDLRequest(NoSQLClient client, string statement,
-            string tableName, TableDDLOptions options) : base(client)
+            string tableName, TableDDLOptions options) :
+            base(client, tableName)
         {
             Statement = statement;
-            this.tableName = tableName;
             Options = options;
         }
+
+        private protected override bool RequiresTableName => false;
 
         internal TableDDLRequest(NoSQLClient client, string statement,
             TableDDLOptions options) : this(client, statement, null, options)
         {
         }
 
-        internal override TimeSpan GetDefaultTimeout() =>
-            Config.TableDDLTimeout;
-
         internal override IOptions BaseOptions => Options;
+
+        internal override ITableCompletionOptions CompletionOptions =>
+            Options;
 
         internal override void Serialize(IRequestSerializer serializer,
             MemoryStream stream)
@@ -64,17 +63,12 @@ namespace Oracle.NoSQL.SDK
         internal virtual IDictionary<string, string> GetFreeFormTags() =>
             Options?.FreeFormTags;
 
-        internal override string InternalTableName => tableName;
-
-        internal override void ApplyResult(object result)
-        {
-            base.ApplyResult(result);
-            Client.RateLimitingHandler?.ApplyTableResult((TableResult)result);
-        }
+        internal override bool NeedsContentSigned => true;
 
         /// <summary>
         /// Gets the SQL statement.  Returns <c>null</c> if this is
-        /// an instance of <see cref="TableLimitsRequest"/>.
+        /// an instance of <see cref="TableLimitsRequest"/> or
+        /// <see cref="TableTagsRequest"/>.
         /// </summary>
         /// <value>
         /// SQL statement.
@@ -109,13 +103,7 @@ namespace Oracle.NoSQL.SDK
             TableLimits = tableLimits;
         }
 
-        /// <summary>
-        /// Gets the table name.
-        /// </summary>
-        /// <value>
-        /// Table name.
-        /// </value>
-        public string TableName => InternalTableName;
+        private protected override bool RequiresTableName => true;
 
         /// <summary>
         /// Gets the table limits for the operation.
@@ -130,7 +118,6 @@ namespace Oracle.NoSQL.SDK
         internal override void Validate()
         {
             base.Validate();
-            CheckTableName(TableName);
 
             if (TableLimits == null)
             {
@@ -163,6 +150,8 @@ namespace Oracle.NoSQL.SDK
             FreeFormTags = freeFormTags;
         }
 
+        private protected override bool RequiresTableName => true;
+
         internal override IDictionary<string, IDictionary<string, string>>
             GetDefinedTags() => DefinedTags;
 
@@ -170,14 +159,6 @@ namespace Oracle.NoSQL.SDK
             FreeFormTags;
 
         internal override short MinProtocolVersion => 4;
-
-        /// <summary>
-        /// Gets the table name.
-        /// </summary>
-        /// <value>
-        /// Table name.
-        /// </value>
-        public string TableName => InternalTableName;
 
         /// <summary>
         /// Gets defined tags for the operation.
@@ -201,7 +182,6 @@ namespace Oracle.NoSQL.SDK
         internal override void Validate()
         {
             base.Validate();
-            CheckTableName(TableName);
 
             if (DefinedTags == null && FreeFormTags == null)
             {

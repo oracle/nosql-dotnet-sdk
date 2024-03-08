@@ -39,6 +39,10 @@ namespace Oracle.NoSQL.SDK
     /// <seealso cref="RowVersion"/>
     public class PutResult<TRow> : IWriteResultWithId<TRow>, IDataResult
     {
+        internal PutResult()
+        {
+        }
+
         // Implement interface properties explicitly to avoid having public
         // setters in the result class.
 

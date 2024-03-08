@@ -220,14 +220,14 @@ namespace Oracle.NoSQL.SDK {
             AdminOptions options = null,
             CancellationToken cancellationToken = default)
         {
-            var startTime = DateTime.Now;
+            var startTime = DateTime.UtcNow;
             var request = new AdminRequest(this, statement, options);
             var result = (AdminResult) await ExecuteRequestAsync(request,
                 cancellationToken);
             Debug.Assert(result != null);
 
             var timeout = request.Options?.Timeout -
-                (DateTime.Now - startTime);
+                (DateTime.UtcNow - startTime);
 
             if (timeout <= TimeSpan.Zero)
             {

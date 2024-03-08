@@ -23,6 +23,10 @@ namespace Oracle.NoSQL.SDK
     /// <seealso cref="NoSQLClient.GetIndexAsync"/>
     public class IndexResult
     {
+        internal IndexResult()
+        {
+        }
+
         /// <summary>
         /// Gets the name of the index.
         /// </summary>

@@ -6,6 +6,7 @@
  */
 
 namespace Oracle.NoSQL.SDK {
+    using System;
     using System.IO;
 
     internal interface IRequestSerializer
@@ -116,6 +117,23 @@ namespace Oracle.NoSQL.SDK {
         QueryResult<TRow> DeserializeQuery<TRow>(MemoryStream stream,
             QueryRequest<TRow> request);
 
+        void SerializeAddReplica(MemoryStream stream,
+            AddReplicaRequest request);
+
+        TableResult DeserializeAddReplica(MemoryStream stream,
+            AddReplicaRequest request);
+
+        void SerializeDropReplica(MemoryStream stream,
+            DropReplicaRequest request);
+
+        TableResult DeserializeDropReplica(MemoryStream stream,
+            DropReplicaRequest request);
+
+        void SerializeGetReplicaStats(MemoryStream stream,
+            GetReplicaStatsRequest request);
+
+        ReplicaStatsResult DeserializeGetReplicaStats(MemoryStream stream,
+            GetReplicaStatsRequest request);
     }
 
 }

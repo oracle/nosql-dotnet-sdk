@@ -7,11 +7,11 @@
 
 namespace Oracle.NoSQL.SDK
 {
+    using System;
     using static ValidateUtils;
 
     /// <summary>
-    /// Base class for information about all operations that require table
-    /// name.
+    /// Base class for information about all operations on a specific table.
     /// </summary>
     /// <seealso cref="Request" />
     public abstract class RequestWithTable : Request
@@ -21,12 +21,20 @@ namespace Oracle.NoSQL.SDK
         {
             TableName = tableName;
         }
-
+        
+        private protected virtual bool RequiresTableName => true;
+        
         /// <summary>
-        /// Gets the name of the table.
+        /// Gets the name of the table, if available for the request.
         /// </summary>
+        /// <remarks>
+        /// This value is <c>null</c> for instances of
+        /// <see cref="TableDDLRequest"/> (but not its subclasses) that
+        /// represent DDL operation as SQL statement (see
+        /// <see cref="TableDDLRequest.Statement"/>).
+        /// </remarks>
         /// <value>
-        /// Table name.
+        /// Table name if available, otherwise <c>null</c>.
         /// </value>
         public string TableName { get; }
 
@@ -35,7 +43,10 @@ namespace Oracle.NoSQL.SDK
         internal override void Validate()
         {
             base.Validate();
-            CheckTableName(TableName);
+            if (RequiresTableName || TableName != null)
+            {
+                CheckTableName(TableName);
+            }
         }
     }
 
@@ -98,4 +109,34 @@ namespace Oracle.NoSQL.SDK
         internal override bool DoesWrites => true;
     }
 
+    /// <summary>
+    /// Base class for table-level operations such as table DDL,
+    /// setting table limits, adding and dropping replicas, etc.
+    /// </summary>
+    /// <remarks>
+    /// These operations return result of type <see cref="TableResult"/>. In
+    /// addition, these are potentially-long running operations and may
+    /// require to call <see cref="TableResult.WaitForCompletionAsync"/> to
+    /// wait for operation completion. For more information, see API
+    /// documentation of corresponding methods of <see cref="NoSQLClient"/>.
+    /// </remarks>
+    public abstract class TableOperationRequest : RequestWithTable
+    {
+        internal TableOperationRequest(NoSQLClient client, string tableName) :
+            base(client, tableName)
+        {
+        }
+
+        internal abstract ITableCompletionOptions CompletionOptions { get; }
+
+        internal override TimeSpan GetDefaultTimeout() =>
+            Config.TableDDLTimeout;
+
+        internal override void ApplyResult(object result)
+        {
+            base.ApplyResult(result);
+            Client.RateLimitingHandler?.ApplyTableResult((TableResult)result);
+        }
+
+    }
 }

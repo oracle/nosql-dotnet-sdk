@@ -230,7 +230,7 @@ namespace Oracle.NoSQL.SDK
 
         internal void Validate()
         {
-            CheckStringNotEmpty(FieldName, "field name in field range");
+            CheckNotNullOrEmpty(FieldName, "field name in field range");
 
             if (StartValue is null && EndValue is null)
             {

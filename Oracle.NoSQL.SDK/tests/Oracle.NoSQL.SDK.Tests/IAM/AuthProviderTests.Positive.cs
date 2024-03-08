@@ -18,6 +18,7 @@ namespace Oracle.NoSQL.SDK.Tests.IAM
     using static Tests.Utils;
     using static TestData;
     using static Utils;
+    using Microsoft.VisualStudio.TestPlatform.CommunicationUtilities;
 
     [TestClass]
     public partial class AuthProviderTests : TestBase
@@ -236,12 +237,12 @@ namespace Oracle.NoSQL.SDK.Tests.IAM
             // At this time it doesn't matter what subclass of Request we
             // provide.
             var request = new GetTableRequest(client, "table", null);
-            var headers = new HttpRequestMessage().Headers;
+            var message = new HttpRequestMessage();
 
-            await iam.Provider.ApplyAuthorizationAsync(request, headers,
+            await iam.Provider.ApplyAuthorizationAsync(request, message,
                 CancellationToken.None);
 
-            VerifyAuth(headers, GetKeyId(iam), Keys.RSA,
+            VerifyAuth(message.Headers, GetKeyId(iam), Keys.RSA,
                 compartment ?? TenantId);
         }
 
@@ -271,27 +272,27 @@ namespace Oracle.NoSQL.SDK.Tests.IAM
             var client = new NoSQLClient(cfg);
             var request = new GetTableRequest(client, "table", null);
             
-            var headers1 = new HttpRequestMessage().Headers;
-            var headers2 = new HttpRequestMessage().Headers;
+            var message1 = new HttpRequestMessage();
+            var message2 = new HttpRequestMessage();
 
-            await iam.Provider.ApplyAuthorizationAsync(request, headers1,
+            await iam.Provider.ApplyAuthorizationAsync(request, message1,
                 CancellationToken.None);
             await Task.Delay(TimeSpan.FromSeconds(1));
 
-            await iam.Provider.ApplyAuthorizationAsync(request, headers2,
+            await iam.Provider.ApplyAuthorizationAsync(request, message2,
                 CancellationToken.None);
             // +1000 ms, the signature should still be valid
-            VerifyAuthEqual(headers2, headers1, GetKeyId(iam), Keys.RSA,
-                CompartmentId);
+            VerifyAuthEqual(message2.Headers, message1.Headers, GetKeyId(iam),
+                Keys.RSA, CompartmentId);
             
             await Task.Delay(TimeSpan.FromMilliseconds(1100));
-            headers2.Clear();
-            await iam.Provider.ApplyAuthorizationAsync(request, headers2,
+            message2.Headers.Clear();
+            await iam.Provider.ApplyAuthorizationAsync(request, message2,
                 CancellationToken.None);
             // +2100 ms, now the signature should have expired, so the new
             // one should be generated.
-            VerifyAuthLaterDate(headers2, headers1, GetKeyId(iam), Keys.RSA,
-                CompartmentId);
+            VerifyAuthLaterDate(message2.Headers, message1.Headers,
+                GetKeyId(iam), Keys.RSA, CompartmentId);
         }
 
         [DataTestMethod]
@@ -307,43 +308,43 @@ namespace Oracle.NoSQL.SDK.Tests.IAM
             var client = new NoSQLClient(cfg);
             var request = new GetTableRequest(client, "table", null);
             
-            var headers1 = new HttpRequestMessage().Headers;
-            var headers2 = new HttpRequestMessage().Headers;
+            var message1 = new HttpRequestMessage();
+            var message2 = new HttpRequestMessage();
 
-            await iam.Provider.ApplyAuthorizationAsync(request, headers1,
+            await iam.Provider.ApplyAuthorizationAsync(request, message1,
                 CancellationToken.None);
             await Task.Delay(TimeSpan.FromSeconds(1));
             
-            await iam.Provider.ApplyAuthorizationAsync(request, headers2,
+            await iam.Provider.ApplyAuthorizationAsync(request, message2,
                 CancellationToken.None);
             // +1000 ms, no refresh yet
-            VerifyAuthEqual(headers2, headers1, GetKeyId(iam), Keys.RSA,
-                CompartmentId);
+            VerifyAuthEqual(message2.Headers, message1.Headers, GetKeyId(iam),
+                Keys.RSA, CompartmentId);
             await Task.Delay(TimeSpan.FromMilliseconds(1200));
 
-            headers2.Clear();
-            await iam.Provider.ApplyAuthorizationAsync(request, headers2,
+            message2.Headers.Clear();
+            await iam.Provider.ApplyAuthorizationAsync(request, message2,
                 CancellationToken.None);
             // +2200 ms, automatic refresh should have happened
-            VerifyAuthLaterDate(headers2, headers1, GetKeyId(iam), Keys.RSA,
-                CompartmentId);
+            VerifyAuthLaterDate(message2.Headers, message1.Headers,
+                GetKeyId(iam), Keys.RSA, CompartmentId);
             await Task.Delay(TimeSpan.FromMilliseconds(1600));
 
             // Now will use headers2 as base and headers1 as new value.
-            headers1.Clear();
-            await iam.Provider.ApplyAuthorizationAsync(request, headers1,
+            message1.Headers.Clear();
+            await iam.Provider.ApplyAuthorizationAsync(request, message1,
                 CancellationToken.None);
             // +3800 ms, shouldn't change again within 2s of last refresh
-            VerifyAuthEqual(headers1, headers2, GetKeyId(iam), Keys.RSA,
-                CompartmentId);
+            VerifyAuthEqual(message1.Headers, message2.Headers, GetKeyId(iam),
+                Keys.RSA, CompartmentId);
             await Task.Delay(TimeSpan.FromMilliseconds(400));
 
-            headers1.Clear();
-            await iam.Provider.ApplyAuthorizationAsync(request, headers1,
+            message1.Headers.Clear();
+            await iam.Provider.ApplyAuthorizationAsync(request, message1,
                 CancellationToken.None);
             // +4200 ms, automatic refresh should have happened again
-            VerifyAuthLaterDate(headers1, headers2, GetKeyId(iam), Keys.RSA,
-                CompartmentId);
+            VerifyAuthLaterDate(message1.Headers, message2.Headers,
+                GetKeyId(iam), Keys.RSA, CompartmentId);
         }
 
     }
