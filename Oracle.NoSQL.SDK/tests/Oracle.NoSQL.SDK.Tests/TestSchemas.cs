@@ -295,16 +295,20 @@ namespace Oracle.NoSQL.SDK.Tests
         }
 
         internal static string MakeCreateTable(TableInfo table,
-            bool ifNotExists = false)
+            bool ifNotExists = false, bool withSchemaFrozen = false)
         {
             var ifNotExistsStr = ifNotExists ? "IF NOT EXISTS " : string.Empty;
             var ttlStr = table.TTL.HasValue ?
                 $" USING TTL {table.TTL}" : string.Empty;
+            var schemaFrozenStr = withSchemaFrozen
+                ? " WITH SCHEMA FROZEN"
+                : string.Empty;
             var fieldsStr = FieldsToString(table.Fields);
             var primaryKeyStr =
                 PrimaryKeyToString(table.PrimaryKey, table.ShardKeySize);
             return $"CREATE TABLE {ifNotExistsStr}{table.Name}" +
-                   $"({fieldsStr}, PRIMARY KEY ({primaryKeyStr})){ttlStr}";
+                   $"({fieldsStr}, PRIMARY KEY ({primaryKeyStr})){ttlStr}" +
+                   schemaFrozenStr;
         }
 
         internal static string MakeDropTable(TableInfo table,

@@ -52,15 +52,18 @@ namespace Oracle.NoSQL.SDK
 
     /// <summary>
     /// Represents options passed to
-    /// <see cref="NoSQLClient.WaitForTableStateAsync"/> method.
+    /// <see cref="NoSQLClient.WaitForTableStateAsync"/> and
+    /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.WaitForLocalReplicaInitAsync*"/>
+    /// methods.
     /// </summary>
     /// <remarks>
     /// This class represents options in <see cref="GetTableOptions"/>
     /// with addition of poll delay to poll for table state change.
     /// </remarks>
     /// <seealso cref="NoSQLClient.WaitForTableStateAsync"/>
+    /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.WaitForLocalReplicaInitAsync*"/>
     /// <seealso cref="GetTableOptions" />
-    public class TableCompletionOptions : GetTableOptions, IOptions
+    public class TableCompletionOptions : GetTableOptions, ITableCompletionOptions
     {
         /// <summary>
         /// Gets or sets the poll delay to poll for table state change.

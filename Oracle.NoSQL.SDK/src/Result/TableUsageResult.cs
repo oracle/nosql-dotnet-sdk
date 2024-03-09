@@ -23,6 +23,10 @@ namespace Oracle.NoSQL.SDK
     /// <seealso cref="TableUsageRecord"/>
     public class TableUsageResult
     {
+        internal TableUsageResult()
+        {
+        }
+
         /// <summary>
         /// Gets the name of the table.
         /// </summary>

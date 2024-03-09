@@ -39,7 +39,7 @@ namespace Oracle.NoSQL.SDK
     /// The <see cref="Region"/> instance can be provided as
     /// <see cref="NoSQLConfig.Region"/> property when creating
     /// <see cref="NoSQLClient"/> instance.  The region determines the
-    /// endpoint with with the <see cref="NoSQLClient"/> instance will
+    /// endpoint with the <see cref="NoSQLClient"/> instance will
     /// communicate.  Note that you may not specify both
     /// <see cref="NoSQLConfig.Region"/> and
     /// <see cref="NoSQLConfig.Endpoint"/> properties.

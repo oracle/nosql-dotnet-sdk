@@ -9,6 +9,7 @@ namespace Oracle.NoSQL.SDK {
 
     using System;
     using System.Diagnostics;
+    using System.IO;
     using System.Security.Cryptography;
     using System.Security.Cryptography.X509Certificates;
     using System.Text;
@@ -112,6 +113,12 @@ namespace Oracle.NoSQL.SDK {
         {
             using var sha256 = SHA256.Create();
             return sha256.ComputeHash(Encoding.UTF8.GetBytes(payload));
+        }
+
+        internal static byte[] ComputeSHA256Digest(Stream payload)
+        {
+            using var sha256 = SHA256.Create();
+            return sha256.ComputeHash(payload);
         }
     }
 

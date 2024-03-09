@@ -29,6 +29,10 @@ namespace Oracle.NoSQL.SDK
     /// </remarks>
     public class DeleteRangeResult : IDataResult
     {
+        internal DeleteRangeResult()
+        {
+        }
+
         ConsumedCapacity IDataResult.ConsumedCapacity
         {
             get => ConsumedCapacity;

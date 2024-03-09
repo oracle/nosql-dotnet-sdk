@@ -51,6 +51,26 @@ namespace Oracle.NoSQL.SDK.Tests
                 (ReplicaAckPolicy)25)
         };
 
+        internal static readonly IEnumerable<TableCompletionOptions>
+            BadTableCompletionOptions =
+                (from timeout in BadTimeSpans
+                    select new TableCompletionOptions
+                    {
+                        Timeout = timeout
+                    })
+                .Concat(
+                    from pollDelay in BadTimeSpans
+                    select new TableCompletionOptions
+                    {
+                        PollDelay = pollDelay
+                    })
+                .Append(new TableCompletionOptions
+                {
+                    // poll delay greater than timeout
+                    Timeout = TimeSpan.FromSeconds(5),
+                    PollDelay = TimeSpan.FromMilliseconds(5100)
+                });
+
         // Relevant to both Put and individual put sub-op in WriteMany.
         internal static IEnumerable<TPutOptions>
             GetBaseBadPutOptions<TPutOptions>()

@@ -14,7 +14,7 @@ namespace Oracle.NoSQL.SDK
     /// <see cref="WriteManyResult{TRow}"/>.
     /// </summary>
     /// <remarks>
-    /// This class contains contains all relevant properties from
+    /// This class contains all relevant properties from
     /// <see cref="PutResult{TRow}"/> and <see cref="DeleteResult{TRow}"/>
     /// (note that <em>ConsumedCapacity</em> is not defined on the sub
     /// operation basis).
@@ -26,6 +26,10 @@ namespace Oracle.NoSQL.SDK
     /// <seealso cref="NoSQLClient.DeleteManyAsync"/>
     public class WriteOperationResult<TRow> : IWriteResultWithId<TRow>
     {
+        internal WriteOperationResult()
+        {
+        }
+
         // Implement interface properties explicitly to avoid having public
         // setters in the result class.
 

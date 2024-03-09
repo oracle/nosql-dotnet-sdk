@@ -9,7 +9,7 @@ namespace Oracle.NoSQL.SDK
 {
     using System;
     using System.Diagnostics;
-    using System.Net.Http.Headers;
+    using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
     using static HttpConstants;
@@ -516,57 +516,70 @@ namespace Oracle.NoSQL.SDK
         /// </remarks>
         /// <param name="request">The <see cref="Request"/> object
         /// representing the running operation.</param>
-        /// <param name="headers">HTTP headers collection to which the
-        /// implementation needs to add the required authorization headers.
-        /// </param>
+        /// <param name="message">HTTP request message.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns><see cref="Task"/> that completes when the required
         /// authorization headers are obtained and added to the
-        /// <paramref name="headers"/> collection.</returns>
+        /// request <paramref name="message"/> collection.</returns>
         /// <exception cref="AuthorizationException">If failed to generate
         /// the request signature.</exception>
         /// <seealso cref="IAuthorizationProvider.ApplyAuthorizationAsync"/>
         public async Task ApplyAuthorizationAsync(Request request,
-            HttpRequestHeaders headers, CancellationToken cancellationToken)
+            HttpRequestMessage message, CancellationToken cancellationToken)
         {
             var isInvalidAuth =
                 request.LastException is InvalidAuthorizationException;
-
-            if (isInvalidAuth || NeedSignatureRefresh())
+            var contentSigned = request.NeedsContentSigned;
+            
+            SignatureDetails signatureDetails;
+            if (isInvalidAuth || contentSigned || NeedSignatureRefresh(
+                    CachedSignatureDetails))
             {
-                await RefreshSignatureDetails(isInvalidAuth,
-                    cancellationToken);
-                if (renewInterval != default)
+                signatureDetails = await CreateSignatureDetails(
+                    request, message, isInvalidAuth, cancellationToken);
+
+                if (!contentSigned)
                 {
-                    lock (providerLock)
+                    CachedSignatureDetails = signatureDetails;
+                    if (renewInterval != default)
                     {
                         ScheduleRenew();
                     }
                 }
             }
-
-            lock (providerLock)
+            else
             {
-                headers.Add(Authorization, signatureDetails.Header);
-                headers.Add(Date, signatureDetails.DateStr);
+                signatureDetails = CachedSignatureDetails;
+            }
 
-                if (delegationToken != null)
-                {
-                    headers.Add(OBOTokenHeader, delegationToken);
-                }
+            message.Headers.Add(Authorization,
+                signatureDetails.Header);
+            message.Headers.Add(Date, signatureDetails.DateStr);
 
-                /*
-                 * If request doesn't has compartment id, set the tenant id as
-                 * the default compartment, which is the root compartment in
-                 * IAM if using user principal. If using an instance principal
-                 * this value is null.
-                 */
-                var compartment = request.Compartment ?? signatureDetails.TenantId;
+            if (contentSigned)
+            {
+                Debug.Assert(signatureDetails.Digest != null);
+                message.Headers.Add(ContentSHA256,
+                    signatureDetails.Digest);
+            }
 
-                if (compartment != null)
-                {
-                    headers.Add(CompartmentId, compartment);
-                }
+            if (signatureDetails.DelegationToken != null)
+            {
+                message.Headers.Add(OBOTokenHeader,
+                    signatureDetails.DelegationToken);
+            }
+
+            /*
+             * If request doesn't have compartment id, set the tenant id
+             * as the default compartment, which is the root compartment
+             * in IAM if using user principal. If using an instance
+             * principal this value is null.
+             */
+            var compartment = request.Compartment ?? signatureDetails.TenantId;
+
+            if (compartment != null)
+            {
+                message.Headers.Add(CompartmentId, compartment);
             }
         }
 
@@ -575,7 +588,10 @@ namespace Oracle.NoSQL.SDK
         {
             if (disposing && !disposed)
             {
-                renewCancelSource?.Cancel();
+                lock (providerLock)
+                {
+                    renewCancelSource?.Cancel();
+                }
                 profileProvider?.Dispose();
                 disposed = true;
             }

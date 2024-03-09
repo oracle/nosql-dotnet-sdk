@@ -195,15 +195,15 @@ namespace Oracle.NoSQL.SDK
                     options), cancellationToken);
         }
 
-        private async Task<TableResult> DoTableDDLWithCompletionAsync(
-            TableDDLRequest request, CancellationToken cancellationToken)
+        private async Task<TableResult> DoTableOpWithCompletionAsync(
+            TableOperationRequest request, CancellationToken cancellationToken)
         {
-            var startTime = DateTime.Now;
+            var startTime = DateTime.UtcNow;
             var result = (TableResult) await ExecuteRequestAsync(request,
                 cancellationToken);
             Debug.Assert(result != null);
-            var timeout = request.Options?.Timeout - (DateTime.Now -
-                startTime);
+            var timeout = request.CompletionOptions?.Timeout -
+                          (DateTime.UtcNow - startTime);
 
             if (timeout <= TimeSpan.Zero)
             {
@@ -212,18 +212,25 @@ namespace Oracle.NoSQL.SDK
             }
 
             return await result.WaitForCompletionAsync(timeout,
-                request.Options?.PollDelay, cancellationToken);
+                request.CompletionOptions?.PollDelay, cancellationToken);
         }
 
         internal async Task WaitForTableStateInternalAsync(
-            TableResult tableResult, TableState tableState,
-            TimeSpan? timeout, TimeSpan? pollDelay,
+            TableResult tableResult, Func<TableResult,bool> predicate,
+            string description, TimeSpan? timeout, TimeSpan? pollDelay,
             CancellationToken cancellationToken)
         {
-            if (tableResult.TableState == tableState)
+            if (predicate(tableResult))
             {
                 return;
             }
+
+            // If called from NoSQLClient.WaitForTableStateAsync() or
+            // NoSQLClient.WaitForLocalReplicaInitAsync(), in which case the
+            // table may not even exist at the moment, in which case we keep
+            // polling until the table is created and reaches desired state.
+            var isInitialStateUnknown =
+                tableResult.TableState == TableResult.UnknownTableState;
 
             var tablePollTimeout = timeout ?? Config.TablePollTimeout;
             var tablePollDelay = pollDelay ?? Config.TablePollDelay;
@@ -238,11 +245,12 @@ namespace Oracle.NoSQL.SDK
 
             var request = new GetTableRequest(this, tableResult.TableName,
                 tableResult.OperationId, options);
-            var startTime = DateTime.Now;
+            var startTime = DateTime.UtcNow;
 
             while(true)
             {
                 TableResult result = null;
+
                 try
                 {
                     result = (TableResult)await ExecuteValidatedRequestAsync(
@@ -251,55 +259,63 @@ namespace Oracle.NoSQL.SDK
                 }
                 catch (TableNotFoundException)
                 {
-                    if (tableState == TableState.Dropped)
-                    {
-                        tableResult.TableState = TableState.Dropped;
-                        return;
-                    }
-
-                    // If called from NoSQLClient.WaitForTableStateAsync(),
-                    // (in which case tableResult.tableState =
-                    // TableResult.UnknownTableState), we keep polling until
-                    // table gets created and reaches desired state (or
-                    // timeout elapses).
-                    if (tableResult.TableState != TableResult.UnknownTableState)
-                    {
-                        throw;
-                    }
+                    tableResult.TableState = TableState.Dropped;
                 }
 
                 if (result != null)
                 {
-                    tableResult.TableState = result.TableState;
-                    tableResult.TableSchema = result.TableSchema;
-                    tableResult.TableLimits = result.TableLimits;
+                    // Modify passed tableResult in place. Doing it on every
+                    // poll instead of just when we return allows the user to
+                    // see updated result even if exception is thrown.
+                    tableResult.CopyFrom(result);
+                }
 
-                    if (result.TableState == tableState)
-                    {
-                        return;
-                    }
+                if (predicate(tableResult))
+                {
+                    return;
+                }
+
+                // If called from TableResult.WaitForCompletionAsync() and we
+                // are not waiting for table to be dropped, but get the table
+                // state dropped, we throw exception to notify the user
+                // something unexpected has happened.
+                if (!isInitialStateUnknown &&
+                    tableResult.TableState == TableState.Dropped)
+                {
+                    throw new TableNotFoundException(
+                        $"Table {tableResult.TableName} not found while " +
+                        $"waiting for {description}");
                 }
 
                 if (tablePollTimeout.HasValue)
                 {
-                    tablePollTimeout -=
-                        DateTime.Now + tablePollDelay - startTime;
-                    if (tablePollTimeout <= TimeSpan.Zero)
+                    var remaining = startTime + tablePollTimeout -
+                        (DateTime.UtcNow + tablePollDelay);
+
+                    if (remaining <= TimeSpan.Zero)
                     {
                         throw new TimeoutException(
-                            "Reached timeout while waiting for table state " +
-                            tableState);
+                            "Reached timeout while waiting for " +
+                            description);
                     }
 
-                    if (options.Timeout > tablePollTimeout)
+                    if (options.Timeout > remaining)
                     {
-                        options.Timeout = tablePollTimeout;
+                        options.Timeout = remaining;
                     }
                 }
 
                 await Task.Delay(tablePollDelay, cancellationToken);
             }
         }
+
+        internal Task WaitForTableStateInternalAsync(
+            TableResult tableResult, TableState tableState, TimeSpan? timeout,
+            TimeSpan? pollDelay, CancellationToken cancellationToken) =>
+            WaitForTableStateInternalAsync(tableResult,
+                result => result.TableState == tableState,
+                $"table state {tableState}", timeout, pollDelay,
+                cancellationToken);
 
         internal async Task WaitForAdminCompletionAsync(
             AdminResult adminResult, TimeSpan? timeout, TimeSpan? pollDelay,
@@ -321,7 +337,7 @@ namespace Oracle.NoSQL.SDK
             };
 
             var request = new AdminStatusRequest(this, adminResult, options);
-            var startTime = DateTime.Now;
+            var startTime = DateTime.UtcNow;
 
             while (true)
             {
@@ -339,19 +355,19 @@ namespace Oracle.NoSQL.SDK
 
                 if (adminPollTimeout.HasValue)
                 {
-                    adminPollTimeout -=
-                        DateTime.Now + adminPollDelay - startTime;
+                    var remaining = startTime + adminPollTimeout -
+                        (DateTime.UtcNow + adminPollDelay);
 
-                    if (adminPollTimeout <= TimeSpan.Zero)
+                    if (remaining <= TimeSpan.Zero)
                     {
                         throw new TimeoutException(
                             "Reached timeout while waiting for " +
                             "admin operation completion");
                     }
 
-                    if (options.Timeout > adminPollTimeout)
+                    if (options.Timeout > remaining)
                     {
-                        options.Timeout = adminPollTimeout;
+                        options.Timeout = remaining;
                     }
                 }
 

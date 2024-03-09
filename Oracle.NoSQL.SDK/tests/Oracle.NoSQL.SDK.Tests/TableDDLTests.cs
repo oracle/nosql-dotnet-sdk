@@ -25,23 +25,12 @@ namespace Oracle.NoSQL.SDK.Tests
 
         private static readonly IEnumerable<TableDDLOptions>
             BadTableDDLOptsNoLimits =
-                (from timeout in BadTimeSpans
-                    select new TableDDLOptions
-                    {
-                        Timeout = timeout
-                    })
-                .Concat(
-                    from pollDelay in BadTimeSpans
-                    select new TableDDLOptions
-                    {
-                        PollDelay = pollDelay
-                    })
-                .Append(new TableDDLOptions
+                from opt in BadTableCompletionOptions
+                select new TableDDLOptions
                 {
-                    // poll delay greater than timeout
-                    Timeout = TimeSpan.FromSeconds(5),
-                    PollDelay = TimeSpan.FromMilliseconds(5100)
-                });
+                    Timeout = opt.Timeout,
+                    PollDelay = opt.PollDelay
+                };
 
         private static readonly IEnumerable<TableLimits> BadTableLimits =
             (from readUnits in BadPositiveInt32

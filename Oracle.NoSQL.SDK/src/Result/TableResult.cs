@@ -9,6 +9,8 @@ namespace Oracle.NoSQL.SDK
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Reflection;
     using System.Text.RegularExpressions;
     using System.Threading;
     using System.Threading.Tasks;
@@ -34,7 +36,7 @@ namespace Oracle.NoSQL.SDK
     /// Table DDL operations performed by
     /// <see cref="M:Oracle.NoSQL.SDK.NoSQLClient.ExecuteTableDDLAsync*"/>
     /// and <see cref="NoSQLClient.SetTableLimitsAsync"/> such as table
-    /// creation, modification, and drop are potentially long running and not
+    /// creation, modification, and drop are potentially long-running and not
     /// necessarily completed when these methods return result and the table
     /// may still be in one of its intermediate states. You may call
     /// <see cref="TableResult.WaitForCompletionAsync"/> to be notified when
@@ -65,7 +67,7 @@ namespace Oracle.NoSQL.SDK
     {
         internal const TableState UnknownTableState = (TableState)(-1);
 
-        private readonly TableDDLRequest request;
+        private readonly TableOperationRequest request;
 
         internal string OperationId { get; set; }
 
@@ -73,9 +75,22 @@ namespace Oracle.NoSQL.SDK
         {
         }
 
-        internal TableResult(TableDDLRequest request = null)
+        internal TableResult(TableOperationRequest request)
         {
             this.request = request;
+        }
+
+        internal void CopyFrom(TableResult result)
+        {
+            Debug.Assert(result != null);
+            foreach (var property in typeof(TableResult).GetProperties(
+                         BindingFlags.Instance | BindingFlags.Public))
+            {
+                if (property.CanWrite)
+                {
+                    property.SetValue(this, property.GetValue(result));
+                }
+            }
         }
 
         /// <summary>
@@ -214,6 +229,69 @@ namespace Oracle.NoSQL.SDK
         public IDictionary<string, string> FreeFormTags { get; internal set; }
 
         /// <summary>
+        /// Cloud Service only.
+        /// Gets a value indicating whether the table's schema is frozen.
+        /// </summary>
+        /// <remarks>
+        /// Frozen schema is required for Global Active Tables.
+        /// </remarks>
+        /// <value>
+        /// <c>true</c> if the table's schema is frozen, otherwise
+        /// <c>false</c>.
+        /// </value>
+        /// <seealso href="https://docs.oracle.com/en/cloud/paas/nosql-cloud/gasnd">
+        /// Global Active Tables in NDCS
+        /// </seealso>
+        public bool IsSchemaFrozen { get; internal set; }
+
+        /// <summary>
+        /// Cloud Service only.
+        /// Gets a value indicating whether the table has replicas, that is
+        /// whether it is a Global Active table.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if the table has replicas, otherwise <c>false</c>.
+        /// </value>
+        /// <seealso href="https://docs.oracle.com/en/cloud/paas/nosql-cloud/gasnd">
+        /// Global Active Tables in NDCS
+        /// </seealso>
+        public bool IsReplicated => Replicas != null;
+
+        /// <summary>
+        /// Cloud Service only.
+        /// Gets a value indicating whether this table is a replica and its
+        /// initialization process has been completed.
+        /// </summary>
+        /// <remarks>
+        /// The initialization process starts after the replica table is
+        /// created and involves copying of the table data from the sender
+        /// region to the receiver region.
+        /// </remarks>
+        /// <value>
+        /// <c>true</c> if this table is a replica and its initialization
+        /// process has been completed, otherwise <c>false</c>.
+        /// </value>
+        /// <seealso href="https://docs.oracle.com/en/cloud/paas/nosql-cloud/gasnd">
+        /// Global Active Tables in NDCS
+        /// </seealso>
+        public bool IsLocalReplicaInitialized { get; internal set; }
+
+        /// <summary>
+        /// Cloud Service only.
+        /// Gets a list containing information for each replica, if this table
+        /// is replicated (i.e. Global Active Table).
+        /// </summary>
+        /// <value>
+        /// List containing information for each replica if this table is
+        /// replicated, otherwise <c>null</c>.
+        /// </value>
+        /// <seealso cref="ReplicaInfo"/>
+        /// <seealso href="https://docs.oracle.com/en/cloud/paas/nosql-cloud/gasnd">
+        /// Global Active Tables in NDCS
+        /// </seealso>
+        public IReadOnlyList<ReplicaInfo> Replicas { get; internal set; }
+
+        /// <summary>
         /// Asynchronously waits for completion of table DDL operations.
         /// </summary>
         /// <remarks>
@@ -259,7 +337,7 @@ namespace Oracle.NoSQL.SDK
         /// </param>
         /// <param name="pollDelay">(Optional) Delay between successive polls,
         /// determines how often the polls are performed.  Must be positive
-        /// value and not greater then the timeout.  Defaults to
+        /// value and not greater than the timeout.  Defaults to
         /// <see cref="NoSQLConfig.TablePollDelay"/>.</param>
         /// <param name="cancellationToken">(Optional) Cancellation token.
         /// </param>
@@ -292,13 +370,16 @@ namespace Oracle.NoSQL.SDK
             {
                 throw new InvalidOperationException(
                     "Cannot call WaitForCompletionAsync because this " +
-                    "TableResult is not a result of ExecuteTableDDL");
+                    "TableResult is not a result of table DDL operation");
             }
 
-            var tableState = request.Statement != null &&
-                Regex.IsMatch(request.Statement, @"^\s*DROP\s+TABLE\s+",
-                    RegexOptions.IgnoreCase) ?
-                    TableState.Dropped : TableState.Active;
+            var tableState = request is TableDDLRequest ddlRequest &&
+                             ddlRequest.Statement != null &&
+                             Regex.IsMatch(ddlRequest.Statement,
+                                 @"^\s*DROP\s+TABLE\s+",
+                                 RegexOptions.IgnoreCase)
+                ? TableState.Dropped
+                : TableState.Active;
 
             CheckPollParameters(timeout, pollDelay, nameof(timeout),
                 nameof(pollDelay));

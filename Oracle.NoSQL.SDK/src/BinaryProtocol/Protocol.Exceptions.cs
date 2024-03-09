@@ -36,7 +36,9 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
         TableDeploymentLimitExceeded = 19,
         TenantDeploymentLimitExceeded = 20,
         OperationNotSupported = 21,
+        ETagMismatch = 22,
         UnsupportedProtocol = 24,
+        TableNotReady = 26,
 
         // Error codes for user throttling, range from 50 to 100(exclusive).
         ReadLimitExceeded = 50,
@@ -169,6 +171,10 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
                     return new ResourceNotFoundException(message);
                 case ErrorCode.OperationNotSupported:
                     return new NotSupportedException(message);
+                case ErrorCode.ETagMismatch:
+                    return new ETagMismatchException(message);
+                case ErrorCode.TableNotReady:
+                    return new TableNotReadyException(message);
                 default:
                     return new BadProtocolException(
                         $"Unknown error code {errorCode}: {message}");

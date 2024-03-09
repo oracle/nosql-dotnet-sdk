@@ -42,7 +42,7 @@ namespace Oracle.NoSQL.SDK
     /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.ExecuteTableDDLWithCompletionAsync*"/>
     /// <seealso cref="NoSQLClient.SetTableLimitsAsync"/>
     /// <seealso cref="NoSQLClient.SetTableLimitsWithCompletionAsync"/>
-    public class TableDDLOptions : IOptions
+    public class TableDDLOptions : ITableCompletionOptions
     {
         /// <inheritdoc cref="GetOptions.Compartment"/>
         public string Compartment { get; set; }

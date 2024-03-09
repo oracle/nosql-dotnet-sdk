@@ -98,6 +98,10 @@ namespace Oracle.NoSQL.SDK
 
         internal IDictionary<string, FieldValue> variables;
 
+        internal PreparedStatement()
+        {
+        }
+
         ConsumedCapacity IDataResult.ConsumedCapacity
         {
             get => ConsumedCapacity;

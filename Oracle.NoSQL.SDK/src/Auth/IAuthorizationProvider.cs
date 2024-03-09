@@ -7,6 +7,7 @@
 
 namespace Oracle.NoSQL.SDK {
     using System;
+    using System.Net.Http;
     using System.Net.Http.Headers;
     using System.Threading;
     using System.Threading.Tasks;
@@ -32,17 +33,19 @@ namespace Oracle.NoSQL.SDK {
     /// <see cref="NoSQLConfig.AuthorizationProvider"/>.
     /// </para>
     /// <para>
-    /// The authorization is supplied as part of HTTP headers in the request
-    /// which includes the header names and values.  In general, multiple
-    /// headers may be required.  For a common case where authorization is
-    /// supplied via a single <em>Authorization</em> HTTP header, you may
-    /// choose to extend <see cref="AuthorizationStringProvider"/> class.
+    /// Normally, the authorization is supplied as part of HTTP headers in the
+    /// request which includes the header names and values. In general,
+    /// multiple headers may be required. For a common case where
+    /// authorization is supplied via a single <em>Authorization</em> HTTP
+    /// header, you may choose to extend
+    /// <see cref="AuthorizationStringProvider"/> class.
     /// </para>
     /// <para>
-    /// If you are implementing a custom authorization provider that uses disposable
-    /// resources, you can also implement the <see cref="IDisposable"/>
-    /// interface.  The driver will call <see cref="IDisposable.Dispose()"/>
-    /// of the provider when <see cref="NoSQLClient"/> instance is disposed.
+    /// If you are implementing a custom authorization provider that uses
+    /// disposable resources, you can also implement the
+    /// <see cref="IDisposable"/> interface.  The driver will call
+    /// <see cref="IDisposable.Dispose()"/> of the provider when
+    /// <see cref="NoSQLClient"/> instance is disposed.
     /// </para>
     /// </remarks>
     /// <seealso cref="NoSQLConfig.AuthorizationProvider"/>
@@ -68,30 +71,39 @@ namespace Oracle.NoSQL.SDK {
         void ConfigureAuthorization(NoSQLConfig config);
 
         /// <summary>
-        /// Obtains and supplies the authorization information as the required
-        /// HTTP headers.
+        /// Obtains and supplies the authorization information to the request.
         /// </summary>
         /// <remarks>
-        /// Add the required headers to the provided
-        /// <see cref="System.Net.Http.Headers.HttpRequestHeaders"/>
-        /// collection.  Obtaining the required authorization information
+        /// <para>
+        /// <paramref name="message"/> parameter is the HTTP request message
+        /// and contains both the headers and the content of the request
+        /// message. Modify this message to supply the required
+        /// authorization information. Normally this involves adding
+        /// authorization headers, for which you can use
+        /// <see cref="HttpRequestMessage.Headers"/> property of
+        /// <see cref="HttpRequestMessage"/> to access the
+        /// <see cref="HttpRequestHeaders"/> collection of the request
+        /// message.
+        /// </para>
+        /// <para>
+        /// Obtaining the required authorization information
         /// may be an asynchronous operation, thus this method is
         /// asynchronous.
+        /// </para>
         /// </remarks>
         /// <param name="request">The <see cref="Request"/> object
         /// representing the running operation.</param>
-        /// <param name="headers">HTTP headers collection to which the
-        /// implementation needs to add the required authorization headers.
+        /// <param name="message">HTTP request message for the request.
         /// </param>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns><see cref="Task"/> that completes when the required
-        /// authorization headers are obtained and added to the
-        /// <paramref name="headers"/> collection.</returns>
+        /// authorization information is obtained and added to the
+        /// request <paramref name="message"/>.</returns>
         /// <exception cref="AuthorizationException">If failed to obtain
-        /// the required authorization headers.  Use this exception to
+        /// the required authorization information. Use this exception to
         /// wrap any provider-specific exception.</exception>
         Task ApplyAuthorizationAsync(Request request,
-            HttpRequestHeaders headers, CancellationToken cancellationToken);
+            HttpRequestMessage message, CancellationToken cancellationToken);
     }
 
     /// <summary>
@@ -148,22 +160,20 @@ namespace Oracle.NoSQL.SDK {
         /// </remarks>
         /// <param name="request">The <see cref="Request"/> object
         /// representing the running operation.</param>
-        /// <param name="headers">HTTP headers collection to which the
-        /// implementation needs to add the required authorization headers.
-        /// </param>
+        /// <param name="message">HTTP request message.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns><see cref="Task"/> that completes when the required
-        /// authorization headers are obtained and added to the
-        /// <paramref name="headers"/> collection.</returns>
+        /// authorization information is obtained and added to the
+        /// request <paramref name="message"/>.</returns>
         /// <exception cref="AuthorizationException">If failed to obtain
-        /// the required authorization headers.  Use this exception to
+        /// the required authorization information. Use this exception to
         /// wrap any provider-specific exception.</exception>
         public async Task ApplyAuthorizationAsync(Request request,
-            HttpRequestHeaders headers, CancellationToken cancellationToken)
+            HttpRequestMessage message, CancellationToken cancellationToken)
         {
             var authString = await GetAuthorizationStringAsync(request,
                 cancellationToken);
-            headers.Add(HttpConstants.Authorization, authString);
+            message.Headers.Add(HttpConstants.Authorization, authString);
         }
 
     }

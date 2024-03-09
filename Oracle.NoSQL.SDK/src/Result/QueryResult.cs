@@ -92,6 +92,10 @@ namespace Oracle.NoSQL.SDK
     /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.GetQueryAsyncEnumerable*"/>
     public class QueryResult<TRow> : IDataResult
     {
+        internal QueryResult()
+        {
+        }
+
         ConsumedCapacity IDataResult.ConsumedCapacity
         {
             get => ConsumedCapacity;

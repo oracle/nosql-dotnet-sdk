@@ -60,6 +60,7 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             internal const string Range = "rg";
             internal const string RangePath = "rp";
             internal const string ReadThrottleCount = "rt";
+            internal const string Region = "rn";
             internal const string ReturnRow = "rr";
             internal const string ShardId = "si";
             internal const string Start = "sr";
@@ -94,6 +95,9 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             internal const string WmSuccess = "ws";
 
             // table metadata
+            internal const string Initialized = "it";
+            internal const string Replicas = "rc";
+            internal const string SchemaFrozen = "sf";
             internal const string TableSchema = "ac";
             internal const string TableState = "as";
 
@@ -141,6 +145,12 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             internal const string SortPhase1Results = "p1";
             internal const string TableAccessInfo = "ai";
             internal const string TopologyInfo = "tp";
+
+            // replica stats response fields
+            internal const string NextStartTime = "ni";
+            internal const string ReplicaStats = "ra";
+            internal const string ReplicaLag = "rl";
+            internal const string Time = "tm";
         }
     }
 }

@@ -13,6 +13,7 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
     using System.IO;
     using System.Text.Json;
     using BinaryProtocol;
+    using Query;
     using BinaryProtocol = BinaryProtocol.Protocol;
     using NsonType = DbType;
     using static ValidateUtils;
@@ -266,6 +267,37 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             });
         }
 
+        internal static ReplicaInfo DeserializeReplicaInfo(NsonReader reader)
+        {
+            var result = new ReplicaInfo();
+            ReadMap(reader, field =>
+            {
+                switch (field)
+                {
+                    case FieldNames.Region:
+                        result.ReplicaName = reader.ReadString();
+                        return true;
+                    case FieldNames.TableOCID:
+                        result.ReplicaOCID = reader.ReadString();
+                        return true;
+                    case FieldNames.WriteUnits:
+                        result.WriteUnits = reader.ReadInt32();
+                        return true;
+                    case FieldNames.LimitsMode:
+                        result.CapacityMode =
+                            (CapacityMode)reader.ReadInt32();
+                        return true;
+                    case FieldNames.TableState:
+                        result.TableState = (TableState)reader.ReadInt32();
+                        return true;
+                    default:
+                        return false;
+                }
+            });
+
+            return result;
+        }
+
         internal static TableResult DeserializeTableResult(NsonReader reader,
             Request request, TableResult result)
         {
@@ -339,12 +371,34 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                         result.TableLimits = new TableLimits(readUnits,
                             writeUnits, storageGB, capacityMode);
                         return true;
+                    case FieldNames.SchemaFrozen:
+                        result.IsSchemaFrozen = reader.ReadBoolean();
+                        return true;
+                    case FieldNames.Initialized:
+                        result.IsLocalReplicaInitialized = reader.ReadBoolean();
+                        return true;
+                    case FieldNames.Replicas:
+                        result.Replicas = ReadArray(reader,
+                            DeserializeReplicaInfo);
+                        return true;
                     default:
                         return false;
                 }
             }, request, result);
 
             return result;
+        }
+
+        internal static TableResult DeserializeTableResult(
+            MemoryStream stream, Request request)
+        {
+            var reader = GetNsonReader(stream);
+            // We only need to pass non-null request if it represents table
+            // operation (e.g. TableDDL, AddReplica, etc.) to be used in
+            // WaitForCompletion. We pass null if request is not an instance
+            // of TableOperationRequest (e.g. GetTableRequest).
+            var result = new TableResult(request as TableOperationRequest);
+            return DeserializeTableResult(reader, request, result);
         }
 
         // GetTableUsage response sends strings for the timestamp values.

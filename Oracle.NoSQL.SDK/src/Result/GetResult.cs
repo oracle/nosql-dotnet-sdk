@@ -28,6 +28,10 @@ namespace Oracle.NoSQL.SDK
     /// <seealso cref="RowVersion"/>
     public class GetResult<TRow> : IDataResult
     {
+        internal GetResult()
+        {
+        }
+
         // We have to implement the interface explicitly (via the class
         // property) because the implicit implementation does not have public
         // setter.

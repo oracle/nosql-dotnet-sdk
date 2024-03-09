@@ -53,26 +53,6 @@ namespace Oracle.NoSQL.SDK.Tests
                     opt
                 });
 
-        private static readonly IEnumerable<TableCompletionOptions>
-            BadTableCompletionOptions =
-                (from opt in BadGetTableOptions
-                    select new TableCompletionOptions
-                    {
-                        Timeout = opt.Timeout
-                    })
-                .Concat(
-                    from pollDelay in BadTimeSpans
-                    select new TableCompletionOptions
-                    {
-                        PollDelay = pollDelay
-                    })
-                .Append(new TableCompletionOptions
-                {
-                    // poll delay greater than timeout
-                    Timeout = TimeSpan.FromSeconds(5),
-                    PollDelay = TimeSpan.FromMilliseconds(5100)
-                });
-
         private static IEnumerable<object[]>
             ForCompletionNegativeDataSource =>
             from opt in BadTableCompletionOptions

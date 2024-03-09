@@ -10,42 +10,41 @@ namespace Oracle.NoSQL.SDK
     using System;
 
     /// <summary>
-    /// The exception that is thrown when a table operation fails
-    /// because the table is in use or busy.
+    /// Cloud service only.
+    /// The exception that is thrown when an operation is attempted on a
+    /// replicated table that is not yet fully initialized.
     /// </summary>
-    /// <remarks>
-    /// Only one modification operation at a time is allowed on a table. This
-    /// is a retryable exception.
-    /// </remarks>
-    public class TableBusyException : RetryableException
+    public class TableNotReadyException : RetryableException
     {
         /// <summary>
-        /// Initializes a new instance of <see cref="TableBusyException"/>.
+        /// Initializes a new instance of
+        /// <see cref="TableNotReadyException"/>.
         /// </summary>
-        public TableBusyException()
+        public TableNotReadyException()
         {
         }
 
         /// <summary>
-        /// Initializes a new instance of <see cref="TableBusyException"/>
-        /// with the message that describes the current exception.
+        /// Initializes a new instance of
+        /// <see cref="TableNotReadyException"/> with the message that
+        /// describes the current exception.
         /// </summary>
         /// <param name="message">A message that describes the current
         /// exception.</param>
-        public TableBusyException(string message)
+        public TableNotReadyException(string message)
             : base(message)
         {
         }
 
         /// <summary>
-        /// Initializes a new instance of <see cref="TableBusyException"/>
+        /// Initializes a new instance of <see cref="TableNotReadyException"/>
         /// with the message that describes the current exception and an inner
         /// exception.
         /// </summary>
         /// <param name="message">A message that describes the current
         /// exception.</param>
         /// <param name="inner">The inner exception.</param>
-        public TableBusyException(string message, Exception inner)
+        public TableNotReadyException(string message, Exception inner)
             : base(message, inner)
         {
         }

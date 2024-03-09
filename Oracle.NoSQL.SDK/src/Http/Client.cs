@@ -91,7 +91,7 @@ namespace Oracle.NoSQL.SDK.Http
             if (config.AuthorizationProvider != null)
             {
                 await config.AuthorizationProvider.ApplyAuthorizationAsync(
-                    request, message.Headers, cancellationToken);
+                    request, message, cancellationToken);
             }
 
             if (request.Namespace is var ns && ns != null)
@@ -107,7 +107,7 @@ namespace Oracle.NoSQL.SDK.Http
             }
 
             // The stream returned by ReadAsStreamAsync(), even though it is
-            // usually a MemoryStream, doesn't not allow access to the buffer
+            // usually a MemoryStream, doesn't allow access to the buffer
             // via MemoryStream.GetBuffer() which is needed for
             // deserialization, so we have to use ReadAsByteArrayAsync().
             var buffer = await response.Content.ReadAsByteArrayAsync();
