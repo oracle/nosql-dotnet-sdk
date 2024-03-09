@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2020, 2022 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2024 Oracle and/or its affiliates. All rights reserved.
  *
  * Licensed under the Universal Permissive License v 1.0 as shown at
  *  https://oss.oracle.com/licenses/upl/
@@ -204,12 +204,25 @@ namespace Oracle.NoSQL.SDK.Tests
         {
             var endTime = DateTime.UtcNow + TimeSpan.FromSeconds(seconds);
             var random = new Random(GetRandomSeed());
+
+            // For child table, use all rows for each parent key, to make sure
+            // we put back all rows we deleted.
+            var childRowsPerParent =
+                fixture.RowFactory is AllTypesChildRowFactory crf
+                    ? crf.ChildRowsPerParent
+                    : 1;
+            var parentCount = fixture.FirstShardCount / childRowsPerParent;
+            // test self-check
+            Assert.IsTrue(parentCount > 0);
+
             do
             {
-                var count = random.Next(fixture.FirstShardCount) + 1;
-                var startIdx = random.Next(
-                    fixture.FirstShardCount - count + 1);
+                var count = random.Next(parentCount) + 1;
+                var startIdx = random.Next(parentCount - count + 1);
+                count *= childRowsPerParent;
+                startIdx *= childRowsPerParent;
                 var endIdx = startIdx + count - 1;
+
                 var partialPK = new MapValue
                 {
                     ["shardId"] = fixture.GetRow(startIdx)["shardId"]
