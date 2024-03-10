@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2020, 2022 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2024 Oracle and/or its affiliates. All rights reserved.
  *
  * Licensed under the Universal Permissive License v 1.0 as shown at
  *  https://oss.oracle.com/licenses/upl/
@@ -234,13 +234,14 @@ namespace Oracle.NoSQL.SDK.Tests
         internal const int DefaultChildRowsPerParent = 3;
 
         private int modifySeq;
-        private readonly int childRowsPerParent;
+
+        internal int ChildRowsPerParent { get; }
 
         internal AllTypesChildRowFactory(DataRowFactory parentFactory,
             int childRowsPerParent = DefaultChildRowsPerParent) :
             base(parentFactory.RowsPerShard * childRowsPerParent)
         {
-            this.childRowsPerParent = childRowsPerParent;
+            ChildRowsPerParent = childRowsPerParent;
             modifySeq = 0;
         }
 
@@ -248,7 +249,7 @@ namespace Oracle.NoSQL.SDK.Tests
 
         internal override DataRow MakeRow(int id)
         {
-            var pid = id / childRowsPerParent;
+            var pid = id / ChildRowsPerParent;
             return new DataRow(id)
             {
                 ["shardId"] = id / RowsPerShard,

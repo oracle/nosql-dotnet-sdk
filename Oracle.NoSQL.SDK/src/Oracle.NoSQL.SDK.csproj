@@ -7,7 +7,7 @@
     <Company>Oracle Corporation</Company>
     <Product>Oracle NoSQL Database</Product>
     <Authors>Oracle Corporation</Authors>
-    <Copyright>Copyright (c) 2020, 2022 Oracle and/or its affiliates. All rights reserved.</Copyright>
+    <Copyright>Copyright (c) 2020, 2024 Oracle and/or its affiliates. All rights reserved.</Copyright>
     <Description>Oracle NoSQL .NET SDK</Description>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
 	<PackageReadmeFile>README.md</PackageReadmeFile>
