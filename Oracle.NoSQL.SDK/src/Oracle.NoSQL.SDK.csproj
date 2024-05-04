@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>net5.0;netcoreapp3.1</TargetFrameworks>
-	<CheckEolTargetFramework>false</CheckEolTargetFramework>
+    <CheckEolTargetFramework>false</CheckEolTargetFramework>
     <RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>
     <Company>Oracle Corporation</Company>
     <Product>Oracle NoSQL Database</Product>
@@ -10,7 +10,7 @@
     <Copyright>Copyright (c) 2020, 2024 Oracle and/or its affiliates. All rights reserved.</Copyright>
     <Description>Oracle NoSQL .NET SDK</Description>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
-	<PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageProjectUrl>https://github.com/oracle/nosql-dotnet-sdk</PackageProjectUrl>
     <RepositoryUrl>https://github.com/oracle/nosql-dotnet-sdk</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -23,15 +23,11 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-	  <DocumentationFile></DocumentationFile>
-	  <NoWarn>1701;1702</NoWarn>
+      <DocumentationFile></DocumentationFile>
+      <NoWarn>1701;1702</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="NoSQLClient.GAT.cs~RF9eba589.TMP" />
-  </ItemGroup>
-
-	<ItemGroup>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
         <_Parameter1>Oracle.NoSQL.SDK.Tests</_Parameter1>
     </AssemblyAttribute>
@@ -42,19 +38,19 @@
         <_Parameter1>Oracle.NoSQL.SDK.SmokeTest</_Parameter1>
     </AssemblyAttribute>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
-	    <_Parameter1>Oracle.NoSQL.SDK.QTF</_Parameter1>
+        <_Parameter1>Oracle.NoSQL.SDK.QTF</_Parameter1>
     </AssemblyAttribute>
-	<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
-		<_Parameter1>Oracle.NoSQL.SDK.VSTests</_Parameter1>
-	</AssemblyAttribute>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <_Parameter1>Oracle.NoSQL.SDK.VSTests</_Parameter1>
+    </AssemblyAttribute>
   </ItemGroup>
 
   <ItemGroup>
-	  <None Include="..\..\README.md">
-		  <Pack>True</Pack>
-		  <PackagePath></PackagePath>
-	  </None>
-	  <None Include="LICENSE.txt">
+      <None Include="..\..\README.md">
+          <Pack>True</Pack>
+          <PackagePath></PackagePath>
+      </None>
+      <None Include="LICENSE.txt">
       <Pack>True</Pack>
       <PackagePath></PackagePath>
     </None>
