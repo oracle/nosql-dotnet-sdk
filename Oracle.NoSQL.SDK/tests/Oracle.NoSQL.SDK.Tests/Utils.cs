@@ -76,9 +76,11 @@ namespace Oracle.NoSQL.SDK.Tests
         // properties as target.
         internal static T AssignProperties<T>(T target, object source)
         {
+            // We can't use typeof(T) in case target is a subclass of T.
+            var targetType = target.GetType();
             foreach (var sourceProperty in source.GetType().GetProperties())
             {
-                var targetProperty = typeof(T).GetProperty(
+                var targetProperty = targetType.GetProperty(
                     sourceProperty.Name,
                     BindingFlags.Instance | BindingFlags.NonPublic |
                     BindingFlags.Public);
@@ -92,10 +94,16 @@ namespace Oracle.NoSQL.SDK.Tests
         internal static T CombineProperties<T>(T target, object source)
             where T : new()
         {
-            T result = new T();
+            T result;
             if (target != null)
             {
+                // We can't use new T() in case target is a subclass of T.
+                result = (T)Activator.CreateInstance(target.GetType(), true);
                 AssignProperties(result, target);
+            }
+            else
+            {
+                result = new T();
             }
 
             return AssignProperties(result, source);

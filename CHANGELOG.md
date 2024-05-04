@@ -8,6 +8,13 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 **Added**
 
+* Cloud only: added OKE workload identity authentication support
+ - added support for new configuration properties in IAMAuthorizationProvider:
+UseOKEWorkloadIdentity, ServiceAccountTokenFile
+ - added new methods in IAMAuthorizationProvider:
+CreateWithOKEWokloadIdentity, CreateWithOKEWorkloadIdentityAndTokenFile
+ - added public class InstanceMetadataClient that enables to get the instance
+region via GetRegionAsync method
 * Cloud only: added support for Global Active tables:
   - added new methods to NoSQLClient: AddReplicaAsync, DropReplicaAsync,
 GetReplicaStatsAsync, WaitForLocalReplicaInitAsync

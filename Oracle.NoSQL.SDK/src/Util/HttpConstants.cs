@@ -47,6 +47,8 @@ namespace Oracle.NoSQL.SDK
 
         internal const string OBOTokenHeader = "opc-obo-token";
 
+        internal const string OPCRequestId = "opc-request-id";
+
         internal static readonly string NoSQLDataPath =
             $"{NoSQLVersion}/{NoSQLPathName}/{DataPathName}";
     }

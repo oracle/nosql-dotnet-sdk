@@ -5,39 +5,23 @@
  *  https://oss.oracle.com/licenses/upl/
  */
 
-using System.Net.Http;
-using System.Reflection;
-using Oracle.NoSQL.SDK;
-
 namespace Oracle.NoSQL.SDK
 {
     using System;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Net;
-    using System.Net.Http;
-    using System.Security.Authentication;
     using System.Security.Cryptography;
     using System.Security.Cryptography.X509Certificates;
     using System.Threading;
     using System.Threading.Tasks;
     using static Utils;
 
-    internal class InstancePrincipalProvider : AuthenticationProfileProvider
+    internal class InstancePrincipalProvider : SecurityTokenBasedProvider
     {
-        // Instance metadata service base URL
-        private const string MetadataServiceBaseUrl =
-            "http://169.254.169.254/opc/v2/";
-        private const string FallbackMetadataServiceUrl =
-            "http://169.254.169.254/opc/v1/";
-        // The authorization header need to send to metadata service since V2
-        private const string AuthorizationHeaderValue = "Bearer Oracle";
         // The default purpose value in federation requests against IAM
         private const string DefaultPurpose = "DEFAULT";
 
         private readonly AuthHttpClient httpClient;
+        private readonly InstanceMetadataClient imdsClient;
         private string federationEndpoint;
-        private string metadataUrl;
         private RSA keyPair;
         private RSA instancePrivateKey;
         private X509Certificate2 instanceCertificate;
@@ -45,63 +29,18 @@ namespace Oracle.NoSQL.SDK
             new X509Certificate2[1];
         private string tenantId;
         private X509FederationClient federationClient;
-        private SecurityToken token;
         private bool disposed;
 
-        internal InstancePrincipalProvider(string federationEndpoint,
-            TimeSpan requestTimeout, ConnectionOptions connectionOptions)
+        internal InstancePrincipalProvider(IAMAuthorizationProvider iam,
+            NoSQLConfig config): base(iam.ProfileExpireBefore)
         {
-            this.federationEndpoint = federationEndpoint;
-            httpClient = new AuthHttpClient(requestTimeout,
-                connectionOptions);
+            federationEndpoint = iam.FederationEndpoint;
+            httpClient = new AuthHttpClient(iam.RequestTimeout,
+                config.ConnectionOptions);
+            imdsClient = new InstanceMetadataClient(httpClient);
         }
 
-        private async Task<string> GetInstanceMetadataAsync(string path,
-            CancellationToken cancellationToken)
-        {
-            var checkFallback = false;
-            if (metadataUrl == null)
-            {
-                metadataUrl = MetadataServiceBaseUrl;
-                checkFallback = true;
-            }
-
-            var request = new HttpRequestMessage(HttpMethod.Get,
-                metadataUrl + path);
-            request.Headers.Add(HttpConstants.Authorization, AuthorizationHeaderValue);
-
-            try
-            {
-                return await httpClient.ExecuteRequestAsync(request,
-                    cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                if (checkFallback && ex is ServiceResponseException srex &&
-                    srex.StatusCode == HttpStatusCode.NotFound)
-                {
-                    metadataUrl = FallbackMetadataServiceUrl;
-                    try
-                    {
-                        request.RequestUri = new Uri(metadataUrl + path);
-                        return await httpClient.ExecuteRequestAsync(request,
-                            cancellationToken);
-                    }
-                    catch (Exception ex2)
-                    {
-                        throw new AuthorizationException(
-                            $"Unable to get resource {path} from instance " +
-                            $"metadata {MetadataServiceBaseUrl} or " +
-                            $"fall back to {FallbackMetadataServiceUrl}, " +
-                            $"error: {ex2.Message}", ex2);
-                    }
-                }
-
-                throw new AuthorizationException(
-                    $"Unable to get resource {path} from instance metadata " +
-                    $"{metadataUrl}, error: {ex.Message}", ex);
-            }
-        }
+        private protected override RSA PrivateKey => keyPair;
 
         // Auto-detect the endpoint that should be used when talking to IAM
         // if no endpoint has been configured.
@@ -110,9 +49,7 @@ namespace Oracle.NoSQL.SDK
         {
             try
             {
-                var result = await GetInstanceMetadataAsync("instance/region",
-                    cancellationToken);
-                var region = SDK.Region.FromRegionCodeOrId(result);
+                var region = await imdsClient.GetRegionAsync(cancellationToken);
                 return $"https://auth.{region.RegionId}.{region.SecondLevelDomain}";
             }
             catch (Exception ex)
@@ -129,7 +66,7 @@ namespace Oracle.NoSQL.SDK
             {
                 instanceCertificate?.Dispose();
                 instanceCertificate = GetCertificateFromPEM(
-                    await GetInstanceMetadataAsync("identity/cert.pem",
+                    await imdsClient.GetValueAsync("identity/cert.pem",
                         cancellationToken));
             }
             catch (Exception ex)
@@ -157,7 +94,7 @@ namespace Oracle.NoSQL.SDK
 
             try
             {
-                var privateKey = await GetInstanceMetadataAsync(
+                var privateKey = await imdsClient.GetValueAsync(
                     "identity/key.pem", cancellationToken);
                 instancePrivateKey?.Dispose();
                 instancePrivateKey = PemPrivateKeyUtils.GetFromString(
@@ -174,7 +111,7 @@ namespace Oracle.NoSQL.SDK
             {
                 intermediateCertificates[0]?.Dispose();
                 intermediateCertificates[0] =
-                    GetCertificateFromPEM(await GetInstanceMetadataAsync(
+                    GetCertificateFromPEM(await imdsClient.GetValueAsync(
                         "identity/intermediate.pem", cancellationToken));
             }
             catch (Exception ex)
@@ -185,8 +122,8 @@ namespace Oracle.NoSQL.SDK
             }
         }
 
-        private async Task<string> GetSecurityTokenAsync(
-            CancellationToken cancellationToken)
+        private protected override async Task<string>
+            RefreshSecurityTokenAsync(CancellationToken cancellationToken)
         {
             federationEndpoint ??= await GetFederationEndpointAsync(
                 cancellationToken);
@@ -204,22 +141,11 @@ namespace Oracle.NoSQL.SDK
                 intermediateCertificates, cancellationToken);
         }
 
-        internal override async Task<AuthenticationProfile> GetProfileAsync(
-            bool forceRefresh, CancellationToken cancellationToken)
-        {
-            if (forceRefresh || token == null || !token.IsValid)
-            {
-                token = SecurityToken.Create(
-                    await GetSecurityTokenAsync(cancellationToken));
-            }
-
-            return new AuthenticationProfile("ST$" + token.Value, keyPair);
-        }
-
         protected override void Dispose(bool disposing)
         {
             if (disposing && !disposed)
             {
+                imdsClient.Dispose();
                 httpClient.Dispose();
                 keyPair?.Dispose();
                 instancePrivateKey?.Dispose();

@@ -17,7 +17,7 @@ namespace Oracle.NoSQL.SDK
     /// <remarks>
     /// <para>
     /// This exception is thrown by the authorization provider when the driver
-    /// driver <see cref="IAuthorizationProvider.ApplyAuthorizationAsync"/>.
+    /// calls <see cref="IAuthorizationProvider.ApplyAuthorizationAsync"/>.
     /// It indicates failure to obtain the authorization information.  This
     /// instance may contain the underlying exception that is specific to the
     /// implementation of the authorization provider as

@@ -299,7 +299,6 @@ namespace Oracle.NoSQL.SDK
 
             // AuthorizationProvider is validated in ConfigureAuthorization().
 
-            ConnectionOptions?.Validate();
             RateLimitingHandler.ValidateConfig(this);
         }
 

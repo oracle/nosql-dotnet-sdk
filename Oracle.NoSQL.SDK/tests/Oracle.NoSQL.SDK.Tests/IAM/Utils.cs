@@ -214,15 +214,17 @@ namespace Oracle.NoSQL.SDK.Tests.IAM
             Assert.AreEqual(oldDateStr, newDateStr);
         }
 
-        internal static void VerifyAuthLaterDate(HttpRequestHeaders newHeaders,
-            HttpRequestHeaders oldHeaders, string keyId, RSA publicKey,
-            string compartment = CompartmentId,
-            string delegationToken = null)
+        internal static void VerifyAuthLaterDate(
+            HttpRequestHeaders newHeaders, HttpRequestHeaders oldHeaders,
+            string newKeyId, string oldKeyId, RSA newPublicKey,
+            RSA oldPublicKey, string compartment = CompartmentId,
+            string newDelegationToken = null,
+            string oldDelegationToken = null)
         {
-            VerifyAuth(newHeaders, keyId, publicKey, compartment,
-                delegationToken);
-            VerifyAuth(oldHeaders, keyId, publicKey, compartment,
-                delegationToken);
+            VerifyAuth(newHeaders, newKeyId, newPublicKey, compartment,
+                newDelegationToken);
+            VerifyAuth(oldHeaders, oldKeyId, oldPublicKey, compartment,
+                oldDelegationToken);
 
             var newAuthHeader = newHeaders.Authorization?.ToString();
             var oldAuthHeader = oldHeaders.Authorization?.ToString();
@@ -236,6 +238,12 @@ namespace Oracle.NoSQL.SDK.Tests.IAM
             Assert.IsTrue(newDate.Value > oldDate.Value);
         }
 
+        internal static void VerifyAuthLaterDate(HttpRequestHeaders newHeaders,
+            HttpRequestHeaders oldHeaders, string keyId, RSA publicKey,
+            string compartment = CompartmentId,
+            string delegationToken = null) => VerifyAuthLaterDate(newHeaders,
+            oldHeaders, keyId, keyId, publicKey, publicKey, compartment,
+            delegationToken, delegationToken);
     }
 
 }

@@ -23,6 +23,9 @@ namespace Oracle.NoSQL.SDK
     /// </remarks>
     public class NoSQLException : Exception
     {
+        private const string ExtraInfoKey =
+            "Oracle.NoSQL.SDK_nosql_extra_info";
+
         // In future, expand this to work on exceptions that are not instances
         // of NoSQLException.
         internal static void SetRequest(Exception ex, Request request)
@@ -31,6 +34,15 @@ namespace Oracle.NoSQL.SDK
             {
                 noSqlEx.Request = request;
             }
+        }
+
+        // This allows us to modify and rethrow existing exception without
+        // having to create a copy of it and thus to retain the existing stack
+        // trace.
+        internal void AddExtraInfo(string extraInfo)
+        {
+            Data[ExtraInfoKey] = Data.Contains(ExtraInfoKey) ? 
+                Data[ExtraInfoKey] + "\n" + extraInfo : extraInfo;
         }
 
         /// <summary>
@@ -62,6 +74,15 @@ namespace Oracle.NoSQL.SDK
             : base(message, inner)
         {
         }
+        
+        /// <summary>
+        /// Gets the message that describes this exception.
+        /// </summary>
+        /// <value>Error message that describes this exception.</value>
+        public override string Message =>
+            Data.Contains(ExtraInfoKey)
+                ? base.Message + "\n" + Data[ExtraInfoKey]
+                : base.Message;
 
         /// <summary>
         /// Gets the <see cref="Request"/> object that describes the

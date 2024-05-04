@@ -5,8 +5,6 @@
  *  https://oss.oracle.com/licenses/upl/
  */
 
-using System.Reflection;
-
 namespace Oracle.NoSQL.SDK
 {
 
@@ -17,9 +15,8 @@ namespace Oracle.NoSQL.SDK
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using static Utils;
-
-    internal class ResourcePrincipalProvider : AuthenticationProfileProvider
+    
+    internal class ResourcePrincipalProvider : SecurityTokenBasedProvider
     {
         // Environment variable names used to fetch artifacts.
         private const string OCIResourcePrincipalVersion =
@@ -42,11 +39,12 @@ namespace Oracle.NoSQL.SDK
         private readonly string privateKeyFile;
         private RSA privateKey;
         private readonly string passphraseFile;
-        private readonly string rpstFile;
-        private ResourcePrincipalSecurityToken rpst;
+        private readonly string rpst;
         private readonly string region;
+        private readonly bool rpstInFile;
 
-        internal ResourcePrincipalProvider()
+        internal ResourcePrincipalProvider(IAMAuthorizationProvider iam) :
+            base(iam.ProfileExpireBefore)
         {
             var version = Environment.GetEnvironmentVariable(
                 OCIResourcePrincipalVersion);
@@ -99,23 +97,19 @@ namespace Oracle.NoSQL.SDK
                     passphrase?.ToCharArray());
             }
 
-            var rpstVal = Environment.GetEnvironmentVariable(
+            rpst = Environment.GetEnvironmentVariable(
                 OCIResourcePrincipalRPST);
 
-            if (rpstVal == null)
+            if (rpst == null)
             {
                 throw new ArgumentException(
                     "Missing environment variable " +
                     OCIResourcePrincipalRPST);
             }
 
-            if (Path.IsPathFullyQualified(rpstVal))
+            if (Path.IsPathFullyQualified(rpst))
             {
-                rpstFile = rpstVal;
-            }
-            else
-            {
-                rpst = ResourcePrincipalSecurityToken.Create(rpstVal);
+                rpstInFile = true;
             }
 
             region = Environment.GetEnvironmentVariable(
@@ -129,20 +123,21 @@ namespace Oracle.NoSQL.SDK
             }
         }
 
-        private async Task RefreshRPSTAsync(CancellationToken cancellationToken)
+        private protected override RSA PrivateKey => privateKey;
+
+        private async Task<string> GetRPSTFromFileAsync(
+            CancellationToken cancellationToken)
         {
-            Debug.Assert(rpstFile != null);
+            Debug.Assert(rpst != null && rpstInFile);
             try
             {
-                var rpstVal = await File.ReadAllTextAsync(rpstFile,
-                    cancellationToken);
-                rpst = ResourcePrincipalSecurityToken.Create(rpstVal);
+                return await File.ReadAllTextAsync(rpst, cancellationToken);
             }
             catch (Exception ex)
             {
                 throw new ArgumentException(
                     "Error reading security token from file " +
-                    $"{rpstFile}: {ex.Message}", ex);
+                    $"{rpst}: {ex.Message}", ex);
             }
         }
 
@@ -172,7 +167,7 @@ namespace Oracle.NoSQL.SDK
             }
         }
 
-        private async Task RefreshPrivateKeyAsync(
+        private async Task GetPrivateKeyFromFileAsync(
             CancellationToken cancellationToken)
         {
             privateKey?.Clear();
@@ -194,30 +189,29 @@ namespace Oracle.NoSQL.SDK
             }
         }
 
-        internal override async Task<AuthenticationProfile> GetProfileAsync(
-            bool forceRefresh, CancellationToken cancellationToken)
+        private protected override SecurityToken
+            CreateSecurityToken(string val) =>
+            ResourcePrincipalSecurityToken.Create(val);
+
+        private protected override async Task<string>
+            RefreshSecurityTokenAsync(CancellationToken cancellationToken)
         {
-            var needRefreshRPST =
-                forceRefresh ||
-                rpstFile != null && (rpst == null || !rpst.IsValid);
-
-            if (needRefreshRPST)
+            if (privateKeyFile != null)
             {
-                await RefreshRPSTAsync(cancellationToken);
+                await GetPrivateKeyFromFileAsync(cancellationToken);
             }
 
-            if (privateKeyFile != null &&
-                (privateKey == null || needRefreshRPST))
-            {
-                await RefreshPrivateKeyAsync(cancellationToken);
-            }
-
-            Debug.Assert(rpst != null);
             Debug.Assert(privateKey != null);
-            return new AuthenticationProfile("ST$" + rpst.Value, privateKey);
+
+            if (rpstInFile)
+            {
+                return await GetRPSTFromFileAsync(cancellationToken);
+            }
+
+            return rpst;
         }
 
-        internal override string Region => region;
+        internal override string RegionId => region;
 
         protected override void Dispose(bool disposing)
         {

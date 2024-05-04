@@ -105,13 +105,13 @@ namespace Oracle.NoSQL.SDK
 
         internal abstract class HttpRetryHandler : DelegatingHandler
         {
-            protected internal HttpRetryHandler(
+            private protected HttpRetryHandler(
                 HttpMessageHandler innerHandler) :
                 base(innerHandler)
             {
             }
 
-            protected internal abstract TimeSpan GetDelay(int retryCount);
+            private protected abstract TimeSpan GetDelay(int retryCount);
 
             protected override async Task<HttpResponseMessage> SendAsync(
                 HttpRequestMessage request, CancellationToken cancellationToken)
@@ -169,7 +169,7 @@ namespace Oracle.NoSQL.SDK
                 this.delay = delay;
             }
 
-            protected internal override TimeSpan GetDelay(int retryCount) =>
+            private protected override TimeSpan GetDelay(int retryCount) =>
                 delay;
         }
     }

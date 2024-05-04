@@ -14,12 +14,12 @@ namespace Oracle.NoSQL.SDK {
 
     internal class SecurityToken
     {
-        protected internal SecurityToken(string value)
+        private protected SecurityToken(string value)
         {
             Value = value;
         }
 
-        protected internal virtual void InitClaims(JsonElement claims)
+        private protected virtual void InitClaims(JsonElement claims)
         {
             if (!claims.TryGetProperty("exp", out var expProp))
             {
@@ -47,13 +47,19 @@ namespace Oracle.NoSQL.SDK {
             ExpirationTime = UnixMillisToDateTime(exp * 1000);
         }
 
-        protected internal void Init()
+        private protected void Init(string tokenName)
         {
+            if (string.IsNullOrEmpty(Value))
+            {
+                throw new ArgumentException(
+                    $"{tokenName} is missing or invalid");
+            }
+
             var parts = Value.Split('.');
             if (parts.Length < 3)
             {
                 throw new ArgumentException(
-                    "Invalid security token, number of parts is " +
+                    $"Invalid {tokenName}, number of parts is " +
                     $"{parts.Length}, should be >= 3");
             }
 
@@ -66,15 +72,16 @@ namespace Oracle.NoSQL.SDK {
             catch (Exception ex)
             {
                 throw new ArgumentException(
-                    $"Error parsing security token: {ex.Message}", ex);
+                    $"Error parsing {tokenName}: {ex.Message}", ex);
             }
-
         }
 
-        internal static SecurityToken Create(string value)
+        // tokenName parameter is for error reporting purpose
+        internal static SecurityToken Create(string value,
+            string tokenName = "security token")
         {
             var token = new SecurityToken(value);
-            token.Init();
+            token.Init(tokenName);
             return token;
         }
 
@@ -83,17 +90,18 @@ namespace Oracle.NoSQL.SDK {
         internal DateTime ExpirationTime { get; private set; } =
             DateTime.MinValue;
 
-        internal bool IsValid => ExpirationTime > DateTime.UtcNow;
+        internal bool IsValid(TimeSpan expireBefore = default) =>
+            ExpirationTime - expireBefore > DateTime.UtcNow;
     }
 
     internal class ResourcePrincipalSecurityToken : SecurityToken
     {
-        protected internal ResourcePrincipalSecurityToken(string value) :
+        private protected ResourcePrincipalSecurityToken(string value) :
             base(value)
         {
         }
 
-        protected internal override void InitClaims(JsonElement claims)
+        private protected override void InitClaims(JsonElement claims)
         {
             base.InitClaims(claims);
 
@@ -114,10 +122,10 @@ namespace Oracle.NoSQL.SDK {
 
         internal string ResourceCompartmentId { get; private set; }
 
-        internal new static ResourcePrincipalSecurityToken Create(string value)
+        internal static ResourcePrincipalSecurityToken Create(string value)
         {
             var token = new ResourcePrincipalSecurityToken(value);
-            token.Init();
+            token.Init("Resource Principal security token");
             return token;
         }
 

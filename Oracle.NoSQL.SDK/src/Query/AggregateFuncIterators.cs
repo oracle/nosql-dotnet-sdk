@@ -14,9 +14,9 @@ namespace Oracle.NoSQL.SDK.Query {
 
     internal abstract class AggregateFuncIterator : PlanSyncIterator
     {
-        protected internal readonly PlanSyncIterator inputIterator;
+        private protected readonly PlanSyncIterator inputIterator;
 
-        protected internal abstract ValueAggregator Aggregator { get; }
+        private protected abstract ValueAggregator Aggregator { get; }
 
         internal AggregateFuncIterator(QueryRuntime runtime,
             AggregateFuncStep step) : base(runtime)
@@ -59,7 +59,7 @@ namespace Oracle.NoSQL.SDK.Query {
     {
         private readonly FuncMinMaxStep step;
 
-        protected internal override ValueAggregator Aggregator { get; }
+        private protected override ValueAggregator Aggregator { get; }
 
         internal FuncMinMaxIterator(QueryRuntime runtime,
             FuncMinMaxStep step) : base(runtime, step)
@@ -77,7 +77,7 @@ namespace Oracle.NoSQL.SDK.Query {
     {
         private readonly FuncSumStep step;
 
-        protected internal override ValueAggregator Aggregator { get; }
+        private protected override ValueAggregator Aggregator { get; }
 
         internal FuncSumIterator(QueryRuntime runtime, FuncSumStep step) :
             base(runtime, step)
@@ -94,7 +94,7 @@ namespace Oracle.NoSQL.SDK.Query {
         private readonly FuncCollectStep step;
         private long memory;
 
-        protected internal override ValueAggregator Aggregator { get; }
+        private protected override ValueAggregator Aggregator { get; }
 
         internal FuncCollectIterator(QueryRuntime runtime,
             FuncCollectStep step) : base(runtime, step)

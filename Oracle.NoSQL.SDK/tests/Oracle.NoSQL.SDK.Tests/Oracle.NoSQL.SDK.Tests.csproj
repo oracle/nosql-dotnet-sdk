@@ -18,4 +18,10 @@
     <ProjectReference Include="..\..\src\Oracle.NoSQL.SDK.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+	<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+	  <_Parameter1>Oracle.NoSQL.SDK.VSTests</_Parameter1>
+	</AssemblyAttribute>
+  </ItemGroup>
+
 </Project>
