@@ -21,6 +21,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace Oracle.NoSQL.SDK.Tests
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Security.Cryptography;
     using System.Text.Json;
@@ -32,13 +33,35 @@ namespace Oracle.NoSQL.SDK.Tests
 
     public abstract class TestBase
     {
+        private protected static Dictionary<string, int> TestCounters
+        {
+            get;
+            set;
+        }
+
+        // Allows to easily set breakpoint in failed test cases. Numbering
+        // starts from 1, as in Test Explorer.
+        internal void IncrementTestCounters()
+        {
+            TestCounters ??= new Dictionary<string, int>();
+            if (TestCounters.TryGetValue(TestContext.TestName, out var count))
+            {
+                TestCounters[TestContext.TestName] = count + 1;
+            }
+            else
+            {
+                TestCounters[TestContext.TestName] = 1;
+            }
+        }
+
         // TestContext gets set for every test.  It is different from the
         // context passed to ClassInitialize().
         public TestContext TestContext { get; set; }
 
         public static void ClassInitialize(TestContext staticContext)
         {
-            Debug.WriteLine($"In ClassInitialize, TestName={staticContext.TestName}");
+            Debug.WriteLine(
+                $"In ClassInitialize, TestName={staticContext.TestName}");
         }
 
         public static void ClassCleanup()

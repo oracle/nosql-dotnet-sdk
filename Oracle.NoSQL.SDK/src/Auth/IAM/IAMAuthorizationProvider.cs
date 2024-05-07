@@ -26,8 +26,8 @@ namespace Oracle.NoSQL.SDK
         /// exclusive with <see cref="ConfigFile"/>,
         /// <see cref="ProfileName"/>, <see cref="CredentialsProvider"/>,
         /// <see cref="UseInstancePrincipal"/>,
-        /// <see cref="UseResourcePrincipal"/> and
-        /// <see cref="UseSessionToken"/>.
+        /// <see cref="UseResourcePrincipal"/>, <see cref="UseSessionToken"/>
+        /// and <see cref="UseOKEWorkloadIdentity"/>.
         /// </value>
         public IAMCredentials Credentials { get; set; }
 
@@ -37,13 +37,14 @@ namespace Oracle.NoSQL.SDK
         /// <value>
         /// The path (absolute or relative) to the OCI configuration file that
         /// is used to supply the credentials.  The default is
-        /// <em>~/.oci/config</em> where <em>~</em> represents user's home
+        /// <c>~/.oci/config</c> where <c>~</c> represents user's home
         /// directory on Unix systems and the user's profile directory (see
-        /// <em>USERPROFILE</em> environment variable) on Windows systems.
+        /// <c>USERPROFILE</c> environment variable) on Windows systems.
         /// This property is exclusive with <see cref="Credentials"/>,
         /// <see cref="CredentialsProvider"/>,
-        /// <see cref="UseInstancePrincipal"/> and
-        /// <see cref="UseResourcePrincipal"/>.
+        /// <see cref="UseInstancePrincipal"/>,
+        /// <see cref="UseResourcePrincipal"/> and
+        /// <see cref="UseOKEWorkloadIdentity"/>.
         /// </value>
         public string ConfigFile { get; set; }
 
@@ -53,11 +54,12 @@ namespace Oracle.NoSQL.SDK
         /// <value>
         /// The profile name in the OCI configuration file if the OCI
         /// configuration file is used to supply the credentials.  The
-        /// default profile name is <em>DEFAULT</em>.  This property is
+        /// default profile name is <c>DEFAULT</c>.  This property is
         /// exclusive with <see cref="Credentials"/>,
         /// <see cref="CredentialsProvider"/>,
-        /// <see cref="UseInstancePrincipal"/> and
-        /// <see cref="UseResourcePrincipal"/>.
+        /// <see cref="UseInstancePrincipal"/>,
+        /// <see cref="UseResourcePrincipal"/> and
+        /// <see cref="UseOKEWorkloadIdentity"/>.
         /// </value>
         public string ProfileName { get; set; }
 
@@ -70,8 +72,8 @@ namespace Oracle.NoSQL.SDK
         /// exclusive with <see cref="Credentials"/>,
         /// <see cref="ConfigFile"/>, <see cref="ProfileName"/>,
         /// <see cref="UseInstancePrincipal"/>,
-        /// <see cref="UseResourcePrincipal"/> and
-        /// <see cref="UseSessionToken"/>
+        /// <see cref="UseResourcePrincipal"/>, <see cref="UseSessionToken"/>
+        /// and <see cref="UseOKEWorkloadIdentity"/>.
         /// </value>
         public Func<CancellationToken, Task<IAMCredentials>>
             CredentialsProvider { get; set; }
@@ -85,8 +87,8 @@ namespace Oracle.NoSQL.SDK
         /// The default is <c>false</c>.  The <c>true</c> value is exclusive
         /// with <see cref="Credentials"/>, <see cref="ConfigFile"/>,
         /// <see cref="ProfileName"/>, <see cref="CredentialsProvider"/>,
-        /// <see cref="UseResourcePrincipal"/> and
-        /// <see cref="UseSessionToken"/>.
+        /// <see cref="UseResourcePrincipal"/>, <see cref="UseSessionToken"/>
+        /// and <see cref="UseOKEWorkloadIdentity"/>.
         /// </value>
         public bool UseInstancePrincipal { get; set; }
 
@@ -169,10 +171,102 @@ namespace Oracle.NoSQL.SDK
         /// The default is <c>false</c>.  The <c>true</c> value is exclusive
         /// with <see cref="Credentials"/>, <see cref="ConfigFile"/>,
         /// <see cref="ProfileName"/>, <see cref="CredentialsProvider"/>,
+        /// <see cref="UseInstancePrincipal"/>, <see cref="UseSessionToken"/>
+        /// and <see cref="UseOKEWorkloadIdentity"/>.
+        /// </value>
+        public bool UseResourcePrincipal { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value that determines whether to use authorization
+        /// for Oracle Container Engine for Kubernetes (OKE) workload
+        /// identity. This authorization can only be used inside Kubernetes
+        /// pods.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// For information on Container Engine for Kubernetes, see
+        /// <see href="https://docs.oracle.com/en-us/iaas/Content/ContEng/Concepts/contengoverview.htm">
+        /// Overview of Container Engine for Kubernetes
+        /// </see>. Also see
+        /// <see href="https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contenggrantingworkloadaccesstoresources.htm">
+        /// Granting Workloads Access to OCI Resources
+        /// </see> for more details on OKE workload identity.
+        /// </para>
+        /// <para>
+        /// Using OKE workload identity requires service account token. By
+        /// default, the provider will load service account token from the
+        /// default file path
+        /// <c>/var/run/secrets/kubernetes.io/serviceaccount/token</c>.
+        /// You may override this and provide your own service account token
+        /// by creating <see cref="IAMAuthorizationProvider"/> in 3 different
+        /// ways:
+        /// <list type="bullet">
+        /// <item>
+        /// <description>
+        /// By calling <see cref="CreateWithOKEWorkloadIdentity(string)"/> and
+        /// passing service account token string.
+        /// </description>
+        /// </item>
+        /// <item>
+        /// <description>
+        /// By calling <see cref="CreateWithOKEWorkloadIdentityAndTokenFile(string)"/>
+        /// and passing a path to service account token file. Alternatively,
+        /// you may set <see cref="ServiceAccountTokenFile"/> property. This
+        /// file will be read every time the SDK needs to obtain security
+        /// token from IAM.
+        /// </description>
+        /// </item>
+        /// <item>
+        /// <description>
+        /// By calling
+        /// <see cref="CreateWithOKEWorkloadIdentity(Func{CancellationToken,Task{string}})"/>
+        /// and passing a custom provider delegate to load service account
+        /// token. This delegate will be invoked every time the SDK needs to
+        /// obtain security token from IAM.
+        /// </description>
+        /// </item>
+        /// </list>
+        /// </para>
+        /// </remarks>
+        /// <value>
+        /// <c>true</c> to use an OKE workload identity, otherwise
+        /// <c>false</c>. The default is <c>false</c>.  The <c>true</c> value
+        /// is exclusive with <see cref="Credentials"/>, <see cref="ConfigFile"/>,
+        /// <see cref="ProfileName"/>, <see cref="CredentialsProvider"/>,
+        /// <see cref="UseResourcePrincipal"/>,
         /// <see cref="UseInstancePrincipal"/> and
         /// <see cref="UseSessionToken"/>.
         /// </value>
-        public bool UseResourcePrincipal { get; set; }
+        public bool UseOKEWorkloadIdentity { get; set; }
+
+        /// <summary>
+        /// Gets or sets the service account token file path.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// This property is only used with OKE workload identity. Use this
+        /// property to provide a path to service account token file. Service
+        /// account token will be reloaded from this file when obtaining IAM
+        /// security token.
+        /// </para>
+        /// <para>
+        /// You may also use this property in JSON configuration file (see
+        /// examples). This property is exclusive with using service account
+        /// token string or service account token provider with
+        /// <see cref="M:Oracle.NoSQL.SDK.IAMAuthorizationProvider.CreateWithOKEWorkloadIdentity"/>.
+        /// Alternative to this property, you may also create
+        /// <see cref="IAMAuthorizationProvider"/> instance via
+        /// <see cref="CreateWithOKEWorkloadIdentityAndTokenFile"/>
+        /// </para>
+        /// </remarks>
+        /// <value>
+        /// The service account token file path (absolute or relative to the
+        /// current directory). Defaults to
+        /// <c>/var/run/secrets/kubernetes.io/serviceaccount/token</c>.
+        /// </value>
+        /// <seealso cref="UseOKEWorkloadIdentity"/>
+        /// <seealso cref="CreateWithOKEWorkloadIdentityAndTokenFile"/>
+        public string ServiceAccountTokenFile { get; set; }
 
         /// <summary>
         /// Gets or sets the value that determines whether to use a session
@@ -190,8 +284,9 @@ namespace Oracle.NoSQL.SDK
         /// <c>true</c> to use session token, otherwise <c>false</c>.
         /// The default is <c>false</c>.  The <c>true</c> value is exclusive
         /// with <see cref="Credentials"/>, <see cref="CredentialsProvider"/>,
-        /// <see cref="UseInstancePrincipal"/> and
-        /// <see cref="UseResourcePrincipal"/>.
+        /// <see cref="UseInstancePrincipal"/>,
+        /// <see cref="UseResourcePrincipal"/> and
+        /// <see cref="UseOKEWorkloadIdentity"/>.
         /// </value>
         public bool UseSessionToken { get; set; }
 
@@ -232,8 +327,8 @@ namespace Oracle.NoSQL.SDK
         /// </summary>
         /// <remarks>
         /// Currently the driver needs to make requests to the authorization
-        /// service only when using instance principal.  The default value
-        /// will suffice for most applications.
+        /// service only when using instance principal or OKE workload
+        /// identity. The default value will suffice for most applications.
         /// </remarks>
         /// <value>The timeout for requests made to the authorization service.
         /// The default is 2 minutes (120 seconds).</value>
@@ -245,7 +340,7 @@ namespace Oracle.NoSQL.SDK
         /// </summary>
         /// <remarks>
         /// Upon using this constructor, you may set the properties described
-        /// to create the desired configuration.  Otherwise the default
+        /// to create the desired configuration.  Otherwise, the default
         /// configuration is used, which obtains credentials from the OCI
         /// configuration file using default OCI configuration file path and
         /// the default profile name as indicated in <see cref="ConfigFile"/>
@@ -373,7 +468,7 @@ namespace Oracle.NoSQL.SDK
             new IAMAuthorizationProvider
             {
                 UseInstancePrincipal = true,
-                delegationToken = delegationToken,
+                DelegationToken = delegationToken,
                 FederationEndpoint = federationEndpoint
             };
 
@@ -440,6 +535,78 @@ namespace Oracle.NoSQL.SDK
                 FederationEndpoint = federationEndpoint
             };
 
+        /// <summary>
+        /// Creates a new instance of <see cref="IAMAuthorizationProvider"/>
+        /// using OKE workload identity.
+        /// </summary>
+        /// <remarks>
+        /// For more information see <see cref="UseOKEWorkloadIdentity"/>.
+        /// This method allows you to specify optional service account token
+        /// string. If not specified, the service account token will be read
+        /// from the default file path
+        /// <c>/var/run/secrets/kubernetes.io/serviceaccount/token</c>.
+        /// </remarks>
+        /// <param name="serviceAccountToken">(Optional) Service account token
+        /// string.</param>
+        /// <returns>A new instance of <see cref="IAMAuthorizationProvider"/>
+        /// using OKE workload identity.</returns>
+        /// <seealso cref="UseOKEWorkloadIdentity"/>
+        public static IAMAuthorizationProvider CreateWithOKEWorkloadIdentity(
+            string serviceAccountToken = null) =>
+            new IAMAuthorizationProvider
+            {
+                UseOKEWorkloadIdentity = true,
+                ServiceAccountToken = serviceAccountToken
+            };
+
+        /// <summary>
+        /// Creates a new instance of <see cref="IAMAuthorizationProvider"/>
+        /// using OKE workload identity and specified service account token
+        /// provider delegate.
+        /// </summary>
+        /// <remarks>
+        /// For more information see <see cref="UseOKEWorkloadIdentity"/>.
+        /// This method allows you to specify service account token provider
+        /// delegate used to obtain the service account token.
+        /// </remarks>
+        /// <param name="serviceAccountTokenProvider">The service Account
+        /// token provider delegate.</param>
+        /// <returns>A new instance of <see cref="IAMAuthorizationProvider"/>
+        /// using OKE workload identity and specified service account token
+        /// provider delegate.</returns>
+        public static IAMAuthorizationProvider CreateWithOKEWorkloadIdentity(
+            Func<CancellationToken, Task<string>>
+                serviceAccountTokenProvider) =>
+            new IAMAuthorizationProvider
+            {
+                UseOKEWorkloadIdentity = true,
+                ServiceAccountTokenProvider = serviceAccountTokenProvider
+            };
+
+        /// <summary>
+        /// Creates a new instance of <see cref="IAMAuthorizationProvider"/>
+        /// using OKE workload identity and specified service account token
+        /// file.
+        /// </summary>
+        /// <remarks>
+        /// For more information see <see cref="UseOKEWorkloadIdentity"/>.
+        /// This method allows you to specify a path to the service account
+        /// token file.
+        /// </remarks>
+        /// <param name="serviceAccountTokenFile">Path to the service account
+        /// token file.</param>
+        /// <returns>A new instance of <see cref="IAMAuthorizationProvider"/>
+        /// using OKE workload identity and specified service account token
+        /// file.</returns>
+        public static IAMAuthorizationProvider
+            CreateWithOKEWorkloadIdentityAndTokenFile(
+            string serviceAccountTokenFile) =>
+            new IAMAuthorizationProvider
+            {
+                UseOKEWorkloadIdentity = true,
+                ServiceAccountTokenFile = serviceAccountTokenFile
+            };
+        
         /// <summary>
         /// Creates a new instance of <see cref="IAMAuthorizationProvider"/>
         /// using session token-based authentication with the default OCI
@@ -532,16 +699,17 @@ namespace Oracle.NoSQL.SDK
             var contentSigned = request.NeedsContentSigned;
             
             SignatureDetails signatureDetails;
-            if (isInvalidAuth || contentSigned || NeedSignatureRefresh(
-                    CachedSignatureDetails))
+            if (isInvalidAuth || contentSigned ||
+                !profileProvider.IsProfileValid ||
+                NeedSignatureRefresh(CachedSignatureDetails))
             {
-                signatureDetails = await CreateSignatureDetails(
+                signatureDetails = await CreateSignatureDetailsAsync(
                     request, message, isInvalidAuth, cancellationToken);
 
                 if (!contentSigned)
                 {
                     CachedSignatureDetails = signatureDetails;
-                    if (renewInterval != default)
+                    if (RefreshAhead != TimeSpan.Zero)
                     {
                         ScheduleRenew();
                     }
@@ -610,6 +778,7 @@ namespace Oracle.NoSQL.SDK
             Dispose(true);
             GC.SuppressFinalize(this);
         }
+
     }
 
 }

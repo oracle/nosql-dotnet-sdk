@@ -11,12 +11,12 @@ namespace Oracle.NoSQL.SDK
     using System.Diagnostics;
     using System.IO;
     using System.Net.Http;
-    using System.Net.Http.Headers;
     using System.Security.Cryptography;
     using System.Threading;
     using System.Threading.Tasks;
     using static HttpConstants;
     using static Utils;
+    using static ValidateUtils;
 
     public partial class IAMAuthorizationProvider
     {
@@ -24,7 +24,12 @@ namespace Oracle.NoSQL.SDK
             TimeSpan.FromSeconds(300);
         private static readonly TimeSpan DefaultRefreshAhead =
             TimeSpan.FromSeconds(10);
-        private static readonly TimeSpan DefaultRequestTimeout =
+
+        private static readonly TimeSpan DefaultProfileExpireBefore =
+            TimeSpan.FromSeconds(10);
+        private static readonly TimeSpan DefaultMaxProfileRefreshAhead =
+            TimeSpan.FromSeconds(60);
+        internal static readonly TimeSpan DefaultRequestTimeout =
             TimeSpan.FromSeconds(120);
 
         private const string SigningHeaders = "(request-target) host date";
@@ -35,9 +40,7 @@ namespace Oracle.NoSQL.SDK
 
         private AuthenticationProfileProvider profileProvider;
         private string serviceHost;
-        private string delegationToken;
         private SignatureDetails internalSignatureDetails;
-        private TimeSpan renewInterval;
         private CancellationTokenSource renewCancelSource;
 
         // Optimization to avoid async lock for common case where signature
@@ -48,6 +51,21 @@ namespace Oracle.NoSQL.SDK
             new SemaphoreSlim(1, 1);
 
         private bool disposed;
+
+        private string DelegationToken { get; set; }
+        
+        internal string ServiceAccountToken { get; set; }
+
+        internal Func<CancellationToken, Task<string>>
+            ServiceAccountTokenProvider { get; set; }
+
+        // Not currently exposed to the user, but different values can be used
+        // in tests.
+        internal TimeSpan ProfileExpireBefore { get; set; } =
+            DefaultProfileExpireBefore;
+
+        internal TimeSpan MaxProfileRefreshAhead { get; set; } =
+            DefaultMaxProfileRefreshAhead;
 
         // We could also use volatile field, but in general using a lock is
         // recommended. This can be changed if needed.
@@ -110,6 +128,7 @@ namespace Oracle.NoSQL.SDK
             internal static async Task<ContentSigningInfo> Create(
                 HttpRequestMessage message)
             {
+                Debug.Assert(message.Content != null);
                 Debug.Assert(message.Content.Headers.ContentType != null);
                 var contentType =
                     message.Content.Headers.ContentType.ToString();
@@ -160,7 +179,7 @@ namespace Oracle.NoSQL.SDK
                     return token;
                 }
 
-                return delegationToken;
+                return DelegationToken;
             }
             catch (Exception ex)
             {
@@ -213,7 +232,7 @@ namespace Oracle.NoSQL.SDK
             return content;
         }
 
-        private async Task<SignatureDetails> CreateSignatureDetails(
+        private async Task<SignatureDetails> CreateSignatureDetailsAsync(
             Request request, HttpRequestMessage message,
             bool forceProfileRefresh, CancellationToken cancellationToken)
         {
@@ -238,7 +257,7 @@ namespace Oracle.NoSQL.SDK
             var currentDelegationToken =
                 DelegationTokenProvider != null || DelegationTokenFile != null
                     ? await LoadDelegationToken(cancellationToken)
-                    : delegationToken;
+                    : DelegationToken;
 
             ContentSigningInfo contentSigningInfo = null;
             if (request?.NeedsContentSigned ?? false)
@@ -295,13 +314,42 @@ namespace Oracle.NoSQL.SDK
                 // ScheduleRenew().
                 var cancellationToken = renewCancelSource.Token;
 
+                // Check if the signature or the profile would expire first.
+                // The reason for using MaxProfileRefreshAhead threshold is to
+                // avoid too frequent signature refresh. E.g. if signature
+                // duration is 5:00 and profile expires in 5:20, we might as
+                // well refresh both profile and signature on next refresh
+                // (at 4:50) rather than refresh only signature and then have
+                // to refresh the signature and profile again in 20 seconds
+                // (because of profile expiration). On the other hand, we
+                // don't want to do profile/token refresh too often
+                // unnecessarily because it may be an expensive operation
+                // (require HTTP request).
+                var needProfileRefresh =
+                    profileProvider.ProfileTTL - (CacheDuration -
+                    RefreshAhead) <= MaxProfileRefreshAhead;
+
+                var renewInterval =
+                    (profileProvider.ProfileTTL < CacheDuration
+                        ? profileProvider.ProfileTTL
+                        : CacheDuration) - RefreshAhead;
+                
+                // This may only happen if token has very short lifetime
+                // (< RefreshAhead), in which case we don't auto-renew.
+                if (renewInterval <= TimeSpan.Zero)
+                {
+                    return;
+                }
+
                 Task.Run(async () =>
                 {
                     try
                     {
+
                         await Task.Delay(renewInterval, cancellationToken);
-                        CachedSignatureDetails = await CreateSignatureDetails(
-                            null, null, false, cancellationToken);
+                        CachedSignatureDetails =
+                            await CreateSignatureDetailsAsync(null, null,
+                                needProfileRefresh, cancellationToken);
                     }
                     catch (Exception)
                     {
@@ -310,7 +358,7 @@ namespace Oracle.NoSQL.SDK
                         // rescheduling because exception thrown here cannot
                         // be handled by the user (although we could log it).
                         // The user will likely get the same exception when
-                        // CreateSignatureDetails() is called again by
+                        // CreateSignatureDetailsAsync() is called again by
                         // ApplyAuthorizationAsync().
                         return;
                     }
@@ -319,6 +367,9 @@ namespace Oracle.NoSQL.SDK
                 }, cancellationToken);
             }
         }
+
+        // Used by tests.
+        internal void ClearSignatureCache() => CachedSignatureDetails = null;
 
         private bool NeedSignatureRefresh(
             SignatureDetails signatureDetails) =>
@@ -340,21 +391,42 @@ namespace Oracle.NoSQL.SDK
         /// <seealso cref="IAuthorizationProvider.ConfigureAuthorization"/>
         public void ConfigureAuthorization(NoSQLConfig config)
         {
+            CheckPositiveTimeSpan(RequestTimeout,
+                nameof(RequestTimeout) + " in authorization provider");
+
             if (UseResourcePrincipal)
             {
-                if (UseInstancePrincipal || UseSessionToken ||
+                if (UseInstancePrincipal || UseOKEWorkloadIdentity ||
+                    UseSessionToken || Credentials != null ||
+                    ConfigFile != null || ProfileName != null ||
+                    CredentialsProvider != null)
+                {
+                    throw new ArgumentException(
+                        "Cannot specify UseInstancePrincipal, " +
+                        "UseOKEWorkloadIdentity UseSessionToken, " +
+                        "Credentials, ConfigFile, ProfileName or " +
+                        "CredentialsProvider properties " +
+                        "together with UseResourcePrincipal property");
+                }
+                profileProvider = new ResourcePrincipalProvider(this);
+            }
+            else if (UseInstancePrincipal)
+            {
+                if (UseOKEWorkloadIdentity || UseSessionToken ||
                     Credentials != null || ConfigFile != null ||
                     ProfileName != null || CredentialsProvider != null)
                 {
                     throw new ArgumentException(
-                        "Cannot specify UseInstancePrincipal, " +
+                        "Cannot specify UseOKEWorkloadIdentity, " +
                         "UseSessionToken, Credentials, ConfigFile, " +
                         "ProfileName or CredentialsProvider properties " +
-                        "together with UseResourcePrincipal property");
+                        "together with UseResourcePrincipal " +
+                        "property");
                 }
-                profileProvider = new ResourcePrincipalProvider();
+
+                profileProvider = new InstancePrincipalProvider(this, config);
             }
-            else if (UseInstancePrincipal)
+            else if (UseOKEWorkloadIdentity)
             {
                 if (UseSessionToken || Credentials != null ||
                     ConfigFile != null || ProfileName != null ||
@@ -363,13 +435,11 @@ namespace Oracle.NoSQL.SDK
                     throw new ArgumentException(
                         "Cannot specify UseSessionToken, Credentials, " +
                         "ConfigFile, ProfileName or CredentialsProvider " +
-                        "properties together with UseResourcePrincipal " +
+                        "properties together with UseOKEWorkloadIdentity " +
                         "property");
                 }
-                
-                profileProvider = new InstancePrincipalProvider(
-                    FederationEndpoint, RequestTimeout,
-                    config.ConnectionOptions);
+
+                profileProvider = new OKEWorkloadIdentityProvider(this);
             }
             else if (UseSessionToken)
             {
@@ -427,7 +497,7 @@ namespace Oracle.NoSQL.SDK
                         "principal");
                 }
 
-                if (delegationToken != null)
+                if (DelegationToken != null)
                 {
                     throw new ArgumentException(
                         "Cannot specify delegation token provider or " +
@@ -448,26 +518,25 @@ namespace Oracle.NoSQL.SDK
                 CacheDuration > MaxEntryLifetime)
             {
                 throw new ArgumentException(
-                    "Invalid CacheDuration value: " +
-                    $"{CacheDuration.TotalSeconds} seconds, must be " +
-                    "positive and no greater than " +
+                    $"Invalid {nameof(CacheDuration)} value in " +
+                    "authorization provider: " +
+                    $"{CacheDuration.TotalSeconds} seconds, " +
+                    "must be positive and no greater than " +
                     $"{MaxEntryLifetime.TotalSeconds} seconds",
                     nameof(CacheDuration));
             }
 
             if (RefreshAhead != TimeSpan.Zero)
             {
-                if (RefreshAhead < TimeSpan.Zero)
+                CheckPositiveTimeSpan(RefreshAhead,
+                    nameof(RefreshAhead) + "in authorization provider");
+                if (RefreshAhead >= CacheDuration)
                 {
-                    throw new ArgumentException(
-                        "Invalid RefreshAhead value: " +
-                        $"{RefreshAhead.TotalSeconds}, cannot be negative",
-                        nameof(RefreshAhead));
+                    RefreshAhead = TimeSpan.Zero;
                 }
-
-                if (RefreshAhead < CacheDuration)
+                else if (MaxProfileRefreshAhead < RefreshAhead)
                 {
-                    renewInterval = CacheDuration - RefreshAhead;
+                    MaxProfileRefreshAhead = RefreshAhead;
                 }
             }
 
@@ -478,7 +547,7 @@ namespace Oracle.NoSQL.SDK
             if (config.Uri == null)
             {
                 Debug.Assert(config.Region == null);
-                config.Region = Region.FromRegionId(profileProvider.Region);
+                config.Region = Region.FromRegionId(profileProvider.RegionId);
                 config.InitUri();
             }
 

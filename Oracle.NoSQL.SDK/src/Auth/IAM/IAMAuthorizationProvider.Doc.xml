@@ -75,10 +75,31 @@ https://oss.oracle.com/licenses/upl/
                         for more information.  The driver obtains a resource
                         provider session token (RPST) that enables the
                         resource such as function to authenticate itself.
-                        The RPST is used to create the request signature.  Use
+                        The RPST is used to create the request signature. Use
                         Resource Principal by setting
                         <see cref="UseResourcePrincipal"/> to <c>true</c> or
                         calling <see cref="CreateWithResourcePrincipal"/>.
+                    </description>
+                </item>
+                <item>
+                    <description>
+                        Oracle Container Engine for Kubernetes (OKE) workload
+                        identity.<br/>
+						You may use OKE workload identity when running an
+						application inside Kubernetes cluster. For information
+						on Container Engine for Kubernetes, see
+                        <see href="https://docs.oracle.com/en-us/iaas/Content/ContEng/Concepts/contengoverview.htm">
+                            Overview of Container Engine for Kubernetes
+                        </see>. Also see
+                        <see href="https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contenggrantingworkloadaccesstoresources.htm">
+                            Granting Workloads Access to OCI Resources
+                        </see> for more details on OKE workload identity.
+                        Use OKE workload identity by setting
+                        <see cref="UseOKEWorkloadIdentity"/> to <c>true</c> or
+                        calling <see cref="M:Oracle.NoSQL.SDK.IAMAuthorizationProvider.CreateWithOKEWorkloadIdentity*"/> or
+                        <see cref="CreateWithOKEWorkloadIdentityAndTokenFile"/>.
+                        See <see cref="UseOKEWorkloadIdentity"/> for more
+                        information.
                     </description>
                 </item>
                 <item>
@@ -120,9 +141,10 @@ https://oss.oracle.com/licenses/upl/
             </list>
         </para>
         <para>
-            Note that when using Instance Principal or Resource Principal you
-            must specify the compartment id (OCID), either as
-            <see cref="NoSQLConfig.Compartment"/> or in the operation options.
+            Note that when using Instance Principal, Resource Principal or OKE
+            workload identity, you must specify the compartment id (OCID),
+            either as <see cref="NoSQLConfig.Compartment"/> or in the
+            operation options.
             You must use compartment id (OCID) and not the compartment name.
             This also means that you may not prefix the table name with the
             compartment name when passing the table name to the
@@ -478,6 +500,61 @@ https://oss.oracle.com/licenses/upl/
                 "UseResourcePrincipal": true
             }
         }
+        </code>
+    </example>
+    <example>
+        Instantiating <see cref="IAMAuthorizationProvider"/> using OKE
+        workload identity.
+        <code>
+            var config = new NoSQLConfig
+            {
+                Region = Region.AP_MUMBAI_1,
+                AuthorizationProvider =	IAMAuthorizationProvider
+                    .CreateWithOKEWorkloadIdentity()
+            };
+        </code>
+    </example>
+    <example>
+        Specifying <see cref="IAMAuthorizationProvider"/> using OKE workload
+        identity in JSON configuration file.
+        <code>
+            {
+                "Region": "sa-saopaulo-1",
+                "AuthorizationProvider": {
+                    "AuthorizationType": "IAM",
+                    "UseOKEWorkloadIdentity": true
+                }
+            }
+        </code>
+    </example>
+    <example>
+        Instantiating <see cref="IAMAuthorizationProvider"/> using OKE
+        workload identity and provided service account token.
+        <code>
+            // Obtain service account token somehow.
+            var serviceAccountToken = GetServiceAccountToken();
+            var config = new NoSQLConfig
+            {
+                Region = Region.AP_MUMBAI_1,
+                AuthorizationProvider =	IAMAuthorizationProvider
+                    .CreateWithOKEWorkloadIdentity(serviceAccountToken)
+            };
+        </code>
+    </example>
+    <example>
+        Specifying <see cref="IAMAuthorizationProvider"/> using OKE workload
+        identity with provided service account token in JSON configuration
+        file (service account token is stored in a separate file
+        "service_account_token_file").
+        <code>
+            {
+                "Region": "sa-saopaulo-1",
+                "AuthorizationProvider": {
+                    "AuthorizationType": "IAM",
+                    "UseOKEWorkloadIdentity": true,
+                    "ServiceAccountTokenFile": "path/to/service_account_token_file"
+                }
+            }
         </code>
     </example>
     <example>

@@ -95,12 +95,31 @@ namespace Oracle.NoSQL.SDK
         /// </value>
         public string TrustedRootCertificateFile { get; set; }
 
+        /// <summary>
+        /// Gets or sets a value that determines whether to disable hostname
+        /// verification on the certificate presented by the server.
+        /// </summary>
+        /// <remarks>
+        /// Note that this option does not disable verification of the
+        /// certificate chain presented by the server. It only allows a
+        /// mismatch between the hostname in the URL and the hostname in the
+        /// certificate.
+        /// </remarks>
+        /// <value>
+        /// <c>true</c> to disable hostname verification. The default is
+        /// <c>false</c>.
+        /// </value>
+        public bool DisableHostnameVerification { get; set; }
+
         // TODO:
         // This class will include all other HTTP and HTTPS related options
         // such as proxy setting, connection pool settings, SSL-related
         // settings, etc.
 
-        internal void Validate()
+        internal bool NeedSSLCustomValidation =>
+            TrustedRootCertificates != null || DisableHostnameVerification;
+
+        private void Validate()
         {
             if (TrustedRootCertificates != null &&
                 TrustedRootCertificateFile != null)
@@ -110,10 +129,20 @@ namespace Oracle.NoSQL.SDK
                     "property together with " +
                     $"{nameof(TrustedRootCertificates)} property");
             }
+
+            if (TrustedRootCertificateFile != null &&
+                TrustedRootCertificateFile.Length == 0)
+            {
+                throw new ArgumentException(
+                    nameof(TrustedRootCertificateFile) +
+                    " cannot be empty string");
+            }
         }
 
         internal void Init()
         {
+            Validate();
+
             if (TrustedRootCertificateFile != null)
             {
                 try

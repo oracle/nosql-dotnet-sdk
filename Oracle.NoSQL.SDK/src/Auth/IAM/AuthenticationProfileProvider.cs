@@ -53,7 +53,11 @@ namespace Oracle.NoSQL.SDK {
         internal abstract Task<AuthenticationProfile> GetProfileAsync(
             bool forceRefresh, CancellationToken cancellationToken);
 
-        internal virtual string Region => null;
+        internal virtual string RegionId => null;
+
+        internal virtual bool IsProfileValid => true;
+
+        internal virtual TimeSpan ProfileTTL => TimeSpan.MaxValue;
 
         protected abstract void Dispose(bool disposing);
 
@@ -324,7 +328,7 @@ namespace Oracle.NoSQL.SDK {
                     $"{configFile}, profile {profileName}", ex);
             }
 
-            Region = profile.GetValueOrDefault(RegionProp);
+            RegionId = profile.GetValueOrDefault(RegionProp);
         }
 
         internal OCIConfigProfileProvider(string configFile,
@@ -337,7 +341,7 @@ namespace Oracle.NoSQL.SDK {
             bool forceRefresh, CancellationToken cancellationToken) =>
             provider.GetProfileAsync(forceRefresh, cancellationToken);
 
-        internal override string Region { get; }
+        internal override string RegionId { get; }
 
         protected override void Dispose(bool disposing)
         {

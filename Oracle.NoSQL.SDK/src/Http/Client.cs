@@ -32,12 +32,14 @@ namespace Oracle.NoSQL.SDK.Http
             ConnectionOptions connectionOptions)
         {
             var handler = new HttpClientHandler();
-            if (connectionOptions?.TrustedRootCertificates != null)
+            if (connectionOptions != null &&
+                (connectionOptions.TrustedRootCertificates != null ||
+                connectionOptions.DisableHostnameVerification))
             {
                 handler.ServerCertificateCustomValidationCallback =
                     (request, certificate, chain, errors) =>
                         ValidateCertificate(certificate, chain, errors,
-                            connectionOptions.TrustedRootCertificates);
+                            connectionOptions);
             }
 
             return handler;
@@ -60,7 +62,7 @@ namespace Oracle.NoSQL.SDK.Http
                 BaseAddress = config.Uri
             };
 
-            client.DefaultRequestHeaders.Host = config.Uri.Host;
+            client.DefaultRequestHeaders.Host = config.Uri.Authority;
             client.DefaultRequestHeaders.Connection.Add("keep-alive");
             client.DefaultRequestHeaders.Accept.Add(
                 new MediaTypeWithQualityHeaderValue(protocolHandler.ContentType));

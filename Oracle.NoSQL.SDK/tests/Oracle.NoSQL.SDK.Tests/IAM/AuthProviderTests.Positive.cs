@@ -15,10 +15,8 @@ namespace Oracle.NoSQL.SDK.Tests.IAM
     using System.Threading.Tasks;
     using System.Net.Http;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using static Tests.Utils;
     using static TestData;
     using static Utils;
-    using Microsoft.VisualStudio.TestPlatform.CommunicationUtilities;
 
     [TestClass]
     public partial class AuthProviderTests : TestBase

@@ -6,17 +6,14 @@
  */
 
 namespace Oracle.NoSQL.SDK.Query {
-    using System;
-    using System.Diagnostics;
-    using System.Runtime.InteropServices;
     using System.Threading;
     using System.Threading.Tasks;
 
     internal abstract class PlanIterator
     {
-        protected internal QueryRuntime runtime;
+        private protected QueryRuntime runtime;
 
-        protected internal PlanIterator(QueryRuntime runtime)
+        private protected PlanIterator(QueryRuntime runtime)
         {
             this.runtime = runtime;
         }
@@ -32,7 +29,7 @@ namespace Oracle.NoSQL.SDK.Query {
             set => runtime.ResultRegistry[Step.ResultPosition] = value;
         }
 
-        protected internal string GetMessageWithLocation(string message) =>
+        internal string GetMessageWithLocation(string message) =>
             runtime.GetMessageWithLocation(message, Step.ExpressionLocation);
 
         internal virtual void Reset(bool resetResult = false)
@@ -42,7 +39,7 @@ namespace Oracle.NoSQL.SDK.Query {
 
     internal abstract class PlanSyncIterator : PlanIterator
     {
-        protected internal PlanSyncIterator(QueryRuntime runtime) :
+        private protected PlanSyncIterator(QueryRuntime runtime) :
             base(runtime)
         {
         }
@@ -52,7 +49,7 @@ namespace Oracle.NoSQL.SDK.Query {
 
     internal abstract class PlanAsyncIterator : PlanIterator
     {
-        protected internal PlanAsyncIterator(QueryRuntime runtime) :
+        private protected PlanAsyncIterator(QueryRuntime runtime) :
             base(runtime)
         {
         }

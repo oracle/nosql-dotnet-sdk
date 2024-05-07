@@ -11,7 +11,7 @@ namespace Oracle.NoSQL.SDK.Query {
 
     internal abstract class OneResultIterator : PlanSyncIterator
     {
-        protected internal bool done;
+        private protected bool done;
 
         internal OneResultIterator(QueryRuntime runtime) : base(runtime)
         {

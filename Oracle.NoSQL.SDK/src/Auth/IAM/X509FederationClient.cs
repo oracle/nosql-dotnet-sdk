@@ -13,6 +13,7 @@ namespace Oracle.NoSQL.SDK
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.Net;
     using System.Net.Http;
@@ -109,6 +110,7 @@ namespace Oracle.NoSQL.SDK
             var dateStr = DateTime.UtcNow.ToString("r");
             var digest = Convert.ToBase64String(ComputeSHA256Digest(payload));
 
+            Debug.Assert(request.Content != null);
             request.Content.Headers.ContentType = new MediaTypeHeaderValue(
                 ApplicationJson);
             request.Content.Headers.Add(ContentSHA256, digest);
@@ -116,29 +118,6 @@ namespace Oracle.NoSQL.SDK
             request.Headers.Add(HttpConstants.Authorization,
                 GetAuthorizationHeader(instanceCertificate,
                     instancePrivateKey, dateStr, payload, digest));
-        }
-
-        private static string ParseTokenResult(string result)
-        {
-            try
-            {
-                using var doc = JsonDocument.Parse(result);
-                var token = doc.RootElement.GetProperty("token")
-                    .GetString();
-                if (token == null)
-                {
-                    throw new ArgumentNullException(nameof(token),
-                        "Token value is null");
-                }
-
-                return token;
-            }
-            catch (Exception ex)
-            {
-                throw new AuthorizationException(
-                    "Received invalid security token response from IAM: " +
-                    ex.Message, ex);
-            }
         }
 
         internal async Task<string> GetSecurityTokenAsync(RSA publicKey,

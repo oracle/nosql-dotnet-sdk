@@ -9,11 +9,9 @@ namespace Oracle.NoSQL.SDK
 {
     using System;
     using System.Diagnostics;
-    using System.IO;
     using System.Net;
     using System.Net.Http;
     using System.Net.Http.Headers;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using static HttpRequestUtils;
@@ -27,7 +25,7 @@ namespace Oracle.NoSQL.SDK
         private readonly int timeoutMillis;
 
         internal AuthHttpClient(TimeSpan timeout,
-            ConnectionOptions connectionOptions)
+            ConnectionOptions connectionOptions = null)
         {
             httpClient = new HttpClient(new HttpConstDelayRetryHandler(
                 Http.Client.CreateHandler(connectionOptions), DefaultDelay));
@@ -40,7 +38,8 @@ namespace Oracle.NoSQL.SDK
         internal async Task<string> ExecuteRequestAsync(
             HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            request.Headers.Host = request.RequestUri.Host;
+            Debug.Assert(request.RequestUri != null);
+            request.Headers.Host = request.RequestUri.Authority;
 
             var response = await SendWithTimeoutAsync(httpClient, request,
                 timeoutMillis, cancellationToken);

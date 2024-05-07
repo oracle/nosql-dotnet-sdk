@@ -9,6 +9,7 @@ namespace Oracle.NoSQL.SDK
 {
 
     using System;
+    using System.Diagnostics;
     using System.Net.Security;
     using System.Security.Cryptography.X509Certificates;
 
@@ -69,16 +70,68 @@ namespace Oracle.NoSQL.SDK
             certificates.Clear();
         }
 
+#if !NET5_0_OR_GREATER
+        private static bool VerifyCertPre50(X509Certificate2 certificate,
+            X509Chain chain, X509Certificate2Collection trustedRoots)
+        {
+            chain.ChainPolicy.VerificationFlags =
+                X509VerificationFlags.AllowUnknownCertificateAuthority;
+            chain.ChainPolicy.ExtraStore.AddRange(trustedRoots);
+            for (int i = 1; i < chain.ChainElements.Count; i++)
+            {
+                chain.ChainPolicy.ExtraStore.Add(
+                    chain.ChainElements[i].Certificate);
+            }
+
+            var isVerified = chain.Build(certificate);
+
+            // X509VerificationFlags.AllowUnknownCertificateAuthority flag
+            // allows not just untrusted root CA but any CA with unknown
+            // issuer or just leaf certificate itself
+            // (X509StatusFlags.PartialChain status), so X509Chain.Build()
+            // return value is not enough, we also have to ensure that the
+            // built chain terminates on the certificate we trust.
+
+            // After the chain is built, the root should be the last element.
+            var root = chain.ChainElements[chain.ChainElements.Count- 1]
+                .Certificate;
+            var rootFound = false;
+
+            foreach (var cert in trustedRoots)
+            {
+                if (BinaryValue.ByteArraysEqual(root.RawData,
+                    cert.RawData))
+                {
+                    rootFound = true;
+                    break;
+                }
+            }
+
+            return isVerified && rootFound;
+        }
+#endif
+
         internal static bool ValidateCertificate(X509Certificate2 certificate,
             X509Chain chain, SslPolicyErrors errors,
-            X509Certificate2Collection trustedRoots)
+            ConnectionOptions options)
         {
+            Debug.Assert(options != null);
+
+            // Allow RemoteCertificateNameMismatch error if
+            // ConnectionOptions.DisableHostNameVerification is set.
+            if (options.DisableHostnameVerification)
+            {
+                errors &= ~SslPolicyErrors.RemoteCertificateNameMismatch;
+            }
+
             if (errors == SslPolicyErrors.None)
             {
                 return true;
             }
 
-            if ((errors & ~SslPolicyErrors.RemoteCertificateChainErrors) != 0)
+            if ((errors &
+                ~SslPolicyErrors.RemoteCertificateChainErrors) != 0 ||
+                options.TrustedRootCertificates == null)
             {
                 return false;
             }
@@ -92,48 +145,13 @@ namespace Oracle.NoSQL.SDK
 
             chain.ChainPolicy.CustomTrustStore.Clear();
             chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
-            chain.ChainPolicy.CustomTrustStore.AddRange(trustedRoots);
+            chain.ChainPolicy.CustomTrustStore.AddRange(
+                options.TrustedRootCertificates);
             return chain.Build(certificate);
 #else
-            foreach (var status in chain.ChainStatus)
-            {
-                if (status.Status != X509ChainStatusFlags.UntrustedRoot)
-                {
-                    return false;
-                }
-            }
-
-            foreach (var element in chain.ChainElements)
-            {
-                foreach (var status in element.ChainElementStatus)
-                {
-                    if (status.Status != X509ChainStatusFlags.UntrustedRoot)
-                    {
-                        return false;
-                    }
-
-                    var found = false;
-                    foreach (var cert in trustedRoots)
-                    {
-                        if (BinaryValue.ByteArraysEqual(
-                            element.Certificate.RawData, cert.RawData))
-                        {
-                            found = true;
-                            break;
-                        }
-                    }
-
-                    if (!found)
-                    {
-                        return false;
-                    }
-                }
-            }
-
-            return true;
+            return VerifyCertPre50(certificate, chain,
+                options.TrustedRootCertificates);
 #endif
         }
-
     }
-
 }

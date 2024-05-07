@@ -15,9 +15,9 @@ namespace Oracle.NoSQL.SDK.Query
 
     internal abstract class ValueAggregator
     {
-        protected internal FieldValue aggregateValue;
+        private protected FieldValue aggregateValue;
 
-        protected internal virtual FieldValue GetInitialValue() =>
+        private protected virtual FieldValue GetInitialValue() =>
             FieldValue.Null;
 
         internal virtual FieldValue Result =>
@@ -66,7 +66,7 @@ namespace Oracle.NoSQL.SDK.Query
 
     internal abstract class MinMaxAggregatorBase : SingleValueAggregator
     {
-        protected internal abstract bool IsMinMax(int compareResult);
+        private protected abstract bool IsMinMax(int compareResult);
 
         internal override void AggregateInternal(FieldValue value)
         {
@@ -93,13 +93,13 @@ namespace Oracle.NoSQL.SDK.Query
 
     internal class MinValueAggregator : MinMaxAggregatorBase
     {
-        protected internal override bool IsMinMax(int compareResult) =>
+        private protected override bool IsMinMax(int compareResult) =>
             compareResult < 0;
     }
 
     internal class MaxValueAggregator : MinMaxAggregatorBase
     {
-        protected internal override bool IsMinMax(int compareResult) =>
+        private protected override bool IsMinMax(int compareResult) =>
             compareResult > 0;
     }
 
@@ -120,13 +120,13 @@ namespace Oracle.NoSQL.SDK.Query
 
     internal abstract class CountAggregatorBase : SingleValueAggregator
     {
-        protected internal static readonly IntegerValue One =
+        private protected static readonly IntegerValue One =
             new IntegerValue(1);
 
-        protected internal override FieldValue GetInitialValue() =>
+        private protected override FieldValue GetInitialValue() =>
             new IntegerValue(0);
 
-        protected internal abstract bool ToCount(FieldValue value);
+        private protected abstract bool ToCount(FieldValue value);
 
         internal override void AggregateInternal(FieldValue value)
         {
@@ -142,30 +142,30 @@ namespace Oracle.NoSQL.SDK.Query
 
     internal class CountStarAggregator : CountAggregatorBase
     {
-        protected internal override bool ToCount(FieldValue value) => true;
+        private protected override bool ToCount(FieldValue value) => true;
     }
 
     internal class CountAggregator : CountAggregatorBase
     {
-        protected internal override bool ToCount(FieldValue value) =>
+        private protected override bool ToCount(FieldValue value) =>
             !value.IsSpecial;
     }
 
     internal class CountNumbersAggregator : CountAggregatorBase
     {
-        protected internal override bool ToCount(FieldValue value) =>
+        private protected override bool ToCount(FieldValue value) =>
             value.IsNumeric;
     }
 
     internal abstract class CollectAggregatorBase : ValueAggregator
     {
-        protected internal readonly bool toSortResults;
+        private protected readonly bool toSortResults;
 
-        protected internal abstract void AddValue(FieldValue value);
+        private protected abstract void AddValue(FieldValue value);
         
-        protected internal abstract long GetMemorySize(long valueSize);
+        private protected abstract long GetMemorySize(long valueSize);
 
-        protected internal static FieldValue SortResults(FieldValue result)
+        private protected static FieldValue SortResults(FieldValue result)
         {
             Debug.Assert(result is ArrayValue);
             result.AsArrayValue.Sort((value1, value2) =>
@@ -173,10 +173,10 @@ namespace Oracle.NoSQL.SDK.Query
             return result;
         }
 
-        protected internal override FieldValue GetInitialValue() =>
+        private protected override FieldValue GetInitialValue() =>
             new ArrayValue();
 
-        protected internal CollectAggregatorBase(bool toSortResults)
+        private protected CollectAggregatorBase(bool toSortResults)
         {
             this.toSortResults = toSortResults;
         }
@@ -215,13 +215,13 @@ namespace Oracle.NoSQL.SDK.Query
 
     internal class CollectAggregator : CollectAggregatorBase
     {
-        protected internal override void AddValue(FieldValue value)
+        private protected override void AddValue(FieldValue value)
         {
             aggregateValue ??= GetInitialValue();
             aggregateValue.AsArrayValue.Add(value);
         }
 
-        protected internal override long GetMemorySize(long valueSize) =>
+        private protected override long GetMemorySize(long valueSize) =>
             GetListEntrySize(valueSize);
 
         internal CollectAggregator(bool toSortResults) : base(toSortResults)
@@ -235,12 +235,12 @@ namespace Oracle.NoSQL.SDK.Query
         private readonly HashSet<FieldValue> valueSet =
             new HashSet<FieldValue>();
 
-        protected internal override void AddValue(FieldValue value)
+        private protected override void AddValue(FieldValue value)
         {
             valueSet.Add(value);
         }
 
-        protected internal override long GetMemorySize(long valueSize) =>
+        private protected override long GetMemorySize(long valueSize) =>
             GetHashSetEntrySize(valueSize);
 
         internal CollectDistinctAggregator(bool toSortResults) :

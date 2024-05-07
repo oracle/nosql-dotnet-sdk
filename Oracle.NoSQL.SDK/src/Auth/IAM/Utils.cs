@@ -13,6 +13,7 @@ namespace Oracle.NoSQL.SDK {
     using System.Security.Cryptography;
     using System.Security.Cryptography.X509Certificates;
     using System.Text;
+    using System.Text.Json;
     using System.Text.RegularExpressions;
 
     internal static class Utils
@@ -120,6 +121,34 @@ namespace Oracle.NoSQL.SDK {
             using var sha256 = SHA256.Create();
             return sha256.ComputeHash(payload);
         }
+
+        internal static string GenerateOpcRequestId() =>
+            Guid.NewGuid().ToString("N").ToUpper();
+
+        internal static string ParseTokenResult(string result,
+            string source = "IAM")
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(result);
+                var token = doc.RootElement.GetProperty("token")
+                    .GetString();
+                if (string.IsNullOrEmpty(token))
+                {
+                    throw new AuthorizationException(
+                        $"Missing token value in response from {source}");
+                }
+
+                return token;
+            }
+            catch (Exception ex)
+            {
+                throw new AuthorizationException(
+                    "Received invalid security token response from " +
+                    $"{source}: {ex.Message}", ex);
+            }
+        }
+
     }
 
 }
