@@ -344,6 +344,12 @@ namespace Oracle.NoSQL.SDK
             "ap-singapore-1", "sin", OC1);
 
         /// <summary>
+        /// Realm: OC1, Singapore2 (Singapore)
+        /// </summary>
+        public static readonly Region AP_SINGAPORE_2 = new Region(
+            "ap-singapore-2", "xsp", OC1);
+
+        /// <summary>
         /// Realm: OC1, Japan East (Tokyo)
         /// </summary>
         public static readonly Region AP_TOKYO_1 = new Region("ap-tokyo-1",
@@ -733,6 +739,12 @@ namespace Oracle.NoSQL.SDK
         /// </summary>
         public static readonly Region AP_DCC_TOKYO_1 = new Region(
             "ap-dcc-tokyo-1", "tyo", OC25);
+
+        /// <summary>
+        /// Realm: OC25, Japan Dedicated (Osaka)
+        /// </summary>
+        public static readonly Region AP_DCC_OSAKA_1 = new Region(
+            "ap-dcc-osaka-1", "uky", OC25);
 
         /// <summary>
         /// Realm: OC26, Abudhabi
