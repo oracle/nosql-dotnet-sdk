@@ -47,6 +47,15 @@ namespace Oracle.NoSQL.SDK
             this.value = value;
         }
 
+        // For compatibility with Java, we have to treat NaN as greater than
+        // any other value, and NaN = NaN. In C#, double.CompareTo() treats
+        // NaN as less than any other value and NaN = NaN, so we reverse the
+        // comparison for this case.
+        internal static int CompareDoubles(double d1, double d2) =>
+            !double.IsNaN(d1) && !double.IsNaN(d2)
+                ? d1.CompareTo(d2)
+                : d2.CompareTo(d1);
+
         /// <inheritdoc cref="FieldValue.DbType" path="summary"/>
         /// <value>
         /// <see cref="SDK.DbType.Double"/>
@@ -133,7 +142,7 @@ namespace Oracle.NoSQL.SDK
                 case DbType.Double:
                 case DbType.Integer:
                 case DbType.Long:
-                    return AsDouble.CompareTo(other.ToDouble());
+                    return CompareDoubles(AsDouble, other.ToDouble());
                 case DbType.Number:
                     return -NumberValue.CompareDecimalDouble(other.AsDecimal,
                         AsDouble);
@@ -192,7 +201,7 @@ namespace Oracle.NoSQL.SDK
                     try
                     {
                         return new NumberValue(
-                            (decimal)value + other.AsDecimal);
+                            (decimal)value + other.ToDecimal());
                     }
                     catch (OverflowException)
                     {
@@ -216,7 +225,7 @@ namespace Oracle.NoSQL.SDK
                     try
                     {
                         return new NumberValue(
-                            (decimal)value - other.AsDecimal);
+                            (decimal)value - other.ToDecimal());
                     }
                     catch (OverflowException)
                     {
@@ -240,7 +249,7 @@ namespace Oracle.NoSQL.SDK
                     try
                     {
                         return new NumberValue(
-                            (decimal)value * other.AsDecimal);
+                            (decimal)value * other.ToDecimal());
                     }
                     catch (OverflowException)
                     {
@@ -265,7 +274,7 @@ namespace Oracle.NoSQL.SDK
                     try
                     {
                         return new NumberValue(
-                            (decimal)value / other.AsDecimal);
+                            (decimal)value / other.ToDecimal());
                     }
                     catch (OverflowException)
                     {

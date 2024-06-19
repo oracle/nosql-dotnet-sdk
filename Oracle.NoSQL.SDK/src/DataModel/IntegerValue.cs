@@ -120,7 +120,8 @@ namespace Oracle.NoSQL.SDK
                 case DbType.Long:
                     return ToInt64().CompareTo(other.AsInt64);
                 case DbType.Double:
-                    return ToDouble().CompareTo(other.AsDouble);
+                    return DoubleValue.CompareDoubles(ToDouble(),
+                        other.AsDouble);
                 case DbType.Number:
                     return ToDecimal().CompareTo(other.AsDecimal);
                 case DbType.Boolean:
@@ -160,7 +161,7 @@ namespace Oracle.NoSQL.SDK
 
         // For efficiency, the arithmetic operations below will modify
         // the value in place when possible and return the same FieldValue
-        // object.  Otherwise the value is promoted to the bigger numeric
+        // object.  Otherwise, the value is promoted to the bigger numeric
         // type and new value is returned.  Same for other numeric types.
 
         internal override FieldValue QueryAdd(FieldValue other)
@@ -170,7 +171,7 @@ namespace Oracle.NoSQL.SDK
                 case DbType.Integer:
                     try
                     {
-                        value = checked(value + other.AsInt32);
+                        value = checked(value + other.ToInt32());
                         return this;
                     }
                     catch (OverflowException)
@@ -180,7 +181,8 @@ namespace Oracle.NoSQL.SDK
                 case DbType.Long:
                     try
                     {
-                        return new LongValue(checked(value + other.AsInt64));
+                        return new LongValue(
+                            checked(value + other.ToInt64()));
                     }
                     catch (OverflowException)
                     {
@@ -189,14 +191,14 @@ namespace Oracle.NoSQL.SDK
                 case DbType.Number:
                     try
                     {
-                        return new NumberValue(value + other.AsDecimal);
+                        return new NumberValue(value + other.ToDecimal());
                     }
                     catch (OverflowException)
                     {
                         goto case DbType.Double;
                     }
                 case DbType.Double:
-                    return new DoubleValue(value + other.AsDouble);
+                    return new DoubleValue(value + other.ToDouble());
                 default:
                     throw other.NonNumericOperand(AdditionOp);
             }
@@ -209,7 +211,7 @@ namespace Oracle.NoSQL.SDK
                 case DbType.Integer:
                     try
                     {
-                        value = checked(value - other.AsInt32);
+                        value = checked(value - other.ToInt32());
                         return this;
                     }
                     catch (OverflowException)
@@ -219,7 +221,8 @@ namespace Oracle.NoSQL.SDK
                 case DbType.Long:
                     try
                     {
-                        return new LongValue(checked(value - other.AsInt64));
+                        return new LongValue(
+                            checked(value - other.ToInt64()));
                     }
                     catch (OverflowException)
                     {
@@ -228,14 +231,14 @@ namespace Oracle.NoSQL.SDK
                 case DbType.Number:
                     try
                     {
-                        return new NumberValue(value - other.AsDecimal);
+                        return new NumberValue(value - other.ToDecimal());
                     }
                     catch (OverflowException)
                     {
                         goto case DbType.Double;
                     }
                 case DbType.Double:
-                    return new DoubleValue(value - other.AsDouble);
+                    return new DoubleValue(value - other.ToDouble());
                 default:
                     throw other.NonNumericOperand(SubtractionOp);
             }
@@ -248,7 +251,7 @@ namespace Oracle.NoSQL.SDK
                 case DbType.Integer:
                     try
                     {
-                        value = checked(value * other.AsInt32);
+                        value = checked(value * other.ToInt32());
                         return this;
                     }
                     catch (OverflowException)
@@ -258,7 +261,8 @@ namespace Oracle.NoSQL.SDK
                 case DbType.Long:
                     try
                     {
-                        return new LongValue(checked(value * other.AsInt64));
+                        return new LongValue(
+                            checked(value * other.ToInt64()));
                     }
                     catch (OverflowException)
                     {
@@ -267,14 +271,14 @@ namespace Oracle.NoSQL.SDK
                 case DbType.Number:
                     try
                     {
-                        return new NumberValue(value * other.AsDecimal);
+                        return new NumberValue(value * other.ToDecimal());
                     }
                     catch (OverflowException)
                     {
                         goto case DbType.Double;
                     }
                 case DbType.Double:
-                    return new DoubleValue(value * other.AsDouble);
+                    return new DoubleValue(value * other.ToDouble());
                 default:
                     throw other.NonNumericOperand(MultiplicationOp);
             }
@@ -288,25 +292,26 @@ namespace Oracle.NoSQL.SDK
                 case DbType.Integer:
                     if (isFloating)
                     {
-                        return new DoubleValue(value / other.AsDouble);
+                        return new DoubleValue(value / other.ToDouble());
                     }
                     value /= other.AsInt32;
                     return this;
                 case DbType.Long:
-                    return isFloating ?
-                        (FieldValue)new DoubleValue(value / other.AsDouble) :
-                        new LongValue(value / other.AsInt64);
+                    return isFloating
+                        ? (FieldValue)new DoubleValue(
+                            value / other.ToDouble())
+                        : new LongValue(value / other.ToInt64());
                 case DbType.Number:
                     try
                     {
-                        return new NumberValue(value / other.AsDecimal);
+                        return new NumberValue(value / other.ToDecimal());
                     }
                     catch (OverflowException)
                     {
                         goto case DbType.Double;
                     }
                 case DbType.Double:
-                    return new DoubleValue(value / other.AsDouble);
+                    return new DoubleValue(value / other.ToDouble());
                 default:
                     throw other.NonNumericOperand(DivisionOp);
             }

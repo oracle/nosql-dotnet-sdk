@@ -39,8 +39,10 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
             stream.Position = savedPosition;
         }
 
+        // Currently we keep topology info in NoSQLClient instance instead of
+        // PreparedStatement, thus adding "request" parameter.
         private static void DeserializePreparedStatement(MemoryStream stream,
-            bool getQueryPlan, PreparedStatement statement)
+            bool getQueryPlan, PreparedStatement statement, Request request)
         {
             DeserializePreparedStatementInfo(stream, statement);
 
@@ -78,7 +80,11 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
                     }
                 }
 
-                statement.SetTopologyInfo(ReadTopologyInfo(stream));
+                var topologyInfo = ReadTopologyInfo(stream);
+                if (topologyInfo != null)
+                {
+                    request.Client.SetQueryTopology(topologyInfo);
+                }
             }
         }
 
@@ -95,7 +101,7 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
             WriteOpcode(stream, Opcode.Prepare);
             SerializeRequest(stream, request);
             WriteString(stream, request.Statement);
-            WriteUnpackedInt16(stream, QueryRuntime.QueryVersion);
+            WriteUnpackedInt16(stream, request.QueryVersion);
             WriteBoolean(stream, request.GetQueryPlan);
         }
 
@@ -108,7 +114,7 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
             };
             DeserializeConsumedCapacity(stream, request, statement);
             DeserializePreparedStatement(stream, request.GetQueryPlan,
-                statement);
+                statement, request);
             return statement;
         }
 
@@ -124,13 +130,11 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
             WriteBoolean(stream, request.PreparedStatement != null);
 
             // The following 7 fields were added in V2
-            WriteUnpackedInt16(stream, QueryRuntime.QueryVersion);
+            WriteUnpackedInt16(stream, request.QueryVersion);
             WritePackedInt32(stream, request.Options?.TraceLevel ?? 0);
             WritePackedInt32(stream, request.Options?.MaxWriteKB ?? 0);
             SerializeMathContext(stream);
-            WritePackedInt32(stream,
-                request.PreparedStatement?.TopologyInfo?.SequenceNumber ??
-                -1);
+            WritePackedInt32(stream, request.QueryTopologySequenceNumber);
             WritePackedInt32(stream, request.ShardId);
             WriteBoolean(stream, // Whether it is a prepared simple query
                 request.PreparedStatement != null &&
@@ -222,13 +226,19 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
                     SQLText = request.Statement,
                     ConsumedCapacity = result.ConsumedCapacity
                 };
-                DeserializePreparedStatement(stream, false, result.PreparedStatement);
+                DeserializePreparedStatement(stream, false,
+                    result.PreparedStatement, request);
             }
 
             if (request.IsInternal)
             {
                 result.ReachedLimit = ReadBoolean(stream);
-                result.TopologyInfo = ReadTopologyInfo(stream);
+                var topologyInfo = ReadTopologyInfo(stream);
+                
+                if (topologyInfo != null)
+                {
+                    request.Client.SetQueryTopology(topologyInfo);
+                }
             }
 
             return result;

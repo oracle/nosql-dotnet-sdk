@@ -120,11 +120,10 @@ namespace Oracle.NoSQL.SDK.Query
 
     internal abstract class CountAggregatorBase : SingleValueAggregator
     {
-        private protected static readonly IntegerValue One =
-            new IntegerValue(1);
+        private protected static readonly LongValue One = new LongValue(1);
 
         private protected override FieldValue GetInitialValue() =>
-            new IntegerValue(0);
+            new LongValue(0);
 
         private protected abstract bool ToCount(FieldValue value);
 

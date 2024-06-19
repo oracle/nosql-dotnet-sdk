@@ -39,6 +39,7 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
         ETagMismatch = 22,
         UnsupportedProtocol = 24,
         TableNotReady = 26,
+        UnsupportedQueryVersion = 27,
 
         // Error codes for user throttling, range from 50 to 100(exclusive).
         ReadLimitExceeded = 50,
@@ -148,12 +149,18 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
                     {
                         return new UnsupportedProtocolException(message);
                     }
-
+                    if (message.Contains("invalid query version",
+                        StringComparison.OrdinalIgnoreCase))
+                    {
+                        return new UnsupportedQueryVersionException(message);
+                    }
                     return new BadProtocolException(message);
                 case ErrorCode.UnsupportedProtocol:
                     return new UnsupportedProtocolException(message);
                 case ErrorCode.TableBusy:
                     return new TableBusyException(message);
+                case ErrorCode.UnsupportedQueryVersion:
+                    return new UnsupportedQueryVersionException(message);
                 case ErrorCode.RequestTimeout:
                     return new TimeoutException(message);
                 case ErrorCode.InvalidAuthorization:

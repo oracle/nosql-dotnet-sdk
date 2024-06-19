@@ -66,6 +66,10 @@ namespace Oracle.NoSQL.SDK
             }
             catch (OverflowException)
             {
+                // This also works if value2 == NaN since OverflowException is
+                // throw above, (NaN < 0) is false (as any comparison operator
+                // with NaN, vs CompareTo), and we consider NaN greater than
+                // any other value.
                 return value2 < 0 ? 1 : -1;
             }
         }
@@ -230,7 +234,7 @@ namespace Oracle.NoSQL.SDK
                         goto case DbType.Double;
                     }
                 case DbType.Double:
-                    return new DoubleValue((double)value + other.AsDouble);
+                    return new DoubleValue((double)value + other.ToDouble());
                 default:
                     throw other.NonNumericOperand(AdditionOp);
             }
@@ -253,7 +257,7 @@ namespace Oracle.NoSQL.SDK
                         goto case DbType.Double;
                     }
                 case DbType.Double:
-                    return new DoubleValue((double)value - other.AsDouble);
+                    return new DoubleValue((double)value - other.ToDouble());
                 default:
                     throw other.NonNumericOperand(SubtractionOp);
             }
@@ -276,7 +280,7 @@ namespace Oracle.NoSQL.SDK
                         goto case DbType.Double;
                     }
                 case DbType.Double:
-                    return new DoubleValue((double)value * other.AsDouble);
+                    return new DoubleValue((double)value * other.ToDouble());
                 default:
                     throw other.NonNumericOperand(MultiplicationOp);
             }
@@ -300,7 +304,7 @@ namespace Oracle.NoSQL.SDK
                         goto case DbType.Double;
                     }
                 case DbType.Double:
-                    return new DoubleValue((double)value / other.AsDouble);
+                    return new DoubleValue((double)value / other.ToDouble());
                 default:
                     throw other.NonNumericOperand(DivisionOp);
             }

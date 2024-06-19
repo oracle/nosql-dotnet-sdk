@@ -9,15 +9,20 @@ namespace Oracle.NoSQL.SDK.Tests
 {
     using System;
     using System.Collections.Generic;
-    using System.Threading;
+    using System.Linq;
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using static Utils;
     using static TestSchemas;
 
-    public abstract class DataTestBase<TTests> : TablesTestBase<TTests>
+    // Changed to decouple functionality in DataTestBase from NoSQLClient
+    // handle, so that it can be used in the outside tests. Moved the
+    // functionality into DataTestUtils class, so that DataTestBase only has
+    // the wrapper methods.
+    internal static class DataTestUtils
     {
-        internal static async Task PutRowAsync(TableInfo table, DataRow row)
+        internal static async Task PutRowAsync(NoSQLClient client,
+            TableInfo table, DataRow row)
         {
             var opt = new PutOptions();
 
@@ -44,26 +49,27 @@ namespace Oracle.NoSQL.SDK.Tests
             row.Version = result.Version;
         }
 
-        internal static async Task PutRowsAsync(TableInfo table,
-            IEnumerable<DataRow> rows)
+        internal static async Task PutRowsAsync(NoSQLClient client,
+            TableInfo table, IEnumerable<DataRow> rows)
         {
             foreach (var row in rows)
             {
-                await PutRowAsync(table, row);
+                await PutRowAsync(client, table, row);
             }
         }
 
-        internal static async Task DeleteRowAsync(TableInfo table,
-            DataRow row)
+        internal static async Task DeleteRowAsync(NoSQLClient client,
+            TableInfo table, DataRow row)
         {
             var result = await client.DeleteAsync(table.Name,
                 MakePrimaryKey(table, row));
             row.Reset();
         }
 
-        internal static void VerifyConsumedCapacity(ConsumedCapacity cc)
+        internal static void VerifyConsumedCapacity(NoSQLClient client,
+            ConsumedCapacity cc)
         {
-            if (IsOnPrem)
+            if (IsOnPrem(client))
             {
                 Assert.IsNull(cc);
             }
@@ -113,10 +119,10 @@ namespace Oracle.NoSQL.SDK.Tests
         private const int ModeTimeDeltaMillisRemote = 5000;
         private const int ModeTimeDeltaMillisBig = 3600 * 1000;
 
-        internal static void VerifyModificationTime(DataRow row,
-            DateTime? modificationTime, bool isPrecise = true)
+        internal static void VerifyModificationTime(NoSQLClient client,
+            DataRow row, DateTime? modificationTime, bool isPrecise = true)
         {
-            if (IsProtocolV3OrAbove)
+            if (IsProtocolV3OrAbove(client))
             {
                 Assert.IsNotNull(modificationTime);
                 var delta = modificationTime.Value - row.ModificationTime;
@@ -125,7 +131,7 @@ namespace Oracle.NoSQL.SDK.Tests
                 // boundary.  Note that in either case it cannot be verified
                 // 100% accurately.
                 var maxDeltaMillis = isPrecise
-                    ? (IsServerLocal
+                    ? (IsServerLocal(client)
                         ? ModTimeDeltaMillisLocal
                         : ModeTimeDeltaMillisRemote)
                     : ModeTimeDeltaMillisBig;
@@ -139,10 +145,10 @@ namespace Oracle.NoSQL.SDK.Tests
             }
         }
 
-        internal static void VerifyExistingModificationTime(DataRow row,
-            IWriteResult<RecordValue> result)
+        internal static void VerifyExistingModificationTime(NoSQLClient client,
+            DataRow row, IWriteResult<RecordValue> result)
         {
-            if (IsProtocolV3OrAbove)
+            if (IsProtocolV3OrAbove(client))
             {
                 Assert.IsNotNull(result.ExistingModificationTime);
                 var delta = result.ExistingModificationTime.Value -
@@ -200,14 +206,18 @@ namespace Oracle.NoSQL.SDK.Tests
         private static void VerifyNumeric(FieldValue expected,
             FieldValue actual, FieldType type)
         {
+            var deltaMultiplier = type is NumericFieldType numType
+                ? numType.DeltaMultiplier
+                : 1;
+
             if (type.DataType == DataType.Double ||
                 type.DataType == DataType.Float)
             {
                 Assert.IsTrue(actual is DoubleValue);
                 VerifyNumber(expected.ToDouble(), actual.AsDouble,
                     type.DataType == DataType.Double
-                        ? DoubleEpsilon
-                        : FloatEpsilon);
+                        ? DoubleEpsilon * deltaMultiplier
+                        : FloatEpsilon * deltaMultiplier);
                 return;
             }
 
@@ -222,7 +232,7 @@ namespace Oracle.NoSQL.SDK.Tests
             }
 
             VerifyNumber(expected.ToDecimal(), actual.AsDecimal,
-                DecimalEpsilon);
+                DecimalEpsilon * deltaMultiplier);
         }
 
         private static void VerifyTimestamp(DateTime expected,
@@ -285,16 +295,16 @@ namespace Oracle.NoSQL.SDK.Tests
                 Assert.IsTrue(actualRecord.TryGetValue(field.Name,
                     out var actualValue));
 
-                // Skip verification of identity column since its expected
-                // value is not known here.  Where necessary, identity column
-                // values will be verified in VerifyPutAsync().
-                if (field.FieldType.IsIdentity)
+                if (!expectedRecord.TryGetValue(field.Name,
+                        out var expectedValue))
                 {
+                    // Skip verification of identity column since its expected
+                    // value is not known here.  Where necessary, identity column
+                    // values will be verified in VerifyPutAsync().
+                    Assert.IsTrue(field.FieldType.IsIdentity);
                     continue;
                 }
 
-                Assert.IsTrue(expectedRecord.TryGetValue(field.Name,
-                    out var expectedValue));
                 VerifyFieldValue(expectedValue, actualValue, field.FieldType);
             }
         }
@@ -306,6 +316,12 @@ namespace Oracle.NoSQL.SDK.Tests
             // sure we use the map equality (expected should not be a record).
             Assert.IsTrue(expected.Equals(actual));
         }
+
+        private static IEnumerable<FieldValue> SortTotalOrder(
+            IEnumerable<FieldValue> values) =>
+            values.OrderBy(value => value,
+                Comparer<FieldValue>.Create((val1, val2) =>
+                    val1.QueryCompareTotalOrder(val2)));
 
         // Check the value returned from the service.  It should be of
         // correct type and equal to the value we sent to the service (after
@@ -374,6 +390,7 @@ namespace Oracle.NoSQL.SDK.Tests
                     break;
                 case DataType.Timestamp:
                     // test self-check
+                    Assert.IsTrue(type is TimestampFieldType);
                     Assert.IsTrue(expected is TimestampValue);
                     Assert.IsTrue(actual is TimestampValue);
                     VerifyTimestamp(expected.AsDateTime, actual.AsDateTime,
@@ -391,6 +408,15 @@ namespace Oracle.NoSQL.SDK.Tests
                     Assert.IsTrue(actual is ArrayValue);
                     Assert.AreEqual(expected.Count, actual.Count);
                     var arrayType = (ArrayFieldType)type;
+                    
+                    if (arrayType.IsUnordered)
+                    {
+                        expected = new ArrayValue(
+                            SortTotalOrder(expected.AsArrayValue));
+                        actual = new ArrayValue(
+                            SortTotalOrder(actual.AsArrayValue));
+                    }
+
                     for (var i = 0; i < expected.Count; i++)
                     {
                         VerifyFieldValue(expected[i], actual[i],
@@ -414,16 +440,16 @@ namespace Oracle.NoSQL.SDK.Tests
             }
         }
 
-        internal static void VerifyGetResult(GetResult<RecordValue> result,
-            TableInfo table, DataRow row,
+        internal static void VerifyGetResult(NoSQLClient client,
+            GetResult<RecordValue> result, TableInfo table, DataRow row,
             Consistency consistency = Consistency.Eventual,
             bool skipVerifyVersion = false,
             bool preciseModificationTime = true)
         {
             Assert.IsNotNull(result);
-            VerifyConsumedCapacity(result.ConsumedCapacity);
+            VerifyConsumedCapacity(client, result.ConsumedCapacity);
 
-            if (!IsOnPrem)
+            if (!IsOnPrem(client))
             {
                 Assert.AreEqual(0, result.ConsumedCapacity.WriteKB);
                 Assert.AreEqual(0, result.ConsumedCapacity.WriteUnits);
@@ -443,7 +469,7 @@ namespace Oracle.NoSQL.SDK.Tests
 
             Assert.IsNotNull(result.Version);
             VerifyExpirationTime(table, row, result.ExpirationTime);
-            VerifyModificationTime(row, result.ModificationTime,
+            VerifyModificationTime(client, row, result.ModificationTime,
                 preciseModificationTime);
 
             // For update queries (unlike puts) we don't know the row's
@@ -456,7 +482,7 @@ namespace Oracle.NoSQL.SDK.Tests
             VerifyFieldValue(row, result.Row, table.RecordType);
         }
 
-        internal static async Task VerifyPutAsync(
+        internal static async Task VerifyPutAsync(NoSQLClient client,
             PutResult<RecordValue> result,
             TableInfo table, DataRow row, PutOptions options = null,
             bool success = true, DataRow existingRow = null,
@@ -473,8 +499,8 @@ namespace Oracle.NoSQL.SDK.Tests
 
             if (!isSubOp)
             {
-                VerifyConsumedCapacity(result.ConsumedCapacity);
-                if (!IsOnPrem)
+                VerifyConsumedCapacity(client, result.ConsumedCapacity);
+                if (!IsOnPrem(client))
                 {
                     if (success)
                     {
@@ -542,7 +568,8 @@ namespace Oracle.NoSQL.SDK.Tests
                         result.ExistingVersion, true);
                     if (verifyExistingModTime)
                     {
-                        VerifyExistingModificationTime(existingRow, result);
+                        VerifyExistingModificationTime(client, existingRow,
+                            result);
                     }
                 }
                 else
@@ -556,7 +583,8 @@ namespace Oracle.NoSQL.SDK.Tests
                 MakePrimaryKey(table, row));
             // This will verify that we get the same row as we put, including its
             // version, expiration time and modification time
-            VerifyGetResult(getResult, table, success ? row : existingRow);
+            VerifyGetResult(client, getResult, table,
+                success ? row : existingRow);
 
             // Verify generated value for an identity column if any
             if (success && result.GeneratedValue != null)
@@ -569,7 +597,7 @@ namespace Oracle.NoSQL.SDK.Tests
             }
         }
 
-        internal static async Task VerifyDeleteAsync(
+        internal static async Task VerifyDeleteAsync(NoSQLClient client,
             DeleteResult<RecordValue> result, TableInfo table,
             MapValue primaryKey, DeleteOptions options = null,
             bool success = true, DataRow existingRow = null,
@@ -582,8 +610,8 @@ namespace Oracle.NoSQL.SDK.Tests
 
             if (!isSubOp)
             {
-                VerifyConsumedCapacity(result.ConsumedCapacity);
-                if (!IsOnPrem)
+                VerifyConsumedCapacity(client, result.ConsumedCapacity);
+                if (!IsOnPrem(client))
                 {
                     Assert.IsTrue(result.ConsumedCapacity.ReadKB >= 1);
                     Assert.IsTrue(result.ConsumedCapacity.ReadUnits >= 1);
@@ -613,7 +641,8 @@ namespace Oracle.NoSQL.SDK.Tests
                     true);
                 if (verifyExistingModTime)
                 {
-                    VerifyExistingModificationTime(existingRow, result);
+                    VerifyExistingModificationTime(client, existingRow,
+                        result);
                 }
             }
             else
@@ -626,7 +655,73 @@ namespace Oracle.NoSQL.SDK.Tests
             // delete or delete on non-existent row, or that the row is the
             // same as existingRow if deleteIfVersion fails on existing row
             var getResult = await client.GetAsync(table.Name, primaryKey);
-            VerifyGetResult(getResult, table, success ? null : existingRow);
+            VerifyGetResult(client, getResult, table,
+                success ? null : existingRow);
         }
+    }
+
+    public abstract class DataTestBase<TTests> : TablesTestBase<TTests>
+    {
+        internal static Task PutRowAsync(TableInfo table, DataRow row) =>
+            DataTestUtils.PutRowAsync(client, table, row);
+
+        internal static Task PutRowsAsync(TableInfo table,
+            IEnumerable<DataRow> rows) =>
+            DataTestUtils.PutRowsAsync(client, table, rows);
+
+        internal static Task DeleteRowAsync(TableInfo table, DataRow row) =>
+            DataTestUtils.DeleteRowAsync(client, table, row);
+
+        internal static void VerifyConsumedCapacity(ConsumedCapacity cc) =>
+            DataTestUtils.VerifyConsumedCapacity(client, cc);
+
+        // We assume that if row.TTL is null, then the row's TTL is table
+        // default TTL, or if table does not have default TTL, then the row
+        // does not expire.  If table has default TTL but we want the row not to
+        // expire, we must have row.TTL == TimeToLive.DoNotExpire.
+        internal static void VerifyExpirationTime(TableInfo table,
+            DataRow row, DateTime? expirationTime) =>
+            DataTestUtils.VerifyExpirationTime(table, row, expirationTime);
+
+        internal static void VerifyModificationTime(DataRow row,
+            DateTime? modificationTime, bool isPrecise = true) =>
+            DataTestUtils.VerifyModificationTime(client, row,
+                modificationTime, isPrecise);
+
+        internal static void VerifyExistingModificationTime(DataRow row,
+            IWriteResult<RecordValue> result) =>
+            DataTestUtils.VerifyExistingModificationTime(client, row, result);
+
+        internal static void VerifyFieldValue(FieldValue expected,
+            FieldValue actual, FieldType type) =>
+            DataTestUtils.VerifyFieldValue(expected, actual, type);
+
+        internal static void VerifyGetResult(GetResult<RecordValue> result,
+            TableInfo table, DataRow row,
+            Consistency consistency = Consistency.Eventual,
+            bool skipVerifyVersion = false,
+            bool preciseModificationTime = true) =>
+            DataTestUtils.VerifyGetResult(client, result, table, row,
+                consistency, skipVerifyVersion, preciseModificationTime);
+
+        internal static Task VerifyPutAsync(
+            PutResult<RecordValue> result,
+            TableInfo table, DataRow row, PutOptions options = null,
+            bool success = true, DataRow existingRow = null,
+            bool isSubOp = false, bool isConditional = false,
+            bool verifyExistingModTime = true) =>
+            DataTestUtils.VerifyPutAsync(client, result, table, row, options,
+                success, existingRow, isSubOp, isConditional,
+                verifyExistingModTime);
+
+        internal static Task VerifyDeleteAsync(
+            DeleteResult<RecordValue> result, TableInfo table,
+            MapValue primaryKey, DeleteOptions options = null,
+            bool success = true, DataRow existingRow = null,
+            bool isSubOp = false, bool isConditional = false,
+            bool verifyExistingModTime = true) =>
+            DataTestUtils.VerifyDeleteAsync(client, result, table, primaryKey,
+                options, success, existingRow, isSubOp, isConditional,
+                verifyExistingModTime);
     }
 }

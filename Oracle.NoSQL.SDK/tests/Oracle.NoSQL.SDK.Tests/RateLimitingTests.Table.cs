@@ -577,6 +577,12 @@ namespace Oracle.NoSQL.SDK.Tests
         public static async Task ClassInitializeAsync(TestContext testContext)
         {
             ClassInitialize(testContext);
+
+            CheckNotOnPrem();
+            var toSkipStr = testContext.Properties[SkipRateLimiterTestsProp];
+            toSkip = Convert.ToBoolean(toSkipStr);
+            CheckSkipRateLimiterTests();
+
             if (SupportsChildTables)
             {
                 await DropTableAsync(ChildFixture.Table);
@@ -596,6 +602,11 @@ namespace Oracle.NoSQL.SDK.Tests
         [ClassCleanup]
         public static async Task ClassCleanupAsync()
         {
+            if (toSkip || IsOnPrem)
+            {
+                return;
+            }
+
             if (SupportsChildTables)
             {
                 await DropTableAsync(ChildFixture.Table);

@@ -24,6 +24,12 @@ namespace Oracle.NoSQL.SDK
         internal byte[][] ContinuationKeys { get; set; }
     }
 
+    internal struct QueryTraceRecord
+    {
+        internal string BatchName { get; set; }
+        internal string BatchTrace { get; set; }
+    }
+
     /// <summary>
     /// Represents the result of the Query operation.
     /// </summary>
@@ -138,7 +144,9 @@ namespace Oracle.NoSQL.SDK
 
         internal bool ReachedLimit { get; set; }
 
-        internal TopologyInfo TopologyInfo { get; set; }
+        internal IReadOnlyList<VirtualScan> VirtualScans { get; set; }
+
+        internal IReadOnlyList<QueryTraceRecord> QueryTraces { get; set; }
     }
 
     /// <summary>

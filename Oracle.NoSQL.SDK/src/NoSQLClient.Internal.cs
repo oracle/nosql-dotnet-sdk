@@ -11,6 +11,7 @@ namespace Oracle.NoSQL.SDK
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Runtime.CompilerServices;
+    using System.Runtime.ExceptionServices;
     using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
@@ -19,6 +20,8 @@ namespace Oracle.NoSQL.SDK
     public partial class NoSQLClient
     {
         private Http.Client client;
+        private readonly object lockObj = new object();
+        private volatile TopologyInfo queryTopology;
         private bool disposed;
 
         internal NoSQLConfig Config { get; private set; }
@@ -26,6 +29,34 @@ namespace Oracle.NoSQL.SDK
         internal ProtocolHandler ProtocolHandler { get; private set; }
 
         internal RateLimitingHandler RateLimitingHandler { get; private set; }
+
+        internal TopologyInfo QueryTopology => queryTopology;
+
+        // Since we only care about the latest topology sequence number, we
+        // can avoid a lock here. TopologyInfo itself is immutable. For
+        // setting topology, because of the check performed, we need a lock
+        // (see below). Currently, we send topology sequence number for every
+        // request, but setting new topology is less frequent.
+        internal int QueryTopologySequenceNumber
+        {
+            get
+            {
+                var topo = QueryTopology;
+                return topo?.SequenceNumber ?? -1;
+            }
+        }
+
+        internal void SetQueryTopology(TopologyInfo topologyInfo)
+        {
+            lock (lockObj)
+            {
+                if (queryTopology == null || queryTopology.SequenceNumber <
+                    topologyInfo.SequenceNumber)
+                {
+                    queryTopology = topologyInfo;
+                }
+            }
+        }
 
         internal static TimeoutException GetTimeoutException(TimeSpan timeout,
             int retryCount, Exception inner) => new TimeoutException(
@@ -65,7 +96,6 @@ namespace Oracle.NoSQL.SDK
 
             while (true)
             {
-                var serialVersion = ProtocolHandler.SerialVersion;
                 try
                 {
                     if (rlReq != null)
@@ -97,22 +127,14 @@ namespace Oracle.NoSQL.SDK
                     var endTime = startTime + timeout;
                     var now = DateTime.UtcNow;
 
-                    if (ex is UnsupportedProtocolException &&
-                        !Config.DisableProtocolFallback && now < endTime &&
-                        // We should always retry if some other concurrent
-                        // request has already decremented serial version.
-                        ProtocolHandler.DecrementSerialVersion(serialVersion))
+                    if (now < endTime &&
+                        request.HandleUnsupportedProtocol(ex))
                     {
-                        if (request.MinProtocolVersion >
-                            ProtocolHandler.SerialVersion)
-                        {
-                            throw new NotSupportedException(
-                                "This operation requires minimum protocol " +
-                                $"version {request.MinProtocolVersion} and " +
-                                "cannot be performed by the service " +
-                                "running protocol version " +
-                                ProtocolHandler.SerialVersion);
-                        }
+                        // Since we changed client's protocol version(s), we
+                        // need to update protocol version(s) and revalidate
+                        // the request before continuing.
+                        request.UpdateProtocolVersion();
+                        request.Validate();
                         continue;
                     }
 
@@ -141,6 +163,16 @@ namespace Oracle.NoSQL.SDK
                     // already elapsed.
                     request.Timeout = endTime - now;
                     await Task.Delay(delay, cancellationToken);
+
+                    // This may help if there are many concurrent requests and
+                    // the client's protocol version has been changed during
+                    // retry delay thus avoiding retrying with wrong protocol
+                    // version.
+                    if (request.HasProtocolChanged())
+                    {
+                        request.UpdateProtocolVersion();
+                        request.Validate();
+                    }
                 }
             }
         }
@@ -472,8 +504,8 @@ namespace Oracle.NoSQL.SDK
                 GetTableUsageOptions options,
                 CancellationToken cancellationToken)
         {
-            var request = new GetTableUsageRequest(this, tableName,
-                options, 4);
+            var request = new GetTableUsageRequest(this, tableName, options);
+            request.CheckPagingSupported();
             request.Validate();
 
             return GetTableUsageAsyncEnumerableInternal(request,

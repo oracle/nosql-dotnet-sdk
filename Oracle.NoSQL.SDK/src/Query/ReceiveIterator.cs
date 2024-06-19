@@ -16,7 +16,6 @@ namespace Oracle.NoSQL.SDK.Query {
     internal partial class ReceiveIterator : PlanAsyncIterator
     {
         private readonly ReceiveStep step;
-        private TopologyInfo topologyInfo;
         private readonly QueryRequest<RecordValue> queryRequest;
         private readonly Duplicates duplicates;
         private readonly SimpleResult simpleResult;
@@ -24,6 +23,7 @@ namespace Oracle.NoSQL.SDK.Query {
         private long totalMemory;
         private int totalRows;
         private byte[] phase1ContinuationKey;
+        private int currVScanId = -1;
         private bool inSortPhase1;
 
         internal ReceiveIterator(QueryRuntime runtime, ReceiveStep step) :
@@ -39,8 +39,13 @@ namespace Oracle.NoSQL.SDK.Query {
                     Consistency = runtime.Request.Options?.Consistency,
                     MaxReadKB = runtime.Request.Options?.MaxReadKB,
                     MaxWriteKB = runtime.Request.Options?.MaxWriteKB,
-                    TraceLevel = runtime.Request.Options?.TraceLevel
-                }) {IsInternal = true};
+                    TraceLevel = runtime.Request.Options?.TraceLevel,
+                    QueryLabel = runtime.Request.Options?.QueryLabel
+                })
+            {
+                BaseTopology = runtime.BaseTopology,
+                IsInternal = true
+            };
 
             if (step.PrimaryKeyFields != null)
             {
@@ -51,13 +56,19 @@ namespace Oracle.NoSQL.SDK.Query {
             {
                 if (step.DistributionKind == DistributionKind.AllShards)
                 {
-                    topologyInfo = runtime.PreparedStatement.TopologyInfo ??
-                                   throw new BadProtocolException(
-                                       "Query plan: missing topology info for " +
-                                       "all-shards query");
+                    var topologyInfo = runtime.BaseTopology;
+                    
+                    if (topologyInfo == null)
+                    {
+                        throw new InvalidOperationException(
+                            "Missing topology information for all-shard query");
+                    }
+
+                    Debug.Assert(topologyInfo.ShardIds?.Count != 0);
+
                     partialResults = new SortedSet<PartialResult>();
                     // Seed empty shard results
-                    foreach (var shardId in topologyInfo.ShardIds)
+                    foreach (var shardId in topologyInfo!.ShardIds!)
                     {
                         partialResults.Add(new PartialResult(this, shardId));
                     }
@@ -73,15 +84,19 @@ namespace Oracle.NoSQL.SDK.Query {
             {
                 simpleResult = new SimpleResult(this);
             }
+
+            Trace("Created iterator, distribution kind = " +
+                step.DistributionKind, 1);
         }
 
         private async Task<QueryResult<RecordValue>> FetchAsync(
             byte[] continuationKey, CancellationToken cancellationToken,
-            int shardId = -1, int limit = 0)
+            int shardId = -1, int limit = 0, VirtualScan virtualScan = null)
         {
             queryRequest.Options.ContinuationKey =
                 continuationKey != null ?
                 new QueryContinuationKey(continuationKey) : null;
+
             if (limit > 0)
             {
                 var optionsLimit = runtime.Request.Options?.Limit ?? 0;
@@ -94,6 +109,7 @@ namespace Oracle.NoSQL.SDK.Query {
             }
 
             queryRequest.ShardId = shardId;
+            queryRequest.VirtualScan = virtualScan;
 
             var result = (QueryResult<RecordValue>)
                 await runtime.Client.ExecuteValidatedRequestAsync(
@@ -101,6 +117,8 @@ namespace Oracle.NoSQL.SDK.Query {
 
             runtime.TallyConsumedCapacity(result.ConsumedCapacity);
             runtime.FetchDone = true;
+
+            Trace($"Fetch returned {result.Rows.Count} records");
 
             if (!inSortPhase1 && !result.ReachedLimit &&
                 result.ContinuationKey != null)
@@ -111,6 +129,21 @@ namespace Oracle.NoSQL.SDK.Query {
                     "the query is not in sort phase 1");
             }
 
+            // Virtual scans can only be sent for ALL_SHARDS query.
+            if (result.VirtualScans != null &&
+                step.DistributionKind != DistributionKind.AllShards)
+            {
+                throw new BadProtocolException(
+                    "Received virtual scans for non-all-shard query type " +
+                    step.DistributionKind);
+            }
+
+            if (result.QueryTraces != null)
+            {
+                runtime.AddServerQueryTraces(result.QueryTraces);
+                queryRequest.Options.BatchNumber++;
+            }
+
             return result;
         }
 
@@ -119,6 +152,9 @@ namespace Oracle.NoSQL.SDK.Query {
             var sortPhase1 = result.SortPhase1;
             var numPartitionIds = sortPhase1.PartitionIds?.Length ?? 0;
             var numResultCounts = sortPhase1.ResultCounts?.Length ?? 0;
+            
+            Trace($"SortPhase1: received results for {numPartitionIds} " +
+                "partitions", 3);
 
             if (numPartitionIds != numResultCounts)
             {
@@ -182,9 +218,13 @@ namespace Oracle.NoSQL.SDK.Query {
             }
         }
 
+        // Returns true if phase1 is completed.
         private async Task<bool> DoSortPhase1Async(
             CancellationToken cancellationToken)
         {
+            Trace("Entered SortPhase1, runtime.FetchDone=" +
+                runtime.FetchDone, 3);
+            
             if (runtime.FetchDone)
             {
                 // Have to postpone phase 1 to the next Query() call
@@ -202,11 +242,14 @@ namespace Oracle.NoSQL.SDK.Query {
             if (result.SortPhase1 == null)
             {
                 throw new BadProtocolException("Query: first response to " +
-                                               "all-partitions query is not a phase 1 response");
+                    "all-partitions query is not a phase 1 response");
             }
 
             inSortPhase1 = result.SortPhase1.ToContinue;
             phase1ContinuationKey = result.ContinuationKey.Bytes;
+            Trace("Received SortPhase1 results, ToContinue = " +
+                $"{inSortPhase1}, phase1ContinuationKey length = " +
+                (phase1ContinuationKey?.Length ?? -1), 2);
 
             if (inSortPhase1 && phase1ContinuationKey == null)
             {
@@ -285,33 +328,22 @@ namespace Oracle.NoSQL.SDK.Query {
             return (int)limit;
         }
 
-        private void HandleTopologyChange()
+        private void HandleVirtualScans(
+            IReadOnlyList<VirtualScan> virtualScans)
         {
-            var currInfo = runtime.PreparedStatement.TopologyInfo;
-            if (topologyInfo == currInfo)
+            if (currVScanId == -1)
             {
-                return;
+                var topologyInfo = runtime.BaseTopology;
+                Debug.Assert(topologyInfo?.ShardIds?.Count != 0);
+                // ShardIds are sorted.
+                currVScanId = topologyInfo!.ShardIds![^1] + 1;
             }
 
-            Debug.Assert(currInfo != null);
-            Debug.Assert(topologyInfo != null);
-
-            // Remove results for shard ids that are not present in new topo
-            partialResults.RemoveWhere(
-                result =>
-                Array.IndexOf(currInfo.ShardIds, result.Id) == -1);
-
-            // Add results for shards ids not present in old topo
-            foreach(var shardId in currInfo.ShardIds)
+            foreach (var virtualScan in virtualScans)
             {
-                if (Array.IndexOf(topologyInfo.ShardIds, shardId) == -1)
-                {
-
-                    partialResults.Add(new PartialResult(this, shardId));
-                }
+                partialResults.Add(new PartialResult(this, currVScanId++,
+                    virtualScan));
             }
-
-            topologyInfo = currInfo;
         }
 
         private async Task SortingFetchAsync(PartialResult result,
@@ -319,6 +351,7 @@ namespace Oracle.NoSQL.SDK.Query {
         {
             var limit = 0;
             var shardId = -1;
+            VirtualScan virtualScan = null;
 
             if (step.DistributionKind == DistributionKind.AllPartitions)
             {
@@ -331,8 +364,9 @@ namespace Oracle.NoSQL.SDK.Query {
             else
             {
                 Debug.Assert(step.DistributionKind ==
-                    DistributionKind.AllShards);
+                             DistributionKind.AllShards);
                 shardId = result.Id;
+                virtualScan = result.VirtualScan;
             }
 
             QueryResult<RecordValue> queryResult;
@@ -340,9 +374,9 @@ namespace Oracle.NoSQL.SDK.Query {
             try
             {
                 queryResult = await FetchAsync(result.ContinuationKey,
-                    cancellationToken, shardId, limit);
+                    cancellationToken, shardId, limit, virtualScan);
             }
-            catch(Exception)
+            catch (Exception)
             {
                 // Add original result in case this exception is retryable
                 partialResults.Add(result);
@@ -352,13 +386,25 @@ namespace Oracle.NoSQL.SDK.Query {
             result.SetQueryResult(queryResult);
             partialResults.Add(result);
 
+            Trace($"SortingFetch: received {queryResult.Rows.Count} rows " +
+                $"for partial result id {result.Id}");
+
             if (step.DistributionKind == DistributionKind.AllPartitions)
             {
                 result.SetMemoryStats();
             }
             else
             {
-                HandleTopologyChange();
+                if (virtualScan != null)
+                {
+                    virtualScan.IsInfoSent = true;
+                }
+
+                if (queryResult.VirtualScans != null)
+                {
+                    HandleVirtualScans(queryResult.VirtualScans);
+                    queryResult.VirtualScans = null;
+                }
             }
         }
 
@@ -391,6 +437,11 @@ namespace Oracle.NoSQL.SDK.Query {
                     Result = row;
                     return true;
                 }
+
+                Trace("In SortingNext, no more local results for id " +
+                    $"{result.Id}, HasRemoteResults = " +
+                    $"{result.HasRemoteResults}, FetchDone = " +
+                    runtime.FetchDone, 3);
 
                 if (!result.HasRemoteResults)
                 {

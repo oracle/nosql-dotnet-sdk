@@ -9,11 +9,9 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.IO;
     using System.Text.Json;
     using BinaryProtocol;
-    using Query;
     using BinaryProtocol = BinaryProtocol.Protocol;
     using NsonType = DbType;
     using static ValidateUtils;
@@ -169,6 +167,48 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             }
         }
 
+        internal static void ValidateTopologyInfo(TopologyInfo topoInfo)
+        {
+            if (topoInfo.SequenceNumber < 0)
+            {
+                throw new BadProtocolException(
+                    "Received invalid topology sequence number: " +
+                    topoInfo.SequenceNumber);
+            }
+
+            if (topoInfo.ShardIds == null || topoInfo.ShardIds.Count == 0)
+            {
+                throw new BadProtocolException(
+                    "Missing shard ids for topology sequence number " +
+                    topoInfo.SequenceNumber);
+            }
+        }
+
+        internal static TopologyInfo ReadTopologyInfo(NsonReader reader)
+        {
+            var seqNo = -1;
+            int[] shardIds = null;
+
+            ReadMap(reader, fieldName =>
+            {
+                switch (fieldName)
+                {
+                    case FieldNames.ProxyTopoSeqNum:
+                        seqNo = reader.ReadInt32();
+                        return true;
+                    case FieldNames.ShardIds:
+                        shardIds = ReadArray(reader, reader.ReadInt32);
+                        return true;
+                    default:
+                        return false;
+                }
+            });
+
+            var result = new TopologyInfo(seqNo, shardIds);
+            ValidateTopologyInfo(result);
+            return result;
+        }
+
         internal static ConsumedCapacity DeserializeConsumedCapacity(
             NsonReader reader)
         {
@@ -220,6 +260,12 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                         return true;
                     case FieldNames.Exception:
                         message = reader.ReadString();
+                        return true;
+                    case FieldNames.TopologyInfo:
+                        // Query topology may be received by any dml or query
+                        // request.
+                        request.Client.SetQueryTopology(
+                            ReadTopologyInfo(reader));
                         return true;
                     default:
                         return processField(fieldName);

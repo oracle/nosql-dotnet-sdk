@@ -137,7 +137,7 @@ namespace Oracle.NoSQL.SDK.Tests
             Assert.AreEqual(index.Name, result.IndexName);
             AssertDeepEqual(index.FieldNames, result.Fields);
 
-            if (IsProtocolV4OrAbove)
+            if (IsExpectedProtocolV4OrAbove)
             {
                 if (result.FieldTypes == null)
                 {

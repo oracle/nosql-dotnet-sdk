@@ -99,7 +99,7 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             IncrementSize();
         }
 
-        internal void WriteInt64(string fieldName, int value)
+        internal void WriteInt64(string fieldName, long value)
         {
             WriteFieldName(fieldName);
             WriteInt64(value);

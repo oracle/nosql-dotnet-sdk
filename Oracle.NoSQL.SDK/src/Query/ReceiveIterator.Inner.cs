@@ -81,10 +81,19 @@ namespace Oracle.NoSQL.SDK.Query {
 
             internal long Memory { get; private set; }
 
+            internal VirtualScan VirtualScan { get; }
+
             internal PartialResult(ReceiveIterator iterator, int id) :
                 base(iterator)
             {
                 Id = id;
+            }
+
+            internal PartialResult(ReceiveIterator iterator, int id,
+                VirtualScan virtualScan) : base(iterator)
+            {
+                Id = id;
+                VirtualScan = virtualScan;
             }
 
             internal PartialResult(ReceiveIterator iterator, int partitionId,
@@ -94,6 +103,9 @@ namespace Oracle.NoSQL.SDK.Query {
                 Rows = rows;
                 ContinuationKey = continuationKey;
                 SetMemoryStats();
+                iterator.Trace(
+                    $"SortPhase1: received {rows.Count} rows " +
+                    $"for pid {partitionId}");
             }
 
             internal void SetMemoryStats()

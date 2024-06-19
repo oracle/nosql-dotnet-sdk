@@ -10,15 +10,18 @@ namespace Oracle.NoSQL.SDK.Query {
     using System.Collections.Generic;
     using System.Data;
     using System.Diagnostics;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
 
     internal class QueryRuntime
     {
-        internal const int QueryVersion = 3;
-
         private FieldValue[] extVariables;
         private long totalMemory;
+        private protected List<QueryTraceRecord> queryTraces;
+#if DEBUG
+        private protected StringBuilder driverTraceBuilder;
+#endif
 
         internal ConsumedCapacity consumedCapacity;
         internal QueryContinuationKey continuationKey;
@@ -30,6 +33,8 @@ namespace Oracle.NoSQL.SDK.Query {
         internal PreparedStatement PreparedStatement { get; }
 
         internal QueryRequest Request { get; set; }
+
+        internal TopologyInfo BaseTopology { get; }
 
         internal long MaxMemory { get; set; }
 
@@ -94,6 +99,8 @@ namespace Oracle.NoSQL.SDK.Query {
             {
                 InitExternalVariables();
             }
+
+            BaseTopology = client.QueryTopology;
         }
 
         private void InitExternalVariables()
@@ -122,7 +129,7 @@ namespace Oracle.NoSQL.SDK.Query {
         }
 
         // Initialize consumed capacity for the current query call.
-        internal void InitConsumedCapacity()
+        private protected void InitConsumedCapacity()
         {
             // PreparedStatement will have consumed capacity set if
             // and only if this is not on-prem.
@@ -142,6 +149,23 @@ namespace Oracle.NoSQL.SDK.Query {
             }
         }
 
+        [Conditional("DEBUG")]
+        private protected void CheckAddDriverQueryTrace()
+        {
+            if (!(Request.Options?.TraceLevel.HasValue ?? false))
+            {
+                return;
+            }
+
+            queryTraces ??= new List<QueryTraceRecord>();
+            queryTraces.Add(new QueryTraceRecord
+            {
+                BatchName = $"{DateTime.UtcNow:u} " +
+                    $"DRIVER B-{Request.Options.BatchNumber}",
+                BatchTrace = driverTraceBuilder?.ToString() ?? ""
+            });
+        }
+
         internal void TallyConsumedCapacity(ConsumedCapacity other)
         {
             if (other != null)
@@ -149,6 +173,17 @@ namespace Oracle.NoSQL.SDK.Query {
                 Debug.Assert(consumedCapacity != null);
                 consumedCapacity.Add(other);
             }
+        }
+
+        internal void AddServerQueryTraces(
+            IReadOnlyList<QueryTraceRecord> traces)
+        {
+            // Copying traces may not be currently necessary since there is
+            // only one fetch per individual request, but it's done this way
+            // in the Java driver (perhaps to accomodate future changes).
+            Debug.Assert(traces != null);
+            queryTraces ??= new List<QueryTraceRecord>();
+            queryTraces.AddRange(traces);
         }
 
         internal string GetMessageWithLocation(string message,
@@ -160,6 +195,42 @@ namespace Oracle.NoSQL.SDK.Query {
         }
 
         internal FieldValue GetExtVariable(int pos) => extVariables?[pos];
+
+        [Conditional("DEBUG")]
+        internal void Trace(string message, int level = 1)
+        {
+            Debug.Assert(Request != null);
+
+            if (!(Request.Options?.TraceLevel.HasValue ?? false) ||
+                Request.Options.TraceLevel < level)
+            {
+                return;
+            }
+
+            driverTraceBuilder ??= new StringBuilder();
+            driverTraceBuilder.Append($"{DateTime.UtcNow:u} : ")
+                .Append(message).Append('\n');
+        }
+
+        [Conditional("DEBUG")]
+        internal void TraceExternalVariables()
+        {
+            if (!(Request.Options?.TraceLevel.HasValue ?? false))
+            {
+                return;
+            }
+
+            Debug.Assert(PreparedStatement.VariableNames.Length ==
+                extVariables.Length);
+
+            for (var i = 0; i < extVariables.Length; i++)
+            {
+                var name = PreparedStatement.VariableNames[i];
+                Trace($"Set external variable, index={i}, name={name}, " +
+                    $"dbType={extVariables[i].DbType}, " +
+                    $"value={extVariables[i]}", 3);
+            }
+        }
     }
 
     internal class QueryPlanExecutor<TRow> : QueryRuntime
@@ -185,6 +256,14 @@ namespace Oracle.NoSQL.SDK.Query {
             FetchDone = false;
             // Indicates whether user needs to call Query() again
             NeedContinuation = false;
+
+            // Make sure we don't append to query traces from previous
+            // request.
+            queryTraces = null;
+#if DEBUG
+            driverTraceBuilder = null;
+            TraceExternalVariables();
+#endif
 
             // If the previous call threw retry-able exception, we may still
             // have results (this.rows).  In this case we return them and let
@@ -221,6 +300,13 @@ namespace Oracle.NoSQL.SDK.Query {
                 Rows = rows,
                 ContinuationKey = continuationKey
             };
+
+            CheckAddDriverQueryTrace();
+
+            if (queryTraces != null)
+            {
+                result.QueryTraces = queryTraces;
+            }
 
             rows = null;
             return result;
