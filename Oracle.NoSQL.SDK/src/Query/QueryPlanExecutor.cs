@@ -152,6 +152,7 @@ namespace Oracle.NoSQL.SDK.Query {
         [Conditional("DEBUG")]
         private protected void CheckAddDriverQueryTrace()
         {
+#if DEBUG
             if (!(Request.Options?.TraceLevel.HasValue ?? false))
             {
                 return;
@@ -164,6 +165,7 @@ namespace Oracle.NoSQL.SDK.Query {
                     $"DRIVER B-{Request.Options.BatchNumber}",
                 BatchTrace = driverTraceBuilder?.ToString() ?? ""
             });
+#endif
         }
 
         internal void TallyConsumedCapacity(ConsumedCapacity other)
@@ -199,6 +201,10 @@ namespace Oracle.NoSQL.SDK.Query {
         [Conditional("DEBUG")]
         internal void Trace(string message, int level = 1)
         {
+            // The conditional method will still compile even if DEBUG is not
+            // defined, so we need #if DEBUG to avoid compile errors with
+            // driverTraceBuilder.
+#if DEBUG
             Debug.Assert(Request != null);
 
             if (!(Request.Options?.TraceLevel.HasValue ?? false) ||
@@ -210,6 +216,7 @@ namespace Oracle.NoSQL.SDK.Query {
             driverTraceBuilder ??= new StringBuilder();
             driverTraceBuilder.Append($"{DateTime.UtcNow:u} : ")
                 .Append(message).Append('\n');
+#endif
         }
 
         [Conditional("DEBUG")]
