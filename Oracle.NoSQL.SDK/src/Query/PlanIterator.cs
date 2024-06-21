@@ -6,6 +6,7 @@
  */
 
 namespace Oracle.NoSQL.SDK.Query {
+    using System.Diagnostics;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -34,6 +35,12 @@ namespace Oracle.NoSQL.SDK.Query {
 
         internal virtual void Reset(bool resetResult = false)
         {
+        }
+
+        [Conditional("DEBUG")]
+        internal void Trace(string message, int level = 0)
+        {
+            runtime.Trace($"[{Step.Name}] {message}", level);
         }
     }
 

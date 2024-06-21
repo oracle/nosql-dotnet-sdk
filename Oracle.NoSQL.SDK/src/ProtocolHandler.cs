@@ -12,8 +12,10 @@ namespace Oracle.NoSQL.SDK
 
     internal class ProtocolHandler
     {
-        private volatile IRequestSerializer serializer;
         private readonly object lockObj = new object();
+        private volatile IRequestSerializer serializer;
+        private volatile short queryVersion =
+            QueryRequestBase.DefaultQueryVersion;
 
         internal ProtocolHandler()
         {
@@ -31,6 +33,21 @@ namespace Oracle.NoSQL.SDK
             Serializer.StartRead(stream, request);
 
         internal short SerialVersion => Serializer.SerialVersion;
+
+        internal short QueryVersion => queryVersion;
+
+        // Earlier serializers will usually support lower query version. This
+        // method allows us to avoid extra HTTP request for decrementing query
+        // version.
+        private void CheckSetSerializerQueryVersion()
+        {
+            var qVer = serializer.MaxQueryVersion;
+
+            if (queryVersion > qVer)
+            {
+                queryVersion = qVer;
+            }
+        }
 
         // Currently two protocols are supported: Nson and binary.  If server
         // doesn't support Nson protocol, we switch to binary.
@@ -56,6 +73,28 @@ namespace Oracle.NoSQL.SDK
                 if (serializer is NsonProtocol.RequestSerializer)
                 {
                     serializer = new BinaryProtocol.RequestSerializer();
+                    CheckSetSerializerQueryVersion();
+                    return true;
+                }
+
+                return false;
+            }
+        }
+
+        internal bool DecrementQueryVersion(short versionUsed)
+        {
+            lock (lockObj)
+            {
+                // Same as in DecrementSerialVersion above.
+                if (queryVersion != versionUsed)
+                {
+                    return true;
+                }
+
+                // Allow fallback from V4 to V3.
+                if (queryVersion == QueryRequestBase.QueryV4)
+                {
+                    queryVersion = QueryRequestBase.QueryV3;
                     return true;
                 }
 
@@ -63,5 +102,5 @@ namespace Oracle.NoSQL.SDK
             }
         }
     }
-	
+    
 }

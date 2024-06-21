@@ -168,6 +168,8 @@ namespace Oracle.NoSQL.SDK
             ReadKB += other.ReadKB;
             WriteUnits += other.WriteUnits;
             WriteKB += other.WriteKB;
+            ReadRateLimitDelay += other.ReadRateLimitDelay;
+            WriteRateLimitDelay += other.WriteRateLimitDelay;
         }
 
         internal void Clear()

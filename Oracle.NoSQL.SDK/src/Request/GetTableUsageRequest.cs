@@ -19,18 +19,19 @@ namespace Oracle.NoSQL.SDK
     /// <seealso cref="RequestWithTable" />
     public class GetTableUsageRequest : RequestWithTable
     {
+        internal const string PagingFeature = "Paging of table usage records";
+
         internal GetTableUsageRequest(NoSQLClient client, string tableName,
-            GetTableUsageOptions options, short minProtocolVersion = 0) :
-            base(client, tableName)
+            GetTableUsageOptions options) : base(client, tableName)
         {
             Options = options;
-            MinProtocolVersion = minProtocolVersion;
         }
 
         internal override IOptions BaseOptions => Options;
 
-        internal override short MinProtocolVersion { get; }
-
+        internal void CheckPagingSupported() =>
+            CheckProtocolVersion(PagingFeature, 4);
+        
         internal override void Serialize(IRequestSerializer serializer,
             MemoryStream stream)
         {
@@ -51,6 +52,15 @@ namespace Oracle.NoSQL.SDK
         /// The options or <c>null</c> if options were not provided.
         /// </value>
         public GetTableUsageOptions Options { get; }
+
+        internal override void Validate()
+        {
+            base.Validate();
+            if (Options?.FromIndex.HasValue ?? false)
+            {
+                CheckProtocolVersion(PagingFeature, 4);
+            }
+        }
     }
 
 }

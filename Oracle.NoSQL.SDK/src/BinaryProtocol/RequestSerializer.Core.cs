@@ -32,6 +32,8 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
 
         public short SerialVersion => serialVersion;
 
+        public short MaxQueryVersion => QueryRequestBase.QueryV3;
+
         public bool DecrementSerialVersion(short versionUsed)
         {
             // versionUsed already handled by

@@ -14,6 +14,7 @@ namespace Oracle.NoSQL.SDK.Tests
     using System.Linq;
     using static TestSchemas;
     using static Utils;
+    using static QueryUtils;
 
     public partial class QueryTests
     {
@@ -22,7 +23,8 @@ namespace Oracle.NoSQL.SDK.Tests
         {
             foreach (var field in Fixture.Table.Fields)
             {
-                if (!row.ContainsKey(field.Name))
+                if (!field.FieldType.IsIdentity &&
+                    !row.ContainsKey(field.Name))
                 {
                     row[field.Name] = FieldValue.Null;
                 }
@@ -303,7 +305,7 @@ namespace Oracle.NoSQL.SDK.Tests
                 {
                     DeletedRowIds = rowIds,
                     ExpectedRows = from rowId in rowIds
-                        select ProjectRecord(Fixture.GetRow(rowId), retCols)
+                        select Fixture.GetRow(rowId).Project(retCols)
                 };
             }
 

@@ -18,13 +18,24 @@ namespace Oracle.NoSQL.SDK.Tests
     [TestClass]
     public partial class RateLimitingTests
     {
+        private const string SkipRateLimiterTestsProp = "skipRateLimiterTests";
+
         private static readonly Random SeedRandom = new Random();
+        private static bool toSkip;
 
         private static int GetRandomSeed()
         {
             lock (SeedRandom)
             {
                 return SeedRandom.Next();
+            }
+        }
+
+        private static void CheckSkipRateLimiterTests()
+        {
+            if (toSkip)
+            {
+                Assert.Inconclusive($"{SkipRateLimiterTestsProp} is enabled");
             }
         }
 
@@ -164,11 +175,12 @@ namespace Oracle.NoSQL.SDK.Tests
             select new object[] { testCase };
 
         // For some reason MSTest executes tests even if ClassInitialize
-        // fails. Instead we disable them here if we are running on-prem.
+        // fails. Instead, we disable them here if we are running on-prem.
         [TestInitialize]
         public void TestInitialize()
         {
             CheckNotOnPrem();
+            CheckSkipRateLimiterTests();
         }
 
         [DataTestMethod]

@@ -14,6 +14,7 @@ namespace Oracle.NoSQL.SDK.Tests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using static Utils;
     using static TestSchemas;
+    using static QueryUtils;
 
     public partial class QueryTests
     {
@@ -54,41 +55,11 @@ namespace Oracle.NoSQL.SDK.Tests
                     preparedStatement.QueryPlan));
             }
 
-            if (IsProtocolV4OrAbove &&
+            if (IsExpectedProtocolV4OrAbove &&
                 (options != null && options.GetResultSchema))
             {
                 Assert.IsFalse(string.IsNullOrEmpty(
                     preparedStatement.ResultSchema));
-            }
-        }
-
-        private static List<RecordValue> SortRows(
-            IReadOnlyList<RecordValue> rows)
-        {
-            var rowList = rows.ToList();
-            rowList.Sort(TotalCompare);
-            return rowList;
-        }
-
-        private void VerifyResultRows(IReadOnlyList<RecordValue> expectedRows,
-            IReadOnlyList<TableField> expectedFields, bool isOrdered)
-        {
-            Assert.AreEqual(expectedRows.Count, rows.Count);
-            if (!isOrdered && expectedRows.Count > 1)
-            {
-                // The ordering doesn't matter as long as expected and actual
-                // rows are sorted in the same order.
-                expectedRows = SortRows(expectedRows);
-                rows = SortRows(rows);
-            }
-
-            var rowType = expectedFields != null
-                ? new RecordFieldType(expectedFields)
-                : Fixture.Table.RecordType;
-
-            for (var i = 0; i < rows.Count; i++)
-            {
-                VerifyFieldValue(expectedRows[i], rows[i], rowType);
             }
         }
 
@@ -210,7 +181,10 @@ namespace Oracle.NoSQL.SDK.Tests
                 return;
             }
 
-            VerifyResultRows(testCase.ExpectedRowList, test.ExpectedFields,
+            var resultType = test.ExpectedFields != null
+                ? new RecordFieldType(test.ExpectedFields)
+                : Fixture.Table.RecordType;
+            VerifyResultRows(rows, testCase.ExpectedRowList, resultType,
                 test.IsOrdered);
 
             if (!IsOnPrem)
@@ -344,10 +318,13 @@ namespace Oracle.NoSQL.SDK.Tests
                     MaxWriteKB = Fixture.MaxRowKB + 1
                 };
 
-                yield return new QueryOptions
+                if (IsExpectedProtocolV4OrAbove)
                 {
-                    Durability = Durability.CommitSync
-                };
+                    yield return new QueryOptions
+                    {
+                        Durability = Durability.CommitSync
+                    };
+                }
             }
 
             if (test.MaxMemoryBytes != null)

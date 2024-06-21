@@ -14,15 +14,11 @@ namespace Oracle.NoSQL.SDK
 
     internal class TopologyInfo
     {
-        internal int SequenceNumber { get; set; }
+        internal int SequenceNumber { get; }
 
-        internal int[] ShardIds { get; set; }
+        internal IReadOnlyList<int> ShardIds { get; }
 
-        internal TopologyInfo()
-        {
-        }
-
-        internal TopologyInfo(int sequenceNumber, int[] shardIds)
+        internal TopologyInfo(int sequenceNumber, IReadOnlyList<int> shardIds)
         {
             SequenceNumber = sequenceNumber;
             ShardIds = shardIds;
@@ -92,8 +88,6 @@ namespace Oracle.NoSQL.SDK
     /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.GetQueryAsyncEnumerable*"/>
     public class PreparedStatement : IDataResult
     {
-        private TopologyInfo topologyInfo;
-
         private object statementLock = new object();
 
         internal IDictionary<string, FieldValue> variables;
@@ -332,30 +326,6 @@ namespace Oracle.NoSQL.SDK
         internal string TableName { get; set; }
 
         internal sbyte OperationCode { get; set; }
-
-        internal TopologyInfo TopologyInfo
-        {
-            get
-            {
-                lock (statementLock)
-                {
-                    return topologyInfo;
-                }
-            }
-        }
-
-        internal void SetTopologyInfo(TopologyInfo info)
-        {
-            lock (statementLock)
-            {
-                if (topologyInfo == null ||
-                    (info != null && info.SequenceNumber >
-                        topologyInfo.SequenceNumber))
-                {
-                    topologyInfo = info;
-                }
-            }
-        }
 
         internal void Validate()
         {

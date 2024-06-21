@@ -11,6 +11,7 @@ namespace Oracle.NoSQL.SDK
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
+    using System.Runtime.ExceptionServices;
 
     /// <summary>
     /// A base class for the requests classes that represent information about
@@ -67,14 +68,39 @@ namespace Oracle.NoSQL.SDK
 
         private TimeSpan timeout;
 
-        internal List<Exception> exceptions;
+        private List<Exception> exceptions;
 
-        internal NoSQLClient Client { get; }
+        private Exception ProtocolNotSupported(string name,
+            short supportedVersion)
+        {
+            return new NotSupportedException(
+                $"{name} is not supported because it requires minimum " +
+                $"protocol version {supportedVersion}. The service is " +
+                $"running protocol version {ProtocolVersion}");
+        }
 
         internal Request(NoSQLClient client)
         {
             Client = client;
+            ProtocolVersion = Client.ProtocolHandler.SerialVersion;
         }
+
+        private protected void CheckProtocolVersion(string name,
+            short supportedVersion)
+        {
+            if (ProtocolVersion < supportedVersion)
+            {
+                throw ProtocolNotSupported(name, supportedVersion);
+            }
+        }
+
+        internal NoSQLClient Client { get; }
+
+        // We save protocol version inside the request because the protocol
+        // version in the client handle may change while this request is
+        // executing if another parallel request has performed protocol
+        // version fallback.
+        internal short ProtocolVersion { get; private set; }
 
         internal virtual TimeSpan GetDefaultTimeout()
         {
@@ -108,6 +134,11 @@ namespace Oracle.NoSQL.SDK
             }
         }
 
+        internal virtual void UpdateProtocolVersion()
+        {
+            ProtocolVersion = Client.ProtocolHandler.SerialVersion;
+        }
+
         internal virtual void Validate()
         {
             BaseOptions?.Validate();
@@ -130,6 +161,37 @@ namespace Oracle.NoSQL.SDK
         internal virtual void ApplyResult(object result)
         {
         }
+
+        // Returns true if the operation can be retried immediately because we
+        // got UnsupportedProtocolException.
+        internal virtual bool HandleUnsupportedProtocol(Exception ex)
+        {
+            // Check if we got UnsupportedProtocolException and can retry
+            // with older protocol, in which case we can immediately retry
+            // (otherwise use retry handler as usual). If protocol fallback
+            // fails, we cannot retry this exception and thus rethrow.
+            if (ex is UnsupportedProtocolException upEx &&
+                !Config.DisableProtocolFallback)
+            {
+                if (!Client.ProtocolHandler.DecrementSerialVersion(
+                        ProtocolVersion))
+                {
+                    throw new UnsupportedProtocolException(
+                        $"Protocol version {ProtocolVersion} is not " +
+                        "supported and protocol fallback was unsuccessful",
+                        ex);
+                }
+
+                return true;
+            }
+
+            return false;
+        }
+
+        // Whether client protocol version has been changed by a concurrent
+        // request.
+        internal virtual bool HasProtocolChanged() =>
+            ProtocolVersion != Client.ProtocolHandler.SerialVersion;
 
         internal void AddException(Exception ex)
         {
@@ -161,6 +223,12 @@ namespace Oracle.NoSQL.SDK
         // Used by rate limiting via TopTableName.
         internal virtual string InternalTableName => null;
 
+        // Currently we send latest topology seqNo for every request, but
+        // we override this method for QueryRequest to send base topology
+        // seqNo.
+        internal virtual int QueryTopologySequenceNumber =>
+            Client.QueryTopologySequenceNumber;
+
         // Used by rate limiting.
         internal string TopTableName
         {
@@ -177,8 +245,6 @@ namespace Oracle.NoSQL.SDK
         }
 
         internal NoSQLConfig Config => Client.Config;
-
-        internal virtual short MinProtocolVersion => 0;
 
         // Cloud only. Requests that may require cross-region auth in the
         // proxy have to have their content signed (via "x-content-sha256"

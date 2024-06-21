@@ -7,9 +7,9 @@
 
 namespace Oracle.NoSQL.SDK
 {
-    using System;
     using System.Diagnostics;
     using System.IO;
+    using Query;
     using static ValidateUtils;
 
     // Used internally to provide query request info separate from
@@ -19,7 +19,7 @@ namespace Oracle.NoSQL.SDK
     /// Base class for <see cref="QueryRequest{TRow}"/>.  Only used
     /// internally.
     /// </summary>
-    public abstract class QueryRequest : Request
+    public abstract class QueryRequest : QueryRequestBase
     {
         // "5" == PrepareCallback.QueryOperation.SELECT
         internal const int OperationCodeSelect = 5;
@@ -58,6 +58,10 @@ namespace Oracle.NoSQL.SDK
 
         internal int ShardId { get; set; } = -1;
 
+        internal TopologyInfo BaseTopology { get; set; }
+
+        internal VirtualScan VirtualScan { get; set; }
+
         internal bool IsInternal { get; set; }
 
         internal override bool SupportsRateLimiting => true;
@@ -73,6 +77,9 @@ namespace Oracle.NoSQL.SDK
 
         internal QueryContinuationKey ContinuationKey =>
             Options?.ContinuationKey;
+
+        internal override int QueryTopologySequenceNumber =>
+            BaseTopology?.SequenceNumber ?? base.QueryTopologySequenceNumber;
     }
 
     /// <summary>
@@ -172,11 +179,23 @@ namespace Oracle.NoSQL.SDK
             {
                 CheckNotNullOrEmpty(Statement, nameof(Statement));
             }
+
+            if (Durability.HasValue)
+            {
+                CheckProtocolVersion("Query durability", 4);
+            }
         }
 
         internal override void ApplyResult(object result)
         {
             base.ApplyResult(result);
+
+            // The code below is not needed for internal requests done via
+            // QueryPlanExecutor.
+            if (IsInternal)
+            {
+                return;
+            }
 
             var queryResult = (QueryResult<TRow>)result;
 
@@ -194,11 +213,6 @@ namespace Oracle.NoSQL.SDK
                 }
             }
 
-            if (queryResult.TopologyInfo != null)
-            {
-                PreparedStatement.SetTopologyInfo(queryResult.TopologyInfo);
-            }
-
             // Once we have prepared statement, it will be part of
             // continuation key to be used for subsequent Query() calls
             // (if Prepare() was not initially called)
@@ -206,6 +220,15 @@ namespace Oracle.NoSQL.SDK
             {
                 queryResult.ContinuationKey.PreparedStatement =
                     PreparedStatement;
+            }
+
+            // Batch number is used for query tracing.
+            if (Options?.TraceLevel.HasValue ?? false)
+            {
+                // Note that this only works if the same options instance is
+                // used for all query batches, which is the case in our
+                // testing.
+                Options.BatchNumber++;
             }
         }
     }

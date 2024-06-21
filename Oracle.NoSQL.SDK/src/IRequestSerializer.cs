@@ -15,6 +15,10 @@ namespace Oracle.NoSQL.SDK {
 
         short SerialVersion { get; }
 
+        // Earlier protocols will usually have lower query version supported,
+        // e.g. BinaryProtocol only supports QueryV3.
+        short MaxQueryVersion => QueryRequestBase.DefaultQueryVersion;
+
         // This method allows serializer to fall back to an older protocol
         // version if the service does not support the current version.
         // Returns true if the fallback was successful.  The implementation

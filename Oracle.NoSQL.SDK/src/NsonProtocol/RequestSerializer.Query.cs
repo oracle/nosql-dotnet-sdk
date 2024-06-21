@@ -5,17 +5,18 @@
  *  https://oss.oracle.com/licenses/upl/
  */
 
-using System.Xml.Linq;
-
 namespace Oracle.NoSQL.SDK.NsonProtocol
 {
+    using System;
+    using System.Collections.Generic;
     using System.IO;
-    using System.Net.Sockets;
     using static Protocol;
     using Query;
     using Query.BinaryProtocol;
     using BinaryProtocol = BinaryProtocol.Protocol;
     using Opcode = BinaryProtocol.Opcode;
+    using NsonType = DbType;
+
     internal partial class RequestSerializer
     {
         internal const int MathContextCustom =
@@ -24,6 +25,18 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             SDK.BinaryProtocol.RequestSerializer.DecimalPrecision;
         internal const int DecimalRounding =
             SDK.BinaryProtocol.RequestSerializer.DecimalRounding;
+
+        // To keep TopologyInfo immutable and accomodate existing logic in
+        // ProcessPreparedStatementField. This is only used by query V3 and
+        // below.
+        private class MutableTopologyInfo
+        {
+            internal int SequenceNumber { get; set; }
+            internal IReadOnlyList<int> ShardIds { get; set; }
+
+            internal TopologyInfo ToTopologyInfo() =>
+                new TopologyInfo(SequenceNumber, ShardIds);
+        }
 
         private static void DeserializeDriverPlanInfo(MemoryStream stream,
             PreparedStatement statement)
@@ -68,7 +81,7 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
         // topology info is not always sent
         private static bool ProcessPreparedStatementField(NsonReader reader,
             string field, ref PreparedStatement statement,
-            ref TopologyInfo topologyInfo)
+            ref MutableTopologyInfo topologyInfo)
         {
             switch (field)
             {
@@ -102,12 +115,14 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                     statement ??= new PreparedStatement();
                     statement.OperationCode = (sbyte)reader.ReadInt32();
                     return true;
+                // These fields are for query V3 and below, for query V4 the
+                // topology is read in Protocol.DeserializeResponse().
                 case FieldNames.ProxyTopoSeqNum:
-                    topologyInfo ??= new TopologyInfo();
+                    topologyInfo ??= new MutableTopologyInfo();
                     topologyInfo.SequenceNumber = reader.ReadInt32();
                     return true;
                 case FieldNames.ShardIds:
-                    topologyInfo ??= new TopologyInfo();
+                    topologyInfo ??= new MutableTopologyInfo();
                     topologyInfo.ShardIds = ReadArray(reader, reader.ReadInt32);
                     return true;
                 default:
@@ -115,6 +130,9 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             }
         }
 
+        // Validates the server portion of the prepared statement from the
+        // protocol perspective. The client portion is validated by
+        // PreparedStatement.Validate().
         private static void ValidatePreparedStatement(
             PreparedStatement preparedStatement)
         {
@@ -171,6 +189,119 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             return sortPhase1;
         }
 
+        private static void SerializeVirtualScan(NsonWriter writer,
+            VirtualScan vs)
+        {
+            writer.StartMap(FieldNames.VirtualScan);
+            writer.WriteInt32(FieldNames.VirtualScanSID, vs.ShardId);
+            writer.WriteInt32(FieldNames.VirtualScanPID, vs.PartitionId);
+
+            if (!vs.IsInfoSent)
+            {
+                writer.WriteByteArray(FieldNames.VirtualScanPrimKey,
+                    vs.PrimaryKey);
+                writer.WriteByteArray(FieldNames.VirtualScanSecKey,
+                    vs.SecondaryKey);
+                writer.WriteBoolean(FieldNames.VirtualScanMoveAfter,
+                    vs.MoveAfterResumeKey);
+
+                writer.WriteByteArray(FieldNames.VirtualScanJoinDescResumeKey,
+                    vs.JoinDescendantResumeKey);
+
+                if (vs.JoinPathTableIds != null)
+                {
+                    writer.WriteFieldName(
+                        FieldNames.VirtualScanJoinPathTables);
+                    WriteArray(writer, vs.JoinPathTableIds,
+                        writer.WriteInt32);
+                }
+                
+                writer.WriteByteArray(FieldNames.VirtualScanJoinPathKey,
+                    vs.JoinPathPrimaryKey);
+                writer.WriteByteArray(FieldNames.VirtualScanJoinPathSecKey,
+                    vs.JoinPathSecondaryKey);
+                writer.WriteBoolean(FieldNames.VirtualScanJoinPathMatched,
+                    vs.JoinPathMatched);
+            }
+
+            writer.EndMap();
+        }
+
+        private static VirtualScan DeserializeVirtualScan(NsonReader reader)
+        {
+            var result = new VirtualScan();
+
+            ReadMap(reader, field =>
+            {
+                switch (field)
+                {
+                    case FieldNames.VirtualScanSID:
+                        result.ShardId = reader.ReadInt32();
+                        return true;
+                    case FieldNames.VirtualScanPID:
+                        result.PartitionId = reader.ReadInt32();
+                        return true;
+                    case FieldNames.VirtualScanPrimKey:
+                        result.PrimaryKey = reader.ReadByteArray();
+                        return true;
+                    case FieldNames.VirtualScanSecKey:
+                        result.SecondaryKey = reader.ReadByteArray();
+                        return true;
+                    case FieldNames.VirtualScanMoveAfter:
+                        result.MoveAfterResumeKey = reader.ReadBoolean();
+                        return true;
+                    case FieldNames.VirtualScanJoinDescResumeKey:
+                        result.JoinDescendantResumeKey =
+                            reader.ReadByteArray();
+                        return true;
+                    case FieldNames.VirtualScanJoinPathTables:
+                        result.JoinPathTableIds =
+                            ReadArray(reader, reader.ReadInt32);
+                        return true;
+                    case FieldNames.VirtualScanJoinPathKey:
+                        result.JoinPathPrimaryKey = reader.ReadByteArray();
+                        return true;
+                    case FieldNames.VirtualScanJoinPathSecKey:
+                        result.JoinPathSecondaryKey = reader.ReadByteArray();
+                        return true;
+                    case FieldNames.VirtualScanJoinPathMatched:
+                        result.JoinPathMatched = reader.ReadBoolean();
+                        return true;
+                    default:
+                        return false;
+                }
+            });
+
+            return result;
+        }
+
+        static IReadOnlyList<QueryTraceRecord> DeserializeQueryTraces(
+            NsonReader reader)
+        {
+            reader.ExpectType(NsonType.Array);
+            var count = reader.Count;
+            if (count % 2 != 0)
+            {
+                throw new BadProtocolException(
+                    $"Received odd length of query traces array: {count}");
+            }
+
+            count /= 2;
+
+            var result = new QueryTraceRecord[count];
+
+            for (var i = 0; i < result.Length; i++)
+            {
+                ref var elem = ref result[i];
+                reader.Next();
+                elem.BatchName = reader.ReadString();
+                reader.Next();
+                elem.BatchTrace = reader.ReadString();
+            }
+
+            return result;
+        }
+
         public void SerializePrepare(MemoryStream stream,
             PrepareRequest request)
         {
@@ -178,8 +309,7 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             writer.StartMap();
             WriteHeader(writer, Opcode.Prepare, request);
             writer.StartMap(FieldNames.Payload);
-            writer.WriteInt32(FieldNames.QueryVersion,
-                QueryRuntime.QueryVersion);
+            writer.WriteInt32(FieldNames.QueryVersion, request.QueryVersion);
             writer.WriteString(FieldNames.Statement, request.Statement);
             writer.WriteBoolean(FieldNames.GetQueryPlan,
                 request.GetQueryPlan);
@@ -197,16 +327,19 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             {
                 SQLText = request.Statement
             };
-            TopologyInfo topologyInfo = null;
+            MutableTopologyInfo mti = null;
 
             DeserializeResponse(reader,
                 field => ProcessPreparedStatementField(reader, field,
-                    ref statement, ref topologyInfo), request, statement);
+                    ref statement, ref mti), request, statement);
             ValidatePreparedStatement(statement);
             
-            if (topologyInfo != null)
+            // Only for query <= V3.
+            if (mti != null)
             {
-                statement.SetTopologyInfo(topologyInfo);
+                var topologyInfo = mti.ToTopologyInfo();
+                ValidateTopologyInfo(topologyInfo);
+                request.Client.SetQueryTopology(topologyInfo);
             }
 
             return statement;
@@ -235,9 +368,19 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                 request.Options?.Limit);
             OptionallyWriteInt32(writer, FieldNames.TraceLevel,
                 request.Options?.TraceLevel);
-            
-            writer.WriteInt32(FieldNames.QueryVersion,
-                QueryRuntime.QueryVersion);
+            OptionallyWriteInt64(writer, FieldNames.ServerMemoryConsumption,
+                request.Options?.MaxServerMemory);
+
+            if (request.Options?.TraceLevel.HasValue ?? false)
+            {
+                writer.WriteBoolean(FieldNames.TraceToLogFiles,
+                    request.Options?.TraceToLogFiles ?? false);
+                var batchNum = request.Options?.BatchNumber ?? 0;
+                // Java driver is using 1-based counter.
+                writer.WriteInt32(FieldNames.BatchCounter, batchNum + 1);
+            }
+
+            writer.WriteInt32(FieldNames.QueryVersion, request.QueryVersion);
 
             if (request.PreparedStatement != null)
             {
@@ -260,6 +403,16 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                     }
                     writer.EndArray();
                 }
+
+                // For query <=V3 we write topology seqNo in the payload.
+                if (request.QueryVersion < QueryRequestBase.QueryV4)
+                {
+                    var topoSeqNum = request.QueryTopologySequenceNumber;
+                    if (topoSeqNum != -1)
+                    {
+                        writer.WriteInt32(FieldNames.TopoSeqNum, topoSeqNum);
+                    }
+                }
             }
             else
             {
@@ -279,10 +432,14 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                 writer.WriteInt32(FieldNames.ShardId, request.ShardId);
             }
 
-            var topoInfo = request.PreparedStatement?.TopologyInfo;
-            if (topoInfo != null)
+            if (request.QueryVersion >= QueryRequestBase.QueryV4)
             {
-                writer.WriteInt32(FieldNames.TopoSeqNum, topoInfo.SequenceNumber);
+                OptionallyWriteString(writer, FieldNames.QueryName,
+                    request.Options?.QueryLabel);
+                if (request.VirtualScan != null)
+                {
+                    SerializeVirtualScan(writer, request.VirtualScan);
+                }
             }
 
             writer.EndMap();
@@ -295,7 +452,7 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             var reader = GetNsonReader(stream);
             var result = new QueryResult<TRow>();
             PreparedStatement preparedStatement = null;
-            TopologyInfo topologyInfo = null;
+            MutableTopologyInfo mti = null;
 
             DeserializeResponse(reader, field =>
             {
@@ -321,9 +478,16 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                     case FieldNames.ReachedLimit:
                         result.ReachedLimit = reader.ReadBoolean();
                         return true;
+                    case FieldNames.VirtualScans:
+                        result.VirtualScans = ReadArray(reader,
+                            DeserializeVirtualScan);
+                        return true;
+                    case FieldNames.QueryBatchTraces:
+                        result.QueryTraces = DeserializeQueryTraces(reader);
+                        return true;
                     default:
                         return ProcessPreparedStatementField(reader, field,
-                            ref preparedStatement, ref topologyInfo);
+                            ref preparedStatement, ref mti);
                 }
             }, request, result);
 
@@ -341,7 +505,15 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                 result.PreparedStatement = preparedStatement;
             }
 
-            result.TopologyInfo = topologyInfo;
+            if (mti != null)
+            {
+                // We received updated topology info. This can happen here
+                // only for query V3 and below.
+                var topologyInfo = mti.ToTopologyInfo();
+                ValidateTopologyInfo(topologyInfo);
+                request.Client.SetQueryTopology(topologyInfo);
+            }
+
             return result;
         }
     }

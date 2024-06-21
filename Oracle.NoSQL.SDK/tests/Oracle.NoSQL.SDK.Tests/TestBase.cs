@@ -163,6 +163,11 @@ namespace Oracle.NoSQL.SDK.Tests
         private const string EndpointProp = "endpoint";
         private const string KVVersionProp = "kvVersion";
 
+        private static readonly Version KVVersionProtocolV3 =
+            new Version("21.2.5");
+        private static readonly Version KVVersionProtocolV4 =
+            new Version("22.3");
+
         // ReSharper disable once StaticMemberInGenericType
         internal static NoSQLConfig config;
 
@@ -171,8 +176,7 @@ namespace Oracle.NoSQL.SDK.Tests
 
         internal static string Compartment => client.Config.Compartment;
 
-        internal static bool IsOnPrem =>
-            client.Config.ServiceType == ServiceType.KVStore;
+        internal static bool IsOnPrem => IsOnPrem(client);
 
         internal static bool IsSecureOnPrem =>
             IsOnPrem && client.Config.AuthorizationProvider != null;
@@ -180,20 +184,18 @@ namespace Oracle.NoSQL.SDK.Tests
         internal static bool IsCloudSim =>
             client.Config.ServiceType == ServiceType.CloudSim;
 
-        internal static bool IsCloud =>
-            client.Config.ServiceType == ServiceType.Cloud;
+        internal static bool IsCloud => IsCloud(client);
 
         internal static bool IsAbsoluteConsistency =>
             client.Config.Consistency == Consistency.Absolute;
 
-        internal static short SerialVersion =>
-            client.ProtocolHandler.SerialVersion;
+        internal static bool IsExpectedProtocolV3OrAbove =>
+            KVVersion == null || KVVersion >= KVVersionProtocolV3;
 
-        internal static bool IsProtocolV3OrAbove => SerialVersion >= 3;
+        internal static bool IsExpectedProtocolV4OrAbove =>
+            KVVersion == null || KVVersion >= KVVersionProtocolV4;
 
-        internal static bool IsProtocolV4OrAbove => SerialVersion >= 4;
-
-        internal static bool IsServerLocal => client.Config.Uri.IsLoopback;
+        internal static bool IsServerLocal => IsServerLocal(client);
 
         // ReSharper disable once StaticMemberInGenericType
         internal static Version KVVersion { get; private set; }
@@ -231,7 +233,7 @@ namespace Oracle.NoSQL.SDK.Tests
 
         internal static void CheckProtocolV3OrAbove()
         {
-            if (!IsProtocolV3OrAbove)
+            if (!IsExpectedProtocolV3OrAbove)
             {
                 Assert.Inconclusive(
                     "This test does not run with proxy protocol version " +
@@ -296,26 +298,16 @@ namespace Oracle.NoSQL.SDK.Tests
 
     }
 
-    public class TablesTestBase<TTests> : ClientTestBase<TTests>
+
+    // Changed to decouple functionality in TableTestBase from NoSQLClient
+    // handle, so that it can be used in the outside tests. Moved the
+    // functionality into TableTestUtils class and left wrapper methods in
+    // TableTestBase.
+    internal static class TableTestUtils
     {
-        // ReSharper disable once StaticMemberInGenericType
-        private static readonly Version
-            ChildTablesCloudVersion = new Version("21.2.5");
-
-        internal static bool SupportsChildTables => IsOnPrem ||
-            KVVersion == null || KVVersion >= ChildTablesCloudVersion;
-
-        internal static void CheckSupportsChildTables()
-        {
-            if (!SupportsChildTables)
-            {
-                Assert.Inconclusive(
-                    "This test requires child table support");
-            }
-        }
-
-        internal static async Task CreateTableAsync(TableInfo table,
-            IndexInfo[] indexes = null, bool withSchemaFrozen = false)
+        internal static async Task CreateTableAsync(NoSQLClient client,
+            TableInfo table, IndexInfo[] indexes = null,
+            bool withSchemaFrozen = false)
         {
             await client.ExecuteTableDDLWithCompletionAsync(
                 MakeCreateTable(table, true, withSchemaFrozen),
@@ -323,27 +315,28 @@ namespace Oracle.NoSQL.SDK.Tests
 
             if (indexes != null)
             {
-                await CreateIndexesAsync(table, indexes);
+                await CreateIndexesAsync(client, table, indexes);
             }
         }
 
-        internal static async Task CreateIndexAsync(TableInfo table,
-            IndexInfo index)
+        internal static async Task CreateIndexAsync(NoSQLClient client,
+            TableInfo table, IndexInfo index)
         {
             await client.ExecuteTableDDLWithCompletionAsync(
                 MakeCreateIndex(table, index, true));
         }
 
-        internal static async Task CreateIndexesAsync(TableInfo table,
-            IndexInfo[] indexes)
+        internal static async Task CreateIndexesAsync(NoSQLClient client,
+            TableInfo table, IndexInfo[] indexes)
         {
             foreach (var index in indexes)
             {
-                await CreateIndexAsync(table, index);
+                await CreateIndexAsync(client, table, index);
             }
         }
 
-        internal static async Task DropTableAsync(TableInfo table)
+        internal static async Task DropTableAsync(NoSQLClient client,
+            TableInfo table)
         {
             try
             {
@@ -388,8 +381,9 @@ namespace Oracle.NoSQL.SDK.Tests
             Assert.AreEqual(expected.StorageGB, actual.StorageGB);
         }
 
-        internal static void VerifyTableResult(TableResult result,
-            TableInfo table, TableState? expectedState = null,
+        internal static void VerifyTableResult(NoSQLClient client,
+            TableResult result, TableInfo table,
+            TableState? expectedState = null,
             TableLimits newTableLimits = null, bool ignoreTableLimits = false)
         {
             Assert.IsNotNull(result);
@@ -402,14 +396,14 @@ namespace Oracle.NoSQL.SDK.Tests
                 Assert.AreEqual(expectedState.Value, result.TableState);
             }
 
-            if (IsOnPrem)
+            if (IsOnPrem(client))
             {
                 Assert.IsNull(result.TableOCID);
                 Assert.IsNull(result.TableLimits);
             }
             else
             {
-                if (IsProtocolV4OrAbove && IsCloud)
+                if (IsProtocolV4OrAbove(client) && IsCloud(client))
                 {
                     Assert.IsNotNull(result.TableOCID);
                     // Work around for an issue where proxy returns OCID with
@@ -448,9 +442,61 @@ namespace Oracle.NoSQL.SDK.Tests
             }
         }
 
+        internal static void VerifyActiveTable(NoSQLClient client,
+            TableResult result, TableInfo table,
+            TableLimits newTableLimits = null) =>
+            VerifyTableResult(client, result, table, TableState.Active,
+                newTableLimits);
+    }
+
+    public class TablesTestBase<TTests> : ClientTestBase<TTests>
+    {
+        // ReSharper disable once StaticMemberInGenericType
+        private static readonly Version
+            ChildTablesCloudVersion = new Version("21.2.5");
+
+        internal static bool SupportsChildTables => IsOnPrem ||
+            KVVersion == null || KVVersion >= ChildTablesCloudVersion;
+
+        internal static void CheckSupportsChildTables()
+        {
+            if (!SupportsChildTables)
+            {
+                Assert.Inconclusive(
+                    "This test requires child table support");
+            }
+        }
+
+        internal static Task CreateTableAsync(TableInfo table,
+            IndexInfo[] indexes = null, bool withSchemaFrozen = false) =>
+            TableTestUtils.CreateTableAsync(client, table, indexes,
+                withSchemaFrozen);
+
+        internal static Task
+            CreateIndexAsync(TableInfo table, IndexInfo index) =>
+            TableTestUtils.CreateIndexAsync(client, table, index);
+
+        internal static Task CreateIndexesAsync(TableInfo table,
+            IndexInfo[] indexes) =>
+            TableTestUtils.CreateIndexesAsync(client, table, indexes);
+
+        internal static Task DropTableAsync(TableInfo table) =>
+            TableTestUtils.DropTableAsync(client, table);
+
+        internal static void VerifyTableLimits(TableLimits expected,
+            TableLimits actual) =>
+            TableTestUtils.VerifyTableLimits(expected, actual);
+
+        internal static void VerifyTableResult(TableResult result,
+            TableInfo table, TableState? expectedState = null,
+            TableLimits newTableLimits = null,
+            bool ignoreTableLimits = false) =>
+            TableTestUtils.VerifyTableResult(client, result, table,
+                expectedState, newTableLimits, ignoreTableLimits);
+
         internal static void VerifyActiveTable(TableResult result,
             TableInfo table, TableLimits newTableLimits = null) =>
-            VerifyTableResult(result, table, TableState.Active,
+            TableTestUtils.VerifyActiveTable(client, result, table,
                 newTableLimits);
     }
 

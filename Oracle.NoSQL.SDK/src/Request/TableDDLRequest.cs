@@ -82,6 +82,22 @@ namespace Oracle.NoSQL.SDK
         /// The options or <c>null</c> if options were not provided.
         /// </value>
         public TableDDLOptions Options { get; }
+
+        internal override void Validate()
+        {
+            base.Validate();
+
+            if (GetDefinedTags() != null || GetFreeFormTags() != null)
+            {
+                CheckProtocolVersion("Table tagging", 4);
+            }
+
+            if (Options?.MatchETag != null)
+            {
+                CheckProtocolVersion("Operation conditional on table ETag",
+                    4);
+            }
+        }
     }
 
     /// <summary>
@@ -157,8 +173,6 @@ namespace Oracle.NoSQL.SDK
 
         internal override IDictionary<string, string> GetFreeFormTags() =>
             FreeFormTags;
-
-        internal override short MinProtocolVersion => 4;
 
         /// <summary>
         /// Gets defined tags for the operation.

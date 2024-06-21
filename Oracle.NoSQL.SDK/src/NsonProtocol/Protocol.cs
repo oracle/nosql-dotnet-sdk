@@ -11,6 +11,7 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
         {
             // request fields
             internal const string AbortOnFail = "a";
+            internal const string BatchCounter = "bc";
             internal const string BindVariables = "bv";
             internal const string CompartmentOCID = "cc";
             internal const string Consistency = "co";
@@ -56,12 +57,14 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             internal const string PreparedQuery = "pq";
             internal const string PreparedStatement = "ps";
             internal const string Query = "q";
+            internal const string QueryName = "qn";
             internal const string QueryVersion = "qv";
             internal const string Range = "rg";
             internal const string RangePath = "rp";
             internal const string ReadThrottleCount = "rt";
             internal const string Region = "rn";
             internal const string ReturnRow = "rr";
+            internal const string ServerMemoryConsumption = "sm";
             internal const string ShardId = "si";
             internal const string Start = "sr";
             internal const string Statement = "st";
@@ -75,6 +78,7 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             internal const string Timeout = "t";
             internal const string TopoSeqNum = "ts";
             internal const string TraceLevel = "tl";
+            internal const string TraceToLogFiles = "tf";
             internal const string TTL = "tt";
             internal const string Type = "y";
             internal const string UpdateTTL = "ut";
@@ -136,6 +140,7 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             internal const string NotTargetTables = "nt";
             internal const string NumResults = "nr";
             internal const string ProxyTopoSeqNum = "pn";
+            internal const string QueryBatchTraces = "qts";
             internal const string QueryOperation = "qo";
             internal const string QueryPlanString = "qs";
             internal const string QueryResults = "qr";
@@ -151,6 +156,20 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             internal const string ReplicaStats = "ra";
             internal const string ReplicaLag = "rl";
             internal const string Time = "tm";
+
+            // query virtual scan-related fields
+            internal const string VirtualScan = "vs";
+            internal const string VirtualScans = "vssa";
+            internal const string VirtualScanSID = "vssid";
+            internal const string VirtualScanPID = "vspid";
+            internal const string VirtualScanPrimKey = "vspk";
+            internal const string VirtualScanSecKey = "vssk";
+            internal const string VirtualScanMoveAfter = "vsma";
+            internal const string VirtualScanJoinDescResumeKey = "vsjdrk";
+            internal const string VirtualScanJoinPathTables = "vsjpt";
+            internal const string VirtualScanJoinPathKey = "vsjpk";
+            internal const string VirtualScanJoinPathSecKey = "vsjpsk";
+            internal const string VirtualScanJoinPathMatched = "vsjpm";
         }
     }
 }

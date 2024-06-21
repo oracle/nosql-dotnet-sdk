@@ -9,17 +9,8 @@ namespace Oracle.NoSQL.SDK.Tests
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.IO;
     using System.Linq;
-    using System.Reflection;
-    using System.Security.Cryptography;
-    using System.Text.Json;
-    using System.Threading;
-    using System.Threading.Tasks;
-    using System.Windows.Markup;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using NsonProtocol;
     using static Utils;
 
     public static class TestSchemas
@@ -81,9 +72,12 @@ namespace Oracle.NoSQL.SDK.Tests
 
         internal class ArrayFieldType : CollectionFieldType
         {
-            internal ArrayFieldType(FieldType elementType) :
-                base(DataType.Array, elementType)
+            internal bool IsUnordered { get; }
+
+            internal ArrayFieldType(FieldType elementType,
+                bool isUnordered = false) : base(DataType.Array, elementType)
             {
+                IsUnordered = isUnordered;
             }
         }
 
@@ -146,10 +140,21 @@ namespace Oracle.NoSQL.SDK.Tests
             internal int Precision { get; }
         }
 
+        internal class NumericFieldType : FieldType
+        {
+            internal NumericFieldType(DataType type, int deltaMultiplier) :
+                base(type)
+            {
+                DeltaMultiplier = deltaMultiplier;
+            }
+
+            internal int DeltaMultiplier { get; }
+        }
+
         internal class IdentityFieldType : FieldType
         {
-            internal IdentityFieldType(DataType dataType, bool generatedAlways = true) :
-                base(dataType)
+            internal IdentityFieldType(DataType dataType,
+                bool generatedAlways = true) : base(dataType)
             {
                 GeneratedAlways = generatedAlways;
             }
@@ -211,9 +216,11 @@ namespace Oracle.NoSQL.SDK.Tests
             // For child tables
             internal TableInfo Parent { get; }
 
-            internal string Name { get; }
+            // Setter used by CloneWithTableName
+            internal string Name { get; set; }
 
-            internal TableLimits TableLimits { get; }
+            // Setter used by CloneWithTableLimits
+            internal TableLimits TableLimits { get; set; }
 
             internal TableField[] Fields { get; }
 
@@ -252,6 +259,20 @@ namespace Oracle.NoSQL.SDK.Tests
 
                 return result;
             }
+
+            internal TableInfo Clone() => (TableInfo)MemberwiseClone();
+
+            internal TableInfo CloneWithProperties(object props)
+            {
+                var result = Clone();
+                return AssignProperties(result, props);
+            }
+
+            internal TableInfo CloneWithTableName(string name) =>
+                CloneWithProperties(new { Name = name });
+
+            internal TableInfo CloneWithTableLimits(TableLimits limits) =>
+                CloneWithProperties(new { TableLimits = limits });
         }
 
         public class IndexInfo

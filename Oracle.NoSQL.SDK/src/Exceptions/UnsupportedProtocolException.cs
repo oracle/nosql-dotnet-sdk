@@ -18,9 +18,9 @@ namespace Oracle.NoSQL.SDK
     /// protocol version than the driver (i.e. the driver is using a newer
     /// protocol version than the service supports).  The driver will attempt
     /// to decrement its internal protocol version and retry the operation.
-    /// If the retries fail, this exception will be thrown.  This exception is
-    /// not retryable (it is only retried internally and should not be retried
-    /// by the retry handler).
+    /// If the protocol version cannot be decremented, this exception will be
+    /// thrown. This exception is not retryable (it is only retried internally
+    /// and should not be retried by the retry handler).
     /// </remarks>
     public class UnsupportedProtocolException : NoSQLException
     {

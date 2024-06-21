@@ -209,7 +209,23 @@ namespace Oracle.NoSQL.SDK
         /// <seealso cref="QueryResult{TRow}.ContinuationKey"/>
         public QueryContinuationKey ContinuationKey { get; set; }
 
+        // For tests. Max memory consumption on the server for this query
+        // in bytes.
+        internal long MaxServerMemory { get; set; }
+
         internal int? TraceLevel { get; set; }
+
+        // Label for the query. This label will appear in query logs if query
+        // tracing has been turned on.
+        internal string QueryLabel { get; set; }
+
+        // Batch number for query tracing.
+        internal int BatchNumber;
+
+        // Whether the query trace will be written to server log files. If
+        // false, the traces will be sent back to the client as part of
+        // QueryResult.
+        internal bool TraceToLogFiles { get; set; }
 
         internal virtual bool IsForTest => false;
 

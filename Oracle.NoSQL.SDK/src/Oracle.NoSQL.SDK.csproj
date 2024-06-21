@@ -40,6 +40,9 @@
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
         <_Parameter1>Oracle.NoSQL.SDK.QTF</_Parameter1>
     </AssemblyAttribute>
+	  <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+		  <_Parameter1>Oracle.NoSQL.SDK.QueryElasticityTest</_Parameter1>
+	  </AssemblyAttribute>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
         <_Parameter1>Oracle.NoSQL.SDK.VSTests</_Parameter1>
     </AssemblyAttribute>

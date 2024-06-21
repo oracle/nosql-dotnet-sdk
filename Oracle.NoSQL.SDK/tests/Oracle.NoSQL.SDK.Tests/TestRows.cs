@@ -227,6 +227,8 @@ namespace Oracle.NoSQL.SDK.Tests
             return modifiedRow;
         }
 
+        internal override FieldValue GetExpectedIdentityVal(DataRow row) =>
+            (long)row.Id + 1;
     }
 
     internal class AllTypesChildRowFactory : DataRowFactory

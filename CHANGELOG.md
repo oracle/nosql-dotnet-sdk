@@ -9,11 +9,6 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 **Added**
 
 * New regions for cloud service: uky, xsp
-
-## [5.2.1]
-
-**Added**
-
 * Cloud only: added OKE workload identity authentication support
  - added support for new configuration properties in IAMAuthorizationProvider:
 UseOKEWorkloadIdentity, ServiceAccountTokenFile
@@ -21,6 +16,16 @@ UseOKEWorkloadIdentity, ServiceAccountTokenFile
 CreateWithOKEWokloadIdentity, CreateWithOKEWorkloadIdentityAndTokenFile
  - added public class InstanceMetadataClient that enables to get the instance
 region via GetRegionAsync method
+
+**Changed**
+
+* Allow internal query protocol version negotiation.
+* Modified internal query processing to support elasticity operations.
+
+## [5.2.1]
+
+**Added**
+
 * Cloud only: added support for Global Active tables:
   - added new methods to NoSQLClient: AddReplicaAsync, DropReplicaAsync,
 GetReplicaStatsAsync, WaitForLocalReplicaInitAsync

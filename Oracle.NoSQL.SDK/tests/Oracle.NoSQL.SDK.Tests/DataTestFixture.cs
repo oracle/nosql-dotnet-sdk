@@ -91,6 +91,9 @@ namespace Oracle.NoSQL.SDK.Tests
 
         internal DataRow MakeRowFromShard(int shardId, int rowIndex = 0) =>
             MakeRow(GetRowIdFromShard(shardId, rowIndex));
+
+        internal virtual FieldValue GetExpectedIdentityVal(DataRow row) =>
+            FieldValue.Null;
     }
 
     internal class DataTestFixture
@@ -155,6 +158,9 @@ namespace Oracle.NoSQL.SDK.Tests
 
         // Used in testing of single-shard operations.
         internal int FirstShardCount => Math.Min(RowsPerShard, RowCount);
+
+        internal FieldValue GetExpectedIdentityVal(DataRow row) =>
+            RowFactory.GetExpectedIdentityVal(row);
     }
 
 }

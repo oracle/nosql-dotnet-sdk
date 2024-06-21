@@ -9,14 +9,74 @@ namespace Oracle.NoSQL.SDK
 {
     using System;
     using System.IO;
+    using System.Runtime.ExceptionServices;
     using static ValidateUtils;
+
+    /// <summary>
+    /// Base class for prepare and query requests. Only used internally.
+    /// </summary>
+    public abstract class QueryRequestBase : Request
+    {
+        internal const short QueryV3 = 3;
+        internal const short QueryV4 = 4;
+        internal const short DefaultQueryVersion = QueryV4;
+
+        internal QueryRequestBase(NoSQLClient client) : base(client)
+        {
+            QueryVersion = Client.ProtocolHandler.QueryVersion;
+        }
+
+        internal short QueryVersion { get; set; }
+
+        internal override void UpdateProtocolVersion()
+        {
+            base.UpdateProtocolVersion();
+            QueryVersion = Client.ProtocolHandler.QueryVersion;
+        }
+
+        // Returns true if the operation can be retried immediately because we
+        // got UnsupportedProtocolException or
+        // UnsupportedQueryVersionException.
+        internal override bool HandleUnsupportedProtocol(Exception ex)
+        {
+            if (base.HandleUnsupportedProtocol(ex))
+            {
+                return true;
+            }
+
+            // Check if we got UnsupportedQueryVersionException and can retry
+            // with older query version, in which case we can immediately
+            // retry (otherwise use retry handler as usual). If query version
+            // fallback fails, we cannot retry this exception and thus rethrow.
+            if (ex is UnsupportedQueryVersionException uqvEx &&
+                !Config.DisableProtocolFallback)
+            {
+                if (!Client.ProtocolHandler
+                        .DecrementQueryVersion(QueryVersion))
+                {
+                    throw new UnsupportedQueryVersionException(
+                        $"Query protocol version {QueryVersion} is not " +
+                        "supported and query protocol fallback was " +
+                        "unsuccessful", ex);
+                }
+
+                return true;
+            }
+
+            return false;
+        }
+
+        internal override bool HasProtocolChanged() =>
+            base.HasProtocolChanged() ||
+            QueryVersion != Client.ProtocolHandler.QueryVersion;
+    }
 
     /// <summary>
     /// Represents information about the Prepare operation performed by
     /// <see cref="NoSQLClient.PrepareAsync"/> API.
     /// </summary>
     /// <seealso cref="NoSQLClient.PrepareAsync"/>
-    public class PrepareRequest : Request
+    public class PrepareRequest : QueryRequestBase
     {
         // Used by rate limiting.
         private string tableName;

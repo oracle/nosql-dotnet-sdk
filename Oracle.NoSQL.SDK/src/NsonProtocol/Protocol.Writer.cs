@@ -8,6 +8,7 @@
 namespace Oracle.NoSQL.SDK.NsonProtocol
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
     using BinaryProtocol = BinaryProtocol.Protocol;
@@ -32,6 +33,7 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
         {
             writer.StartMap(FieldNames.Header);
             writer.WriteInt32(FieldNames.Version, SerialVersion);
+            
             if (tableName != null)
             {
                 writer.WriteString(FieldNames.TableName, tableName);
@@ -40,6 +42,8 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             writer.WriteInt32(FieldNames.Opcode, (int)opcode);
             writer.WriteInt32(FieldNames.Timeout,
                 request.RequestTimeoutMillis);
+            writer.WriteInt32(FieldNames.TopoSeqNum,
+                request.QueryTopologySequenceNumber);
             writer.EndMap();
         }
 
@@ -198,6 +202,15 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             }
         }
 
+        internal static void OptionallyWriteInt64(NsonWriter writer,
+            string fieldName, long? value)
+        {
+            if (value.HasValue)
+            {
+                writer.WriteInt64(fieldName, value.Value);
+            }
+        }
+
         internal static void OptionallyWriteString(NsonWriter writer,
             string fieldName, string value)
         {
@@ -214,6 +227,19 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
         {
             writer.WriteString(fieldName,
                 BinaryProtocol.DateTimeToString(value));
+        }
+
+        internal static void WriteArray<T>(NsonWriter writer,
+            IEnumerable<T> value, Action<T> writeElement)
+        {
+            writer.StartArray();
+
+            foreach (var elem in value)
+            {
+                writeElement(elem);
+            }
+
+            writer.EndArray();
         }
 
     }

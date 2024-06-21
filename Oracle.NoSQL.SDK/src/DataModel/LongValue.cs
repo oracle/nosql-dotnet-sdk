@@ -133,9 +133,10 @@ namespace Oracle.NoSQL.SDK
             {
                 case DbType.Long:
                 case DbType.Integer:
-                    return ToInt64().CompareTo(other.AsInt64);
+                    return ToInt64().CompareTo(other.ToInt64());
                 case DbType.Double:
-                    return ToDouble().CompareTo(other.AsDouble);
+                    return DoubleValue.CompareDoubles(ToDouble(),
+                        other.AsDouble);
                 case DbType.Number:
                     return ToDecimal().CompareTo(other.AsDecimal);
                 case DbType.Boolean:
@@ -192,14 +193,14 @@ namespace Oracle.NoSQL.SDK
                 case DbType.Number:
                     try
                     {
-                        return new NumberValue(value + other.AsDecimal);
+                        return new NumberValue(value + other.ToDecimal());
                     }
                     catch (OverflowException)
                     {
                         goto case DbType.Double;
                     }
                 case DbType.Double:
-                    return new DoubleValue(value + other.AsDouble);
+                    return new DoubleValue(value + other.ToDouble());
                 default:
                     throw other.NonNumericOperand(AdditionOp);
             }
@@ -223,14 +224,14 @@ namespace Oracle.NoSQL.SDK
                 case DbType.Number:
                     try
                     {
-                        return new NumberValue(value - other.AsDecimal);
+                        return new NumberValue(value - other.ToDecimal());
                     }
                     catch (OverflowException)
                     {
                         goto case DbType.Double;
                     }
                 case DbType.Double:
-                    return new DoubleValue(value - other.AsDouble);
+                    return new DoubleValue(value - other.ToDouble());
                 default:
                     throw other.NonNumericOperand(SubtractionOp);
             }
@@ -254,14 +255,14 @@ namespace Oracle.NoSQL.SDK
                 case DbType.Number:
                     try
                     {
-                        return new NumberValue(value * other.AsDecimal);
+                        return new NumberValue(value * other.ToDecimal());
                     }
                     catch (OverflowException)
                     {
                         goto case DbType.Double;
                     }
                 case DbType.Double:
-                    return new DoubleValue(value * other.AsDouble);
+                    return new DoubleValue(value * other.ToDouble());
                 default:
                     throw other.NonNumericOperand(MultiplicationOp);
             }
@@ -283,14 +284,14 @@ namespace Oracle.NoSQL.SDK
                 case DbType.Number:
                     try
                     {
-                        return new NumberValue(value / other.AsDecimal);
+                        return new NumberValue(value / other.ToDecimal());
                     }
                     catch (OverflowException)
                     {
                         goto case DbType.Double;
                     }
                 case DbType.Double:
-                    return new DoubleValue(value / other.AsDouble);
+                    return new DoubleValue(value / other.ToDouble());
                 default:
                     throw other.NonNumericOperand(DivisionOp);
             }

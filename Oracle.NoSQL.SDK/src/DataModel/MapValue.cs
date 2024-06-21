@@ -180,11 +180,13 @@ namespace Oracle.NoSQL.SDK
                 "Missing EndObject token for MapValue");
         }
 
-        internal static int QueryCompareMapValues(MapValue value1,
-            MapValue value2, int nullRank)
+
+        internal static int QueryCompareMaps(IEnumerable<string> keys1,
+            MapValue value1, IEnumerable<string> keys2, MapValue value2,
+            int nullRank)
         {
-            using var enum1 = new SortedSet<string>(value1.Keys).GetEnumerator();
-            using var enum2 = new SortedSet<string>(value2.Keys).GetEnumerator();
+            using var enum1 = keys1.GetEnumerator();
+            using var enum2 = keys2.GetEnumerator();
 
             while (enum1.MoveNext() && enum2.MoveNext())
             {
@@ -208,6 +210,11 @@ namespace Oracle.NoSQL.SDK
 
             return value1.Count.CompareTo(value2.Count);
         }
+
+        internal static int QueryCompareMapValues(MapValue value1,
+            MapValue value2, int nullRank) => QueryCompareMaps(
+            new SortedSet<string>(value1.Keys), value1,
+            new SortedSet<string>(value2.Keys), value2, nullRank);
 
         /// <summary>
         /// Gets or sets the value associated with the specified key.

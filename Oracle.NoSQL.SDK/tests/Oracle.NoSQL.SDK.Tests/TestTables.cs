@@ -5,8 +5,11 @@
  *  https://oss.oracle.com/licenses/upl/
  */
 
+// ReSharper disable StringLiteralTypo
+// ReSharper disable CommentTypo
 namespace Oracle.NoSQL.SDK.Tests
 {
+    using System;
     using static TestSchemas;
 
     internal static class TestTables
@@ -48,12 +51,11 @@ namespace Oracle.NoSQL.SDK.Tests
         };
 
         internal static TableInfo GetSimpleTableWithName(string name) =>
-            new TableInfo(name, SimpleTable.TableLimits, SimpleTable.Fields,
-                SimpleTable.PrimaryKey);
+            SimpleTable.CloneWithTableName(name);
 
         internal static TableInfo GetSimpleTableWithLimits(
-            TableLimits tableLimits) => new TableInfo(SimpleTable.Name,
-            tableLimits, SimpleTable.Fields, SimpleTable.PrimaryKey);
+            TableLimits tableLimits) =>
+            SimpleTable.CloneWithTableLimits(tableLimits);
 
         private const string AllTypesTableName = TableNamePrefix + "AllTypes";
 
@@ -91,7 +93,7 @@ namespace Oracle.NoSQL.SDK.Tests
                     new MapFieldType(DataType.Binary)),
                 new TableField("colJSON", DataType.Json),
                 new TableField("colJSON2", DataType.Json),
-                new TableField("colIdentity", new IdentityFieldType(
+                new TableField("colIden", new IdentityFieldType(
                     DataType.Long))
             },
             new[] { "shardId", "pkString" },
@@ -103,13 +105,7 @@ namespace Oracle.NoSQL.SDK.Tests
         };
 
         internal static TableInfo GetAllTypesTableWithName(string name) =>
-            new TableInfo(name, AllTypesTable.TableLimits,
-                AllTypesTable.Fields, AllTypesTable.PrimaryKey,
-                AllTypesTable.ShardKeySize)
-            {
-                TTL = AllTypesTable.TTL,
-                DependentTableNames = AllTypesTable.DependentTableNames
-            };
+            AllTypesTable.CloneWithTableName(name);
 
         internal static readonly TableInfo AllTypesChildTable = new TableInfo(
             AllTypesTable, AllTypesTable.Name + ".childTable", new[]
@@ -123,6 +119,46 @@ namespace Oracle.NoSQL.SDK.Tests
             // Pending release of the KV bug fix TTL can be changed to differ
             // from TTL of the parent table.
             TTL = TimeToLive.OfDays(3)
+        };
+
+        // Note that currently sorting on enumeration columns is only possible
+        // if enumeration constants are defined in alphabetic order (because
+        // server sorts on ordinals). See EnumColumnValues.
+
+        // For secondary indexes, we use colIden to give unique sort order.
+
+        // Currently only used by external tests.
+        internal static readonly IndexInfo[] AllTypesTableIndexes = new[]
+        {
+            new IndexInfo("idenIdx", new [] { "colIden" }),
+            new IndexInfo("tsIdenIdx", new [] { "colTimestamp", "colIden" }),
+            new IndexInfo("recFldStrIdx", new [] { "colRecord.fldString" }),
+            new IndexInfo("recFldStrIdenIdx",
+                new [] { "colRecord.fldString", "colIden" }),
+            new IndexInfo("array2JsonYIdx", new [] { "colArray2[].y" },
+                new [] { "INTEGER" }),
+            new IndexInfo("enumIdx", new [] { "colEnum" }),
+            new IndexInfo("JsonLocIdx", new [] { "colJSON.location" },
+                new [] { "point" }),
+            new IndexInfo("jsonXzbIdx",
+                new [] { "colJSON.x", "colJSON.z", "colJSON.b" },
+                new [] { "STRING", "STRING", "BOOLEAN" }),
+            new IndexInfo("numIdx", new [] { "colNumber" }),
+            new IndexInfo("numIdenIdx", new [] { "colNumber", "colIden" }),
+            new IndexInfo("num2IdenIdx", new [] { "colNumber2", "colIden" }),
+            new IndexInfo("jsonUIdenIdx", new [] { "colJSON.u", "colIden" },
+                new [] { "anyAtomic", null }),
+            new IndexInfo("jsonXuzIdenIdx",
+                new [] { "colJSON.x", "colJSON.u", "colJSON.z", "colIden"},
+                new [] { "anyAtomic", "anyAtomic", "STRING", null }),
+            new IndexInfo("enumJson2zkxaIdx",
+                new [] { "colEnum", "colJSON2.z.k", "colJSON2.x.a" },
+                new [] { null, "anyAtomic", "anyAtomic" })
+        };
+
+        internal static readonly IndexInfo[] AllTypesChildTableIndexes = new[]
+        {
+            new IndexInfo("numColIdx", new[] { "colNumber" })
         };
 
         static TestTables()

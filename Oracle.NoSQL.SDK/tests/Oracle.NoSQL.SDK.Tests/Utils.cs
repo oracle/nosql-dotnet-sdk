@@ -292,18 +292,6 @@ namespace Oracle.NoSQL.SDK.Tests
             return map;
         }
 
-        internal static RecordValue ProjectRecord(RecordValue record,
-            IEnumerable<string> fieldNames)
-        {
-            var result = new RecordValue();
-            foreach (var fieldName in fieldNames)
-            {
-                result[fieldName] = record[fieldName];
-            }
-
-            return result;
-        }
-
         internal static string RepeatString(string value, int count) =>
             string.Concat(Enumerable.Repeat(value, count));
 
@@ -311,5 +299,44 @@ namespace Oracle.NoSQL.SDK.Tests
             string name) =>
             ((string)testContext.Properties[name])?.ToLower() ==
             "true";
+
+        internal static bool IsOnPrem(NoSQLClient client) =>
+            client.Config.ServiceType == ServiceType.KVStore;
+
+        internal static bool IsCloud(NoSQLClient client) =>
+            client.Config.ServiceType == ServiceType.Cloud;
+
+        internal static short GetProtocolVersion(NoSQLClient client) =>
+            client.ProtocolHandler.SerialVersion;
+
+        internal static bool IsProtocolV3OrAbove(NoSQLClient client) =>
+            GetProtocolVersion(client) >= 3;
+
+        internal static bool IsProtocolV4OrAbove(NoSQLClient client) =>
+            GetProtocolVersion(client) >= 4;
+
+        internal static bool IsServerLocal(NoSQLClient client) =>
+            client.Config.Uri.IsLoopback;
+
+        // This assumes that the project directory name is the same as the
+        // test assembly name, which is true in the naming convention used
+        // here. Also, must be called from the test project assembly.
+        internal static string GetCurrentProjectDirectory()
+        {
+            // Unfortunately we can't use Assembly.GetEntryAssembly() because
+            // it returns "testhost".
+            var testAssemblyName =
+                Assembly.GetCallingAssembly().GetName().Name;
+
+            DirectoryInfo dir;
+            for (dir = new DirectoryInfo(AppContext.BaseDirectory);
+                 dir != null && dir.Name != testAssemblyName;
+                 dir = dir.Parent)
+            {
+            }
+
+            Assert.IsNotNull(dir);
+            return dir.FullName;
+        }
     }
 }
