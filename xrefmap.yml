@@ -802,6 +802,18 @@ references:
   commentId: Overload:Oracle.NoSQL.SDK.ConnectionOptions.#ctor
   fullName: Oracle.NoSQL.SDK.ConnectionOptions.ConnectionOptions
   nameWithType: ConnectionOptions.ConnectionOptions
+- uid: Oracle.NoSQL.SDK.ConnectionOptions.DisableHostnameVerification
+  name: DisableHostnameVerification
+  href: api/Oracle.NoSQL.SDK.ConnectionOptions.DisableHostnameVerification.html#Oracle_NoSQL_SDK_ConnectionOptions_DisableHostnameVerification
+  commentId: P:Oracle.NoSQL.SDK.ConnectionOptions.DisableHostnameVerification
+  fullName: Oracle.NoSQL.SDK.ConnectionOptions.DisableHostnameVerification
+  nameWithType: ConnectionOptions.DisableHostnameVerification
+- uid: Oracle.NoSQL.SDK.ConnectionOptions.DisableHostnameVerification*
+  name: DisableHostnameVerification
+  href: api/Oracle.NoSQL.SDK.ConnectionOptions.DisableHostnameVerification.html
+  commentId: Overload:Oracle.NoSQL.SDK.ConnectionOptions.DisableHostnameVerification
+  fullName: Oracle.NoSQL.SDK.ConnectionOptions.DisableHostnameVerification
+  nameWithType: ConnectionOptions.DisableHostnameVerification
 - uid: Oracle.NoSQL.SDK.ConnectionOptions.TrustedRootCertificateFile
   name: TrustedRootCertificateFile
   href: api/Oracle.NoSQL.SDK.ConnectionOptions.TrustedRootCertificateFile.html#Oracle_NoSQL_SDK_ConnectionOptions_TrustedRootCertificateFile
@@ -3502,6 +3514,39 @@ references:
   commentId: Overload:Oracle.NoSQL.SDK.IAMAuthorizationProvider.CreateWithInstancePrincipalForDelegationFromFile
   fullName: Oracle.NoSQL.SDK.IAMAuthorizationProvider.CreateWithInstancePrincipalForDelegationFromFile
   nameWithType: IAMAuthorizationProvider.CreateWithInstancePrincipalForDelegationFromFile
+- uid: Oracle.NoSQL.SDK.IAMAuthorizationProvider.CreateWithOKEWorkloadIdentity(System.Func{System.Threading.CancellationToken,System.Threading.Tasks.Task{System.String}})
+  name: CreateWithOKEWorkloadIdentity(Func<CancellationToken, Task<String>>)
+  href: api/Oracle.NoSQL.SDK.IAMAuthorizationProvider.CreateWithOKEWorkloadIdentity.html#Oracle_NoSQL_SDK_IAMAuthorizationProvider_CreateWithOKEWorkloadIdentity_System_Func_System_Threading_CancellationToken_System_Threading_Tasks_Task_System_String___
+  commentId: M:Oracle.NoSQL.SDK.IAMAuthorizationProvider.CreateWithOKEWorkloadIdentity(System.Func{System.Threading.CancellationToken,System.Threading.Tasks.Task{System.String}})
+  name.vb: CreateWithOKEWorkloadIdentity(Func(Of CancellationToken, Task(Of String)))
+  fullName: Oracle.NoSQL.SDK.IAMAuthorizationProvider.CreateWithOKEWorkloadIdentity(System.Func<System.Threading.CancellationToken, System.Threading.Tasks.Task<System.String>>)
+  fullName.vb: Oracle.NoSQL.SDK.IAMAuthorizationProvider.CreateWithOKEWorkloadIdentity(System.Func(Of System.Threading.CancellationToken, System.Threading.Tasks.Task(Of System.String)))
+  nameWithType: IAMAuthorizationProvider.CreateWithOKEWorkloadIdentity(Func<CancellationToken, Task<String>>)
+  nameWithType.vb: IAMAuthorizationProvider.CreateWithOKEWorkloadIdentity(Func(Of CancellationToken, Task(Of String)))
+- uid: Oracle.NoSQL.SDK.IAMAuthorizationProvider.CreateWithOKEWorkloadIdentity(System.String)
+  name: CreateWithOKEWorkloadIdentity(String)
+  href: api/Oracle.NoSQL.SDK.IAMAuthorizationProvider.CreateWithOKEWorkloadIdentity.html#Oracle_NoSQL_SDK_IAMAuthorizationProvider_CreateWithOKEWorkloadIdentity_System_String_
+  commentId: M:Oracle.NoSQL.SDK.IAMAuthorizationProvider.CreateWithOKEWorkloadIdentity(System.String)
+  fullName: Oracle.NoSQL.SDK.IAMAuthorizationProvider.CreateWithOKEWorkloadIdentity(System.String)
+  nameWithType: IAMAuthorizationProvider.CreateWithOKEWorkloadIdentity(String)
+- uid: Oracle.NoSQL.SDK.IAMAuthorizationProvider.CreateWithOKEWorkloadIdentity*
+  name: CreateWithOKEWorkloadIdentity
+  href: api/Oracle.NoSQL.SDK.IAMAuthorizationProvider.CreateWithOKEWorkloadIdentity.html
+  commentId: Overload:Oracle.NoSQL.SDK.IAMAuthorizationProvider.CreateWithOKEWorkloadIdentity
+  fullName: Oracle.NoSQL.SDK.IAMAuthorizationProvider.CreateWithOKEWorkloadIdentity
+  nameWithType: IAMAuthorizationProvider.CreateWithOKEWorkloadIdentity
+- uid: Oracle.NoSQL.SDK.IAMAuthorizationProvider.CreateWithOKEWorkloadIdentityAndTokenFile(System.String)
+  name: CreateWithOKEWorkloadIdentityAndTokenFile(String)
+  href: api/Oracle.NoSQL.SDK.IAMAuthorizationProvider.CreateWithOKEWorkloadIdentityAndTokenFile.html#Oracle_NoSQL_SDK_IAMAuthorizationProvider_CreateWithOKEWorkloadIdentityAndTokenFile_System_String_
+  commentId: M:Oracle.NoSQL.SDK.IAMAuthorizationProvider.CreateWithOKEWorkloadIdentityAndTokenFile(System.String)
+  fullName: Oracle.NoSQL.SDK.IAMAuthorizationProvider.CreateWithOKEWorkloadIdentityAndTokenFile(System.String)
+  nameWithType: IAMAuthorizationProvider.CreateWithOKEWorkloadIdentityAndTokenFile(String)
+- uid: Oracle.NoSQL.SDK.IAMAuthorizationProvider.CreateWithOKEWorkloadIdentityAndTokenFile*
+  name: CreateWithOKEWorkloadIdentityAndTokenFile
+  href: api/Oracle.NoSQL.SDK.IAMAuthorizationProvider.CreateWithOKEWorkloadIdentityAndTokenFile.html
+  commentId: Overload:Oracle.NoSQL.SDK.IAMAuthorizationProvider.CreateWithOKEWorkloadIdentityAndTokenFile
+  fullName: Oracle.NoSQL.SDK.IAMAuthorizationProvider.CreateWithOKEWorkloadIdentityAndTokenFile
+  nameWithType: IAMAuthorizationProvider.CreateWithOKEWorkloadIdentityAndTokenFile
 - uid: Oracle.NoSQL.SDK.IAMAuthorizationProvider.CreateWithResourcePrincipal
   name: CreateWithResourcePrincipal()
   href: api/Oracle.NoSQL.SDK.IAMAuthorizationProvider.CreateWithResourcePrincipal.html#Oracle_NoSQL_SDK_IAMAuthorizationProvider_CreateWithResourcePrincipal
@@ -3652,6 +3697,18 @@ references:
   commentId: Overload:Oracle.NoSQL.SDK.IAMAuthorizationProvider.RequestTimeout
   fullName: Oracle.NoSQL.SDK.IAMAuthorizationProvider.RequestTimeout
   nameWithType: IAMAuthorizationProvider.RequestTimeout
+- uid: Oracle.NoSQL.SDK.IAMAuthorizationProvider.ServiceAccountTokenFile
+  name: ServiceAccountTokenFile
+  href: api/Oracle.NoSQL.SDK.IAMAuthorizationProvider.ServiceAccountTokenFile.html#Oracle_NoSQL_SDK_IAMAuthorizationProvider_ServiceAccountTokenFile
+  commentId: P:Oracle.NoSQL.SDK.IAMAuthorizationProvider.ServiceAccountTokenFile
+  fullName: Oracle.NoSQL.SDK.IAMAuthorizationProvider.ServiceAccountTokenFile
+  nameWithType: IAMAuthorizationProvider.ServiceAccountTokenFile
+- uid: Oracle.NoSQL.SDK.IAMAuthorizationProvider.ServiceAccountTokenFile*
+  name: ServiceAccountTokenFile
+  href: api/Oracle.NoSQL.SDK.IAMAuthorizationProvider.ServiceAccountTokenFile.html
+  commentId: Overload:Oracle.NoSQL.SDK.IAMAuthorizationProvider.ServiceAccountTokenFile
+  fullName: Oracle.NoSQL.SDK.IAMAuthorizationProvider.ServiceAccountTokenFile
+  nameWithType: IAMAuthorizationProvider.ServiceAccountTokenFile
 - uid: Oracle.NoSQL.SDK.IAMAuthorizationProvider.UseInstancePrincipal
   name: UseInstancePrincipal
   href: api/Oracle.NoSQL.SDK.IAMAuthorizationProvider.UseInstancePrincipal.html#Oracle_NoSQL_SDK_IAMAuthorizationProvider_UseInstancePrincipal
@@ -3664,6 +3721,18 @@ references:
   commentId: Overload:Oracle.NoSQL.SDK.IAMAuthorizationProvider.UseInstancePrincipal
   fullName: Oracle.NoSQL.SDK.IAMAuthorizationProvider.UseInstancePrincipal
   nameWithType: IAMAuthorizationProvider.UseInstancePrincipal
+- uid: Oracle.NoSQL.SDK.IAMAuthorizationProvider.UseOKEWorkloadIdentity
+  name: UseOKEWorkloadIdentity
+  href: api/Oracle.NoSQL.SDK.IAMAuthorizationProvider.UseOKEWorkloadIdentity.html#Oracle_NoSQL_SDK_IAMAuthorizationProvider_UseOKEWorkloadIdentity
+  commentId: P:Oracle.NoSQL.SDK.IAMAuthorizationProvider.UseOKEWorkloadIdentity
+  fullName: Oracle.NoSQL.SDK.IAMAuthorizationProvider.UseOKEWorkloadIdentity
+  nameWithType: IAMAuthorizationProvider.UseOKEWorkloadIdentity
+- uid: Oracle.NoSQL.SDK.IAMAuthorizationProvider.UseOKEWorkloadIdentity*
+  name: UseOKEWorkloadIdentity
+  href: api/Oracle.NoSQL.SDK.IAMAuthorizationProvider.UseOKEWorkloadIdentity.html
+  commentId: Overload:Oracle.NoSQL.SDK.IAMAuthorizationProvider.UseOKEWorkloadIdentity
+  fullName: Oracle.NoSQL.SDK.IAMAuthorizationProvider.UseOKEWorkloadIdentity
+  nameWithType: IAMAuthorizationProvider.UseOKEWorkloadIdentity
 - uid: Oracle.NoSQL.SDK.IAMAuthorizationProvider.UseResourcePrincipal
   name: UseResourcePrincipal
   href: api/Oracle.NoSQL.SDK.IAMAuthorizationProvider.UseResourcePrincipal.html#Oracle_NoSQL_SDK_IAMAuthorizationProvider_UseResourcePrincipal
@@ -3952,6 +4021,54 @@ references:
   commentId: Overload:Oracle.NoSQL.SDK.IndexResult.IndexName
   fullName: Oracle.NoSQL.SDK.IndexResult.IndexName
   nameWithType: IndexResult.IndexName
+- uid: Oracle.NoSQL.SDK.InstanceMetadataClient
+  name: InstanceMetadataClient
+  href: api/Oracle.NoSQL.SDK.InstanceMetadataClient.html
+  commentId: T:Oracle.NoSQL.SDK.InstanceMetadataClient
+  fullName: Oracle.NoSQL.SDK.InstanceMetadataClient
+  nameWithType: InstanceMetadataClient
+- uid: Oracle.NoSQL.SDK.InstanceMetadataClient.#ctor
+  name: InstanceMetadataClient()
+  href: api/Oracle.NoSQL.SDK.InstanceMetadataClient.-ctor.html#Oracle_NoSQL_SDK_InstanceMetadataClient__ctor
+  commentId: M:Oracle.NoSQL.SDK.InstanceMetadataClient.#ctor
+  fullName: Oracle.NoSQL.SDK.InstanceMetadataClient.InstanceMetadataClient()
+  nameWithType: InstanceMetadataClient.InstanceMetadataClient()
+- uid: Oracle.NoSQL.SDK.InstanceMetadataClient.#ctor(System.TimeSpan)
+  name: InstanceMetadataClient(TimeSpan)
+  href: api/Oracle.NoSQL.SDK.InstanceMetadataClient.-ctor.html#Oracle_NoSQL_SDK_InstanceMetadataClient__ctor_System_TimeSpan_
+  commentId: M:Oracle.NoSQL.SDK.InstanceMetadataClient.#ctor(System.TimeSpan)
+  fullName: Oracle.NoSQL.SDK.InstanceMetadataClient.InstanceMetadataClient(System.TimeSpan)
+  nameWithType: InstanceMetadataClient.InstanceMetadataClient(TimeSpan)
+- uid: Oracle.NoSQL.SDK.InstanceMetadataClient.#ctor*
+  name: InstanceMetadataClient
+  href: api/Oracle.NoSQL.SDK.InstanceMetadataClient.-ctor.html
+  commentId: Overload:Oracle.NoSQL.SDK.InstanceMetadataClient.#ctor
+  fullName: Oracle.NoSQL.SDK.InstanceMetadataClient.InstanceMetadataClient
+  nameWithType: InstanceMetadataClient.InstanceMetadataClient
+- uid: Oracle.NoSQL.SDK.InstanceMetadataClient.Dispose
+  name: Dispose()
+  href: api/Oracle.NoSQL.SDK.InstanceMetadataClient.Dispose.html#Oracle_NoSQL_SDK_InstanceMetadataClient_Dispose
+  commentId: M:Oracle.NoSQL.SDK.InstanceMetadataClient.Dispose
+  fullName: Oracle.NoSQL.SDK.InstanceMetadataClient.Dispose()
+  nameWithType: InstanceMetadataClient.Dispose()
+- uid: Oracle.NoSQL.SDK.InstanceMetadataClient.Dispose*
+  name: Dispose
+  href: api/Oracle.NoSQL.SDK.InstanceMetadataClient.Dispose.html
+  commentId: Overload:Oracle.NoSQL.SDK.InstanceMetadataClient.Dispose
+  fullName: Oracle.NoSQL.SDK.InstanceMetadataClient.Dispose
+  nameWithType: InstanceMetadataClient.Dispose
+- uid: Oracle.NoSQL.SDK.InstanceMetadataClient.GetRegionAsync(System.Threading.CancellationToken)
+  name: GetRegionAsync(CancellationToken)
+  href: api/Oracle.NoSQL.SDK.InstanceMetadataClient.GetRegionAsync.html#Oracle_NoSQL_SDK_InstanceMetadataClient_GetRegionAsync_System_Threading_CancellationToken_
+  commentId: M:Oracle.NoSQL.SDK.InstanceMetadataClient.GetRegionAsync(System.Threading.CancellationToken)
+  fullName: Oracle.NoSQL.SDK.InstanceMetadataClient.GetRegionAsync(System.Threading.CancellationToken)
+  nameWithType: InstanceMetadataClient.GetRegionAsync(CancellationToken)
+- uid: Oracle.NoSQL.SDK.InstanceMetadataClient.GetRegionAsync*
+  name: GetRegionAsync
+  href: api/Oracle.NoSQL.SDK.InstanceMetadataClient.GetRegionAsync.html
+  commentId: Overload:Oracle.NoSQL.SDK.InstanceMetadataClient.GetRegionAsync
+  fullName: Oracle.NoSQL.SDK.InstanceMetadataClient.GetRegionAsync
+  nameWithType: InstanceMetadataClient.GetRegionAsync
 - uid: Oracle.NoSQL.SDK.IntegerValue
   name: IntegerValue
   href: api/Oracle.NoSQL.SDK.IntegerValue.html
@@ -6052,6 +6169,18 @@ references:
   commentId: Overload:Oracle.NoSQL.SDK.NoSQLException.IsRetryable
   fullName: Oracle.NoSQL.SDK.NoSQLException.IsRetryable
   nameWithType: NoSQLException.IsRetryable
+- uid: Oracle.NoSQL.SDK.NoSQLException.Message
+  name: Message
+  href: api/Oracle.NoSQL.SDK.NoSQLException.Message.html#Oracle_NoSQL_SDK_NoSQLException_Message
+  commentId: P:Oracle.NoSQL.SDK.NoSQLException.Message
+  fullName: Oracle.NoSQL.SDK.NoSQLException.Message
+  nameWithType: NoSQLException.Message
+- uid: Oracle.NoSQL.SDK.NoSQLException.Message*
+  name: Message
+  href: api/Oracle.NoSQL.SDK.NoSQLException.Message.html
+  commentId: Overload:Oracle.NoSQL.SDK.NoSQLException.Message
+  fullName: Oracle.NoSQL.SDK.NoSQLException.Message
+  nameWithType: NoSQLException.Message
 - uid: Oracle.NoSQL.SDK.NoSQLException.Request
   name: Request
   href: api/Oracle.NoSQL.SDK.NoSQLException.Request.html#Oracle_NoSQL_SDK_NoSQLException_Request
@@ -7242,6 +7371,12 @@ references:
   fullName.vb: Oracle.NoSQL.SDK.QueryRequest(Of TRow).Statement
   nameWithType: QueryRequest<TRow>.Statement
   nameWithType.vb: QueryRequest(Of TRow).Statement
+- uid: Oracle.NoSQL.SDK.QueryRequestBase
+  name: QueryRequestBase
+  href: api/Oracle.NoSQL.SDK.QueryRequestBase.html
+  commentId: T:Oracle.NoSQL.SDK.QueryRequestBase
+  fullName: Oracle.NoSQL.SDK.QueryRequestBase
+  nameWithType: QueryRequestBase
 - uid: Oracle.NoSQL.SDK.QueryResult`1
   name: QueryResult<TRow>
   href: api/Oracle.NoSQL.SDK.QueryResult-1.html
@@ -7470,6 +7605,12 @@ references:
   commentId: F:Oracle.NoSQL.SDK.Region.AP_DCC_GAZIPUR_1
   fullName: Oracle.NoSQL.SDK.Region.AP_DCC_GAZIPUR_1
   nameWithType: Region.AP_DCC_GAZIPUR_1
+- uid: Oracle.NoSQL.SDK.Region.AP_DCC_OSAKA_1
+  name: AP_DCC_OSAKA_1
+  href: api/Oracle.NoSQL.SDK.Region.AP_DCC_OSAKA_1.html#Oracle_NoSQL_SDK_Region_AP_DCC_OSAKA_1
+  commentId: F:Oracle.NoSQL.SDK.Region.AP_DCC_OSAKA_1
+  fullName: Oracle.NoSQL.SDK.Region.AP_DCC_OSAKA_1
+  nameWithType: Region.AP_DCC_OSAKA_1
 - uid: Oracle.NoSQL.SDK.Region.AP_DCC_TOKYO_1
   name: AP_DCC_TOKYO_1
   href: api/Oracle.NoSQL.SDK.Region.AP_DCC_TOKYO_1.html#Oracle_NoSQL_SDK_Region_AP_DCC_TOKYO_1
@@ -7524,6 +7665,12 @@ references:
   commentId: F:Oracle.NoSQL.SDK.Region.AP_SINGAPORE_1
   fullName: Oracle.NoSQL.SDK.Region.AP_SINGAPORE_1
   nameWithType: Region.AP_SINGAPORE_1
+- uid: Oracle.NoSQL.SDK.Region.AP_SINGAPORE_2
+  name: AP_SINGAPORE_2
+  href: api/Oracle.NoSQL.SDK.Region.AP_SINGAPORE_2.html#Oracle_NoSQL_SDK_Region_AP_SINGAPORE_2
+  commentId: F:Oracle.NoSQL.SDK.Region.AP_SINGAPORE_2
+  fullName: Oracle.NoSQL.SDK.Region.AP_SINGAPORE_2
+  nameWithType: Region.AP_SINGAPORE_2
 - uid: Oracle.NoSQL.SDK.Region.AP_SYDNEY_1
   name: AP_SYDNEY_1
   href: api/Oracle.NoSQL.SDK.Region.AP_SYDNEY_1.html#Oracle_NoSQL_SDK_Region_AP_SYDNEY_1
@@ -10002,6 +10149,36 @@ references:
   commentId: Overload:Oracle.NoSQL.SDK.UnsupportedProtocolException.#ctor
   fullName: Oracle.NoSQL.SDK.UnsupportedProtocolException.UnsupportedProtocolException
   nameWithType: UnsupportedProtocolException.UnsupportedProtocolException
+- uid: Oracle.NoSQL.SDK.UnsupportedQueryVersionException
+  name: UnsupportedQueryVersionException
+  href: api/Oracle.NoSQL.SDK.UnsupportedQueryVersionException.html
+  commentId: T:Oracle.NoSQL.SDK.UnsupportedQueryVersionException
+  fullName: Oracle.NoSQL.SDK.UnsupportedQueryVersionException
+  nameWithType: UnsupportedQueryVersionException
+- uid: Oracle.NoSQL.SDK.UnsupportedQueryVersionException.#ctor
+  name: UnsupportedQueryVersionException()
+  href: api/Oracle.NoSQL.SDK.UnsupportedQueryVersionException.-ctor.html#Oracle_NoSQL_SDK_UnsupportedQueryVersionException__ctor
+  commentId: M:Oracle.NoSQL.SDK.UnsupportedQueryVersionException.#ctor
+  fullName: Oracle.NoSQL.SDK.UnsupportedQueryVersionException.UnsupportedQueryVersionException()
+  nameWithType: UnsupportedQueryVersionException.UnsupportedQueryVersionException()
+- uid: Oracle.NoSQL.SDK.UnsupportedQueryVersionException.#ctor(System.String)
+  name: UnsupportedQueryVersionException(String)
+  href: api/Oracle.NoSQL.SDK.UnsupportedQueryVersionException.-ctor.html#Oracle_NoSQL_SDK_UnsupportedQueryVersionException__ctor_System_String_
+  commentId: M:Oracle.NoSQL.SDK.UnsupportedQueryVersionException.#ctor(System.String)
+  fullName: Oracle.NoSQL.SDK.UnsupportedQueryVersionException.UnsupportedQueryVersionException(System.String)
+  nameWithType: UnsupportedQueryVersionException.UnsupportedQueryVersionException(String)
+- uid: Oracle.NoSQL.SDK.UnsupportedQueryVersionException.#ctor(System.String,System.Exception)
+  name: UnsupportedQueryVersionException(String, Exception)
+  href: api/Oracle.NoSQL.SDK.UnsupportedQueryVersionException.-ctor.html#Oracle_NoSQL_SDK_UnsupportedQueryVersionException__ctor_System_String_System_Exception_
+  commentId: M:Oracle.NoSQL.SDK.UnsupportedQueryVersionException.#ctor(System.String,System.Exception)
+  fullName: Oracle.NoSQL.SDK.UnsupportedQueryVersionException.UnsupportedQueryVersionException(System.String, System.Exception)
+  nameWithType: UnsupportedQueryVersionException.UnsupportedQueryVersionException(String, Exception)
+- uid: Oracle.NoSQL.SDK.UnsupportedQueryVersionException.#ctor*
+  name: UnsupportedQueryVersionException
+  href: api/Oracle.NoSQL.SDK.UnsupportedQueryVersionException.-ctor.html
+  commentId: Overload:Oracle.NoSQL.SDK.UnsupportedQueryVersionException.#ctor
+  fullName: Oracle.NoSQL.SDK.UnsupportedQueryVersionException.UnsupportedQueryVersionException
+  nameWithType: UnsupportedQueryVersionException.UnsupportedQueryVersionException
 - uid: Oracle.NoSQL.SDK.UserInfo
   name: UserInfo
   href: api/Oracle.NoSQL.SDK.UserInfo.html
