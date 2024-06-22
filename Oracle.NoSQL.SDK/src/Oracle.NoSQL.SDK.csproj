@@ -15,10 +15,10 @@
     <RepositoryUrl>https://github.com/oracle/nosql-dotnet-sdk</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>oracle cloud oracle-cloud nosql database</PackageTags>
-    <PackageReleaseNotes>Release 5.2.1.
+    <PackageReleaseNotes>Release 5.2.2.
     </PackageReleaseNotes>
     <PackageIcon>Icon.png</PackageIcon>
-    <Version>5.2.1</Version>
+    <Version>5.2.2</Version>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
   </PropertyGroup>
 
