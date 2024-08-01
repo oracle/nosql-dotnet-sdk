@@ -115,61 +115,44 @@ namespace Oracle.NoSQL.SDK
         public RowVersion Version { get; internal set; }
 
         /// <summary>
-        /// Gets the value of existing row if the conditional Put operation
-        /// has failed.
+        /// Gets the value of existing row if available.
         /// </summary>
         /// <remarks>
-        /// This value is available if the conditional Put operation (as
-        /// indicated by <see cref="PutOptions.IfAbsent"/> or
-        /// <see cref="PutOptions.MatchVersion"/> options) has failed, there
-        /// is an existing row and <see cref="PutOptions.ReturnExisting"/>
-        /// was set to <c>true</c>.
+        /// This value is available only if
+        /// <see cref="PutOptions.ReturnExisting"/> was set to <c>true</c>
+        /// and under one of the conditions described in the remarks section
+        /// of <see cref="NoSQLClient.PutAsync"/>.
         /// </remarks>
         /// <value>
         /// Value of existing row if available, otherwise <c>null</c>.
         /// </value>
-        /// <seealso cref="PutOptions.IfAbsent"/>
-        /// <seealso cref="PutOptions.IfPresent"/>
-        /// <seealso cref="PutOptions.MatchVersion"/>
+        /// <seealso cref="NoSQLClient.PutAsync"/>
         /// <seealso cref="PutOptions.ReturnExisting"/>
         public TRow ExistingRow { get; internal set; }
 
         /// <summary>
-        /// Gets the value of <see cref="RowVersion"/> of existing row if the
-        /// conditional Put operation has failed.
+        /// Gets the value of <see cref="RowVersion"/> of existing row if
+        /// available.
         /// </summary>
-        /// <remarks>
-        /// This value is available if the conditional Put operation (as
-        /// indicated by <see cref="PutOptions.IfAbsent"/> or
-        /// <see cref="PutOptions.MatchVersion"/> options) has failed, there
-        /// is an existing row and <see cref="PutOptions.ReturnExisting"/>
-        /// was set to <c>true</c>.
-        /// </remarks>
+        /// <inheritdoc cref="ExistingRow" path="remarks"/>
         /// <value>
         /// Version of <see cref="RowVersion"/> of existing row if
         /// available, otherwise <c>null</c>.
         /// </value>
-        /// <seealso cref="PutOptions.IfAbsent"/>
-        /// <seealso cref="PutOptions.IfPresent"/>
-        /// <seealso cref="PutOptions.MatchVersion"/>
+        /// <seealso cref="NoSQLClient.PutAsync"/>
         /// <seealso cref="PutOptions.ReturnExisting"/>
         public RowVersion ExistingVersion { get; internal set; }
 
         /// <summary>
-        /// Gets the modification time of existing row if the conditional Put
-        /// operation has failed.
+        /// Gets the modification time of existing row.
         /// </summary>
-        /// <remarks>
-        /// This value is available if the conditional Put operation (as
-        /// indicated by <see cref="PutOptions.IfAbsent"/> or
-        /// <see cref="PutOptions.MatchVersion"/> options) has failed, there
-        /// is an existing row, <see cref="PutOptions.ReturnExisting"/>
-        /// was set to <c>true</c> and the server supports this feature.
-        /// </remarks>
+        /// <inheritdoc cref="ExistingRow" path="remarks"/>
         /// <value>
         /// The modification time of existing row if available, otherwise
         /// <c>null</c>.
         /// </value>
+        /// <seealso cref="NoSQLClient.PutAsync"/>
+        /// <seealso cref="PutOptions.ReturnExisting"/>
         public DateTime? ExistingModificationTime { get; internal set; }
 
         /// <summary>

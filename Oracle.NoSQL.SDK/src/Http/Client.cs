@@ -9,6 +9,7 @@ namespace Oracle.NoSQL.SDK.Http
 {
     using System;
     using System.IO;
+    using System.Linq;
     using System.Net;
     using System.Net.Http;
     using System.Net.Http.Headers;
@@ -27,6 +28,30 @@ namespace Oracle.NoSQL.SDK.Http
         private readonly ProtocolHandler protocolHandler;
         private readonly HttpClient client;
         private int requestId;
+        // Does it need to be volatile?
+        private int serverSerialVersion;
+
+        private static int GetServerSerialVersion(
+            HttpResponseMessage response)
+        {
+            if (!response.Headers.TryGetValues(
+                HttpConstants.ServerSerialVersion,
+                out var values))
+            {
+                return 0;
+            }
+
+            var verStr = values.FirstOrDefault();
+            
+            if (verStr == null || !int.TryParse(verStr, out var ver))
+            {
+                return 0;
+            }
+
+            return ver;
+        }
+
+        internal int ServerSerialVersion => serverSerialVersion;
 
         internal static HttpMessageHandler CreateHandler(
             ConnectionOptions connectionOptions)
@@ -106,6 +131,11 @@ namespace Oracle.NoSQL.SDK.Http
             if (response.StatusCode != HttpStatusCode.OK)
             {
                 throw await CreateServiceResponseExceptionAsync(response);
+            }
+
+            if (serverSerialVersion == 0)
+            {
+                serverSerialVersion = GetServerSerialVersion(response);
             }
 
             // The stream returned by ReadAsStreamAsync(), even though it is

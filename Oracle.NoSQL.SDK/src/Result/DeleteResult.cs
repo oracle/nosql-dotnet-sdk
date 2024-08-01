@@ -88,54 +88,43 @@ namespace Oracle.NoSQL.SDK
         public bool Success { get; internal set; }
 
         /// <summary>
-        /// Gets the value of existing row if the conditional Delete operation
-        /// has failed.
+        /// Gets the value of existing row if available.
         /// </summary>
         /// <remarks>
-        /// This value is available if the conditional Delete operation (as
-        /// indicated by <see cref="DeleteOptions.MatchVersion"/>) has failed
-        /// and <see cref="DeleteOptions.ReturnExisting"/> was set to
-        /// <c>true</c>.
+        /// This value is available only if
+        /// <see cref="DeleteOptions.ReturnExisting"/> was set to <c>true</c>
+        /// and under one of the conditions described in the remarks section
+        /// of <see cref="NoSQLClient.DeleteAsync"/>.
         /// </remarks>
         /// <value>
         /// Value of existing row if available, otherwise <c>null</c>.
         /// </value>
-        /// <seealso cref="DeleteOptions.MatchVersion"/>
-        /// <seealso cref="NoSQLClient.DeleteIfVersionAsync"/>
+        /// <seealso cref="NoSQLClient.DeleteAsync"/>
+        /// <seealso cref="DeleteOptions.ReturnExisting"/>
         public TRow ExistingRow { get; internal set; }
 
         /// <summary>
-        /// Gets the value of <see cref="RowVersion"/> of existing row if the
-        /// conditional Delete operation has failed.
+        /// Gets the value of <see cref="RowVersion"/> of existing row if
+        /// available.
         /// </summary>
-        /// <remarks>
-        /// This value is available if the conditional Delete operation (as
-        /// indicated by <see cref="DeleteOptions.MatchVersion"/>) has failed
-        /// and <see cref="DeleteOptions.ReturnExisting"/> was set to
-        /// <c>true</c>.
-        /// </remarks>
+        /// <inheritdoc cref="ExistingRow" path="remarks"/>
         /// <value>
         /// Version of existing row if available, otherwise <c>null</c>.
         /// </value>
-        /// <seealso cref="DeleteOptions.MatchVersion"/>
-        /// <seealso cref="NoSQLClient.DeleteIfVersionAsync"/>
+        /// <seealso cref="NoSQLClient.DeleteAsync"/>
+        /// <seealso cref="DeleteOptions.ReturnExisting"/>
         public RowVersion ExistingVersion { get; internal set; }
 
         /// <summary>
-        /// Gets the modification time of existing row if the conditional
-        /// Delete operation has failed.
+        /// Gets the modification time of existing row if available.
         /// </summary>
-        /// <remarks>
-        /// This value is available if the conditional Delete operation (as
-        /// indicated by <see cref="DeleteOptions.MatchVersion"/>) has failed,
-        /// there is an existing row,
-        /// <see cref="DeleteOptions.ReturnExisting"/> was set to <c>true</c>
-        /// and the server supports this feature.
-        /// </remarks>
+        /// <inheritdoc cref="ExistingRow" path="remarks"/>
         /// <value>
         /// The modification time of existing row if available, otherwise
         /// <c>null</c>.
         /// </value>
+        /// <seealso cref="NoSQLClient.DeleteAsync"/>
+        /// <seealso cref="DeleteOptions.ReturnExisting"/>
         public DateTime? ExistingModificationTime { get; internal set; }
 
     }
