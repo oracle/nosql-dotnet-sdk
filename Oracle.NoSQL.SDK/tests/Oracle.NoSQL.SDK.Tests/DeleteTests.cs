@@ -182,12 +182,14 @@ namespace Oracle.NoSQL.SDK.Tests
             {
                 Compartment = Compartment,
                 Timeout = TimeSpan.FromSeconds(12),
-                ReturnExisting = true, // should have no effect here
+                // should return row as it was before deletion
+                ReturnExisting = true,
                 Durability = Durability.CommitSync
             };
             var result = await client.DeleteAsync(table.Name, primaryKey,
                 options);
-            await VerifyDeleteAsync(result, table, primaryKey, options);
+            await VerifyDeleteAsync(result, table, primaryKey, options,
+                existingRow: row);
         }
 
         [DataTestMethod]
@@ -233,6 +235,7 @@ namespace Oracle.NoSQL.SDK.Tests
 
             var result = await client.DeleteAsync(table.Name, primaryKey,
                 options);
+            // existing row not returned if MatchVersion is specified
             await VerifyDeleteAsync(result, table, primaryKey, options);
 
             // now the row has been deleted
@@ -345,8 +348,10 @@ namespace Oracle.NoSQL.SDK.Tests
                 primaryKey, version, new DeleteOptions
                 {
                     Durability = new Durability(SyncPolicy.Sync,
-                        SyncPolicy.WriteNoSync, ReplicaAckPolicy.All)
+                        SyncPolicy.WriteNoSync, ReplicaAckPolicy.All),
+                    ReturnExisting = true
                 });
+            // existing row not returned if MatchVersion is specified
             await VerifyDeleteAsync(result, table, primaryKey,
                 isConditional:true);
         }

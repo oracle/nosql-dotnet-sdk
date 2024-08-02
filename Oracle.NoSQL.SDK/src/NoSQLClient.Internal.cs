@@ -32,6 +32,8 @@ namespace Oracle.NoSQL.SDK
 
         internal TopologyInfo QueryTopology => queryTopology;
 
+        internal int ServerSerialVersion => client.ServerSerialVersion;
+
         // Since we only care about the latest topology sequence number, we
         // can avoid a lock here. TopologyInfo itself is immutable. For
         // setting topology, because of the check performed, we need a lock

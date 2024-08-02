@@ -117,7 +117,7 @@ namespace Oracle.NoSQL.SDK.Tests
                         await VerifyPutAsync(ToPutResult(opResult),
                             fixture.Table, row, putOp.Options, opSuccess,
                             fixture.GetRow(row.Id, true), true,
-                            putOp.GetType() != typeof(PutOperation),
+                            ((IPutOp)putOp).PutOpKind,
                             verifyExistingModTime:false);
                     }
                     else
@@ -184,7 +184,7 @@ namespace Oracle.NoSQL.SDK.Tests
                         ToPutResult(result.FailedOperationResult),
                         fixture.Table, row, putOp.Options, false,
                         fixture.GetRow(row.Id, true), true,
-                        putOp.GetType() != typeof(PutOperation),
+                        ((IPutOp)putOp).PutOpKind,
                         verifyExistingModTime:false);
                 }
                 else

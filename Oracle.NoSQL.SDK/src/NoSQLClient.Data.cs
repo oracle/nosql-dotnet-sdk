@@ -130,12 +130,14 @@ namespace Oracle.NoSQL.SDK {
         /// <see cref="NoSQLClient.PutIfVersionAsync"/>.
         /// </para>
         /// <para>
-        /// It is also possible, on failure, to return information about the
-        /// existing row.  The row and it's <see cref="RowVersion"/> can be
-        /// optionally returned as part of <see cref="PutResult{TRow}"/> if a
-        /// put operation fails because of a version mismatch or if the
-        /// operation fails because the row already exists. The existing row
-        /// information will only be returned if
+        /// It is also possible to return information about the existing row.
+        /// The row, including its <see cref="RowVersion"/> and modification
+        /// time can be optionally returned as part of
+        /// <see cref="PutResult{TRow}"/> via properties
+        /// <see cref="PutResult{TRow}.ExistingRow"/>,
+        /// <see cref="PutResult{TRow}.ExistingVersion"/> and
+        /// <see cref="PutResult{TRow}.ExistingModificationTime"/>. The
+        /// existing row information will only be returned if
         /// <see cref="PutOptions.ReturnExisting"/> is <c>true</c> and one of
         /// the following occurs:
         /// <list type="bullet">
@@ -152,13 +154,28 @@ namespace Oracle.NoSQL.SDK {
         /// not match the one provided.
         /// </description>
         /// </item>
+        /// <item>
+        /// <description>
+        /// The <see cref="PutOptions.IfPresent"/> is true and the operation
+        /// succeeds or the put operation is unconditional (none of
+        /// <see cref="PutOptions.IfAbsent"/>,
+        /// <see cref="PutOptions.IfPresent"/> or
+        /// <see cref="PutOptions.MatchVersion"/> is specified) and the
+        /// operation replaces existing row. In these cases, the row, its
+        /// version and modification time will be returned as they were before
+        /// the put operation took place. Note that this information might not
+        /// be available with older servers. Also note that if
+        /// <see cref="PutOptions.MatchVersion"/> is specified and the
+        /// operation succeeds, the existing row information will not be
+        /// returned.
+        /// </description>
+        /// </item>
         /// </list>
         /// </para>
         /// <para>
         /// Use of <see cref="PutOptions.ReturnExisting"/> may result in
         /// additional consumed read capacity and may affect the operation's
-        /// latency.  If the operation is successful there will be no
-        /// information returned about the previous row.
+        /// latency.
         /// </para>
         /// <para>
         /// Note that the failures of conditional Put operations discussed
@@ -364,8 +381,8 @@ namespace Oracle.NoSQL.SDK {
         /// The row is identified using a primary key value.
         /// </para>
         /// <para>
-        /// By default a delete operation is unconditional and will succeed if
-        /// the specified row exists.  Delete operations can be made
+        /// By default, a delete operation is unconditional and will succeed
+        /// if the specified row exists.  Delete operations can be made
         /// conditional based on whether the <see cref="RowVersion"/> of an
         /// existing row matches that supplied by
         /// <see cref="DeleteOptions.MatchVersion"/>.  Instead of using
@@ -374,21 +391,41 @@ namespace Oracle.NoSQL.SDK {
         /// same conditional operation.
         /// </para>
         /// <para>
-        /// It is also possible, on failure, to return information about the
-        /// existing row.  The row and its version can be optionally returned
-        /// as part of <see cref="DeleteResult{TRow}"/> if a delete operation
-        /// fails because of a version mismatch.The existing row information
-        /// will only be returned if
-        /// <see cref="DeleteOptions.ReturnExisting"/> is <c>true</c> and
-        /// <see cref="DeleteOptions.MatchVersion"/> is set and the operation
-        /// fails because the row exists and its <see cref="RowVersion"/> does
-        /// not match the one provided.
+        /// It is also possible to return information about the existing row.
+        /// The row, its version and modification time can be optionally
+        /// returned as part of <see cref="DeleteResult{TRow}"/> via
+        /// properties <see cref="DeleteResult{TRow}.ExistingRow"/>,
+        /// <see cref="DeleteResult{TRow}.ExistingVersion"/> and
+        /// <see cref="DeleteResult{TRow}.ExistingModificationTime"/>. The
+        /// existing row information will only be returned if
+        /// <see cref="DeleteOptions.ReturnExisting"/> is <c>true</c> and one
+        /// of the following occurs:
+        /// <list type="bullet">
+        /// <item>
+        /// <description>
+        /// <see cref="DeleteOptions.MatchVersion"/> is specified and the
+        /// operation fails because the row exists and its
+        /// <see cref="RowVersion"/> does not match the specified version.
+        /// </description>
+        /// </item>
+        /// <item>
+        /// <description>
+        /// <see cref="DeleteOptions.MatchVersion"/> is not specified and the
+        /// delete operation succeeds, in which case the row, its version and
+        /// modification time will be returned as they were before the
+        /// deletion. Note that this information might not be available with
+        /// older servers. Also note that if
+        /// <see cref="DeleteOptions.MatchVersion"/> is specified and the
+        /// operation succeeds, the existing row information will not be
+        /// returned.
+        /// </description>
+        /// </item>
+        /// </list>
         /// </para>
         /// <para>
         /// Use of <see cref="DeleteOptions.ReturnExisting"/> may result in
         /// additional consumed read capacity and may affect the operation's
-        /// latency.  If the operation is successful there will be no
-        /// information returned about the deleted row.
+        /// latency.
         /// </para>
         /// <para>
         /// Note that the failures of conditional Delete operation as

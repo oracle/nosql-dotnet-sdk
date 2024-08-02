@@ -87,19 +87,17 @@ namespace Oracle.NoSQL.SDK
 
         /// <summary>
         /// Gets or sets a value that determines whether to return existing
-        /// row and its <see cref="RowVersion"/> if the conditional Delete
-        /// operation fails because of the version mismatch discussed in
-        /// <see cref="NoSQLClient.DeleteAsync"/>.
+        /// row, its <see cref="RowVersion"/> and modification time.
         /// </summary>
         /// <remarks>
-        /// If set to <c>true</c>, the existing row and its version will be
-        /// returned as <see cref="DeleteResult{TRow}.ExistingRow"/> and
-        /// <see cref="DeleteResult{TRow}.ExistingVersion"/>.
+        /// If set to <c>true</c>, the existing row, its version and
+        /// modification time will be returned as part of
+        /// <see cref="DeleteResult{TRow}"/> under conditions described in
+        /// the remarks section of <see cref="NoSQLClient.DeleteAsync"/>.
         /// </remarks>
         /// <value>
-        /// <c>true</c> to return existing row and its version if conditional
-        /// Delete operation fails, otherwise <c>false</c>.  The default is
-        /// <c>false</c>.
+        /// <c>true</c> to return existing row information, otherwise
+        /// <c>false</c>.  The default is <c>false</c>.
         /// </value>
         public bool ReturnExisting { get; set; }
 

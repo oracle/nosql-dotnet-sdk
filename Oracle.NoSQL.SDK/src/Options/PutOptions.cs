@@ -186,18 +186,17 @@ namespace Oracle.NoSQL.SDK
 
         /// <summary>
         /// Gets or sets a value that determines whether to return existing
-        /// row and its <see cref="RowVersion"/> if the conditional Put
-        /// operation fails.
+        /// row, its <see cref="RowVersion"/> and modification time.
         /// </summary>
         /// <remarks>
-        /// If set to <c>true</c>, the existing row and its version will be
-        /// returned as <see cref="PutResult{TRow}.ExistingRow"/> and
-        /// <see cref="PutResult{TRow}.ExistingVersion"/>.
+        /// If set to <c>true</c>, the existing row, its version and
+        /// modification time will be returned as part of
+        /// <see cref="PutResult{TRow}"/> under conditions described in
+        /// the remarks section of <see cref="NoSQLClient.PutAsync"/>.
         /// </remarks>
         /// <value>
-        /// <c>true</c> to return existing row and its version if conditional
-        /// Put operation fails, otherwise <c>false</c>. The default is
-        /// <c>false</c>.
+        /// <c>true</c> to return existing row information, otherwise
+        /// <c>false</c>. The default is <c>false</c>.
         /// </value>
         public bool ReturnExisting { get; set; }
 

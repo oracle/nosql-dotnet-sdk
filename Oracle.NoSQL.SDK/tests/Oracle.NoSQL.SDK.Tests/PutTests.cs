@@ -297,7 +297,8 @@ namespace Oracle.NoSQL.SDK.Tests
             };
             var result = await client.PutAsync(table.Name, (MapValue)row,
                 options);
-            await VerifyPutAsync(result, table, row, options);
+            await VerifyPutAsync(result, table, row, options,
+                existingRow: row);
         }
 
         [DataTestMethod]
@@ -333,7 +334,7 @@ namespace Oracle.NoSQL.SDK.Tests
             var result = await client.PutIfAbsentAsync(table.Name,
                 (MapValue)row, options);
             await VerifyPutAsync(result, table, row, options,
-                isConditional: true);
+                putOpKind: PutOpKind.IfAbsent);
         }
 
         [DataTestMethod]
@@ -364,7 +365,7 @@ namespace Oracle.NoSQL.SDK.Tests
             var result = await client.PutIfAbsentAsync(table.Name,
                 (MapValue)row);
             await VerifyPutAsync(result, table, row, null, false, row,
-                isConditional: true);
+                putOpKind: PutOpKind.IfAbsent);
         }
 
         [DataTestMethod]
@@ -381,8 +382,7 @@ namespace Oracle.NoSQL.SDK.Tests
             var result = await client.PutIfAbsentAsync(table.Name,
                 (MapValue)modifiedRow, options);
             await VerifyPutAsync(result, table, modifiedRow, options, false,
-                row,
-                isConditional: true);
+                existingRow: row, putOpKind: PutOpKind.IfAbsent);
         }
 
         [DataTestMethod]
@@ -402,6 +402,27 @@ namespace Oracle.NoSQL.SDK.Tests
             var result = await client.PutAsync(table.Name,
                 (MapValue)modifiedRow, options);
             await VerifyPutAsync(result, table, modifiedRow, options);
+        }
+
+        [DataTestMethod]
+        [DynamicData(nameof(PutExistingRowDataSource))]
+        public async Task TestPutWithIfPresentReturnExistingModifiedRowAsync(
+            TableInfo table, DataRow row)
+        {
+            SetForCleanup(row, null);
+            var modifiedRow = Fixture.MakeModifiedRow(row);
+            var options = new PutOptions
+            {
+                IfPresent = true,
+                TTL = modifiedRow.TTL,
+                Compartment = Compartment,
+                ReturnExisting = true
+            };
+
+            var result = await client.PutAsync(table.Name,
+                (MapValue)modifiedRow, options);
+            await VerifyPutAsync(result, table, modifiedRow, options,
+                existingRow: row);
         }
 
         [DataTestMethod]
@@ -429,7 +450,7 @@ namespace Oracle.NoSQL.SDK.Tests
             var result = await client.PutIfPresentAsync(table.Name,
                 (MapValue)modifiedRow, options);
             await VerifyPutAsync(result, table, modifiedRow, options,
-                isConditional: true);
+                putOpKind: PutOpKind.IfPresent);
         }
 
         [DataTestMethod]
@@ -447,7 +468,7 @@ namespace Oracle.NoSQL.SDK.Tests
             var result = await client.PutIfPresentAsync(table.Name,
                 (MapValue)row, options);
             await VerifyPutAsync(result, table, row, options,
-                isConditional: true);
+                existingRow: row, putOpKind: PutOpKind.IfPresent);
         }
 
         [DataTestMethod]
@@ -478,7 +499,7 @@ namespace Oracle.NoSQL.SDK.Tests
             var result = await client.PutIfPresentAsync(table.Name,
                 (MapValue)row, options);
             await VerifyPutAsync(result, table, row, options, false,
-                isConditional: true);
+                putOpKind: PutOpKind.IfPresent);
         }
 
         [DataTestMethod]
@@ -495,7 +516,7 @@ namespace Oracle.NoSQL.SDK.Tests
             var result = await client.PutIfPresentAsync(table.Name,
                 (MapValue)row, options);
             await VerifyPutAsync(result, table, row, options, false,
-                isConditional: true);
+                putOpKind: PutOpKind.IfPresent);
         }
 
         [DataTestMethod]
@@ -515,6 +536,8 @@ namespace Oracle.NoSQL.SDK.Tests
             // put with correct MatchVersion
             var result = await client.PutAsync(table.Name, (MapValue)row,
                 options);
+            // Existing row will not be returned for MatchVersion even with
+            // ReturnExisting = true
             await VerifyPutAsync(result, table, row, options);
 
             // modify the row
@@ -543,7 +566,7 @@ namespace Oracle.NoSQL.SDK.Tests
             var result = await client.PutIfVersionAsync(table.Name,
                 (MapValue)modifiedRow, version, options);
             await VerifyPutAsync(result, table, modifiedRow, options,
-                isConditional: true);
+                putOpKind: PutOpKind.IfVersion);
 
             // modify the row again
             var modifiedRow2 = Fixture.MakeModifiedRow(row);
@@ -557,7 +580,7 @@ namespace Oracle.NoSQL.SDK.Tests
             result = await client.PutIfVersionAsync(table.Name,
                 (MapValue)modifiedRow2, version, options);
             await VerifyPutAsync(result, table, modifiedRow2, options, false,
-                modifiedRow, isConditional: true);
+                modifiedRow, putOpKind: PutOpKind.IfVersion);
         }
 
         [DataTestMethod]
@@ -588,7 +611,7 @@ namespace Oracle.NoSQL.SDK.Tests
             var result = await client.PutIfVersionAsync(table.Name,
                 (MapValue)newRow, existingRow.Version);
             await VerifyPutAsync(result, table, newRow, null, false,
-                isConditional: true);
+                putOpKind: PutOpKind.IfVersion);
         }
 
         [TestMethod]
@@ -614,7 +637,7 @@ namespace Oracle.NoSQL.SDK.Tests
             var putResult = await client.PutIfVersionAsync(Fixture.Table.Name,
                 (MapValue)modifiedRow, new RowVersion(binaryVersion.AsByteArray));
             await VerifyPutAsync(putResult, Fixture.Table, modifiedRow,
-                isConditional: true);
+                putOpKind: PutOpKind.IfVersion);
         }
 
         [TestMethod]

@@ -21,6 +21,8 @@ namespace Oracle.NoSQL.SDK.Tests
     // the wrapper methods.
     internal static class DataTestUtils
     {
+        internal const int ServerSerialVersion5 = 5;
+
         internal static async Task PutRowAsync(NoSQLClient client,
             TableInfo table, DataRow row)
         {
@@ -482,18 +484,70 @@ namespace Oracle.NoSQL.SDK.Tests
             VerifyFieldValue(row, result.Row, table.RecordType);
         }
 
+        // We assume that existingRow is always passed to VerifyPutAsync and
+        // VerifyDeleteAsync when options.ReturnExisting is specified and
+        // there is an existing row.
+        internal static void VerifyExistingRow(NoSQLClient client,
+            IWriteResult<RecordValue> result,
+            TableInfo table, IWriteOptions options = null,
+            bool success = true, DataRow existingRow = null,
+            PutOpKind putOpKind = PutOpKind.Always,
+            bool verifyExistingModTime = true)
+        {
+            var hasExisting =
+                options != null && options.ReturnExisting &&
+                 existingRow != null && (success
+                     ? (client.ServerSerialVersion >= ServerSerialVersion5 &&
+                        putOpKind != PutOpKind.IfVersion)
+                     : (putOpKind == PutOpKind.IfAbsent ||
+                        putOpKind == PutOpKind.IfVersion));
+
+            if (hasExisting)
+            {
+                VerifyFieldValue(existingRow, result.ExistingRow,
+                    table.RecordType);
+                Assert.IsNotNull(existingRow?.Version); // test self-check
+                AssertDeepEqual(existingRow.Version, result.ExistingVersion,
+                    true);
+                if (verifyExistingModTime)
+                {
+                    VerifyExistingModificationTime(client, existingRow,
+                        result);
+                }
+            }
+            else
+            {
+                Assert.IsNull(result.ExistingRow);
+                Assert.IsNull(result.ExistingVersion);
+                Assert.IsNull(result.ExistingModificationTime);
+            }
+        }
+
+        internal static void VerifyExistingRowForDelete(NoSQLClient client,
+            IWriteResult<RecordValue> result,
+            TableInfo table, IWriteOptions options = null,
+            bool success = true, DataRow existingRow = null,
+            bool isConditional = false,
+            bool verifyExistingModTime = true) =>
+            VerifyExistingRow(client, result, table, options, success,
+                existingRow,
+                isConditional ? PutOpKind.IfVersion : PutOpKind.Always,
+                verifyExistingModTime);
+
         internal static async Task VerifyPutAsync(NoSQLClient client,
             PutResult<RecordValue> result,
             TableInfo table, DataRow row, PutOptions options = null,
             bool success = true, DataRow existingRow = null,
-            bool isSubOp = false, bool isConditional = false,
+            bool isSubOp = false, PutOpKind putOpKind = PutOpKind.Always,
             bool verifyExistingModTime = true)
         {
             Assert.IsNotNull(row); // test self-check
             Assert.IsNotNull(result);
 
-            isConditional = isConditional || options != null &&
-                options.putOpKind != PutOpKind.Always;
+            if (putOpKind == PutOpKind.Always && options != null)
+            {
+                putOpKind = options.putOpKind;
+            }
 
             Assert.AreEqual(success, result.Success);
 
@@ -515,7 +569,9 @@ namespace Oracle.NoSQL.SDK.Tests
                             result.ConsumedCapacity.WriteUnits == 0);
                     }
 
-                    if (isConditional)
+                    if (putOpKind != PutOpKind.Always ||
+                        (client.ServerSerialVersion >= ServerSerialVersion5 &&
+                        (options?.ReturnExisting ?? false)))
                     {
                         Assert.IsTrue(result.ConsumedCapacity.ReadKB >= 1);
                         Assert.IsTrue(result.ConsumedCapacity.ReadUnits >= 1);
@@ -528,12 +584,17 @@ namespace Oracle.NoSQL.SDK.Tests
                 }
             }
 
+            // Some tests pass the same instance for row and existingRow.
+            // Because the code below will change row.Version and
+            // row.ModificationTime, we have to check for existing row info
+            // first.
+            VerifyExistingRow(client, result, table, options, success,
+                existingRow, putOpKind, verifyExistingModTime);
+
             if (success)
             {
                 Assert.IsNotNull(result.Version);
                 AssertNotDeepEqual(row.Version, result.Version, true);
-                Assert.IsNull(result.ExistingRow);
-                Assert.IsNull(result.ExistingVersion);
 
                 var isNew = row.Version == null;
                 row.Version = result.Version;
@@ -553,30 +614,9 @@ namespace Oracle.NoSQL.SDK.Tests
             }
             else
             {
-                Assert.IsTrue(isConditional); // test self-check
+                // test self-check
+                Assert.AreNotEqual(PutOpKind.Always, putOpKind);
                 Assert.IsNull(result.Version);
-                // existingRow should be provided if and only if this is a
-                // failure case and there is an existing row matching the
-                // primary key.
-                if (options != null && options.ReturnExisting &&
-                    existingRow != null)
-                {
-                    VerifyFieldValue(existingRow, result.ExistingRow,
-                        table.RecordType);
-                    Assert.IsNotNull(existingRow.Version); // test self-check
-                    AssertDeepEqual(existingRow.Version,
-                        result.ExistingVersion, true);
-                    if (verifyExistingModTime)
-                    {
-                        VerifyExistingModificationTime(client, existingRow,
-                            result);
-                    }
-                }
-                else
-                {
-                    Assert.IsNull(result.ExistingRow);
-                    Assert.IsNull(result.ExistingVersion);
-                }
             }
 
             var getResult = await client.GetAsync(table.Name,
@@ -630,26 +670,8 @@ namespace Oracle.NoSQL.SDK.Tests
                 }
             }
 
-            if (!result.Success && options != null &&
-                options.ReturnExisting && existingRow != null)
-            {
-                Assert.IsTrue(isConditional); // test self-check
-                VerifyFieldValue(existingRow, result.ExistingRow,
-                    table.RecordType);
-                Assert.IsNotNull(existingRow.Version); // test self-check
-                AssertDeepEqual(existingRow.Version, result.ExistingVersion,
-                    true);
-                if (verifyExistingModTime)
-                {
-                    VerifyExistingModificationTime(client, existingRow,
-                        result);
-                }
-            }
-            else
-            {
-                Assert.IsNull(result.ExistingRow);
-                Assert.IsNull(result.ExistingVersion);
-            }
+            VerifyExistingRowForDelete(client, result, table, options,
+                success, existingRow, isConditional, verifyExistingModTime);
 
             // This will verify that row does not exist after successful
             // delete or delete on non-existent row, or that the row is the
@@ -708,10 +730,10 @@ namespace Oracle.NoSQL.SDK.Tests
             PutResult<RecordValue> result,
             TableInfo table, DataRow row, PutOptions options = null,
             bool success = true, DataRow existingRow = null,
-            bool isSubOp = false, bool isConditional = false,
+            bool isSubOp = false, PutOpKind putOpKind = PutOpKind.Always,
             bool verifyExistingModTime = true) =>
             DataTestUtils.VerifyPutAsync(client, result, table, row, options,
-                success, existingRow, isSubOp, isConditional,
+                success, existingRow, isSubOp, putOpKind,
                 verifyExistingModTime);
 
         internal static Task VerifyDeleteAsync(

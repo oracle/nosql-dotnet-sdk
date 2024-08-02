@@ -22,12 +22,32 @@ namespace Oracle.NoSQL.SDK.Tests
                     ? MakePut(fromStart)
                     : MakeDelete(fromStart));
 
+            yield return new WriteManyTestCase(
+                "put even, delete odd, returnExisting, success",
+                from fromStart in Enumerable.Range(0, 20)
+                select fromStart % 2 == 0
+                    ? MakePut(fromStart, null,
+                        new PutOptions { ReturnExisting = true })
+                    : MakeDelete(fromStart, null,
+                        new DeleteOptions { ReturnExisting = true }));
+
             yield return new WriteManyTestCase("one put, new row, success",
                 new[]
                 {
                     MakePut(1, options: new PutOptions
                     {
                         ExactMatch = true
+                    })
+                });
+
+            yield return new WriteManyTestCase(
+                "one put, new row, returnExisting, success",
+                new[]
+                {
+                    MakePut(1, options: new PutOptions
+                    {
+                        ExactMatch = true,
+                        ReturnExisting = true
                     })
                 });
 
@@ -39,10 +59,30 @@ namespace Oracle.NoSQL.SDK.Tests
                 });
 
             yield return new WriteManyTestCase(
+                "one delete, existing row, returnExisting, success",
+                new[]
+                {
+                    MakeDelete(1, options: new DeleteOptions
+                    {
+                        ReturnExisting = true
+                    })
+                });
+
+            yield return new WriteManyTestCase(
                 "two puts, one ifAbsent and abortOnFail, fail",
                 new[]
                 {
                     MakePutIfAbsent(0, abortIfUnsuccessful: true),
+                    MakePut(fromEnd: 0)
+                }, false);
+
+            yield return new WriteManyTestCase(
+                "two puts, returnExisting, one ifAbsent and abortOnFail, " +
+                "fail",
+                new[]
+                {
+                    MakePutIfAbsent(0, abortIfUnsuccessful: true,
+                        options: new PutOptions { ReturnExisting = true }),
                     MakePut(fromEnd: 0)
                 }, false);
 
@@ -81,12 +121,37 @@ namespace Oracle.NoSQL.SDK.Tests
                 });
 
             yield return new DeleteManyTestCase(
+                "delete 10 past the end, returnExisting, abortOnFail in " +
+                "opt, fail",
+                from fromEnd in Enumerable.Range(-4, 10)
+                select MakePK(null, fromEnd),
+                false,
+                new DeleteManyOptions
+                {
+                    Compartment = Compartment,
+                    AbortIfUnsuccessful = true,
+                    ReturnExisting = true
+                });
+
+            yield return new DeleteManyTestCase(
                 "delete 10 past the end, abortOnFail not set, success",
                 from fromEnd in Enumerable.Range(-4, 10)
                 select MakePK(null, fromEnd), true, new DeleteManyOptions
                 {
                     Timeout = TimeSpan.FromSeconds(15),
                     Durability = Durability.CommitNoSync
+                },
+                idx => idx >= 4);
+
+            yield return new DeleteManyTestCase(
+                "delete 10 past the end, returnExisting, abortOnFail " +
+                "not set, success",
+                from fromEnd in Enumerable.Range(-4, 10)
+                select MakePK(null, fromEnd), true, new DeleteManyOptions
+                {
+                    Timeout = TimeSpan.FromSeconds(15),
+                    Durability = Durability.CommitNoSync,
+                    ReturnExisting = true
                 },
                 idx => idx >= 4);
 
@@ -153,6 +218,20 @@ namespace Oracle.NoSQL.SDK.Tests
                 idx => idx >= 5);
 
             yield return new PutManyTestCase(
+                "putMany, ifPresent, returnExisting: true in opt, over " +
+                "rowIdEnd boundary, some updates, success",
+                from fromEnd in Enumerable.Range(-5, 10)
+                select MakeRow(null, fromEnd),
+                true,
+                new PutManyOptions
+                {
+                    IfPresent = true,
+                    ExactMatch = false,
+                    ReturnExisting = true
+                },
+                idx => idx >= 5);
+
+            yield return new PutManyTestCase(
                 "putMany, ifAbsent and returnExisting are true in opt, " +
                 "over rowIdEnd boundary, some updates, success",
                 from fromEnd in Enumerable.Range(-5, 10)
@@ -173,15 +252,26 @@ namespace Oracle.NoSQL.SDK.Tests
                     : MakeDeleteIfVersion(GetMatchVersion(fromStart),
                         fromStart));
 
+            yield return new WriteManyTestCase(
+                "put even, delete odd with correct matchVersion, " +
+                "returnExisting, success",
+                from fromStart in Enumerable.Range(0, 20)
+                select fromStart % 2 == 0
+                    ? MakePutIfVersion(GetMatchVersion(fromStart), fromStart)
+                    : MakeDeleteIfVersion(GetMatchVersion(fromStart),
+                        fromStart,
+                        options: new DeleteOptions { ReturnExisting = true }));
+
             yield return new PutManyTestCase(
                 "putMany with incorrect matchVersion of row 5 in opt, " +
-                "1 update, success",
+                "returnExisting: true, 1 update, success",
                 from fromStart in Enumerable.Range(0, 8)
                 select MakeRow(fromStart),
                 true,
                 new PutManyOptions
                 {
-                    MatchVersion = GetMatchVersion(5)
+                    MatchVersion = GetMatchVersion(5),
+                    ReturnExisting = true
                 },
                 idx => idx != 5);
 
@@ -281,6 +371,17 @@ namespace Oracle.NoSQL.SDK.Tests
                     : MakeDelete(ChildFixture, fromStart));
 
             yield return new WriteManyTestCase(
+                "put even, delete odd from child table, returnExisting, " +
+                "success",
+                from fromStart in Enumerable.Range(0, 20)
+                select fromStart % 2 == 0
+                    ? MakePut(ParentFixture, fromStart,
+                        options: new PutOptions { ReturnExisting = true })
+                    : MakeDelete(ChildFixture, fromStart,
+                        options: new DeleteOptions
+                            { ReturnExisting = true }));
+
+            yield return new WriteManyTestCase(
                 "put odd for child table, delete even, success",
                 from fromStart in Enumerable.Range(0, 15)
                 select fromStart % 2 != 0 || fromStart >= 10
@@ -291,8 +392,10 @@ namespace Oracle.NoSQL.SDK.Tests
             yield return new WriteManyTestCase("two puts, one ifAbsent, fail",
                 new[]
                 {
-                    MakePutIfAbsent(ParentFixture, 0, abortIfUnsuccessful: true),
-                    MakePut(ChildFixture, 0)
+                    MakePutIfAbsent(ParentFixture, 0,
+                        abortIfUnsuccessful: true),
+                    MakePut(ChildFixture, 0,
+                        options: new PutOptions { ReturnExisting = true })
                 }, false, null, idx => idx == 0);
 
             yield return new WriteManyTestCase(
@@ -365,7 +468,8 @@ namespace Oracle.NoSQL.SDK.Tests
                         GetMatchVersion(ChildFixture, fromStart), fromStart));
 
             yield return new WriteManyTestCase(
-                "put with incorrect matchVersion for child table, returnExisting and abortOnFail in opt, no updates, fail",
+                "put with incorrect matchVersion for child table, " +
+                "returnExisting and abortOnFail in opt, no updates, fail",
                 (from fromStart in Enumerable.Range(1, 7)
                     select MakePutIfVersion(ChildFixture,
                         // incorrect match version

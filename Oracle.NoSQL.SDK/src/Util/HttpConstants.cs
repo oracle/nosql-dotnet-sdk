@@ -49,6 +49,8 @@ namespace Oracle.NoSQL.SDK
 
         internal const string OPCRequestId = "opc-request-id";
 
+        internal const string ServerSerialVersion = "x-nosql-serial-version";
+
         internal static readonly string NoSQLDataPath =
             $"{NoSQLVersion}/{NoSQLPathName}/{DataPathName}";
     }
