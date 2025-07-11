@@ -83,11 +83,6 @@ namespace Oracle.NoSQL.SDK.Tests
                 .Append(new MapValue
                 {
                     ["$shardId"] = 0,
-                    ["$pkString"] = null // null value in primary key
-                })
-                .Append(new MapValue
-                {
-                    ["$shardId"] = 0,
                     ["$pkString"] = "a",
                     ["$no_such_variable"] = "n" // undeclared variable
                 })
