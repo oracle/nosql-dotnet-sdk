@@ -665,8 +665,7 @@ namespace Oracle.NoSQL.SDK.Tests
         public async Task TestWriteManyLoopAsync(TestCase testCase)
         {
             CheckBasicOnly(testCase);
-            await TestTableLoopAsync(WriteManyLoopAsync, testCase, false,
-                true);
+            await TestTableLoopAsync(WriteManyLoopAsync, testCase);
         }
 
         [DataTestMethod]
@@ -675,8 +674,7 @@ namespace Oracle.NoSQL.SDK.Tests
         {
             CheckBasicOnly(testCase);
             CheckSupportsChildTables();
-            await TestTableLoopAsync(MultiTableWriteManyLoopAsync, testCase,
-                false, true);
+            await TestTableLoopAsync(MultiTableWriteManyLoopAsync, testCase);
         }
 
         [DataTestMethod]
