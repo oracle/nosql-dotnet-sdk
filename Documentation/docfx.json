@@ -3,15 +3,13 @@
         {
             "src": [
                 {
-	            "src": "../Oracle.NoSQL.SDK/src/bin",
-                    "files": [ "**/Debug/netcoreapp3.1/*.dll" ]
+					"src": "../Oracle.NoSQL.SDK/src",
+                    "files": [ "*.csproj" ]
                 }
             ],
             "dest": "obj/api",
             "shouldSkipMarkup": true,
-	    "properties": {
-	        "TargetFramework": "netcoreapp3.1"
-	    }
+			"memberLayout": "separatePages"
         }
     ],
     "build": {
@@ -30,8 +28,9 @@
             "_appTitle": "NoSQL SDK for .NET",
             "_enableSearch": true,
             "_appFooter": "<span>Copyright © 2020, 2024 Oracle and/or its affiliates. All rights reserved.</span>",
-	    "_appLogoPath": "Logo.png",
-	    "_appFaviconPath": "favicon.ico"
+			"_appLogoPath": "Logo.png",
+			"_appFaviconPath": "favicon.ico",
+			"_disableContribution": true
         },
         "markdownEngineName": "markdig",
         "overwrite": "specs/*.md",
@@ -43,6 +42,9 @@
                 "files": [ "Logo.png", "favicon.ico", "LICENSE.txt", "THIRD_PARTY_LICENSES.txt" ]
             }
         ],
-        "xrefService": [ "https://xref.docs.microsoft.com/query?uid={uid}" ]
+		"template": [ "statictoc", "template" ],
+		"xref": [
+		  "https://learn.microsoft.com/en-us/dotnet/.xrefmap.json"
+		]
     }
 }
