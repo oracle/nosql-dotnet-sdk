@@ -60,6 +60,7 @@ See the
 [API and user guide documentation](https://oracle.github.io/nosql-dotnet-sdk/).
 
 ## Changes
+
 See [Changelog](https://github.com/oracle/nosql-dotnet-sdk/blob/main/CHANGELOG.md)
 for changes in each release.
 
@@ -291,8 +292,10 @@ dotnet run -f <target-framework> [-- /path/to/config.json]
 ```
 
 where *<example>* is the example directory and *<target-framework>* is the
-target framework moniker, supported values are *net7.0*, *net6.0*, *net5.0*
-and *netcoreapp3.1*.
+target framework moniker, supported values are *net5.0* and *netcoreapp3.1*,
+but both of these are forward-compatible and should run on any later .NET
+runtime as well.
+
 The command above will build and run the example.
 
 For example:
