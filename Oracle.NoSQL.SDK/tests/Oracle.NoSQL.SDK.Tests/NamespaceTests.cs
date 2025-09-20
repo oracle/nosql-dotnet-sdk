@@ -40,7 +40,8 @@ namespace Oracle.NoSQL.SDK.Tests
 
             await client.ExecuteAdminWithCompletionAsync(
                 $"DROP NAMESPACE IF EXISTS {NamespaceName} CASCADE");
-            await client.ExecuteAdminAsync($"CREATE NAMESPACE {NamespaceName}");
+            await client.ExecuteAdminWithCompletionAsync(
+                $"CREATE NAMESPACE {NamespaceName}");
 
             await CreateTableAsync(Fixture.Table);
 
