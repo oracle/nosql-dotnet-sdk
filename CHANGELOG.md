@@ -21,6 +21,10 @@ PutOptions.ReturnExisting is set to true and row already exists.
 - Delete can return the deleted row when DeleteOptions.ReturnExisting is set
 to true.
 
+**Added**
+
+* New cloud OCI region codes
+
 ## [5.2.2]
 
 **Added**
