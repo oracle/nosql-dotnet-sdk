@@ -21,6 +21,8 @@ namespace Oracle.NoSQL.SDK
 
         PutOptions Options { get; }
 
+        string LastWriteMetadata { get; }
+
         RowVersion MatchVersion { get; }
 
         bool ReturnExisting { get; }
@@ -36,7 +38,7 @@ namespace Oracle.NoSQL.SDK
     /// <seealso cref="NoSQLClient.PutAsync"/>
     /// <seealso cref="Request"/>
     /// <seealso cref="ReadRequest" />
-    public class PutRequest<TRow> : WriteRequest, IPutOp
+    public class PutRequest<TRow> : WriteRequest, IPutOp, IHasLastWriteMetadata
     {
         internal PutRequest(NoSQLClient client, string tableName, object row,
             PutOptions options) : base(client, tableName)
@@ -49,6 +51,8 @@ namespace Oracle.NoSQL.SDK
             Options?.putOpKind ?? PutOpKind.Always;
 
         RowVersion IPutOp.MatchVersion => Options?.MatchVersion;
+
+        string IPutOp.LastWriteMetadata => LastWriteMetadata;
 
         internal override IWriteOptions WriteOptions => Options;
 
@@ -91,6 +95,14 @@ namespace Oracle.NoSQL.SDK
         /// The options or <c>null</c> if options were not provided.
         /// </value>
         public PutOptions Options { get; }
+
+        /// <summary>
+        /// Gets the JSON last-write metadata for the Put operation.
+        /// </summary>
+        public string LastWriteMetadata => Options?.LastWriteMetadata;
+
+        bool IHasLastWriteMetadata.HasLastWriteMetadata =>
+            LastWriteMetadata != null;
     }
 
     /// <summary>

@@ -51,6 +51,12 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                     op.MatchVersion.Bytes);
             }
 
+            if (op.LastWriteMetadata != null)
+            {
+                writer.WriteString(FieldNames.LastWriteMetadata,
+                    op.LastWriteMetadata);
+            }
+
             WriteValue(writer, MapValue.FromObject(op.Row));
         }
 
@@ -60,6 +66,12 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             {
                 writer.WriteByteArray(FieldNames.RowVersion,
                     op.MatchVersion.Bytes);
+            }
+
+            if (op.LastWriteMetadata != null)
+            {
+                writer.WriteString(FieldNames.LastWriteMetadata,
+                    op.LastWriteMetadata);
             }
 
             WriteKey(writer, MapValue.FromObject(op.PrimaryKey));
@@ -135,6 +147,9 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                         case FieldNames.ModificationTime:
                             result.ModificationTime =
                                 ReadOptionalTimestamp(reader);
+                            return true;
+                        case FieldNames.LastWriteMetadata:
+                            result.LastWriteMetadata = reader.ReadString();
                             return true;
                         default:
                             return false;
@@ -230,6 +245,12 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             WriteHeader(writer, Opcode.MultiDelete, request);
             writer.StartMap(FieldNames.Payload);
             WriteDurability(writer, request.Durability);
+
+            if (request.LastWriteMetadata != null)
+            {
+                writer.WriteString(FieldNames.LastWriteMetadata,
+                    request.LastWriteMetadata);
+            }
 
             if (request.Options?.MaxWriteKB.HasValue ?? false)
             {
