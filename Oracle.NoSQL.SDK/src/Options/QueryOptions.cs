@@ -90,6 +90,17 @@ namespace Oracle.NoSQL.SDK
         public Durability? Durability { get; set; }
 
         /// <summary>
+        /// Gets or sets the JSON last-write metadata for write queries.
+        /// </summary>
+        /// <remarks>
+        /// This option applies only to INSERT, UPDATE, UPSERT and DELETE
+        /// statements. This value must contain exactly one JSON value such
+        /// as an object, array, string, number, <c>true</c>,
+        /// <c>false</c> or <c>null</c>.
+        /// </remarks>
+        public string LastWriteMetadata { get; set; }
+
+        /// <summary>
         /// Gets or sets the limit on the number of rows returned by this
         /// operation.
         /// </summary>
@@ -234,6 +245,7 @@ namespace Oracle.NoSQL.SDK
             CheckTimeout(Timeout);
             CheckEnumValue(Consistency);
             Durability?.Validate();
+            CheckJsonValue(LastWriteMetadata, nameof(LastWriteMetadata));
             CheckPositiveInt32(Limit, nameof(Limit));
             CheckPositiveInt32(MaxReadKB, nameof(MaxReadKB));
             CheckPositiveInt32(MaxWriteKB, nameof(MaxWriteKB));

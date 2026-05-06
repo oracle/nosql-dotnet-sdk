@@ -23,6 +23,8 @@ namespace Oracle.NoSQL.SDK
         RowVersion ExistingVersion { get; set; }
 
         DateTime? ExistingModificationTime { get; set; }
+
+        string ExistingLastWriteMetadata { get; set; }
     }
 
     internal interface IWriteResultWithId<TRow> : IWriteResult<TRow>

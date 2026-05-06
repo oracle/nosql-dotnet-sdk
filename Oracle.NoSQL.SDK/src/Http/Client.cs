@@ -21,6 +21,9 @@ namespace Oracle.NoSQL.SDK.Http
 
     internal sealed class Client : IDisposable
     {
+        private const string FeaturesKey = "features=";
+        private const long FeatureFlagLastWriteMetadata = 1L << 0;
+
         private readonly Uri dataPathUri = new Uri(NoSQLDataPath,
             UriKind.Relative);
 
@@ -30,6 +33,8 @@ namespace Oracle.NoSQL.SDK.Http
         private int requestId;
         // Does it need to be volatile?
         private int serverSerialVersion;
+        private long enabledFeatures;
+        private int isSuccessResponseProcessed;
 
         private static int GetServerSerialVersion(
             HttpResponseMessage response)
@@ -49,6 +54,103 @@ namespace Oracle.NoSQL.SDK.Http
             }
 
             return ver;
+        }
+
+        private static long? GetEnabledFeatures(HttpResponseMessage response)
+        {
+            if (!response.Headers.TryGetValues(HttpConstants.ServerVersion,
+                    out var values))
+            {
+                return null;
+            }
+
+            var versionInfo = values.FirstOrDefault();
+            if (versionInfo == null)
+            {
+                return null;
+            }
+
+            var start = versionInfo.IndexOf(FeaturesKey,
+                StringComparison.Ordinal);
+            if (start < 0)
+            {
+                return null;
+            }
+
+            start += FeaturesKey.Length;
+            var end = versionInfo.IndexOf(' ', start);
+            var featureValue = end >= 0
+                ? versionInfo.Substring(start, end - start)
+                : versionInfo.Substring(start);
+
+            return long.TryParse(featureValue,
+                    System.Globalization.NumberStyles.HexNumber, null,
+                    out var features)
+                ? features
+                : (long?)null;
+        }
+
+        private void UpdateCachedResponseInfo(HttpResponseMessage response)
+        {
+            if (serverSerialVersion == 0)
+            {
+                serverSerialVersion = GetServerSerialVersion(response);
+            }
+
+            var features = GetEnabledFeatures(response);
+            if (features.HasValue)
+            {
+                Interlocked.Exchange(ref enabledFeatures, features.Value);
+            }
+
+            Interlocked.Exchange(ref isSuccessResponseProcessed, 1);
+        }
+
+        private async Task ExecuteEmptyRequestAsync(Request request,
+            CancellationToken cancellationToken)
+        {
+            if (Interlocked.CompareExchange(ref isSuccessResponseProcessed, 0,
+                    0) != 0)
+            {
+                return;
+            }
+
+            var message = new HttpRequestMessage(HttpMethod.Head, dataPathUri);
+            message.Headers.Add(RequestId, Convert.ToString(
+                Interlocked.Increment(ref requestId)));
+
+            if (config.AuthorizationProvider != null)
+            {
+                await config.AuthorizationProvider.ApplyAuthorizationAsync(
+                    request, message, cancellationToken);
+            }
+
+            if (request.Namespace is var ns && ns != null)
+            {
+                message.Headers.Add(Namespace, ns);
+            }
+
+            var timeout = Math.Min(request.RequestTimeoutMillis, 2000);
+            var response = await SendWithTimeoutAsync(client, message, timeout,
+                cancellationToken);
+            if (response.StatusCode != HttpStatusCode.OK)
+            {
+                throw await CreateServiceResponseExceptionAsync(response);
+            }
+
+            UpdateCachedResponseInfo(response);
+        }
+
+        private async Task<bool> IsFeatureEnabledAsync(long featureFlag,
+            Request request, CancellationToken cancellationToken)
+        {
+            if (Interlocked.CompareExchange(ref isSuccessResponseProcessed, 0,
+                    0) == 0)
+            {
+                await ExecuteEmptyRequestAsync(request, cancellationToken);
+            }
+
+            return (Interlocked.Read(ref enabledFeatures) & featureFlag) != 0;
         }
 
         internal int ServerSerialVersion => serverSerialVersion;
@@ -98,6 +200,15 @@ namespace Oracle.NoSQL.SDK.Http
         internal async Task<object> ExecuteRequestAsync(Request request,
             CancellationToken cancellationToken)
         {
+            if (request is IHasLastWriteMetadata hasLastWriteMetadata &&
+                hasLastWriteMetadata.HasLastWriteMetadata &&
+                !await IsFeatureEnabledAsync(FeatureFlagLastWriteMetadata,
+                    request, cancellationToken))
+            {
+                throw new NotSupportedException(
+                    "Last write metadata is not supported by this server");
+            }
+
             var message = new HttpRequestMessage(HttpMethod.Post,
                 dataPathUri);
 
@@ -133,10 +244,7 @@ namespace Oracle.NoSQL.SDK.Http
                 throw await CreateServiceResponseExceptionAsync(response);
             }
 
-            if (serverSerialVersion == 0)
-            {
-                serverSerialVersion = GetServerSerialVersion(response);
-            }
+            UpdateCachedResponseInfo(response);
 
             // The stream returned by ReadAsStreamAsync(), even though it is
             // usually a MemoryStream, doesn't allow access to the buffer

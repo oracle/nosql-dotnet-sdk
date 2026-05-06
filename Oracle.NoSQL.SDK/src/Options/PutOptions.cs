@@ -88,6 +88,17 @@ namespace Oracle.NoSQL.SDK
         public Durability? Durability { get; set; }
 
         /// <summary>
+        /// Gets or sets the JSON last-write metadata for the Put operation.
+        /// </summary>
+        /// <remarks>
+        /// This value must contain exactly one JSON value such as an object,
+        /// array, string, number, <c>true</c>, <c>false</c> or <c>null</c>.
+        /// If not specified, the row metadata is cleared on a successful
+        /// write.
+        /// </remarks>
+        public string LastWriteMetadata { get; set; }
+
+        /// <summary>
         /// Gets or sets a value that determines whether to perform the Put
         /// operation only if there is no existing row that matches the
         /// primary key.
@@ -268,6 +279,7 @@ namespace Oracle.NoSQL.SDK
         {
             CheckTimeout(Timeout);
             Durability?.Validate();
+            CheckJsonValue(LastWriteMetadata, nameof(LastWriteMetadata));
             CheckPositiveInt32(IdentityCacheSize, nameof(IdentityCacheSize));
             if (UpdateTTLToDefault && TTL.HasValue)
             {

@@ -19,6 +19,8 @@ namespace Oracle.NoSQL.SDK
 
         DeleteOptions Options { get; }
 
+        string LastWriteMetadata { get; }
+
         RowVersion MatchVersion { get; }
 
         bool ReturnExisting { get; }
@@ -35,7 +37,8 @@ namespace Oracle.NoSQL.SDK
     /// <seealso cref="NoSQLClient.DeleteAsync"/>
     /// <seealso cref="Request"/>
     /// <seealso cref="WriteRequest" />
-    public class DeleteRequest<TRow> : WriteRequest, IDeleteOp
+    public class DeleteRequest<TRow> : WriteRequest, IDeleteOp,
+        IHasLastWriteMetadata
     {
         internal DeleteRequest(NoSQLClient client, string tableName,
             object primaryKey, DeleteOptions options) :
@@ -46,6 +49,8 @@ namespace Oracle.NoSQL.SDK
         }
 
         internal override IWriteOptions WriteOptions => Options;
+
+        string IDeleteOp.LastWriteMetadata => LastWriteMetadata;
 
         RowVersion IDeleteOp.MatchVersion => Options?.MatchVersion;
 
@@ -87,6 +92,14 @@ namespace Oracle.NoSQL.SDK
         /// The options or <c>null</c> if options were not provided.
         /// </value>
         public DeleteOptions Options { get; set; }
+
+        /// <summary>
+        /// Gets the JSON last-write metadata for the Delete operation.
+        /// </summary>
+        public string LastWriteMetadata => Options?.LastWriteMetadata;
+
+        bool IHasLastWriteMetadata.HasLastWriteMetadata =>
+            LastWriteMetadata != null;
     }
 
     /// <summary>

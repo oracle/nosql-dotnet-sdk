@@ -78,6 +78,18 @@ namespace Oracle.NoSQL.SDK
         public Durability? Durability { get; set; }
 
         /// <summary>
+        /// Gets or sets the JSON last-write metadata for the DeleteRange
+        /// operation.
+        /// </summary>
+        /// <remarks>
+        /// This value must contain exactly one JSON value such as an object,
+        /// array, string, number, <c>true</c>, <c>false</c> or <c>null</c>.
+        /// If not specified, the row metadata is cleared on a successful
+        /// delete.
+        /// </remarks>
+        public string LastWriteMetadata { get; set; }
+
+        /// <summary>
         /// Gets or sets the field range.
         /// </summary>
         /// <remarks>
@@ -141,6 +153,7 @@ namespace Oracle.NoSQL.SDK
         {
             CheckTimeout(Timeout);
             Durability?.Validate();
+            CheckJsonValue(LastWriteMetadata, nameof(LastWriteMetadata));
             CheckPositiveInt32(MaxWriteKB, nameof(MaxWriteKB));
 
             // Currently the proxy returns BadProtocolException on this so we
