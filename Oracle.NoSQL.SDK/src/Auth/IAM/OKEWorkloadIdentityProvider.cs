@@ -124,8 +124,7 @@ namespace Oracle.NoSQL.SDK
 
             connectionOptions = new ConnectionOptions
             {
-                TrustedRootCertificateFile = caCertFile,
-                DisableHostnameVerification = true
+                TrustedRootCertificateFile = caCertFile
             };
             connectionOptions.Init();
 
