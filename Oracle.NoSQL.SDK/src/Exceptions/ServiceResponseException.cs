@@ -52,17 +52,9 @@ namespace Oracle.NoSQL.SDK
     public class ServiceResponseException : NoSQLException
     {
         private static string GetMessage(HttpStatusCode statusCode,
-            string reasonPhrase, string content)
-        {
-            var message = "Unsuccessful HTTP response: " +
-                          $"{(int)statusCode} {reasonPhrase}";
-            if (content != null)
-            {
-                message += $". Error output: {content}";
-            }
-
-            return message;
-        }
+            string reasonPhrase) =>
+            "Unsuccessful HTTP response: " +
+            $"{(int)statusCode} {reasonPhrase}";
 
         /// <summary>
         /// Initializes a new instance of
@@ -105,6 +97,9 @@ namespace Oracle.NoSQL.SDK
         /// <remarks>
         /// The value of <see cref="Exception.Message"/> is generated from
         /// <paramref name="statusCode"/> and <paramref name="reasonPhrase"/>.
+        /// The raw HTTP response body is available via
+        /// <see cref="ResponseMessage"/> and may contain sensitive
+        /// diagnostic content.
         /// </remarks>
         /// <param name="statusCode">HTTP status code.</param>
         /// <param name="reasonPhrase">HTTP status message.</param>
@@ -112,7 +107,7 @@ namespace Oracle.NoSQL.SDK
         /// response.</param>
         public ServiceResponseException(HttpStatusCode statusCode,
             string reasonPhrase, string responseMessage) :
-            base(GetMessage(statusCode, reasonPhrase, responseMessage))
+            base(GetMessage(statusCode, reasonPhrase))
         {
             StatusCode = statusCode;
             StatusMessage = reasonPhrase;
@@ -146,7 +141,8 @@ namespace Oracle.NoSQL.SDK
         /// Gets the service response message.
         /// </summary>
         /// <value>Message sent within the body of the service HTTP response.
-        /// </value>
+        /// This value may contain sensitive diagnostic content and should not
+        /// be logged or displayed unless explicitly intended.</value>
         public string ResponseMessage { get; }
     }
 
