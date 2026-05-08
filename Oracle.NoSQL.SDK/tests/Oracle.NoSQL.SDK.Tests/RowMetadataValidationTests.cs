@@ -8,7 +8,9 @@
 namespace Oracle.NoSQL.SDK.Tests
 {
     using System;
+    using System.Net.Http;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Oracle.NoSQL.SDK.Http;
 
     [TestClass]
     public class RowMetadataValidationTests
@@ -44,6 +46,18 @@ namespace Oracle.NoSQL.SDK.Tests
             metadata => new QueryOptions { LastWriteMetadata = metadata }
         };
 
+        private static long? GetEnabledFeatures(string versionHeader)
+        {
+            using var response = new HttpResponseMessage();
+            if (versionHeader != null)
+            {
+                response.Headers.Add(HttpConstants.ServerVersion,
+                    versionHeader);
+            }
+
+            return Client.GetEnabledFeatures(response);
+        }
+
         [TestMethod]
         public void TestValidRowMetadata()
         {
@@ -67,6 +81,21 @@ namespace Oracle.NoSQL.SDK.Tests
                         createOptions(metadata).Validate());
                 }
             }
+        }
+
+        [TestMethod]
+        public void TestEnabledFeaturesParsing()
+        {
+            Assert.IsNull(GetEnabledFeatures(null));
+            Assert.IsNull(GetEnabledFeatures("proxy=26.1.0 kv=26.1.0"));
+            Assert.IsNull(GetEnabledFeatures(
+                "proxy=26.1.0 kv=26.1.0 features=not-hex"));
+            Assert.AreEqual(0, GetEnabledFeatures(
+                "proxy=26.1.0 kv=26.1.0 features=0"));
+            Assert.AreEqual(1, GetEnabledFeatures(
+                "proxy=26.1.0 kv=26.1.0 features=1"));
+            Assert.AreEqual(15, GetEnabledFeatures(
+                "proxy=26.1.0 kv=26.1.0 features=f other=value"));
         }
     }
 }

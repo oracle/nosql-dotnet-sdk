@@ -38,7 +38,7 @@ namespace Oracle.NoSQL.SDK
     /// <seealso cref="Request"/>
     /// <seealso cref="WriteRequest" />
     public class DeleteRequest<TRow> : WriteRequest, IDeleteOp,
-        IHasLastWriteMetadata
+        ILastWriteMetadataRequest
     {
         internal DeleteRequest(NoSQLClient client, string tableName,
             object primaryKey, DeleteOptions options) :
@@ -98,7 +98,7 @@ namespace Oracle.NoSQL.SDK
         /// </summary>
         public string LastWriteMetadata => Options?.LastWriteMetadata;
 
-        bool IHasLastWriteMetadata.HasLastWriteMetadata =>
+        bool ILastWriteMetadataRequest.HasLastWriteMetadata =>
             LastWriteMetadata != null;
     }
 

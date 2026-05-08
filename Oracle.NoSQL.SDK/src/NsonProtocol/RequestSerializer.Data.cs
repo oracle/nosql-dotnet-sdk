@@ -21,6 +21,15 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
         private static Opcode GetDeleteOpcode(IDeleteOp op) =>
             SDK.BinaryProtocol.RequestSerializer.GetDeleteOpcode(op);
 
+        private static void WriteLastWriteMetadata(NsonWriter writer,
+            string metadata)
+        {
+            if (metadata != null)
+            {
+                writer.WriteString(FieldNames.LastWriteMetadata, metadata);
+            }
+        }
+
         private static void SerializePutOp(NsonWriter writer, IPutOp op)
         {
             if (op.Options?.ExactMatch ?? false)
@@ -51,12 +60,7 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                     op.MatchVersion.Bytes);
             }
 
-            if (op.LastWriteMetadata != null)
-            {
-                writer.WriteString(FieldNames.LastWriteMetadata,
-                    op.LastWriteMetadata);
-            }
-
+            WriteLastWriteMetadata(writer, op.LastWriteMetadata);
             WriteValue(writer, MapValue.FromObject(op.Row));
         }
 
@@ -68,12 +72,7 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                     op.MatchVersion.Bytes);
             }
 
-            if (op.LastWriteMetadata != null)
-            {
-                writer.WriteString(FieldNames.LastWriteMetadata,
-                    op.LastWriteMetadata);
-            }
-
+            WriteLastWriteMetadata(writer, op.LastWriteMetadata);
             WriteKey(writer, MapValue.FromObject(op.PrimaryKey));
         }
 
@@ -246,11 +245,7 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             writer.StartMap(FieldNames.Payload);
             WriteDurability(writer, request.Durability);
 
-            if (request.LastWriteMetadata != null)
-            {
-                writer.WriteString(FieldNames.LastWriteMetadata,
-                    request.LastWriteMetadata);
-            }
+            WriteLastWriteMetadata(writer, request.LastWriteMetadata);
 
             if (request.Options?.MaxWriteKB.HasValue ?? false)
             {

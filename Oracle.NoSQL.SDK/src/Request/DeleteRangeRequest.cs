@@ -21,7 +21,8 @@ namespace Oracle.NoSQL.SDK
     /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.GetDeleteRangeAsyncEnumerable*"/>
     /// <seealso cref="Request"/>
     /// <seealso cref="RequestWithTable" />
-    public class DeleteRangeRequest : RequestWithTable, IHasLastWriteMetadata
+    public class DeleteRangeRequest : RequestWithTable,
+        ILastWriteMetadataRequest
     {
         internal DeleteRangeRequest(NoSQLClient client, string tableName,
             object partialPrimaryKey, DeleteRangeOptions options) :
@@ -102,7 +103,7 @@ namespace Oracle.NoSQL.SDK
         /// </summary>
         public string LastWriteMetadata => Options?.LastWriteMetadata;
 
-        bool IHasLastWriteMetadata.HasLastWriteMetadata =>
+        bool ILastWriteMetadataRequest.HasLastWriteMetadata =>
             LastWriteMetadata != null;
     }
 }

@@ -34,7 +34,7 @@ namespace Oracle.NoSQL.SDK.Http
         // Does it need to be volatile?
         private int serverSerialVersion;
         private long enabledFeatures;
-        private int isSuccessResponseProcessed;
+        private int isFeatureInfoProcessed;
 
         private static int GetServerSerialVersion(
             HttpResponseMessage response)
@@ -56,7 +56,7 @@ namespace Oracle.NoSQL.SDK.Http
             return ver;
         }
 
-        private static long? GetEnabledFeatures(HttpResponseMessage response)
+        internal static long? GetEnabledFeatures(HttpResponseMessage response)
         {
             if (!response.Headers.TryGetValues(HttpConstants.ServerVersion,
                     out var values))
@@ -90,7 +90,8 @@ namespace Oracle.NoSQL.SDK.Http
                 : (long?)null;
         }
 
-        private void UpdateCachedResponseInfo(HttpResponseMessage response)
+        private void UpdateCachedResponseInfo(HttpResponseMessage response,
+            bool isFeatureProbe = false)
         {
             if (serverSerialVersion == 0)
             {
@@ -101,15 +102,31 @@ namespace Oracle.NoSQL.SDK.Http
             if (features.HasValue)
             {
                 Interlocked.Exchange(ref enabledFeatures, features.Value);
+                Interlocked.Exchange(ref isFeatureInfoProcessed, 1);
             }
-
-            Interlocked.Exchange(ref isSuccessResponseProcessed, 1);
+            else if (isFeatureProbe)
+            {
+                MarkFeaturesUnavailable();
+            }
         }
 
-        private async Task ExecuteEmptyRequestAsync(Request request,
+        private void MarkFeaturesUnavailable()
+        {
+            Interlocked.Exchange(ref enabledFeatures, 0);
+            Interlocked.Exchange(ref isFeatureInfoProcessed, 1);
+        }
+
+        private static bool IsUnsupportedFeatureProbeResponse(
+            HttpStatusCode statusCode) =>
+            statusCode == HttpStatusCode.BadRequest ||
+            statusCode == HttpStatusCode.NotFound ||
+            statusCode == HttpStatusCode.MethodNotAllowed ||
+            statusCode == HttpStatusCode.NotImplemented;
+
+        private async Task ExecuteFeatureProbeAsync(Request request,
             CancellationToken cancellationToken)
         {
-            if (Interlocked.CompareExchange(ref isSuccessResponseProcessed, 0,
+            if (Interlocked.CompareExchange(ref isFeatureInfoProcessed, 0,
                     0) != 0)
             {
                 return;
@@ -135,22 +152,43 @@ namespace Oracle.NoSQL.SDK.Http
                 cancellationToken);
             if (response.StatusCode != HttpStatusCode.OK)
             {
+                if (IsUnsupportedFeatureProbeResponse(response.StatusCode))
+                {
+                    MarkFeaturesUnavailable();
+                    return;
+                }
+
                 throw await CreateServiceResponseExceptionAsync(response);
             }
 
-            UpdateCachedResponseInfo(response);
+            UpdateCachedResponseInfo(response, true);
         }
 
         private async Task<bool> IsFeatureEnabledAsync(long featureFlag,
             Request request, CancellationToken cancellationToken)
         {
-            if (Interlocked.CompareExchange(ref isSuccessResponseProcessed, 0,
+            if (Interlocked.CompareExchange(ref isFeatureInfoProcessed, 0,
                     0) == 0)
             {
-                await ExecuteEmptyRequestAsync(request, cancellationToken);
+                await ExecuteFeatureProbeAsync(request, cancellationToken);
             }
 
             return (Interlocked.Read(ref enabledFeatures) & featureFlag) != 0;
+        }
+
+        private static int GetRemainingTimeoutMillis(DateTime startTime,
+            int timeoutMillis)
+        {
+            var elapsedMillis = (int)(DateTime.UtcNow - startTime)
+                .TotalMilliseconds;
+            var remainingMillis = timeoutMillis - elapsedMillis;
+            if (remainingMillis <= 0)
+            {
+                throw new TimeoutException(
+                    $"Operation timed out after {elapsedMillis} ms");
+            }
+
+            return remainingMillis;
         }
 
         internal int ServerSerialVersion => serverSerialVersion;
@@ -200,8 +238,11 @@ namespace Oracle.NoSQL.SDK.Http
         internal async Task<object> ExecuteRequestAsync(Request request,
             CancellationToken cancellationToken)
         {
-            if (request is IHasLastWriteMetadata hasLastWriteMetadata &&
-                hasLastWriteMetadata.HasLastWriteMetadata &&
+            var startTime = DateTime.UtcNow;
+            var timeoutMillis = request.RequestTimeoutMillis;
+
+            if (request is ILastWriteMetadataRequest metadataRequest &&
+                metadataRequest.HasLastWriteMetadata &&
                 !await IsFeatureEnabledAsync(FeatureFlagLastWriteMetadata,
                     request, cancellationToken))
             {
@@ -211,6 +252,10 @@ namespace Oracle.NoSQL.SDK.Http
 
             var message = new HttpRequestMessage(HttpMethod.Post,
                 dataPathUri);
+
+            timeoutMillis = GetRemainingTimeoutMillis(startTime,
+                timeoutMillis);
+            request.RequestTimeoutMillis = timeoutMillis;
 
             var stream = new MemoryStream();
             protocolHandler.StartWrite(stream, request);
@@ -238,7 +283,7 @@ namespace Oracle.NoSQL.SDK.Http
             }
 
             var response = await SendWithTimeoutAsync(client, message,
-                request.RequestTimeoutMillis, cancellationToken);
+                timeoutMillis, cancellationToken);
             if (response.StatusCode != HttpStatusCode.OK)
             {
                 throw await CreateServiceResponseExceptionAsync(response);

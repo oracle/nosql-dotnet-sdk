@@ -697,16 +697,18 @@ namespace Oracle.NoSQL.SDK
             var isInvalidAuth =
                 request.LastException is InvalidAuthorizationException;
             var contentSigned = request.NeedsContentSigned;
+            var cacheableSignatureRequest =
+                IsCacheableSignatureRequest(message);
             
             SignatureDetails signatureDetails;
-            if (isInvalidAuth || contentSigned ||
+            if (isInvalidAuth || contentSigned || !cacheableSignatureRequest ||
                 !profileProvider.IsProfileValid ||
                 NeedSignatureRefresh(CachedSignatureDetails))
             {
                 signatureDetails = await CreateSignatureDetailsAsync(
                     request, message, isInvalidAuth, cancellationToken);
 
-                if (!contentSigned)
+                if (!contentSigned && cacheableSignatureRequest)
                 {
                     CachedSignatureDetails = signatureDetails;
                     if (RefreshAhead != TimeSpan.Zero)

@@ -7,7 +7,10 @@
 
 namespace Oracle.NoSQL.SDK
 {
-    internal interface IHasLastWriteMetadata
+    // Request-level feature gate for operations that may send row
+    // last-write metadata.  WriteMany returns true when any child operation
+    // carries metadata.
+    internal interface ILastWriteMetadataRequest
     {
         bool HasLastWriteMetadata { get; }
     }

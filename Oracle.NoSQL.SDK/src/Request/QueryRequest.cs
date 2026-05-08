@@ -19,7 +19,8 @@ namespace Oracle.NoSQL.SDK
     /// Base class for <see cref="QueryRequest{TRow}"/>.  Only used
     /// internally.
     /// </summary>
-    public abstract class QueryRequest : QueryRequestBase, IHasLastWriteMetadata
+    public abstract class QueryRequest : QueryRequestBase,
+        ILastWriteMetadataRequest
     {
         // "5" == PrepareCallback.QueryOperation.SELECT
         internal const int OperationCodeSelect = 5;
@@ -83,7 +84,7 @@ namespace Oracle.NoSQL.SDK
 
         internal string LastWriteMetadata => Options?.LastWriteMetadata;
 
-        bool IHasLastWriteMetadata.HasLastWriteMetadata =>
+        bool ILastWriteMetadataRequest.HasLastWriteMetadata =>
             LastWriteMetadata != null;
     }
 

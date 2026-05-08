@@ -38,7 +38,8 @@ namespace Oracle.NoSQL.SDK
     /// <seealso cref="NoSQLClient.PutAsync"/>
     /// <seealso cref="Request"/>
     /// <seealso cref="ReadRequest" />
-    public class PutRequest<TRow> : WriteRequest, IPutOp, IHasLastWriteMetadata
+    public class PutRequest<TRow> : WriteRequest, IPutOp,
+        ILastWriteMetadataRequest
     {
         internal PutRequest(NoSQLClient client, string tableName, object row,
             PutOptions options) : base(client, tableName)
@@ -101,7 +102,7 @@ namespace Oracle.NoSQL.SDK
         /// </summary>
         public string LastWriteMetadata => Options?.LastWriteMetadata;
 
-        bool IHasLastWriteMetadata.HasLastWriteMetadata =>
+        bool ILastWriteMetadataRequest.HasLastWriteMetadata =>
             LastWriteMetadata != null;
     }
 
