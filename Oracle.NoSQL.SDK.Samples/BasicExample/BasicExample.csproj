@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Oracle.NoSQL.SDK\src\Oracle.NoSQL.SDK.csproj" />
+    <PackageReference Include="Oracle.NoSQL.SDK" Version="5.2.3" />
   </ItemGroup>
 
 </Project>
