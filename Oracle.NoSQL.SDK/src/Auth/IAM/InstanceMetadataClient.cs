@@ -8,7 +8,6 @@
 namespace Oracle.NoSQL.SDK
 {
     using System;
-    using System.Net;
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
@@ -33,14 +32,13 @@ namespace Oracle.NoSQL.SDK
     /// </remarks>
     public sealed class InstanceMetadataClient : IDisposable
     {
-        // Instance metadata service base URL
+        // OCI instance metadata service v2 base URL. IMDS is exposed by OCI
+        // as a link-local HTTP endpoint and requires Authorization: Bearer
+        // Oracle for v2 requests.
         private const string MetadataServiceBaseUrl =
             "http://169.254.169.254/opc/v2/";
 
-        private const string FallbackMetadataServiceUrl =
-            "http://169.254.169.254/opc/v1/";
-
-        // The authorization header need to send to metadata service since V2
+        // The authorization header to send to metadata service v2.
         private const string AuthorizationHeaderValue = "Bearer Oracle";
 
         private readonly AuthHttpClient httpClient;
@@ -94,11 +92,9 @@ namespace Oracle.NoSQL.SDK
         internal async Task<string> GetValueAsync(string path,
             CancellationToken cancellationToken)
         {
-            var checkFallback = false;
             if (metadataUrl == null)
             {
                 metadataUrl = MetadataServiceBaseUrl;
-                checkFallback = true;
             }
 
             try
@@ -107,25 +103,6 @@ namespace Oracle.NoSQL.SDK
             }
             catch (Exception ex)
             {
-                if (checkFallback && ex is ServiceResponseException srex &&
-                    srex.StatusCode == HttpStatusCode.NotFound)
-                {
-                    metadataUrl = FallbackMetadataServiceUrl;
-                    try
-                    {
-                        return await GetValueInternalAsync(path,
-                            cancellationToken);
-                    }
-                    catch (Exception ex2)
-                    {
-                        throw new AuthorizationException(
-                            $"Unable to get resource {path} from instance " +
-                            $"metadata {MetadataServiceBaseUrl} or " +
-                            $"fall back to {FallbackMetadataServiceUrl}, " +
-                            $"error: {ex2.Message}", ex2);
-                    }
-                }
-
                 throw new AuthorizationException(
                     $"Unable to get resource {path} from instance metadata " +
                     $"{metadataUrl}, error: {ex.Message}", ex);
