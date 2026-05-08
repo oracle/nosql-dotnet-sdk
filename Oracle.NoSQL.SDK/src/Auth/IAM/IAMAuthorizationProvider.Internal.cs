@@ -145,6 +145,9 @@ namespace Oracle.NoSQL.SDK
             }
         }
 
+        private bool HasDynamicDelegationToken =>
+            DelegationTokenProvider != null || DelegationTokenFile != null;
+
         private async Task<string> LoadDelegationToken(
             CancellationToken cancellationToken)
         {
@@ -234,7 +237,8 @@ namespace Oracle.NoSQL.SDK
 
         private async Task<SignatureDetails> CreateSignatureDetailsAsync(
             Request request, HttpRequestMessage message,
-            bool forceProfileRefresh, CancellationToken cancellationToken)
+            bool forceProfileRefresh, CancellationToken cancellationToken,
+            string currentDelegationToken = null)
         {
             AuthenticationProfile profile;
 
@@ -252,12 +256,17 @@ namespace Oracle.NoSQL.SDK
                 providerAsyncLock.Release();
             }
 
-            // If there is no DelegationTokenProvider or DelegationTokenFile,
-            // delegationToken could have been initialized in the constructor.
-            var currentDelegationToken =
-                DelegationTokenProvider != null || DelegationTokenFile != null
-                    ? await LoadDelegationToken(cancellationToken)
-                    : DelegationToken;
+            if (!HasDynamicDelegationToken)
+            {
+                // If there is no DelegationTokenProvider or DelegationTokenFile,
+                // delegationToken could have been initialized in the constructor.
+                currentDelegationToken = DelegationToken;
+            }
+            else if (currentDelegationToken == null)
+            {
+                currentDelegationToken =
+                    await LoadDelegationToken(cancellationToken);
+            }
 
             ContentSigningInfo contentSigningInfo = null;
             if (request?.NeedsContentSigned ?? false)
@@ -375,6 +384,11 @@ namespace Oracle.NoSQL.SDK
             SignatureDetails signatureDetails) =>
             signatureDetails == null || DateTime.UtcNow >
             signatureDetails.Time + CacheDuration;
+
+        private static bool DelegationTokenMatches(
+            SignatureDetails signatureDetails,
+            string currentDelegationToken) =>
+            signatureDetails?.DelegationToken == currentDelegationToken;
 
         /// <summary>
         /// Validates and configures the authorization provider.
