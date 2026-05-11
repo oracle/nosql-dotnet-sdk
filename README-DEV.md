@@ -10,20 +10,15 @@ source code and run and modify tests and examples.
 
 Read [README](./README.md) on how to use the SDK.
 
-1.  You may develop on Windows, Linux or Mac.  The SDK supports .NET 5.0 and
-later as well as .NET Core 3.1. It is recommended to use LTS version. Current
-LTS version is .NET 8.0. Download your chosen .NET version
+1.  You may develop on Windows, Linux or Mac.  The SDK supports .NET 10.0 or
+later supported versions. Download your chosen .NET version
 [here](https://dotnet.microsoft.com/en-us/download/dotnet) and follow
 installation instructions for your operating system.
 
 After installation, set *DOTNET_ROOT* environment variable to point to the .NET
 installation location. 
 
-Currently, the SDK is built for 2 platforms: .NET 5.0 and .NET Core 3.1.
-However, both binaries are forward-compatible and will run on any later .NET
-runtime. .NET 5.0 binary will be used by applications running on .NET 5.0 or
-later, however testing .NET Core 3.1 binary may be necessary to ensure
-backward compatibility. See below on how to specify target framework.
+Currently, the SDK is built for .NET 10.0.
 
 Note that .NET SDK for Oracle NoSQL Database requires C# version 8.0 or
 higher.
@@ -42,20 +37,17 @@ cd nosql-dotnet-sdk
 dotnet build
 ```
 
-(Note: the above command will build for both .NET 5.0 and .NET 3.1 and will
-work only if you installed .NET 5.0 or later).
+(Note: the above command requires a .NET 10.0 SDK or later supported version).
 
-You may also build for particular .NET version (.NET 5.0 or .NET Core 3.1)
-and particular build configuration (*Debug* or *Release*):
+You may also build for a particular build configuration (*Debug* or
+*Release*):
 
 ```bash
 cd nosql-dotnet-sdk
-dotnet build -f <target-framework> [-c <build-configuration>]
+dotnet build [-c <build-configuration>]
 ```
 
-where *target-framework* is target framework moniker (TFM), values are
-*net5.0* and *netcoreapp3.1*, and *build-configuration* is *Debug* or
-*Release*, default is *Debug*.
+where *build-configuration* is *Debug* or *Release*, default is *Debug*.
 
 The above will build the solution *Oracle.NoSQL.SDK.sln*.  You may also
 build particular projects individually by building in the following
@@ -143,12 +135,10 @@ Simulator running on *localhost* port *8080*:
 
 ```bash
 cd nosql-dotnet-sdk
-dotnet test -f <target-framework> [-c <build-configuration>]
+dotnet test [-c <build-configuration>]
 ```
 
-where *target-framework* is target framework moniker (TFM), values are
-*net5.0* and *netcoreapp3.1*, and *build-configuration* is *Debug* or
-*Release*, default is *Debug*.
+where *build-configuration* is *Debug* or *Release*, default is *Debug*.
 
 In all other cases, JSON configuration file is required.  It is passed to the
 tests as property named *noSQLConfigFile*, as part of
@@ -159,7 +149,7 @@ You may provide this property in one of two ways:
 1.  On the command line when running *dotnet test*:
 
 ```bash
-dotnet test -f <target-framework> [-c <build-configuration>] -- TestRunParameters.Parameter(name=\"noSQLConfigFile\", value=\"/path/to/config.json\")
+dotnet test [-c <build-configuration>] -- TestRunParameters.Parameter(name=\"noSQLConfigFile\", value=\"/path/to/config.json\")
 ```
 
 2. In a *.runsettings* file:
@@ -180,7 +170,7 @@ be *.runsettings*) with the following contents:
 Pass this file to *dotnet test* command:
 
 ```bash
-dotnet test -f <target-framework> [-c <build-configuration>] -s test.runsettings
+dotnet test [-c <build-configuration>] -s test.runsettings
 ```
 
 In addition to *dotnet test* command, using *.runsettings* file will allow you
@@ -195,7 +185,7 @@ To run individual unit tests or test cases, use *dotnet test* command with
 *--filter* option.  For example:
 
 ```bash
-dotnet test -f net5.0 --filter ClassName~PutTests
+dotnet test --filter ClassName~PutTests
 ```
 
 For more details, see
@@ -256,12 +246,10 @@ database. It requires JSON configuration file as described above.  To
 
 ```bash
 cd nosql-dotnet-sdk/Oracle.NoSQL.SDK/tests/Oracle.NoSQL.SDK.SmokeTest
-dotnet run -f <target-framework> [-c <build-configuration>] -- /path/to/config.json
+dotnet run [-c <build-configuration>] -- /path/to/config.json
 ```
 
-where *target-framework* is target framework moniker (TFM), values are
-*net5.0* and *netcoreapp3.1*, and *build-configuration* is *Debug* or
-*Release*, default is *Debug*.
+where *build-configuration* is *Debug* or *Release*, default is *Debug*.
 
 Note: you may omit JSON configuration file if running against the cloud
 service using default OCI configuration file (see

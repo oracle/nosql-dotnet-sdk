@@ -356,14 +356,14 @@ namespace Oracle.NoSQL.SDK
                 var fields = typeof(Region).GetFields(
                     BindingFlags.Public | BindingFlags.Static);
 
-                foreach (var field in fields)
+                foreach (var regionField in fields)
                 {
-                    if (field.FieldType != typeof(Region))
+                    if (regionField.FieldType != typeof(Region))
                     {
                         continue;
                     }
 
-                    var region = (Region)field.GetValue(null);
+                    var region = (Region)regionField.GetValue(null);
                     Debug.Assert(region != null);
 
                     result.Add(region);

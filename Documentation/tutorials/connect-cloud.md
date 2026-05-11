@@ -8,9 +8,8 @@ The SDK requires:
 * An Oracle Cloud Infrastructure account
 * A user created in that account, in a group with a policy that grants the
 desired permissions.
-* [.NET Core](https://dotnet.microsoft.com/download) 3.1 or later, including
-[.NET 5.0](https://dotnet.microsoft.com/download/dotnet/5.0) or later version
-running on Windows, Linux, or Mac.
+* [.NET](https://dotnet.microsoft.com/download) 10.0 or later supported
+version running on Windows, Linux, or Mac.
 * [Nuget Package Manager](https://docs.microsoft.com/en-us/nuget/consume-packages/install-use-packages-nuget-cli)
 if you wish to install the SDK independently of your project.
 
@@ -631,27 +630,10 @@ the project *BasicExample.csproj*.
 5.  Build and run the project:
 
 ```bash
-dotnet run -f <your_target_framework>
+dotnet run
 ```
 
-The project supports multiple
-[target frameworks](https://docs.microsoft.com/en-us/dotnet/standard/frameworks)
-which currently are .NET Core 3.1 and .NET 5.0, so you must specify the target
-framework to use.
-
-For .NET 5.0, specify *net5.0*:
-
-```bash
-dotnet run -f net5.0
-```
-
-For .NET Core 3.1, specify *netcoreapp3.1*:
-
-```bash
-dotnet run -f netcoreapp3.1
-```
-
-Note that the commands above will automatically download and install Oracle
+Note that the command above will automatically download and install Oracle
 NoSQL Database SDK package as a dependency of the example project.
 
 Alternatively, you may build and run the example project in
@@ -715,7 +697,7 @@ provide to the *dotnet run* command.  For example:
 
 ```bash
 cd Oracle.NoSQL.SDK.Samples/BasicExample
-dotnet run -f net5.0 -- ../cloudsim.json
+dotnet run -- ../cloudsim.json
 ```
 
 As described in section [Specifying Service Type](#service_type), for the

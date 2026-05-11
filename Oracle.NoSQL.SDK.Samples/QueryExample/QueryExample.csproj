@@ -2,9 +2,8 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>netcoreapp3.1;net5.0</TargetFrameworks>
-	<RollForward>Major</RollForward>
-    <CheckEolTargetFramework>false</CheckEolTargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
+    <RollForward>Major</RollForward>
     <RootNamespace>Oracle.NoSQL.SDK.Samples</RootNamespace>
   </PropertyGroup>
 
