@@ -11,8 +11,8 @@ and the [On-Premise Oracle NoSQL Database](https://docs.oracle.com/en/database/o
 
 ## Prerequisites
 
-* [.NET Core](https://dotnet.microsoft.com/download) 3.1 or later, including
-.NET 5.0, .NET 6.0 and later running on Windows, Linux, or Mac.
+* [.NET](https://dotnet.microsoft.com/download) 10.0 or later supported
+version running on Windows, Linux, or Mac.
 * Optionally,
 [Nuget Package Manager](https://docs.microsoft.com/en-us/nuget/consume-packages/install-use-packages-nuget-cli)
 if you wish to install the SDK independently of your project.
@@ -288,13 +288,10 @@ command, providing JSON config file as the command line argument:
 
 ```bash
 cd Oracle.NoSQL.SDK.Samples/<example>
-dotnet run -f <target-framework> [-- /path/to/config.json]
+dotnet run [-- /path/to/config.json]
 ```
 
-where *<example>* is the example directory and *<target-framework>* is the
-target framework moniker, supported values are *net5.0* and *netcoreapp3.1*,
-but both of these are forward-compatible and should run on any later .NET
-runtime as well.
+where *<example>* is the example directory.
 
 The command above will build and run the example.
 
@@ -302,7 +299,7 @@ For example:
 
 ```bash
 cd Oracle.NoSQL.SDK.Samples/BasicExample
-dotnet run -f net5.0 -- my_config.json
+dotnet run -- my_config.json
 ```
 
 ## Help

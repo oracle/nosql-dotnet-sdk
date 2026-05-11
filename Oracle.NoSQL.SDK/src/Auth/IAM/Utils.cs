@@ -59,7 +59,7 @@ namespace Oracle.NoSQL.SDK {
         }
 
         internal static X509Certificate2 GetCertificateFromPEM(string pem) =>
-            new X509Certificate2(Encoding.UTF8.GetBytes(pem));
+            X509Certificate2.CreateFromPem(pem);
 
         // Taken from C# OCI SDK
         internal static string GetTenantIdFromInstanceCertificate(
