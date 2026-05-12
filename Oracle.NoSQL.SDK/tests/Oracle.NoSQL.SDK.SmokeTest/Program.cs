@@ -22,7 +22,7 @@ namespace Oracle.NoSQL.SDK.SmokeTest
                 Indented = true
             };
 
-        public static async Task Main(string[] args)
+        public static async Task<int> Main(string[] args)
         {
             // Console.ReadLine();
             try
@@ -33,6 +33,7 @@ namespace Oracle.NoSQL.SDK.SmokeTest
                 Console.WriteLine("Created NoSQLClient instance");
                 await RunSmokeTest(client);
                 Console.WriteLine("Success!");
+                return 0;
             }
             catch (Exception ex)
             {
@@ -48,6 +49,8 @@ namespace Oracle.NoSQL.SDK.SmokeTest
                     Console.WriteLine("Error: " + inner.Message);
                     Console.WriteLine(inner.StackTrace);
                 }
+
+                return 1;
             }
         }
 

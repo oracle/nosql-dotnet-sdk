@@ -212,6 +212,10 @@ namespace Oracle.NoSQL.SDK
 
         internal virtual bool ShouldRetry => true;
 
+        // Network exceptions are ambiguous because the service may have
+        // committed the request before the response was lost.
+        internal virtual bool CanRetryOnNetworkException => true;
+
         internal virtual bool SupportsRateLimiting => false;
 
         // Used by rate limiting.
