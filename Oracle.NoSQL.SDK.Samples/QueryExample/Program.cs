@@ -179,8 +179,28 @@ namespace Oracle.NoSQL.SDK.Samples
 
             Console.WriteLine("  Inserted 4 records");
 
-            // Find user with name Supriya with a simple query.
+            // Add a record using a write query with last-write metadata.
+            const string queryWriteMetadata =
+                "{\"updatedBy\":\"QueryExample\",\"operation\":\"upsert\"}";
             var statement =
+                $"UPSERT INTO {TableName} VALUES(77, 'Maya', " +
+                "{\"age\":29,\"city\":\"Austin\"})";
+
+            Console.WriteLine("\nUse a write query with metadata: {0}",
+                statement);
+            await ExecuteQuery(client, statement, new QueryOptions
+            {
+                LastWriteMetadata = queryWriteMetadata
+            });
+
+            statement =
+                $"SELECT id, name, last_write_metadata($u) AS metadata " +
+                $"FROM {TableName} $u WHERE id = 77";
+            Console.WriteLine("\nRead metadata with query: {0}", statement);
+            await DoQuery(client.GetQueryAsyncEnumerable(statement));
+
+            // Find user with name Supriya with a simple query.
+            statement =
                 $"SELECT * FROM {TableName} WHERE name = 'Supriya'";
 
             Console.WriteLine("\nUse a simple query: {0}", statement);
@@ -219,6 +239,17 @@ namespace Oracle.NoSQL.SDK.Samples
 
             Console.WriteLine("  Operation completed");
             Console.WriteLine("  Table state is {0}", tableResult.TableState);
+        }
+
+        private static async Task ExecuteQuery(NoSQLClient client,
+            string statement, QueryOptions options)
+        {
+            QueryResult<RecordValue> result;
+            do
+            {
+                result = await client.QueryAsync(statement, options);
+                options.ContinuationKey = result.ContinuationKey;
+            } while (options.ContinuationKey != null);
         }
 
         // Iterate over query results.
