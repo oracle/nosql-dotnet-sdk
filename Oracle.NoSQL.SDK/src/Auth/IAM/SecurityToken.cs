@@ -8,6 +8,7 @@
 namespace Oracle.NoSQL.SDK {
 
     using System;
+    using System.Security.Cryptography;
     using System.Text.Json;
     using static Utils;
     using static DateTimeUtils;
@@ -45,6 +46,67 @@ namespace Oracle.NoSQL.SDK {
             }
 
             ExpirationTime = UnixMillisToDateTime(exp * 1000);
+
+            if (claims.TryGetProperty("jwk", out var jwkProp))
+            {
+                InitJWK(jwkProp);
+            }
+        }
+
+        private static byte[] Base64UrlDecodeBytes(string value)
+        {
+            var asBase64 = value.Replace('_', '/').Replace('-', '+');
+            if ((value.Length & 3) != 0)
+            {
+                asBase64 = asBase64.PadRight(
+                    ((asBase64.Length >> 2) + 1) << 2, '=');
+            }
+
+            return Convert.FromBase64String(asBase64);
+        }
+
+        private static RSAParameters GetJWKParameters(JsonElement jwk)
+        {
+            if (!jwk.TryGetProperty("n", out var modulusProp) ||
+                modulusProp.ValueKind != JsonValueKind.String)
+            {
+                throw new InvalidOperationException(
+                    "Invalid JWK in JWT, missing modulus");
+            }
+
+            if (!jwk.TryGetProperty("e", out var exponentProp) ||
+                exponentProp.ValueKind != JsonValueKind.String)
+            {
+                throw new InvalidOperationException(
+                    "Invalid JWK in JWT, missing exponent");
+            }
+
+            return new RSAParameters
+            {
+                Modulus = Base64UrlDecodeBytes(modulusProp.GetString()),
+                Exponent = Base64UrlDecodeBytes(exponentProp.GetString())
+            };
+        }
+
+        private void InitJWK(JsonElement jwkProp)
+        {
+            switch (jwkProp.ValueKind)
+            {
+                case JsonValueKind.String:
+                    using (var jwk = JsonDocument.Parse(
+                        jwkProp.GetString()))
+                    {
+                        PublicKey = GetJWKParameters(jwk.RootElement);
+                    }
+                    break;
+                case JsonValueKind.Object:
+                    PublicKey = GetJWKParameters(jwkProp);
+                    break;
+                default:
+                    throw new InvalidOperationException(
+                        "Invalid JWK claim value in JWT: " +
+                        jwkProp.GetRawText());
+            }
         }
 
         private protected void Init(string tokenName)
@@ -92,6 +154,34 @@ namespace Oracle.NoSQL.SDK {
 
         internal bool IsValid(TimeSpan expireBefore = default) =>
             ExpirationTime - expireBefore > DateTime.UtcNow;
+
+        private RSAParameters? PublicKey { get; set; }
+
+        internal void ValidatePublicKey(RSA expectedKey)
+        {
+            if (expectedKey == null)
+            {
+                throw new ArgumentNullException(nameof(expectedKey));
+            }
+
+            if (PublicKey == null)
+            {
+                throw new ArgumentException(
+                    "Security token is missing JWK public key");
+            }
+
+            var expected = expectedKey.ExportParameters(false);
+            var actual = PublicKey.Value;
+            if (!CryptographicOperations.FixedTimeEquals(
+                    actual.Modulus, expected.Modulus) ||
+                !CryptographicOperations.FixedTimeEquals(
+                    actual.Exponent, expected.Exponent))
+            {
+                throw new ArgumentException(
+                    "Security token JWK public key does not match " +
+                    "the configured private key");
+            }
+        }
     }
 
     internal class ResourcePrincipalSecurityToken : SecurityToken

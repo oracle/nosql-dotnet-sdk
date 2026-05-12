@@ -27,9 +27,11 @@ namespace Oracle.NoSQL.SDK.Tests.IAM
         internal const string TenantId = "ocid1.tenancy.oc1..tenancy";
         internal const string UserId = "ocid1.user.oc1..user";
         internal const string Fingerprint = "fingerprint";
-        
-        internal const string SessionToken =
-            "token-header.token-payload.token-sig";
+
+        internal static readonly RSAKeys Keys = new RSAKeys();
+
+        internal static readonly string SessionToken =
+            Utils.CreateSecurityToken(Keys.RSA);
 
         internal const string DelegationToken =
             "token-header.token-payload.token-sig";
@@ -60,8 +62,6 @@ namespace Oracle.NoSQL.SDK.Tests.IAM
 
         internal static readonly string DelegationTokenFile =
             TempFileCache.GetTempFile();
-
-        internal static readonly RSAKeys Keys = new RSAKeys();
 
         internal static readonly IAMCredentials CredentialsBase =
             new IAMCredentials

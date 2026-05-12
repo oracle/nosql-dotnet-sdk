@@ -47,6 +47,7 @@ namespace Oracle.NoSQL.SDK
             {
                 securityToken = CreateSecurityToken(
                     await RefreshSecurityTokenAsync(cancellationToken));
+                securityToken.ValidatePublicKey(PrivateKey);
             }
 
             return new AuthenticationProfile("ST$" + securityToken.Value,

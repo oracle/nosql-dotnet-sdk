@@ -264,6 +264,16 @@ namespace Oracle.NoSQL.SDK {
                     $"Security token from file {sessionTokenFile} is empty");
             }
 
+            var token = SecurityToken.Create(sessionToken);
+            if (!token.IsValid())
+            {
+                throw new ArgumentException(
+                    $"Security token from file {sessionTokenFile} " +
+                    "is expired");
+            }
+
+            token.ValidatePublicKey(privateKey);
+
             return new AuthenticationProfile("ST$" + sessionToken, privateKey,
                 tenantId);
         }
