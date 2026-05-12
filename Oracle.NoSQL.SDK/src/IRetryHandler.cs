@@ -35,7 +35,8 @@ namespace Oracle.NoSQL.SDK {
     /// </item>
     /// <item>
     /// <description>
-    /// All network-related errors.  Currently those are instances of
+    /// Network-related errors for operations that are safe to replay.
+    /// Currently those errors are instances of
     /// <see cref="System.Net.Http.HttpRequestException"/>.
     /// </description>
     /// </item>

@@ -107,6 +107,8 @@ namespace Oracle.NoSQL.SDK
         internal override bool SupportsRateLimiting => true;
 
         internal override bool DoesWrites => true;
+
+        internal override bool CanRetryOnNetworkException => false;
     }
 
     /// <summary>
@@ -131,6 +133,8 @@ namespace Oracle.NoSQL.SDK
 
         internal override TimeSpan GetDefaultTimeout() =>
             Config.TableDDLTimeout;
+
+        internal override bool CanRetryOnNetworkException => false;
 
         internal override void ApplyResult(object result)
         {

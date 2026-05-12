@@ -34,6 +34,8 @@ namespace Oracle.NoSQL.SDK
 
         internal override TimeSpan GetDefaultTimeout() => Config.AdminTimeout;
 
+        internal override bool CanRetryOnNetworkException => false;
+
         internal override void Serialize(IRequestSerializer serializer,
             MemoryStream stream)
         {

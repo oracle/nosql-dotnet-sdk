@@ -211,10 +211,15 @@ namespace Oracle.NoSQL.SDK {
                 return request.Timeout > ControlOperationBaseDelay;
             }
 
-            if (request.LastException is SecurityInfoNotReadyException ||
-                request.Client.IsRetryableNetworkException(request.LastException))
+            if (request.LastException is SecurityInfoNotReadyException)
             {
                 return true;
+            }
+
+            if (request.Client.IsRetryableNetworkException(
+                    request.LastException))
+            {
+                return request.CanRetryOnNetworkException;
             }
 
             if (request.LastException is InvalidAuthorizationException)

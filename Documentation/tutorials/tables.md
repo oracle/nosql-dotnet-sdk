@@ -1226,8 +1226,9 @@ include throttling exceptions as well as other exceptions where a resource is
 temporarily anavailable.  Some other subclasses of
 [NoSQLException](xref:Oracle.NoSQL.SDK.NoSQLException) may also be
 retryable depending on the conditions under which the exception occurred.  See
-API documentation for details.  In addition, network-related errors are
-retryable because most network conditions are temporary.
+API documentation for details.  In addition, network-related errors may be
+retryable for operations that are safe to replay, because most network
+conditions are temporary.
 * Exceptions that should not be retried because they will still fail after
 retry.  They include exceptions such as
 [TableNotFoundException](xref:Oracle.NoSQL.SDK.TableNotFoundException),

@@ -72,6 +72,10 @@ namespace Oracle.NoSQL.SDK
             PreparedStatement != null &&
             PreparedStatement.OperationCode == OperationCodeSelect;
 
+        internal override bool CanRetryOnNetworkException =>
+            PreparedStatement != null &&
+            PreparedStatement.OperationCode == OperationCodeSelect;
+
         internal override string InternalTableName =>
             PreparedStatement?.TableName;
 

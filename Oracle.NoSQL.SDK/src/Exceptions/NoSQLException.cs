@@ -119,7 +119,8 @@ namespace Oracle.NoSQL.SDK
         /// For instances of <see cref="NoSQLException"/> the driver will
         /// retry only those that have <see cref="IsRetryable"/> equal
         /// <c>true</c>.  In addition, standard exception types indicating
-        /// a network error will be retried as well.  See
+        /// a network error may be retried for operations that are safe to
+        /// replay.  See
         /// <see cref="IRetryHandler"/> for details.
         /// </para>
         /// <para>
