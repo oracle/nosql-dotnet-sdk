@@ -244,6 +244,38 @@ namespace Oracle.NoSQL.SDK.Tests.IAM
                 compartment ?? TenantId);
         }
 
+        [TestMethod]
+        public async Task TestAuthProviderSignsActualHttpMethodAsync()
+        {
+            var iam = GoodDirectIAMConfigs.First();
+            PrepareConfig(iam);
+
+            var cfg = MakeNoSQLConfig(iam, CompartmentId);
+            var client = new NoSQLClient(cfg);
+            var request = new GetTableRequest(client, "table", null);
+
+            var postMessage = new HttpRequestMessage(HttpMethod.Post,
+                new Uri(NoSQLDataPath, UriKind.Relative));
+            await iam.Provider.ApplyAuthorizationAsync(request, postMessage,
+                CancellationToken.None);
+            VerifyAuth(postMessage.Headers, GetKeyId(iam), Keys.RSA,
+                CompartmentId, requestTarget: $"post /{NoSQLDataPath}");
+
+            var headMessage = new HttpRequestMessage(HttpMethod.Head,
+                new Uri(NoSQLDataPath, UriKind.Relative));
+            await iam.Provider.ApplyAuthorizationAsync(request, headMessage,
+                CancellationToken.None);
+            VerifyAuth(headMessage.Headers, GetKeyId(iam), Keys.RSA,
+                CompartmentId, requestTarget: $"head /{NoSQLDataPath}");
+
+            var cachedPostMessage = new HttpRequestMessage(HttpMethod.Post,
+                new Uri(NoSQLDataPath, UriKind.Relative));
+            await iam.Provider.ApplyAuthorizationAsync(request,
+                cachedPostMessage, CancellationToken.None);
+            VerifyAuthEqual(cachedPostMessage.Headers, postMessage.Headers,
+                GetKeyId(iam), Keys.RSA, CompartmentId);
+        }
+
         private static IEnumerable<object[]> CacheRefreshTestDataSource =>
             Enumerable.Empty<object[]>()
                 // one of each type (credentials, OCI config file, credentials

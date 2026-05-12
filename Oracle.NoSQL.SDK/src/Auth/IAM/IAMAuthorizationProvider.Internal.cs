@@ -209,10 +209,12 @@ namespace Oracle.NoSQL.SDK
         // should match.
         private string GetSigningContent(string dateStr,
             string currentDelegationToken,
-            ContentSigningInfo contentSigningInfo)
+            ContentSigningInfo contentSigningInfo,
+            HttpRequestMessage message)
         {
+            var requestTarget = GetRequestTarget(message);
             var content =
-                $"{RequestTarget}: post /{NoSQLDataPath}\n" +
+                $"{RequestTarget}: {requestTarget}\n" +
                 $"{Host}: {serviceHost}\n" +
                 $"{Date}: {dateStr}";
 
@@ -231,6 +233,33 @@ namespace Oracle.NoSQL.SDK
 
             return content;
         }
+
+        private static string GetRequestTarget(HttpRequestMessage message)
+        {
+            var method = message?.RequestUri == null
+                ? "post"
+                : message.Method.Method.ToLowerInvariant();
+            var path = $"/{NoSQLDataPath}";
+
+            if (message?.RequestUri != null)
+            {
+                path = message.RequestUri.IsAbsoluteUri
+                    ? message.RequestUri.PathAndQuery
+                    : message.RequestUri.OriginalString;
+
+                if (!path.StartsWith("/", StringComparison.Ordinal))
+                {
+                    path = "/" + path;
+                }
+            }
+
+            return $"{method} {path}";
+        }
+
+        private static bool IsCacheableSignatureRequest(
+            HttpRequestMessage message) =>
+            string.Equals(GetRequestTarget(message),
+                $"post /{NoSQLDataPath}", StringComparison.Ordinal);
 
         private async Task<SignatureDetails> CreateSignatureDetailsAsync(
             Request request, HttpRequestMessage message,
@@ -274,7 +303,7 @@ namespace Oracle.NoSQL.SDK
             {
                 signature = CreateSignature(
                     GetSigningContent(dateStr, currentDelegationToken,
-                        contentSigningInfo),
+                        contentSigningInfo, message),
                     profile.PrivateKey);
             }
             catch (CryptographicException ex)

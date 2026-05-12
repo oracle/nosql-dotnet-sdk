@@ -8,6 +8,7 @@
 namespace Oracle.NoSQL.SDK
 {
     using System;
+    using System.Text.Json;
 
     internal static class ValidateUtils
     {
@@ -162,6 +163,25 @@ namespace Oracle.NoSQL.SDK
         internal static void CheckTableName(string tableName)
         {
             CheckNotNullOrEmpty(tableName, "table name");
+        }
+
+        internal static void CheckJsonValue(string value, string name)
+        {
+            if (value == null)
+            {
+                return;
+            }
+
+            try
+            {
+                using var _ = JsonDocument.Parse(value);
+            }
+            catch (JsonException ex)
+            {
+                throw new ArgumentException(
+                    $"{name} must contain a single valid JSON value: " +
+                    ex.Message, name);
+            }
         }
     }
 

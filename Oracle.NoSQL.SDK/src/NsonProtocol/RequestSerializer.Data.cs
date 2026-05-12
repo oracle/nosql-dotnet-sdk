@@ -21,6 +21,15 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
         private static Opcode GetDeleteOpcode(IDeleteOp op) =>
             SDK.BinaryProtocol.RequestSerializer.GetDeleteOpcode(op);
 
+        private static void WriteLastWriteMetadata(NsonWriter writer,
+            string metadata)
+        {
+            if (metadata != null)
+            {
+                writer.WriteString(FieldNames.LastWriteMetadata, metadata);
+            }
+        }
+
         private static void SerializePutOp(NsonWriter writer, IPutOp op)
         {
             if (op.Options?.ExactMatch ?? false)
@@ -51,6 +60,7 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                     op.MatchVersion.Bytes);
             }
 
+            WriteLastWriteMetadata(writer, op.LastWriteMetadata);
             WriteValue(writer, MapValue.FromObject(op.Row));
         }
 
@@ -62,6 +72,7 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                     op.MatchVersion.Bytes);
             }
 
+            WriteLastWriteMetadata(writer, op.LastWriteMetadata);
             WriteKey(writer, MapValue.FromObject(op.PrimaryKey));
         }
 
@@ -135,6 +146,9 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                         case FieldNames.ModificationTime:
                             result.ModificationTime =
                                 ReadOptionalTimestamp(reader);
+                            return true;
+                        case FieldNames.LastWriteMetadata:
+                            result.LastWriteMetadata = reader.ReadString();
                             return true;
                         default:
                             return false;
@@ -230,6 +244,8 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             WriteHeader(writer, Opcode.MultiDelete, request);
             writer.StartMap(FieldNames.Payload);
             WriteDurability(writer, request.Durability);
+
+            WriteLastWriteMetadata(writer, request.LastWriteMetadata);
 
             if (request.Options?.MaxWriteKB.HasValue ?? false)
             {

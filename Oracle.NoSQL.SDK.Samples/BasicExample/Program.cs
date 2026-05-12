@@ -119,6 +119,8 @@ namespace Oracle.NoSQL.SDK.Samples
 
             // Write a record
             Console.WriteLine("\nWrite a record");
+            const string writeMetadata =
+                "{\"updatedBy\":\"BasicExample\",\"reason\":\"initial load\"}";
             var putResult = await client.PutAsync(TableName, new MapValue
             {
                 ["cookie_id"] = 456,
@@ -131,6 +133,9 @@ namespace Oracle.NoSQL.SDK.Samples
                         ["foodie"] = "2018-12-31"
                     }
                 }
+            }, new PutOptions
+            {
+                LastWriteMetadata = writeMetadata
             });
 
             if (putResult.ConsumedCapacity != null)
@@ -151,6 +156,8 @@ namespace Oracle.NoSQL.SDK.Samples
                 {
                     Indented = true
                 }));
+            Console.WriteLine("\n  Last-write metadata:");
+            Console.WriteLine("  " + getResult.LastWriteMetadata);
 
             if (getResult.ConsumedCapacity != null)
             {

@@ -304,6 +304,10 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                     case FieldNames.ExistingVersion:
                         result.ExistingVersion = ReadRowVersion(reader);
                         return true;
+                    case FieldNames.ExistingLastWriteMetadata:
+                        result.ExistingLastWriteMetadata =
+                            reader.ReadString();
+                        return true;
                     case FieldNames.ExistingValue:
                         result.ExistingRow = ReadRow(reader).ToObject<TRow>();
                         return true;

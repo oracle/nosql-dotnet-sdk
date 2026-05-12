@@ -19,7 +19,8 @@ namespace Oracle.NoSQL.SDK
     /// Base class for <see cref="QueryRequest{TRow}"/>.  Only used
     /// internally.
     /// </summary>
-    public abstract class QueryRequest : QueryRequestBase
+    public abstract class QueryRequest : QueryRequestBase,
+        ILastWriteMetadataRequest
     {
         // "5" == PrepareCallback.QueryOperation.SELECT
         internal const int OperationCodeSelect = 5;
@@ -80,6 +81,11 @@ namespace Oracle.NoSQL.SDK
 
         internal override int QueryTopologySequenceNumber =>
             BaseTopology?.SequenceNumber ?? base.QueryTopologySequenceNumber;
+
+        internal string LastWriteMetadata => Options?.LastWriteMetadata;
+
+        bool ILastWriteMetadataRequest.HasLastWriteMetadata =>
+            LastWriteMetadata != null;
     }
 
     /// <summary>
@@ -154,6 +160,11 @@ namespace Oracle.NoSQL.SDK
             get => base.Options;
             internal set => base.Options = value;
         }
+
+        /// <summary>
+        /// Gets the JSON last-write metadata for write queries.
+        /// </summary>
+        public new string LastWriteMetadata => base.LastWriteMetadata;
 
         internal override void Serialize(IRequestSerializer serializer,
             MemoryStream stream)

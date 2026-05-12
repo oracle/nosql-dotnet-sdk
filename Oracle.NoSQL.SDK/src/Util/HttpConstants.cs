@@ -35,6 +35,8 @@ namespace Oracle.NoSQL.SDK
 
         internal const string NoSQLVersion = "V2";
 
+        internal const string ServerVersion = "x-nosql-version";
+
         internal const string NoSQLPathName = "nosql";
 
         internal const string CompartmentId = "x-nosql-compartment-id";

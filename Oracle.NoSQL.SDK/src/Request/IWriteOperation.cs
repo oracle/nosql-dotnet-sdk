@@ -89,6 +89,8 @@ namespace Oracle.NoSQL.SDK
         internal bool DoesReads =>
             ((IPutOp)this).PutOpKind != PutOpKind.Always;
 
+        string IPutOp.LastWriteMetadata => LastWriteMetadata;
+
         RowVersion IPutOp.MatchVersion => Options?.MatchVersion;
 
         bool IPutOp.ReturnExisting => Options?.ReturnExisting ?? false;
@@ -104,6 +106,9 @@ namespace Oracle.NoSQL.SDK
 
         /// <inheritdoc cref="PutRequest{TRow}.Options"/>
         public PutOptions Options { get; }
+
+        /// <inheritdoc cref="PutRequest{TRow}.LastWriteMetadata"/>
+        public string LastWriteMetadata => Options?.LastWriteMetadata;
 
         internal virtual void Validate()
         {
@@ -207,6 +212,8 @@ namespace Oracle.NoSQL.SDK
 
         bool IDeleteOp.ReturnExisting => Options?.ReturnExisting ?? false;
 
+        string IDeleteOp.LastWriteMetadata => LastWriteMetadata;
+
         RowVersion IDeleteOp.MatchVersion => Options?.MatchVersion;
 
         /// <inheritdoc cref="IWriteOperation.AbortIfUnsuccessful"/>
@@ -220,6 +227,9 @@ namespace Oracle.NoSQL.SDK
 
         /// <inheritdoc cref="DeleteRequest{TRow}.Options"/>
         public DeleteOptions Options { get; }
+
+        /// <inheritdoc cref="DeleteRequest{TRow}.LastWriteMetadata"/>
+        public string LastWriteMetadata => Options?.LastWriteMetadata;
 
         internal virtual void Validate()
         {
