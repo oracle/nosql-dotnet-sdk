@@ -700,28 +700,33 @@ namespace Oracle.NoSQL.SDK
             var isInvalidAuth =
                 request.LastException is InvalidAuthorizationException;
             var contentSigned = request.NeedsContentSigned;
-            var hasDynamicDelegationToken = HasDynamicDelegationToken;
-            var currentDelegationToken = hasDynamicDelegationToken
-                ? await LoadDelegationToken(cancellationToken)
-                : null;
+            string currentDelegationToken = null;
+            if (HasDynamicDelegationToken)
+            {
+                currentDelegationToken =
+                    await LoadDelegationToken(cancellationToken);
+            }
+
+            // Use one cache snapshot for the match decision and the headers
+            // applied to this request.
             var cachedSignatureDetails = CachedSignatureDetails;
             
             SignatureDetails signatureDetails;
             if (isInvalidAuth || contentSigned ||
                 !profileProvider.IsProfileValid ||
                 NeedSignatureRefresh(cachedSignatureDetails) ||
-                (hasDynamicDelegationToken &&
+                (HasDynamicDelegationToken &&
                  !DelegationTokenMatches(cachedSignatureDetails,
                      currentDelegationToken)))
             {
                 signatureDetails = await CreateSignatureDetailsAsync(
-                    request, message, isInvalidAuth, cancellationToken,
-                    currentDelegationToken);
+                    request, message, isInvalidAuth, currentDelegationToken,
+                    cancellationToken);
 
                 if (!contentSigned)
                 {
                     CachedSignatureDetails = signatureDetails;
-                    if (!hasDynamicDelegationToken &&
+                    if (!HasDynamicDelegationToken &&
                         RefreshAhead != TimeSpan.Zero)
                     {
                         ScheduleRenew();

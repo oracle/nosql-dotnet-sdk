@@ -237,8 +237,8 @@ namespace Oracle.NoSQL.SDK
 
         private async Task<SignatureDetails> CreateSignatureDetailsAsync(
             Request request, HttpRequestMessage message,
-            bool forceProfileRefresh, CancellationToken cancellationToken,
-            string currentDelegationToken = null)
+            bool forceProfileRefresh, string currentDelegationToken,
+            CancellationToken cancellationToken)
         {
             AuthenticationProfile profile;
 
@@ -358,7 +358,7 @@ namespace Oracle.NoSQL.SDK
                         await Task.Delay(renewInterval, cancellationToken);
                         CachedSignatureDetails =
                             await CreateSignatureDetailsAsync(null, null,
-                                needProfileRefresh, cancellationToken);
+                                needProfileRefresh, null, cancellationToken);
                     }
                     catch (Exception)
                     {
