@@ -11,6 +11,7 @@ namespace Oracle.NoSQL.SDK.Tests.IAM
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
     using System.Net.Http;
@@ -186,6 +187,34 @@ namespace Oracle.NoSQL.SDK.Tests.IAM
                 ? GetKeyIdFromToken(iam.SessTokenFileData)
                 : CredentialsKeyId;
 
+        private class TestCredentialsProfileProvider :
+            CredentialsProfileProvider
+        {
+            private readonly TimeSpan profileTTL;
+
+            internal TestCredentialsProfileProvider(IAMCredentials credentials,
+                TimeSpan? profileTTL = null) : base(credentials)
+            {
+                this.profileTTL = profileTTL ?? TimeSpan.MaxValue;
+            }
+
+            internal override TimeSpan ProfileTTL => profileTTL;
+        }
+
+        private static void UseTestProfileProvider(
+            IAMAuthorizationProvider provider, TimeSpan? profileTTL = null)
+        {
+            var profileProviderField =
+                typeof(IAMAuthorizationProvider).GetField("profileProvider",
+                    BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.IsNotNull(profileProviderField);
+
+            (profileProviderField.GetValue(provider) as IDisposable)?.Dispose();
+            profileProviderField.SetValue(provider,
+                new TestCredentialsProfileProvider(CredentialsPK,
+                    profileTTL));
+        }
+
         private IAMConfigInfo currentIAMConfig;
 
         private void PrepareConfig(IAMConfigInfo iam)
@@ -343,6 +372,315 @@ namespace Oracle.NoSQL.SDK.Tests.IAM
             // +4200 ms, automatic refresh should have happened again
             VerifyAuthLaterDate(message1.Headers, message2.Headers,
                 GetKeyId(iam), Keys.RSA, CompartmentId);
+        }
+
+        [TestMethod]
+        public async Task TestStaticDelegationTokenCacheAsync()
+        {
+            var provider =
+                IAMAuthorizationProvider.CreateWithInstancePrincipalForDelegation(
+                    DelegationToken);
+            provider.RefreshAhead = TimeSpan.Zero;
+
+            var client = new NoSQLClient(new NoSQLConfig
+            {
+                Region = TestRegion,
+                AuthorizationProvider = provider,
+                Compartment = CompartmentId
+            });
+            UseTestProfileProvider(provider);
+
+            var request = new GetTableRequest(client, "table", null);
+            var message1 = new HttpRequestMessage();
+            var message2 = new HttpRequestMessage();
+
+            try
+            {
+                await provider.ApplyAuthorizationAsync(request, message1,
+                    CancellationToken.None);
+                VerifyAuth(message1.Headers, CredentialsKeyId, Keys.RSA,
+                    CompartmentId, DelegationToken);
+
+                await provider.ApplyAuthorizationAsync(request, message2,
+                    CancellationToken.None);
+                VerifyAuthEqual(message2.Headers, message1.Headers,
+                    CredentialsKeyId, Keys.RSA, CompartmentId,
+                    DelegationToken);
+            }
+            finally
+            {
+                provider.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public async Task TestDynamicDelegationTokenProviderCalledWithValidCacheAsync()
+        {
+            var providerCallCount = 0;
+            var provider =
+                IAMAuthorizationProvider.CreateWithInstancePrincipalForDelegation(
+                    cancellationToken =>
+                    {
+                        Interlocked.Increment(ref providerCallCount);
+                        return Task.FromResult(DelegationToken);
+                    });
+            provider.RefreshAhead = TimeSpan.Zero;
+
+            var client = new NoSQLClient(new NoSQLConfig
+            {
+                Region = TestRegion,
+                AuthorizationProvider = provider,
+                Compartment = CompartmentId
+            });
+            UseTestProfileProvider(provider);
+
+            var request = new GetTableRequest(client, "table", null);
+            var message1 = new HttpRequestMessage();
+            var message2 = new HttpRequestMessage();
+
+            try
+            {
+                await provider.ApplyAuthorizationAsync(request, message1,
+                    CancellationToken.None);
+                await provider.ApplyAuthorizationAsync(request, message2,
+                    CancellationToken.None);
+
+                Assert.AreEqual(2, providerCallCount);
+                VerifyAuthEqual(message2.Headers, message1.Headers,
+                    CredentialsKeyId, Keys.RSA, CompartmentId,
+                    DelegationToken);
+            }
+            finally
+            {
+                provider.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public async Task TestDynamicDelegationTokenProviderDefaultRefreshAheadAsync()
+        {
+            var currentDelegationToken = DelegationToken;
+            var providerCallCount = 0;
+            var provider =
+                IAMAuthorizationProvider.CreateWithInstancePrincipalForDelegation(
+                    cancellationToken =>
+                    {
+                        Interlocked.Increment(ref providerCallCount);
+                        return Task.FromResult(currentDelegationToken);
+                    });
+            provider.CacheDuration = TimeSpan.FromSeconds(20);
+
+            var client = new NoSQLClient(new NoSQLConfig
+            {
+                Region = TestRegion,
+                AuthorizationProvider = provider,
+                Compartment = CompartmentId
+            });
+            UseTestProfileProvider(provider, TimeSpan.FromSeconds(11));
+
+            var request = new GetTableRequest(client, "table", null);
+            var message1 = new HttpRequestMessage();
+            var message2 = new HttpRequestMessage();
+            var updatedDelegationToken = DelegationToken + "-updated";
+
+            try
+            {
+                Assert.AreNotEqual(TimeSpan.Zero, provider.RefreshAhead);
+                await provider.ApplyAuthorizationAsync(request, message1,
+                    CancellationToken.None);
+                VerifyAuth(message1.Headers, CredentialsKeyId, Keys.RSA,
+                    CompartmentId, DelegationToken);
+
+                currentDelegationToken = updatedDelegationToken;
+                await Task.Delay(TimeSpan.FromMilliseconds(1500));
+                Assert.AreEqual(1, providerCallCount);
+
+                await provider.ApplyAuthorizationAsync(request, message2,
+                    CancellationToken.None);
+                Assert.AreEqual(2, providerCallCount);
+                VerifyAuth(message2.Headers, CredentialsKeyId, Keys.RSA,
+                    CompartmentId, updatedDelegationToken);
+            }
+            finally
+            {
+                provider.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public async Task TestConcurrentDynamicDelegationTokensAsync()
+        {
+            var currentDelegationToken = new AsyncLocal<string>();
+            var providerCallCount = 0;
+            var providerCallsStarted = new TaskCompletionSource<bool>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+            var provider =
+                IAMAuthorizationProvider.CreateWithInstancePrincipalForDelegation(
+                    async cancellationToken =>
+                    {
+                        if (Interlocked.Increment(ref providerCallCount) == 2)
+                        {
+                            providerCallsStarted.TrySetResult(true);
+                        }
+
+                        await providerCallsStarted.Task;
+                        return currentDelegationToken.Value;
+                    });
+            provider.RefreshAhead = TimeSpan.Zero;
+
+            var client = new NoSQLClient(new NoSQLConfig
+            {
+                Region = TestRegion,
+                AuthorizationProvider = provider,
+                Compartment = CompartmentId
+            });
+            UseTestProfileProvider(provider);
+
+            var request = new GetTableRequest(client, "table", null);
+            var aliceToken = DelegationToken + "-alice";
+            var bobToken = DelegationToken + "-bob";
+
+            async Task<HttpRequestMessage> ApplyWithToken(string token)
+            {
+                currentDelegationToken.Value = token;
+                var message = new HttpRequestMessage();
+                await provider.ApplyAuthorizationAsync(request, message,
+                    CancellationToken.None);
+                return message;
+            }
+
+            try
+            {
+                var aliceTask = Task.Run(() => ApplyWithToken(aliceToken));
+                var bobTask = Task.Run(() => ApplyWithToken(bobToken));
+                var allTasks = Task.WhenAll(aliceTask, bobTask);
+
+                if (await Task.WhenAny(allTasks,
+                    Task.Delay(TimeSpan.FromSeconds(5))) != allTasks)
+                {
+                    providerCallsStarted.TrySetResult(true);
+                    Assert.Fail("Timed out waiting for concurrent " +
+                                "delegation token requests");
+                }
+
+                var messages = await allTasks;
+                Assert.AreEqual(2, providerCallCount);
+                VerifyAuth(messages[0].Headers, CredentialsKeyId, Keys.RSA,
+                    CompartmentId, aliceToken);
+                VerifyAuth(messages[1].Headers, CredentialsKeyId, Keys.RSA,
+                    CompartmentId, bobToken);
+            }
+            finally
+            {
+                providerCallsStarted.TrySetResult(true);
+                provider.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public async Task TestDynamicDelegationTokenProviderCacheAsync()
+        {
+            var currentDelegationToken = DelegationToken;
+            var provider =
+                IAMAuthorizationProvider.CreateWithInstancePrincipalForDelegation(
+                    cancellationToken =>
+                        Task.FromResult(currentDelegationToken));
+            provider.RefreshAhead = TimeSpan.Zero;
+
+            var client = new NoSQLClient(new NoSQLConfig
+            {
+                Region = TestRegion,
+                AuthorizationProvider = provider,
+                Compartment = CompartmentId
+            });
+            UseTestProfileProvider(provider);
+
+            var request = new GetTableRequest(client, "table", null);
+            var message1 = new HttpRequestMessage();
+            var message2 = new HttpRequestMessage();
+            var message3 = new HttpRequestMessage();
+            var updatedDelegationToken = DelegationToken + "-updated";
+
+            try
+            {
+                await provider.ApplyAuthorizationAsync(request, message1,
+                    CancellationToken.None);
+                VerifyAuth(message1.Headers, CredentialsKeyId, Keys.RSA,
+                    CompartmentId, DelegationToken);
+
+                currentDelegationToken = updatedDelegationToken;
+                await provider.ApplyAuthorizationAsync(request, message2,
+                    CancellationToken.None);
+                VerifyAuth(message2.Headers, CredentialsKeyId, Keys.RSA,
+                    CompartmentId, updatedDelegationToken);
+                Assert.AreNotEqual(message1.Headers.Authorization?.ToString(),
+                    message2.Headers.Authorization?.ToString());
+
+                await provider.ApplyAuthorizationAsync(request, message3,
+                    CancellationToken.None);
+                VerifyAuthEqual(message3.Headers, message2.Headers,
+                    CredentialsKeyId, Keys.RSA, CompartmentId,
+                    updatedDelegationToken);
+            }
+            finally
+            {
+                provider.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public async Task TestDynamicDelegationTokenFileCacheAsync()
+        {
+            var delegationTokenFile = Path.GetTempFileName();
+            IAMAuthorizationProvider provider = null;
+            try
+            {
+                File.WriteAllText(delegationTokenFile, DelegationToken);
+
+                provider = IAMAuthorizationProvider
+                    .CreateWithInstancePrincipalForDelegationFromFile(
+                        delegationTokenFile);
+                provider.RefreshAhead = TimeSpan.Zero;
+
+                var client = new NoSQLClient(new NoSQLConfig
+                {
+                    Region = TestRegion,
+                    AuthorizationProvider = provider,
+                    Compartment = CompartmentId
+                });
+                UseTestProfileProvider(provider);
+
+                var request = new GetTableRequest(client, "table", null);
+                var message1 = new HttpRequestMessage();
+                var message2 = new HttpRequestMessage();
+                var message3 = new HttpRequestMessage();
+                var updatedDelegationToken = DelegationToken + "-updated";
+
+                await provider.ApplyAuthorizationAsync(request, message1,
+                    CancellationToken.None);
+                VerifyAuth(message1.Headers, CredentialsKeyId, Keys.RSA,
+                    CompartmentId, DelegationToken);
+
+                File.WriteAllText(delegationTokenFile, updatedDelegationToken);
+                await provider.ApplyAuthorizationAsync(request, message2,
+                    CancellationToken.None);
+                VerifyAuth(message2.Headers, CredentialsKeyId, Keys.RSA,
+                    CompartmentId, updatedDelegationToken);
+                Assert.AreNotEqual(
+                    message1.Headers.Authorization?.ToString(),
+                    message2.Headers.Authorization?.ToString());
+
+                await provider.ApplyAuthorizationAsync(request, message3,
+                    CancellationToken.None);
+                VerifyAuthEqual(message3.Headers, message2.Headers,
+                    CredentialsKeyId, Keys.RSA, CompartmentId,
+                    updatedDelegationToken);
+            }
+            finally
+            {
+                provider?.Dispose();
+                File.Delete(delegationTokenFile);
+            }
         }
 
     }
