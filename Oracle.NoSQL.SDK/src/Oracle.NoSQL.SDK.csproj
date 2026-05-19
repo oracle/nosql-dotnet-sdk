@@ -1,9 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net5.0;netcoreapp3.1</TargetFrameworks>
-	<RollForward>Major</RollForward>
-    <CheckEolTargetFramework>false</CheckEolTargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>
     <Company>Oracle Corporation</Company>
     <Product>Oracle NoSQL Database</Product>

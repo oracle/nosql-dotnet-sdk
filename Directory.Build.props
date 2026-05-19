@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <CheckEolTargetFramework>true</CheckEolTargetFramework>
+    <MSBuildWarningsAsErrors>$(MSBuildWarningsAsErrors);NETSDK1138</MSBuildWarningsAsErrors>
+  </PropertyGroup>
+</Project>

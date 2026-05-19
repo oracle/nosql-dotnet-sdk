@@ -6,9 +6,9 @@ Database. It supports both the
 and the on-premise product,
 [Oracle NoSQL Database](https://www.oracle.com/database/technologies/related/nosql.html).
 
-Supported platforms are
-[.NET 5.0](https://dotnet.microsoft.com/download/dotnet/5.0) and
-[.NET Core 3.1](https://dotnet.microsoft.com/download/dotnet/3.1).
+Supported platform is
+[.NET 10.0](https://dotnet.microsoft.com/download/dotnet/10.0) or later
+supported versions.
 
 To get started, see [tutorials](tutorials/intro.md) and
 [API reference](xref:Oracle.NoSQL.SDK).
