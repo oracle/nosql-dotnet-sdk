@@ -17,6 +17,7 @@ namespace Oracle.NoSQL.SDK.Tests.IAM
     using System.Reflection;
     using System.Security.Cryptography;
     using System.Text;
+    using System.Text.Json;
     using System.Text.RegularExpressions;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using static TestData;
@@ -120,6 +121,54 @@ namespace Oracle.NoSQL.SDK.Tests.IAM
 
         internal static string GetKeyIdFromToken(string token) =>
             "ST$" + token;
+
+        private static string Base64UrlEncode(byte[] data) =>
+            Convert.ToBase64String(data)
+                .TrimEnd('=')
+                .Replace('+', '-')
+                .Replace('/', '_');
+
+        internal static string CreateSecurityToken(RSA publicKey,
+            TimeSpan? lifetime = null, bool includeJWK = true)
+        {
+            var header = JsonSerializer.Serialize(new
+            {
+                kid = "test-key-id",
+                alg = "RS256"
+            });
+
+            var exp = DateTimeOffset.UtcNow.Add(
+                lifetime ?? TimeSpan.FromHours(1)).ToUnixTimeSeconds();
+            var publicParams = publicKey.ExportParameters(false);
+            var payload = new Dictionary<string, object>
+            {
+                ["exp"] = exp,
+                ["iss"] = "authService.oracle.com",
+                ["aud"] = "oci"
+            };
+
+            if (includeJWK)
+            {
+                payload["jwk"] = JsonSerializer.Serialize(new
+                {
+                    kty = "RSA",
+                    n = Base64UrlEncode(publicParams.Modulus),
+                    e = Base64UrlEncode(publicParams.Exponent),
+                    kid = "Ignored"
+                });
+            }
+
+            return Base64UrlEncode(Encoding.UTF8.GetBytes(header)) + "." +
+                Base64UrlEncode(Encoding.UTF8.GetBytes(
+                    JsonSerializer.Serialize(payload))) + ".signature";
+        }
+
+        internal static string CreateSecurityTokenWithNewKey(
+            TimeSpan? lifetime = null)
+        {
+            using var rsa = RSA.Create(2048);
+            return CreateSecurityToken(rsa, lifetime);
+        }
 
         internal static string[] GetOCIConfigLines(string profileName,
             IAMCredentials credentials, string region = null) => new string[]

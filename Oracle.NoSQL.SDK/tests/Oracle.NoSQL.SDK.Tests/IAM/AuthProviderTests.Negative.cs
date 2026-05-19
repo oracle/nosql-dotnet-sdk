@@ -171,7 +171,18 @@ namespace Oracle.NoSQL.SDK.Tests.IAM
                 // Empty session token
                 .Append(new OCIConfigInfo(
                     DefaultProfileStart.Concat(OCIConfigLinesSessToken),
-                    Keys.PrivatePKCS8PEM, null, string.Empty));
+                    Keys.PrivatePKCS8PEM, null, string.Empty))
+                // Session token JWK does not match configured private key
+                .Append(new OCIConfigInfo(
+                    DefaultProfileStart.Concat(OCIConfigLinesSessToken),
+                    Keys.PrivatePKCS8PEM, null,
+                    Utils.CreateSecurityTokenWithNewKey()))
+                // Expired session token
+                .Append(new OCIConfigInfo(
+                    DefaultProfileStart.Concat(OCIConfigLinesSessToken),
+                    Keys.PrivatePKCS8PEM, null,
+                    Utils.CreateSecurityToken(Keys.RSA,
+                        TimeSpan.FromMinutes(-1))));
 
         private static readonly
             IEnumerable<Func<CancellationToken, Task<IAMCredentials>>>
