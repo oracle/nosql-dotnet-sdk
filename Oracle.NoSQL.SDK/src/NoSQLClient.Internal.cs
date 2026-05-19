@@ -146,6 +146,12 @@ namespace Oracle.NoSQL.SDK
                             request.RetryCount, ex);
                     }
 
+                    if (IsRetryableNetworkException(ex) &&
+                        !request.CanRetryOnNetworkException)
+                    {
+                        throw;
+                    }
+
                     if (!IsRetryableException(ex) ||
                         !Config.RetryHandler.ShouldRetry(request))
                     {
@@ -414,8 +420,9 @@ namespace Oracle.NoSQL.SDK
             AdminOptions options,
             CancellationToken cancellationToken)
         {
-            var result = await ExecuteAdminWithCompletionAsync(statement,
-                options, cancellationToken);
+            var result = await ExecuteAdminWithCompletionAsync(
+                new AdminListRequest(this, statement.ToCharArray(), options),
+                cancellationToken);
             Debug.Assert(result != null);
 
             if (string.IsNullOrEmpty(result.Output))

@@ -220,8 +220,16 @@ namespace Oracle.NoSQL.SDK {
             AdminOptions options = null,
             CancellationToken cancellationToken = default)
         {
+            return await ExecuteAdminWithCompletionAsync(
+                new AdminRequest(this, statement, options),
+                cancellationToken);
+        }
+
+        private async Task<AdminResult> ExecuteAdminWithCompletionAsync(
+            AdminRequest request,
+            CancellationToken cancellationToken)
+        {
             var startTime = DateTime.UtcNow;
-            var request = new AdminRequest(this, statement, options);
             var result = (AdminResult) await ExecuteRequestAsync(request,
                 cancellationToken);
             Debug.Assert(result != null);

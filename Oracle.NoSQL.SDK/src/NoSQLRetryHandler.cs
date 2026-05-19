@@ -52,10 +52,11 @@ namespace Oracle.NoSQL.SDK {
     /// </item>
     /// <item>
     /// <description>
-    /// Network-related exceptions and
-    /// <see cref="SecurityInfoNotReadyException"/> are always retried (up to
+    /// <see cref="SecurityInfoNotReadyException"/> is always retried (up to
     /// the operation timeout) regardless of the number of retries done so
-    /// far (thus ignoring <see cref="MaxRetryAttempts"/>).
+    /// far (thus ignoring <see cref="MaxRetryAttempts"/>).  Network-related
+    /// exceptions are retried this way only for requests that are safe to
+    /// replay.
     /// </description>
     /// </item>
     /// <item>
@@ -211,10 +212,15 @@ namespace Oracle.NoSQL.SDK {
                 return request.Timeout > ControlOperationBaseDelay;
             }
 
-            if (request.LastException is SecurityInfoNotReadyException ||
-                request.Client.IsRetryableNetworkException(request.LastException))
+            if (request.LastException is SecurityInfoNotReadyException)
             {
                 return true;
+            }
+
+            if (request.Client.IsRetryableNetworkException(
+                    request.LastException))
+            {
+                return request.CanRetryOnNetworkException;
             }
 
             if (request.LastException is InvalidAuthorizationException)
