@@ -9,6 +9,8 @@ namespace Oracle.NoSQL.SDK.Tests.IAM
 {
     using System;
     using System.Security.Cryptography;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using static TestData;
     using static Utils;
@@ -51,6 +53,48 @@ namespace Oracle.NoSQL.SDK.Tests.IAM
                 TimeSpan.FromMinutes(-1)));
 
             Assert.IsFalse(token.IsValid());
+        }
+
+        [TestMethod]
+        public async Task TestInvalidRefreshedTokenIsNotCached()
+        {
+            var provider = new TestSecurityTokenBasedProvider(
+                CreateSecurityTokenWithNewKey());
+
+            await Assert.ThrowsExceptionAsync<ArgumentException>(() =>
+                provider.GetProfileAsync(true, CancellationToken.None));
+
+            await Assert.ThrowsExceptionAsync<ArgumentException>(() =>
+                provider.GetProfileAsync(false, CancellationToken.None));
+
+            Assert.AreEqual(2, provider.RefreshCount);
+        }
+
+        private class TestSecurityTokenBasedProvider :
+            SecurityTokenBasedProvider
+        {
+            private readonly string token;
+
+            internal TestSecurityTokenBasedProvider(string token) :
+                base(TimeSpan.Zero)
+            {
+                this.token = token;
+            }
+
+            internal int RefreshCount { get; private set; }
+
+            private protected override RSA PrivateKey => Keys.RSA;
+
+            private protected override Task<string> RefreshSecurityTokenAsync(
+                CancellationToken cancellationToken)
+            {
+                RefreshCount++;
+                return Task.FromResult(token);
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+            }
         }
     }
 }
