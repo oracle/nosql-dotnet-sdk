@@ -1,0 +1,4 @@
+{
+    "ServiceType": "KVSTORE",
+    "Endpoint": "http://localhost:8080"
+}

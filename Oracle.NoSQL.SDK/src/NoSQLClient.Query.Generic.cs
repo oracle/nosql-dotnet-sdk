@@ -53,6 +53,14 @@ namespace Oracle.NoSQL.SDK {
             request.PreparedStatement ??=
                 request.ContinuationKey?.PreparedStatement;
 
+            if (!request.IsInternal)
+            {
+                // Count the user-visible logical query once.  Internal query
+                // fetches are still counted as HTTP Query requests by
+                // ExecuteValidatedRequestAsync.
+                StatsControl?.ObserveQuery(request);
+            }
+
             // If the query is not already prepared the first request will
             // prepare it.
             if (request.PreparedStatement == null)
@@ -131,6 +139,9 @@ namespace Oracle.NoSQL.SDK {
                 options);
             request.Validate();
 
+            // Direct prepared-query execution bypasses ExecuteQueryRequestAsync,
+            // so count the user-visible logical query here.
+            StatsControl?.ObserveQuery(request);
             return ExecutePreparedQueryRequestAsync(request, cancellationToken);
         }
 

@@ -177,6 +177,12 @@ namespace Oracle.NoSQL.SDK.Tests
                     ServiceType = (ServiceType)(-1),
                     Endpoint = CloudSimEndpoint
                 })
+                // invalid stats profile
+                .Append(new NoSQLConfig
+                {
+                    StatsProfile = (StatsControl.Profile)(-1),
+                    Endpoint = CloudSimEndpoint
+                })
                 // cannot have both endpoint and region
                 .Append(new NoSQLConfig
                 {
@@ -194,6 +200,18 @@ namespace Oracle.NoSQL.SDK.Tests
                         Endpoint = CloudSimEndpoint,
                         Timeout = timeout
                     })
+                .Concat(from timeout in BadTimeSpans
+                    select new NoSQLConfig
+                    {
+                        Endpoint = CloudSimEndpoint,
+                        StatsInterval = timeout
+                    })
+                // Java rejects stats intervals below one second.
+                .Append(new NoSQLConfig
+                {
+                    Endpoint = CloudSimEndpoint,
+                    StatsInterval = TimeSpan.FromMilliseconds(500)
+                })
                 .Concat(from timeout in BadTimeSpans
                     select new NoSQLConfig
                     {

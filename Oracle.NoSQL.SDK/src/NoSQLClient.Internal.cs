@@ -30,6 +30,8 @@ namespace Oracle.NoSQL.SDK
 
         internal RateLimitingHandler RateLimitingHandler { get; private set; }
 
+        internal StatsControlImpl StatsControl { get; private set; }
+
         internal TopologyInfo QueryTopology => queryTopology;
 
         internal int ServerSerialVersion => client.ServerSerialVersion;
@@ -112,13 +114,23 @@ namespace Oracle.NoSQL.SDK
                     if (rlReq != null)
                     {
                         await rlReq.Finish(result, cancellationToken);
+                        request.StatsRateLimitDelayMs =
+                            Request.ToStatsMilliseconds(rlReq.Delay);
                     }
+                    // Observe only the final successful outcome. Retry
+                    // attempts are accumulated on the request before this.
+                    StatsControl?.Observe(request);
                     return result;
                 }
                 catch (Exception ex)
                 {
                     request.AddException(ex);
                     rlReq?.HandleException(ex);
+                    if (rlReq != null)
+                    {
+                        request.StatsRateLimitDelayMs =
+                            Request.ToStatsMilliseconds(rlReq.Delay);
+                    }
 
                     if (ex is SecurityInfoNotReadyException &&
                         timeout < Config.SecurityInfoNotReadyTimeout)
@@ -140,21 +152,27 @@ namespace Oracle.NoSQL.SDK
                         continue;
                     }
 
+                    // Every ObserveError below is for a terminal failure,
+                    // after retry policy has decided no more attempts remain.
                     if (ex is TimeoutException)
                     {
-                        throw GetTimeoutException(now - startTime,
+                        var timeoutEx = GetTimeoutException(now - startTime,
                             request.RetryCount, ex);
+                        StatsControl?.ObserveError(request);
+                        throw timeoutEx;
                     }
 
                     if (IsRetryableNetworkException(ex) &&
                         !request.CanRetryOnNetworkException)
                     {
+                        StatsControl?.ObserveError(request);
                         throw;
                     }
 
                     if (!IsRetryableException(ex) ||
                         !Config.RetryHandler.ShouldRetry(request))
                     {
+                        StatsControl?.ObserveError(request);
                         throw;
                     }
 
@@ -163,9 +181,13 @@ namespace Oracle.NoSQL.SDK
 
                     if (now >= endTime)
                     {
-                        throw GetTimeoutException(now - startTime,
+                        var timeoutEx = GetTimeoutException(now - startTime,
                             request.RetryCount, ex);
+                        StatsControl?.ObserveError(request);
+                        throw timeoutEx;
                     }
+
+                    request.RecordStatsRetry(ex, delay);
 
                     // This will adjust http request timeout for the time
                     // already elapsed.

@@ -47,6 +47,8 @@ namespace Oracle.NoSQL.SDK
 
         internal QueryOptions Options { get; set; }
 
+        internal virtual bool IsPreparedQuery => false;
+
         internal Consistency Consistency =>
             Options?.Consistency ?? Config.Consistency;
 
@@ -148,6 +150,8 @@ namespace Oracle.NoSQL.SDK
         /// operation was passed a SQL statement.
         /// </value>
         public bool IsPrepared { get; }
+
+        internal override bool IsPreparedQuery => IsPrepared;
 
         /// <summary>
         /// Gets the options for the Query operation.

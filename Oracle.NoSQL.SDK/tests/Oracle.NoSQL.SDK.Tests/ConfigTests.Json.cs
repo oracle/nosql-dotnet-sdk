@@ -42,6 +42,30 @@ namespace Oracle.NoSQL.SDK.Tests
             }
         }
 
+        private class StatsProfileConverter :
+            JsonConverter<StatsControl.Profile>
+        {
+            public override StatsControl.Profile Read(
+                ref Utf8JsonReader reader, Type typeToConvert,
+                JsonSerializerOptions options)
+            {
+                throw new NotSupportedException();
+            }
+
+            public override void Write(Utf8JsonWriter writer,
+                StatsControl.Profile value, JsonSerializerOptions options)
+            {
+                var stringValue = value.ToString();
+                var i = jsonWriteSeq++ % 3;
+                writer.WriteStringValue(i switch
+                {
+                    0 => stringValue,
+                    1 => stringValue.ToUpper(),
+                    _ => stringValue.ToLower()
+                });
+            }
+        }
+
         private class TimeSpanConverter : JsonConverter<TimeSpan>
         {
             public override TimeSpan Read(ref Utf8JsonReader reader,
@@ -159,6 +183,7 @@ namespace Oracle.NoSQL.SDK.Tests
                     WriteIndented = true
                 };
                 options.Converters.Add(new ServiceTypeConverter());
+                options.Converters.Add(new StatsProfileConverter());
                 options.Converters.Add(new TimeSpanConverter());
                 options.Converters.Add(new CharArrayConverter());
                 options.Converters.Add(new RetryHandlerConverter());
@@ -173,14 +198,17 @@ namespace Oracle.NoSQL.SDK.Tests
         private static bool CanUseConfigWithJson(NoSQLConfig config) =>
             (config.RetryHandler == null ||
              config.RetryHandler is NoSQLRetryHandler) &&
-            (config.AuthorizationProvider == null ||
-             config.AuthorizationProvider is KVStoreAuthorizationProvider kv &&
-             kv.CredentialsProvider == null ||
-             config.AuthorizationProvider is IAMAuthorizationProvider iam &&
-             iam.Credentials?.PrivateKey == null &&
-             iam.CredentialsProvider == null &&
-             iam.DelegationTokenProvider == null &&
-             config.RateLimiterCreator == null);
+            ((config.AuthorizationProvider == null) ||
+             (config.AuthorizationProvider is KVStoreAuthorizationProvider kv &&
+              kv.CredentialsProvider == null) ||
+             (config.AuthorizationProvider is IAMAuthorizationProvider iam &&
+              iam.Credentials?.PrivateKey == null &&
+              iam.CredentialsProvider == null &&
+              iam.DelegationTokenProvider == null)) &&
+            config.RateLimiterCreator == null &&
+            // Callbacks cannot be represented in JSON config files, so
+            // StatsHandler is covered by object/config tests instead.
+            config.StatsHandler == null;
 
         private static IEnumerable<object[]> PositiveJsonDataSource =>
             from config in GoodConfigs where CanUseConfigWithJson(config)

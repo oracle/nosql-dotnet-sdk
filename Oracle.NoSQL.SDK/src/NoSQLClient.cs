@@ -233,6 +233,10 @@ namespace Oracle.NoSQL.SDK {
             {
                 RateLimitingHandler = new RateLimitingHandler(this);
             }
+            // One StatsControl is owned by each client instance, matching the
+            // Java handle/client lifecycle.
+            StatsControl = new StatsControlImpl(Config,
+                RateLimitingHandler != null);
         }
 
         /// <summary>
@@ -313,6 +317,9 @@ namespace Oracle.NoSQL.SDK {
         {
             if (disposing && !disposed)
             {
+                // Flush and stop stats before releasing the HTTP client and
+                // other resources.
+                StatsControl?.Shutdown();
                 client.Dispose();
                 Config.ReleaseResources();
                 RateLimitingHandler?.Dispose();
@@ -347,6 +354,12 @@ namespace Oracle.NoSQL.SDK {
         /// </remarks>
         /// <value>Service type.</value>
         public ServiceType ServiceType => Config.ServiceType;
+
+        /// <summary>
+        /// Gets the statistics control object for this client.
+        /// </summary>
+        /// <returns>Statistics control object.</returns>
+        public StatsControl GetStatsControl() => StatsControl;
 
     }
 

@@ -150,6 +150,7 @@ namespace Oracle.NoSQL.SDK
         {
             Timeout = BaseOptions?.Timeout ?? GetDefaultTimeout();
             exceptions?.Clear();
+            InitStats();
         }
 
         internal abstract void Serialize(IRequestSerializer serializer,
@@ -286,6 +287,71 @@ namespace Oracle.NoSQL.SDK
         /// </value>
         /// <seealso cref="NoSQLConfig.RetryHandler"/>
         public int RetryCount { get; private set; }
+
+        internal int StatsRetryCount { get; private set; }
+
+        internal int StatsRetryDelayMs { get; private set; }
+
+        internal int StatsRetryAuthCount { get; private set; }
+
+        internal int StatsRetryThrottleCount { get; private set; }
+
+        internal int StatsRateLimitDelayMs { get; set; }
+
+        internal int StatsRequestSize { get; set; }
+
+        internal int StatsResponseSize { get; set; }
+
+        internal int StatsRequestLatencyMs { get; set; }
+
+        internal int StatsConnectionCount { get; set; }
+
+        internal void RecordStatsRetry(Exception ex, TimeSpan delay)
+        {
+            StatsRetryCount++;
+            StatsRetryDelayMs += ToStatsMilliseconds(delay);
+
+            if (ex is AuthorizationException ||
+                ex is InvalidAuthorizationException ||
+                ex is SecurityInfoNotReadyException)
+            {
+                StatsRetryAuthCount++;
+            }
+
+            if (ex is ReadThrottlingException ||
+                ex is WriteThrottlingException ||
+                ex is ControlOperationThrottlingException)
+            {
+                StatsRetryThrottleCount++;
+            }
+        }
+
+        internal static int ToStatsMilliseconds(TimeSpan timeSpan)
+        {
+            // Java stats records integer milliseconds, so fractional
+            // milliseconds are intentionally truncated here.
+            if (timeSpan <= TimeSpan.Zero)
+            {
+                return 0;
+            }
+
+            return timeSpan.TotalMilliseconds >= int.MaxValue
+                ? int.MaxValue
+                : (int)timeSpan.TotalMilliseconds;
+        }
+
+        private void InitStats()
+        {
+            StatsRetryCount = 0;
+            StatsRetryDelayMs = 0;
+            StatsRetryAuthCount = 0;
+            StatsRetryThrottleCount = 0;
+            StatsRateLimitDelayMs = 0;
+            StatsRequestSize = 0;
+            StatsResponseSize = 0;
+            StatsRequestLatencyMs = 0;
+            StatsConnectionCount = 0;
+        }
 
         /// <summary>
         /// Gets the last exception that occurred while retrying the operation

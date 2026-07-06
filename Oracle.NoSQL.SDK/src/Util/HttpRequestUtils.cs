@@ -75,14 +75,17 @@ namespace Oracle.NoSQL.SDK
             HttpClient client,
             HttpRequestMessage message,
             int timeoutMillis,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            HttpCompletionOption completionOption =
+                HttpCompletionOption.ResponseContentRead)
         {
             using var linkedSource = CancellationTokenSource
                 .CreateLinkedTokenSource(cancellationToken);
             linkedSource.CancelAfter(timeoutMillis);
             try
             {
-                return await client.SendAsync(message, linkedSource.Token);
+                return await client.SendAsync(message, completionOption,
+                    linkedSource.Token);
             }
             catch (OperationCanceledException ex)
             {

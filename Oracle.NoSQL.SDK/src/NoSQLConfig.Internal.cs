@@ -30,6 +30,29 @@ namespace Oracle.NoSQL.SDK
             }
         }
 
+        private class StatsProfileConverter :
+            JsonConverter<StatsControl.Profile>
+        {
+            public override StatsControl.Profile Read(
+                ref Utf8JsonReader reader, Type typeToConvert,
+                JsonSerializerOptions options)
+            {
+                if (reader.TokenType == JsonTokenType.Number)
+                {
+                    return (StatsControl.Profile)reader.GetInt32();
+                }
+
+                return (StatsControl.Profile)Enum.Parse(
+                    typeof(StatsControl.Profile), reader.GetString(), true);
+            }
+
+            public override void Write(Utf8JsonWriter writer,
+                StatsControl.Profile value, JsonSerializerOptions options)
+            {
+                throw new NotSupportedException();
+            }
+        }
+
         private class TimeSpanConverter : JsonConverter<TimeSpan>
         {
             public override TimeSpan Read(ref Utf8JsonReader reader,
@@ -175,6 +198,8 @@ namespace Oracle.NoSQL.SDK
             JsonSerializerOptions.Converters.Add(
                 new ServiceTypeConverter());
             JsonSerializerOptions.Converters.Add(
+                new StatsProfileConverter());
+            JsonSerializerOptions.Converters.Add(
                 new TimeSpanConverter());
             JsonSerializerOptions.Converters.Add(
                 new CharArrayConverter());
@@ -281,7 +306,9 @@ namespace Oracle.NoSQL.SDK
         {
             CheckEnumValue(ServiceType);
             CheckEnumValue(Consistency);
+            CheckEnumValue(StatsProfile);
             CheckTimeout(Timeout);
+            ValidateStatsInterval();
             CheckTimeout(TableDDLTimeout, nameof(TableDDLTimeout));
             CheckTimeout(AdminTimeout, nameof(AdminTimeout));
             CheckTimeout(SecurityInfoNotReadyTimeout,
@@ -300,6 +327,16 @@ namespace Oracle.NoSQL.SDK
             // AuthorizationProvider is validated in ConfigureAuthorization().
 
             RateLimitingHandler.ValidateConfig(this);
+        }
+
+        private void ValidateStatsInterval()
+        {
+            CheckTimeout(StatsInterval, nameof(StatsInterval));
+            if (StatsInterval < TimeSpan.FromSeconds(1))
+            {
+                throw new ArgumentException(
+                    $"{nameof(StatsInterval)} must be at least 1 second.");
+            }
         }
 
         internal void Init()

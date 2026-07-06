@@ -12,6 +12,7 @@ namespace Oracle.NoSQL.SDK.Tests
     using System.Collections.Generic;
     using System.Linq;
     using System.Reflection;
+    using Microsoft.Extensions.Logging.Abstractions;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using static Utils;
 
@@ -117,6 +118,14 @@ namespace Oracle.NoSQL.SDK.Tests
             Assert.AreEqual(config.Consistency, clientConfig.Consistency);
             Assert.AreEqual(config.MaxMemoryMB, clientConfig.MaxMemoryMB);
             Assert.AreEqual(config.Compartment, clientConfig.Compartment);
+            Assert.AreEqual(config.StatsProfile, clientConfig.StatsProfile);
+            Assert.AreEqual(config.StatsInterval, clientConfig.StatsInterval);
+            Assert.AreEqual(config.StatsPrettyPrint,
+                clientConfig.StatsPrettyPrint);
+            Assert.AreEqual(config.StatsEnableLog,
+                clientConfig.StatsEnableLog);
+            Assert.AreEqual(config.StatsHandler, clientConfig.StatsHandler);
+            Assert.AreEqual(config.StatsLogger, clientConfig.StatsLogger);
 
             AssertDeepEqual(config.RetryHandler ?? new NoSQLRetryHandler(),
                 clientConfig.RetryHandler);
@@ -363,6 +372,23 @@ namespace Oracle.NoSQL.SDK.Tests
             {
                 Endpoint = CloudSimEndpoint,
                 RateLimitingEnabled = true
+            })
+            .Append(new NoSQLConfig
+            {
+                // Stats options should round-trip through config cloning and
+                // client initialization like the other public config options.
+                Endpoint = CloudSimEndpoint,
+                StatsInterval = TimeSpan.FromSeconds(5),
+                StatsPrettyPrint = true,
+                StatsEnableLog = true,
+                StatsHandler = _ => { },
+                StatsLogger = NullLogger.Instance
+            })
+            .Append(new NoSQLConfig
+            {
+                Endpoint = CloudSimEndpoint,
+                StatsInterval = TimeSpan.FromSeconds(30),
+                StatsPrettyPrint = true
             })
             .Append(new NoSQLConfig
             {
