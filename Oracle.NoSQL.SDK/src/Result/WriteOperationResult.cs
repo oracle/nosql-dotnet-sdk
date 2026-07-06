@@ -57,6 +57,12 @@ namespace Oracle.NoSQL.SDK
             set => ExistingModificationTime = value;
         }
 
+        string IWriteResult<TRow>.ExistingLastWriteMetadata
+        {
+            get => ExistingLastWriteMetadata;
+            set => ExistingLastWriteMetadata = value;
+        }
+
         FieldValue IWriteResultWithId<TRow>.GeneratedValue
         {
             get => GeneratedValue;
@@ -121,6 +127,15 @@ namespace Oracle.NoSQL.SDK
         /// <seealso cref="PutResult{TRow}.ExistingVersion"/>
         /// <seealso cref="DeleteResult{TRow}.ExistingVersion"/>
         public RowVersion ExistingVersion { get; internal set; }
+
+        /// <summary>
+        /// Gets the JSON last-write metadata of existing row if the
+        /// operation returned it.
+        /// </summary>
+        /// <inheritdoc cref="PutResult{TRow}.ExistingLastWriteMetadata" path="value"/>
+        /// <seealso cref="PutResult{TRow}.ExistingLastWriteMetadata"/>
+        /// <seealso cref="DeleteResult{TRow}.ExistingLastWriteMetadata"/>
+        public string ExistingLastWriteMetadata { get; internal set; }
 
         /// <summary>
         /// Gets the modification time of existing row if the conditional Put

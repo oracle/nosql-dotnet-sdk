@@ -17,7 +17,8 @@ namespace Oracle.NoSQL.SDK
     /// Base class for <see cref="WriteManyRequest{TRow}"/>.  Only used
     /// internally.
     /// </summary>
-    public abstract class WriteManyRequest : Request
+    public abstract class WriteManyRequest : Request,
+        ILastWriteMetadataRequest
     {
         internal const int MaxOpCount = 50;
 
@@ -123,6 +124,29 @@ namespace Oracle.NoSQL.SDK
             Options != null && Options.AbortIfUnsuccessful;
 
         internal IWriteManyOptions Options { get; }
+
+        bool ILastWriteMetadataRequest.HasLastWriteMetadata
+        {
+            get
+            {
+                foreach (var operation in Operations)
+                {
+                    if (operation is PutOperation putOperation &&
+                        putOperation.LastWriteMetadata != null)
+                    {
+                        return true;
+                    }
+
+                    if (operation is DeleteOperation deleteOperation &&
+                        deleteOperation.LastWriteMetadata != null)
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
     }
 
     /// <summary>

@@ -8,6 +8,7 @@
 namespace Oracle.NoSQL.SDK
 {
     using System;
+    using System.ComponentModel;
 
     /// <summary>
     /// Represents the version of a row in the database.
@@ -46,27 +47,29 @@ namespace Oracle.NoSQL.SDK
     /// </example>
     public class RowVersion
     {
+        private readonly byte[] bytes;
+
         /// <summary>
         /// Gets the version contents as byte array.
         /// </summary>
         /// <remarks>
-        /// This can be used to pass the version to a query via
-        /// <c>row_version</c> SQL function, as shown in the example.
+        /// Row versions are opaque values.  The byte array returned by this
+        /// property is an internal serialized representation and should not be
+        /// compared for equality or interpreted by applications.  The
+        /// serialized representation may differ between service, proxy and
+        /// client versions even when the values identify the same row version.
+        /// Use <see cref="RowVersion"/> instances directly with conditional
+        /// APIs such as <see cref="NoSQLClient.PutIfVersionAsync"/> and
+        /// <see cref="NoSQLClient.DeleteIfVersionAsync"/>.
         /// </remarks>
         /// <value>
-        /// The <c>byte[]</c> contents of this instance.
+        /// The internal <c>byte[]</c> contents of this instance.
         /// </value>
-        /// <example>
-        /// Passing row version as a byte array to a query.
-        /// <code>
-        /// var preparedStatement = await client.PrepareAsync(
-        ///     @"UPDATE MyTable $t SET NAME = 'John' WHERE id = ? AND row_version($t) = ?");
-        /// preparedStatement.SetVariable(1, 10);
-        /// preparedStatement.SetVariable(2, rowVersion.Bytes);
-        /// var queryResult = await client.QueryAsync(preparedStatement);
-        /// </code>
-        /// </example>
-        public byte[] Bytes { get; }
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("RowVersion is opaque. Use RowVersion directly with conditional APIs.", false)]
+        public byte[] Bytes => bytes;
+
+        internal byte[] InternalBytes => bytes;
 
         /// <summary>
         /// Initializes new instance of <see cref="RowVersion"/> with the
@@ -75,7 +78,11 @@ namespace Oracle.NoSQL.SDK
         /// <remarks>
         /// This constructor can be used to create row version from a
         /// <c>byte[]</c> that was obtained from a query using
-        /// <c>row_version</c> SQL function, as shown in the example.
+        /// <c>row_version</c> SQL function, as shown in the example.  Do not
+        /// compare the byte array with the bytes from another
+        /// <see cref="RowVersion"/>.  Row versions are opaque and their
+        /// serialized representation may differ between service, proxy and
+        /// client versions.
         /// </remarks>
         /// <param name="value">The value of the contents of this version.
         /// </param>
@@ -102,7 +109,7 @@ namespace Oracle.NoSQL.SDK
         /// </example>
         public RowVersion(byte[] value)
         {
-            Bytes = value ?? throw new ArgumentNullException(
+            bytes = value ?? throw new ArgumentNullException(
                 nameof(value),
                 "Argument to RowVersion constructor cannot be null");
         }
@@ -114,31 +121,22 @@ namespace Oracle.NoSQL.SDK
         /// <c>string</c> representing Base64-encoded contents of this
         /// instance.
         /// </value>
-        public string Encoded => Convert.ToBase64String(Bytes);
+        public string Encoded => Convert.ToBase64String(bytes);
 
         /// <summary>
         /// Converts value of this instance to string as Base64-encoded
         /// representation of its binary contents.
         /// </summary>
         /// <remarks>
-        /// You may use the string representation of row version similar to
-        /// <see cref="Bytes"/> property to pass to pass the version to a
-        /// query via <c>row_version</c> SQL function, as shown in the
-        /// example.
+        /// Row versions are opaque values.  This string representation should
+        /// not be compared for equality with values returned by queries because
+        /// the serialized representation may differ between service, proxy and
+        /// client versions.
         /// </remarks>
         /// <returns>
         /// String representation of this instance, which is the same as
         /// the value of <see cref="Encoded"/> property.
         /// </returns>
-        /// <example>
-        /// Passing row version as a string to a query.
-        /// <code>
-        /// var rowVersion = getResult.Version;
-        /// var queryResult = await client.QueryAsync(
-        ///     "UPDATE MyTable $t SET NAME = 'John' WHERE id = 10 AND " +
-        ///     $"row_version($t) = CAST('{rowVersion}' AS Binary");
-        /// </code>
-        /// </example>
         public override string ToString() => Encoded;
     }
 

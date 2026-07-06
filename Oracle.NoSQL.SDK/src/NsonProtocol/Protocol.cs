@@ -38,6 +38,7 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             internal const string Key = "k";
             internal const string KVVersion = "kv";
             internal const string LastIndex = "li";
+            internal const string LastWriteMetadata = "mt";
             internal const string ListMaxToRead = "lx";
             internal const string ListStartIndex = "ls";
             internal const string MatchVersion = "mv";
@@ -127,6 +128,7 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
 
             // operation metadata
             internal const string ExistingModTime = "em";
+            internal const string ExistingLastWriteMetadata = "ed";
             internal const string ExistingValue = "el";
             internal const string ExistingVersion = "ev";
             internal const string Generated = "gn";

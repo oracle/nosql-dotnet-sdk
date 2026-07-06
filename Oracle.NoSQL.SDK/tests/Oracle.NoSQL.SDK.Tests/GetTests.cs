@@ -172,8 +172,10 @@ namespace Oracle.NoSQL.SDK.Tests
             var getResult = await client.GetAsync(Fixture.Table.Name, primaryKey);
             VerifyGetResult(getResult, Fixture.Table, Fixture.Rows[0]);
 
-            // Get version of the same row from query and compare version
-            // values as binary and as string, should be equal.
+            // Get version of the same row from query and check that it can be
+            // used in conditional put.  Do not compare the bytes with the
+            // version from Get because the serialized forms may differ if the
+            // proxy and server use different serialization versions.
             var queryResult = await client.QueryAsync(
                 "SELECT row_version($t) AS versionBytes, " +
                 "CAST(row_version($t) AS String) AS versionString FROM " +
@@ -185,11 +187,20 @@ namespace Oracle.NoSQL.SDK.Tests
             
             var versionBytes = queryResult.Rows[0]["versionBytes"];
             Assert.IsTrue(versionBytes is BinaryValue);
-            AssertDeepEqual(getResult.Version.Bytes, versionBytes.AsByteArray);
+            var queryVersion = new RowVersion(versionBytes.AsByteArray);
 
             var versionString = queryResult.Rows[0]["versionString"];
             Assert.IsTrue(versionString is StringValue);
-            Assert.AreEqual(getResult.Version.ToString(), versionString.AsString);
+            Assert.AreEqual(queryVersion.ToString(), versionString.AsString);
+
+            var row = Fixture.Rows[0];
+            var options = row.TTL.HasValue
+                ? new PutOptions { TTL = row.TTL }
+                : null;
+            var putResult = await client.PutIfVersionAsync(Fixture.Table.Name,
+                (MapValue)row, queryVersion, options);
+            await VerifyPutAsync(putResult, Fixture.Table, row, options,
+                putOpKind: PutOpKind.IfVersion);
         }
     }
 

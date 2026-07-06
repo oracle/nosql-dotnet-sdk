@@ -74,6 +74,12 @@ namespace Oracle.NoSQL.SDK
             set => ExistingModificationTime = value;
         }
 
+        string IWriteResult<TRow>.ExistingLastWriteMetadata
+        {
+            get => ExistingLastWriteMetadata;
+            set => ExistingLastWriteMetadata = value;
+        }
+
         /// <inheritdoc cref="GetResult{TRow}.ConsumedCapacity"/>
         public ConsumedCapacity ConsumedCapacity { get; internal set; }
 
@@ -114,6 +120,18 @@ namespace Oracle.NoSQL.SDK
         /// <seealso cref="NoSQLClient.DeleteAsync"/>
         /// <seealso cref="DeleteOptions.ReturnExisting"/>
         public RowVersion ExistingVersion { get; internal set; }
+
+        /// <summary>
+        /// Gets the JSON last-write metadata of existing row if available.
+        /// </summary>
+        /// <inheritdoc cref="ExistingRow" path="remarks"/>
+        /// <value>
+        /// JSON last-write metadata of existing row if available, otherwise
+        /// <c>null</c>.
+        /// </value>
+        /// <seealso cref="NoSQLClient.DeleteAsync"/>
+        /// <seealso cref="DeleteOptions.ReturnExisting"/>
+        public string ExistingLastWriteMetadata { get; internal set; }
 
         /// <summary>
         /// Gets the modification time of existing row if available.

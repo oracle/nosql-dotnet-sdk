@@ -80,6 +80,14 @@ namespace Oracle.NoSQL.SDK
         public DateTime? ModificationTime { get; internal set; }
 
         /// <summary>
+        /// Gets the JSON last-write metadata of the returned row.
+        /// </summary>
+        /// <value>
+        /// The JSON last-write metadata if available, otherwise <c>null</c>.
+        /// </value>
+        public string LastWriteMetadata { get; internal set; }
+
+        /// <summary>
         /// Gets the version of the returned row.
         /// </summary>
         /// <value>

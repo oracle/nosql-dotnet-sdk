@@ -360,6 +360,11 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                 WriteDurability(writer, request.Durability);
             }
 
+            if (request.QueryVersion >= QueryRequestBase.QueryV4)
+            {
+                WriteLastWriteMetadata(writer, request.LastWriteMetadata);
+            }
+
             OptionallyWriteInt32(writer, FieldNames.MaxReadKB,
                 request.Options?.MaxReadKB);
             OptionallyWriteInt32(writer, FieldNames.MaxWriteKB,

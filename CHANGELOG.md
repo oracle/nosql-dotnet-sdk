@@ -24,6 +24,9 @@ to true.
 **Added**
 
 * New cloud OCI region codes
+* Added last-write metadata support for Put, Delete, DeleteRange,
+  WriteMany/PutMany/DeleteMany and write queries, including validation and
+  response fields for returned existing-row metadata.
 
 ## [5.2.2]
 

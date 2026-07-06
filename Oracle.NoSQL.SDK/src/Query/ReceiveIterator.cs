@@ -37,6 +37,8 @@ namespace Oracle.NoSQL.SDK.Query {
                     Compartment = runtime.Request.Options?.Compartment,
                     Timeout = runtime.Request.Options?.Timeout,
                     Consistency = runtime.Request.Options?.Consistency,
+                    LastWriteMetadata =
+                        runtime.Request.Options?.LastWriteMetadata,
                     MaxReadKB = runtime.Request.Options?.MaxReadKB,
                     MaxWriteKB = runtime.Request.Options?.MaxWriteKB,
                     TraceLevel = runtime.Request.Options?.TraceLevel,

@@ -87,7 +87,7 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
         internal static void WriteVersion(MemoryStream stream,
             RowVersion version)
         {
-            WriteByteArray(stream, version.Bytes);
+            WriteByteArray(stream, version.InternalBytes);
         }
 
         internal static void WriteOpcode(MemoryStream stream, Opcode opcode,

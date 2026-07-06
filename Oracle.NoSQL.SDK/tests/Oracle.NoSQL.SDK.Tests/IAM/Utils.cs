@@ -90,10 +90,11 @@ namespace Oracle.NoSQL.SDK.Tests.IAM
             "algorithm=\"(.+?)\",signature=\"(.+?)\",version=\"(.+?)\"$");
 
         private static string GetSigningContent(string dateStr,
-            string delegationToken)
+            string delegationToken, string requestTarget = null)
         {
+            requestTarget ??= $"post /{NoSQLDataPath}";
             var content =
-                $"{RequestTargetHeader}: post /{NoSQLDataPath}\n" +
+                $"{RequestTargetHeader}: {requestTarget}\n" +
                 $"{HostHeader}: {TestRegionHost}\n" +
                 $"{DateHeader}: {dateStr}";
 
@@ -185,7 +186,8 @@ namespace Oracle.NoSQL.SDK.Tests.IAM
         };
 
         internal static void VerifyAuthHeader(string header, string keyId,
-            RSA publicKey, string dateStr, string delegationToken)
+            RSA publicKey, string dateStr, string delegationToken,
+            string requestTarget = null)
         {
             var match = AuthHeaderPattern.Match(header);
             Assert.IsTrue(match.Success);
@@ -193,7 +195,8 @@ namespace Oracle.NoSQL.SDK.Tests.IAM
             Assert.AreEqual(keyId, match.Groups[1].Value);
 
             var signature = match.Groups[3].Value;
-            var sc = GetSigningContent(dateStr, delegationToken);
+            var sc = GetSigningContent(dateStr, delegationToken,
+                requestTarget);
 
             var sigBytes = new byte[signature.Length];
             Assert.IsTrue(Convert.TryFromBase64String(signature, sigBytes,
@@ -206,7 +209,7 @@ namespace Oracle.NoSQL.SDK.Tests.IAM
 
         internal static void VerifyAuth(HttpRequestHeaders headers,
             string keyId, RSA publicKey, string compartment = CompartmentId,
-            string delegationToken = null)
+            string delegationToken = null, string requestTarget = null)
         {
             Assert.IsNotNull(headers.Authorization);
             Assert.IsTrue(headers.Contains(DateHeader));
@@ -239,7 +242,7 @@ namespace Oracle.NoSQL.SDK.Tests.IAM
             }
 
             VerifyAuthHeader(authHeader, keyId, publicKey, dateStr,
-                delegationToken);
+                delegationToken, requestTarget);
         }
 
         internal static void VerifyAuthEqual(HttpRequestHeaders newHeaders,

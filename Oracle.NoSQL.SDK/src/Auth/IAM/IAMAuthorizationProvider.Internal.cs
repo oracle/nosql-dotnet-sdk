@@ -212,10 +212,12 @@ namespace Oracle.NoSQL.SDK
         // should match.
         private string GetSigningContent(string dateStr,
             string currentDelegationToken,
-            ContentSigningInfo contentSigningInfo)
+            ContentSigningInfo contentSigningInfo,
+            HttpRequestMessage message)
         {
+            var requestTarget = GetRequestTarget(message);
             var content =
-                $"{RequestTarget}: post /{NoSQLDataPath}\n" +
+                $"{RequestTarget}: {requestTarget}\n" +
                 $"{Host}: {serviceHost}\n" +
                 $"{Date}: {dateStr}";
 
@@ -234,6 +236,33 @@ namespace Oracle.NoSQL.SDK
 
             return content;
         }
+
+        private static string GetRequestTarget(HttpRequestMessage message)
+        {
+            var method = message?.RequestUri == null
+                ? "post"
+                : message.Method.Method.ToLowerInvariant();
+            var path = $"/{NoSQLDataPath}";
+
+            if (message?.RequestUri != null)
+            {
+                path = message.RequestUri.IsAbsoluteUri
+                    ? message.RequestUri.PathAndQuery
+                    : message.RequestUri.OriginalString;
+
+                if (!path.StartsWith("/", StringComparison.Ordinal))
+                {
+                    path = "/" + path;
+                }
+            }
+
+            return $"{method} {path}";
+        }
+
+        private static bool IsCacheableSignatureRequest(
+            HttpRequestMessage message) =>
+            string.Equals(GetRequestTarget(message),
+                $"post /{NoSQLDataPath}", StringComparison.Ordinal);
 
         private async Task<SignatureDetails> CreateSignatureDetailsAsync(
             Request request, HttpRequestMessage message,
@@ -283,7 +312,7 @@ namespace Oracle.NoSQL.SDK
             {
                 signature = CreateSignature(
                     GetSigningContent(dateStr, currentDelegationToken,
-                        contentSigningInfo),
+                        contentSigningInfo, message),
                     profile.PrivateKey);
             }
             catch (CryptographicException ex)
@@ -379,6 +408,25 @@ namespace Oracle.NoSQL.SDK
 
         // Used by tests.
         internal void ClearSignatureCache() => CachedSignatureDetails = null;
+
+        private void CacheSignatureDetails(SignatureDetails signatureDetails)
+        {
+            CachedSignatureDetails = signatureDetails;
+            if (!HasDynamicDelegationToken &&
+                RefreshAhead != TimeSpan.Zero)
+            {
+                ScheduleRenew();
+            }
+        }
+
+        private async Task RefreshCachedSignatureDetailsAsync(
+            bool forceProfileRefresh, string currentDelegationToken,
+            CancellationToken cancellationToken)
+        {
+            CacheSignatureDetails(await CreateSignatureDetailsAsync(null,
+                null, forceProfileRefresh, currentDelegationToken,
+                cancellationToken));
+        }
 
         private bool NeedSignatureRefresh(
             SignatureDetails signatureDetails) =>

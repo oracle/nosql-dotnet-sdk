@@ -700,6 +700,9 @@ namespace Oracle.NoSQL.SDK
             var isInvalidAuth =
                 request.LastException is InvalidAuthorizationException;
             var contentSigned = request.NeedsContentSigned;
+            var cacheableSignatureRequest =
+                IsCacheableSignatureRequest(message);
+            var profileValid = profileProvider.IsProfileValid;
             string currentDelegationToken = null;
             if (HasDynamicDelegationToken)
             {
@@ -710,27 +713,34 @@ namespace Oracle.NoSQL.SDK
             // Use one cache snapshot for the match decision and the headers
             // applied to this request.
             var cachedSignatureDetails = CachedSignatureDetails;
-            
-            SignatureDetails signatureDetails;
-            if (isInvalidAuth || contentSigned ||
-                !profileProvider.IsProfileValid ||
+            var needCachedSignatureRefresh =
                 NeedSignatureRefresh(cachedSignatureDetails) ||
                 (HasDynamicDelegationToken &&
                  !DelegationTokenMatches(cachedSignatureDetails,
-                     currentDelegationToken)))
-            {
-                signatureDetails = await CreateSignatureDetailsAsync(
-                    request, message, isInvalidAuth, currentDelegationToken,
-                    cancellationToken);
+                     currentDelegationToken));
+            var refreshCachedPostSignature =
+                !contentSigned && !cacheableSignatureRequest &&
+                (isInvalidAuth || !profileValid ||
+                 needCachedSignatureRefresh);
 
-                if (!contentSigned)
+            SignatureDetails signatureDetails;
+            if (isInvalidAuth || contentSigned || !cacheableSignatureRequest ||
+                !profileValid || needCachedSignatureRefresh)
+            {
+                if (refreshCachedPostSignature)
                 {
-                    CachedSignatureDetails = signatureDetails;
-                    if (!HasDynamicDelegationToken &&
-                        RefreshAhead != TimeSpan.Zero)
-                    {
-                        ScheduleRenew();
-                    }
+                    await RefreshCachedSignatureDetailsAsync(isInvalidAuth,
+                        currentDelegationToken, cancellationToken);
+                }
+
+                signatureDetails = await CreateSignatureDetailsAsync(
+                    request, message,
+                    isInvalidAuth && !refreshCachedPostSignature,
+                    currentDelegationToken, cancellationToken);
+
+                if (!contentSigned && cacheableSignatureRequest)
+                {
+                    CacheSignatureDetails(signatureDetails);
                 }
             }
             else

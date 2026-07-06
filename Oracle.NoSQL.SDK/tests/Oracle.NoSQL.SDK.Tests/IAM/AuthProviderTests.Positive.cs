@@ -201,8 +201,39 @@ namespace Oracle.NoSQL.SDK.Tests.IAM
             internal override TimeSpan ProfileTTL => profileTTL;
         }
 
+        private class TestMutableProfileProvider :
+            AuthenticationProfileProvider
+        {
+            internal TestMutableProfileProvider(string keyId)
+            {
+                KeyId = keyId;
+            }
+
+            internal string KeyId { get; set; }
+
+            internal bool Valid { get; set; } = true;
+
+            internal override bool IsProfileValid => Valid;
+
+            internal int ProfileLoadCount { get; private set; }
+
+            internal override Task<AuthenticationProfile> GetProfileAsync(
+                bool forceRefresh, CancellationToken cancellationToken)
+            {
+                ProfileLoadCount++;
+                Valid = true;
+                return Task.FromResult(new AuthenticationProfile(KeyId,
+                    Keys.RSA, TenantId));
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+            }
+        }
+
         private static void UseTestProfileProvider(
-            IAMAuthorizationProvider provider, TimeSpan? profileTTL = null)
+            IAMAuthorizationProvider provider,
+            AuthenticationProfileProvider profileProvider)
         {
             var profileProviderField =
                 typeof(IAMAuthorizationProvider).GetField("profileProvider",
@@ -210,7 +241,13 @@ namespace Oracle.NoSQL.SDK.Tests.IAM
             Assert.IsNotNull(profileProviderField);
 
             (profileProviderField.GetValue(provider) as IDisposable)?.Dispose();
-            profileProviderField.SetValue(provider,
+            profileProviderField.SetValue(provider, profileProvider);
+        }
+
+        private static void UseTestProfileProvider(
+            IAMAuthorizationProvider provider, TimeSpan? profileTTL = null)
+        {
+            UseTestProfileProvider(provider,
                 new TestCredentialsProfileProvider(CredentialsPK,
                     profileTTL));
         }
@@ -271,6 +308,77 @@ namespace Oracle.NoSQL.SDK.Tests.IAM
 
             VerifyAuth(message.Headers, GetKeyId(iam), Keys.RSA,
                 compartment ?? TenantId);
+        }
+
+        [TestMethod]
+        public async Task TestAuthProviderSignsActualHttpMethodAsync()
+        {
+            var iam = GoodDirectIAMConfigs.First();
+            PrepareConfig(iam);
+
+            var cfg = MakeNoSQLConfig(iam, CompartmentId);
+            var client = new NoSQLClient(cfg);
+            var request = new GetTableRequest(client, "table", null);
+
+            var postMessage = new HttpRequestMessage(HttpMethod.Post,
+                new Uri(NoSQLDataPath, UriKind.Relative));
+            await iam.Provider.ApplyAuthorizationAsync(request, postMessage,
+                CancellationToken.None);
+            VerifyAuth(postMessage.Headers, GetKeyId(iam), Keys.RSA,
+                CompartmentId, requestTarget: $"post /{NoSQLDataPath}");
+
+            var headMessage = new HttpRequestMessage(HttpMethod.Head,
+                new Uri(NoSQLDataPath, UriKind.Relative));
+            await iam.Provider.ApplyAuthorizationAsync(request, headMessage,
+                CancellationToken.None);
+            VerifyAuth(headMessage.Headers, GetKeyId(iam), Keys.RSA,
+                CompartmentId, requestTarget: $"head /{NoSQLDataPath}");
+
+            var cachedPostMessage = new HttpRequestMessage(HttpMethod.Post,
+                new Uri(NoSQLDataPath, UriKind.Relative));
+            await iam.Provider.ApplyAuthorizationAsync(request,
+                cachedPostMessage, CancellationToken.None);
+            VerifyAuthEqual(cachedPostMessage.Headers, postMessage.Headers,
+                GetKeyId(iam), Keys.RSA, CompartmentId);
+        }
+
+        [TestMethod]
+        public async Task TestNonCacheableProfileRefreshUpdatesPostCacheAsync()
+        {
+            var iam = GoodDirectIAMConfigs.First();
+            PrepareConfig(iam);
+
+            var cfg = MakeNoSQLConfig(iam, CompartmentId);
+            var client = new NoSQLClient(cfg);
+            var request = new GetTableRequest(client, "table", null);
+            var profileProvider =
+                new TestMutableProfileProvider("old-profile");
+            UseTestProfileProvider(iam.Provider, profileProvider);
+
+            var firstPostMessage = new HttpRequestMessage(HttpMethod.Post,
+                new Uri(NoSQLDataPath, UriKind.Relative));
+            await iam.Provider.ApplyAuthorizationAsync(request,
+                firstPostMessage, CancellationToken.None);
+            VerifyAuth(firstPostMessage.Headers, "old-profile", Keys.RSA,
+                CompartmentId, requestTarget: $"post /{NoSQLDataPath}");
+
+            profileProvider.KeyId = "new-profile";
+            profileProvider.Valid = false;
+
+            var headMessage = new HttpRequestMessage(HttpMethod.Head,
+                new Uri(NoSQLDataPath, UriKind.Relative));
+            await iam.Provider.ApplyAuthorizationAsync(request, headMessage,
+                CancellationToken.None);
+            VerifyAuth(headMessage.Headers, "new-profile", Keys.RSA,
+                CompartmentId, requestTarget: $"head /{NoSQLDataPath}");
+
+            var secondPostMessage = new HttpRequestMessage(HttpMethod.Post,
+                new Uri(NoSQLDataPath, UriKind.Relative));
+            await iam.Provider.ApplyAuthorizationAsync(request,
+                secondPostMessage, CancellationToken.None);
+            VerifyAuth(secondPostMessage.Headers, "new-profile", Keys.RSA,
+                CompartmentId, requestTarget: $"post /{NoSQLDataPath}");
+            Assert.AreEqual(3, profileProvider.ProfileLoadCount);
         }
 
         private static IEnumerable<object[]> CacheRefreshTestDataSource =>
