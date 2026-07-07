@@ -314,8 +314,7 @@ namespace Oracle.NoSQL.SDK.Http
             try
             {
                 var response = await SendWithTimeoutAsync(client, message,
-                    timeoutMillis, cancellationToken,
-                    HttpCompletionOption.ResponseHeadersRead);
+                    timeoutMillis, cancellationToken);
                 var connectionCount = AcquiredConnectionCount;
                 if (response.StatusCode != HttpStatusCode.OK)
                 {
