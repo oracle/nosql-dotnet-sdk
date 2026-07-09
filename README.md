@@ -337,9 +337,9 @@ dotnet test Oracle.NoSQL.SDK/tests/Oracle.NoSQL.SDK.Tests/Oracle.NoSQL.SDK.Tests
   --filter StatsTests
 ```
 
-StatsControl execution-path tests require the Oracle NoSQL Database Cloud
-Simulator. From the extracted Cloud Simulator directory, start it on the
-default local endpoint:
+Most StatsControl execution-path tests require the Oracle NoSQL Database
+Cloud Simulator. From the extracted Cloud Simulator directory, start it on
+the default local endpoint:
 
 ```bash
 ./runCloudSim -root ./cloudsim-root -httpPort 8080 -storePort 5010
@@ -354,6 +354,21 @@ dotnet test Oracle.NoSQL.SDK/tests/Oracle.NoSQL.SDK.Tests/Oracle.NoSQL.SDK.Tests
   --filter StatsExecutionPathTests
 ```
 
+The execution-path suite also contains an on-premise `ListTables` stats test.
+After starting non-secure KVLite and its HTTP proxy as described above, run:
+
+```bash
+dotnet test Oracle.NoSQL.SDK/tests/Oracle.NoSQL.SDK.Tests/Oracle.NoSQL.SDK.Tests.csproj \
+  --framework net10.0 \
+  --no-restore \
+  --filter StatsExecutionPathTests -- \
+  TestRunParameters.Parameter\(name=\"noSQLConfigFile\",value=\"Oracle.NoSQL.SDK.Samples/kvlite.json\"\)
+```
+
+With a Cloud Simulator configuration, the on-premise test is inconclusive.
+With a KVStore configuration, the Cloud Simulator-only tests are
+inconclusive and the on-premise `ListTables` test runs.
+
 To manually inspect generated stats output, run:
 
 ```bash
@@ -362,6 +377,7 @@ dotnet run --project Oracle.NoSQL.SDK/tests/Oracle.NoSQL.SDK.StatsLoadCheck \
   --operation basicFlow \
   --table Users \
   --profile ALL \
+  --percentile-mode EXACT \
   --interval-sec 1 \
   --pretty-print true \
   --enable-log true \
@@ -372,7 +388,41 @@ dotnet run --project Oracle.NoSQL.SDK/tests/Oracle.NoSQL.SDK.StatsLoadCheck \
 Stats logging uses `Microsoft.Extensions.Logging.ILogger`.  The load-check
 tool wires `--enable-log true` to a small console logger so the output remains
 visible.  Applications that use `NoSQLConfig.StatsEnableLog = true` should set
-`NoSQLConfig.StatsLogger` from their own logging setup.
+`NoSQLConfig.StatsLogger` from their own logging setup.  Unlike Java's default
+`java.util.logging` logger, the .NET logging abstraction does not select an
+output provider for the application.  If no logger is supplied, collection
+and `StatsHandler` callbacks still work, but interval snapshots are not written
+to a log destination.
+
+The `ALL` profile includes query text and, when available, the driver query
+plan.  Query text can contain table names, schema details, or literal values.
+Use `MORE` when query-level diagnostics are not required, and apply the same
+access controls and retention policy to stats logs as to other application
+diagnostic data.  A `StatsHandler` runs on the periodic reporting path and
+should return promptly; applications should queue expensive processing to
+their own worker rather than block the handler.
+
+`EXACT` is the default percentile mode and stores every latency sample using
+the same calculation as the Java SDK.  For high-volume workloads, the load
+checker accepts `--percentile-mode BUCKETED`.  Bucketed mode stores a count for
+each observed integer millisecond value, so p95 and p99 remain exact at the
+SDK's millisecond resolution while memory scales with distinct latency values
+instead of request count.  The equivalent application configuration is:
+
+```csharp
+config.StatsPercentileMode = StatsControl.PercentileMode.Bucketed;
+```
+
+The mode affects percentile storage only.  It does not change min, max,
+average, request counts, output field names, or profiles.  `REGULAR` does not
+collect p95/p99, so the setting only has an effect with `MORE` and `ALL`.
+
+High-concurrency load checks may exceed Cloud Simulator or configured table
+throughput.  The SDK retries throttled requests, but an operation is reported
+as an error if its retry or overall timeout budget is exhausted.  A high
+`retry.throttleCount` indicates capacity pressure; reduce `--concurrency` or
+increase table capacity where appropriate.  Non-throttling errors should be
+investigated separately rather than treated as expected load-test behavior.
 
 ## Help
 

@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2020, 2025 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026 Oracle and/or its affiliates. All rights reserved.
  *
  * Licensed under the Universal Permissive License v 1.0 as shown at
  *  https://oss.oracle.com/licenses/upl/
@@ -652,6 +652,22 @@ namespace Oracle.NoSQL.SDK
             StatsControl.Profile.None;
 
         /// <summary>
+        /// Gets or sets how request latency percentile samples are stored.
+        /// </summary>
+        /// <remarks>
+        /// This setting applies to the <see cref="StatsControl.Profile.More"/>
+        /// and <see cref="StatsControl.Profile.All"/> profiles.  Bucketed mode
+        /// uses one exact bucket per integer millisecond value and is useful for
+        /// high-volume workloads because it does not retain every request.
+        /// </remarks>
+        /// <value>
+        /// Percentile storage mode.  The default is
+        /// <see cref="StatsControl.PercentileMode.Exact"/> for Java parity.
+        /// </value>
+        public StatsControl.PercentileMode StatsPercentileMode { get; set; } =
+            StatsControl.PercentileMode.Exact;
+
+        /// <summary>
         /// Gets or sets the interval for periodic statistics snapshots.
         /// </summary>
         /// <remarks>
@@ -660,8 +676,8 @@ namespace Oracle.NoSQL.SDK
         /// configuration properties.
         /// </remarks>
         /// <value>
-        /// Statistics interval.  The default is 10 minutes.  The minimum
-        /// value is 1 second.
+        /// Statistics interval as a whole number of seconds.  The default is
+        /// 10 minutes and the minimum value is 1 second.
         /// </value>
         /// <seealso cref="StatsControl"/>
         public TimeSpan StatsInterval { get; set; } =
@@ -696,7 +712,7 @@ namespace Oracle.NoSQL.SDK
         /// </summary>
         /// <remarks>
         /// The handler is called after an interval snapshot is generated and
-        /// before that interval's counters are cleared for the next window.
+        /// the next collection interval has started with fresh counters.
         /// </remarks>
         /// <value>Statistics handler or <c>null</c>.</value>
         /// <seealso cref="StatsControl"/>

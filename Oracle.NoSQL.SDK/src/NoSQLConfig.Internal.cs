@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2020, 2025 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026 Oracle and/or its affiliates. All rights reserved.
  *
  * Licensed under the Universal Permissive License v 1.0 as shown at
  *  https://oss.oracle.com/licenses/upl/
@@ -48,6 +48,31 @@ namespace Oracle.NoSQL.SDK
 
             public override void Write(Utf8JsonWriter writer,
                 StatsControl.Profile value, JsonSerializerOptions options)
+            {
+                throw new NotSupportedException();
+            }
+        }
+
+        private class StatsPercentileModeConverter :
+            JsonConverter<StatsControl.PercentileMode>
+        {
+            public override StatsControl.PercentileMode Read(
+                ref Utf8JsonReader reader, Type typeToConvert,
+                JsonSerializerOptions options)
+            {
+                if (reader.TokenType == JsonTokenType.Number)
+                {
+                    return (StatsControl.PercentileMode)reader.GetInt32();
+                }
+
+                return (StatsControl.PercentileMode)Enum.Parse(
+                    typeof(StatsControl.PercentileMode), reader.GetString(),
+                    true);
+            }
+
+            public override void Write(Utf8JsonWriter writer,
+                StatsControl.PercentileMode value,
+                JsonSerializerOptions options)
             {
                 throw new NotSupportedException();
             }
@@ -200,6 +225,8 @@ namespace Oracle.NoSQL.SDK
             JsonSerializerOptions.Converters.Add(
                 new StatsProfileConverter());
             JsonSerializerOptions.Converters.Add(
+                new StatsPercentileModeConverter());
+            JsonSerializerOptions.Converters.Add(
                 new TimeSpanConverter());
             JsonSerializerOptions.Converters.Add(
                 new CharArrayConverter());
@@ -307,6 +334,7 @@ namespace Oracle.NoSQL.SDK
             CheckEnumValue(ServiceType);
             CheckEnumValue(Consistency);
             CheckEnumValue(StatsProfile);
+            CheckEnumValue(StatsPercentileMode);
             CheckTimeout(Timeout);
             ValidateStatsInterval();
             CheckTimeout(TableDDLTimeout, nameof(TableDDLTimeout));
@@ -336,6 +364,21 @@ namespace Oracle.NoSQL.SDK
             {
                 throw new ArgumentException(
                     $"{nameof(StatsInterval)} must be at least 1 second.");
+            }
+
+            if (StatsInterval.Ticks % TimeSpan.TicksPerSecond != 0)
+            {
+                throw new ArgumentException(
+                    $"{nameof(StatsInterval)} must be a whole number of " +
+                    "seconds.");
+            }
+
+            // Task.Delay accepts at most UInt32.MaxValue - 1 milliseconds.
+            if (StatsInterval.TotalMilliseconds > uint.MaxValue - 1L)
+            {
+                throw new ArgumentException(
+                    $"{nameof(StatsInterval)} exceeds the maximum supported " +
+                    "timer interval.");
             }
         }
 

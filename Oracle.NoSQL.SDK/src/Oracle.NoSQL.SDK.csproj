@@ -6,7 +6,7 @@
     <Company>Oracle Corporation</Company>
     <Product>Oracle NoSQL Database</Product>
     <Authors>Oracle Corporation</Authors>
-    <Copyright>Copyright (c) 2020, 2025 Oracle and/or its affiliates. All rights reserved.</Copyright>
+    <Copyright>Copyright (c) 2020, 2026 Oracle and/or its affiliates. All rights reserved.</Copyright>
     <Description>Oracle NoSQL .NET SDK</Description>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
     <PackageReadmeFile>README.md</PackageReadmeFile>
@@ -47,7 +47,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.3" />
+    <!-- Use the lowest supported runtime major to avoid pulling .NET 10
+         DiagnosticSource assemblies into net8.0 and net9.0 applications. -->
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
   </ItemGroup>
 
   <ItemGroup>

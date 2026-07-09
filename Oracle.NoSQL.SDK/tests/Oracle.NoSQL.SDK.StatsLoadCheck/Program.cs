@@ -24,6 +24,7 @@ namespace Oracle.NoSQL.SDK.StatsLoadCheck
             "Oracle.NoSQL.SDK.Samples/cloudsim.json";
         private const string DefaultOperation = "listTables";
         private const string DefaultProfile = "MORE";
+        private const string DefaultPercentileMode = "EXACT";
         private const string DefaultTable = "Users";
         private const long DefaultTotal = 1000000;
         private const int DefaultConcurrency = 100;
@@ -54,7 +55,8 @@ namespace Oracle.NoSQL.SDK.StatsLoadCheck
                 Console.WriteLine(
                     "Starting stats load check with { total: " +
                     $"{options.Total}, concurrency: {options.Concurrency}, " +
-                    $"profile: '{options.Profile}', operation: " +
+                    $"profile: '{options.Profile}', percentileMode: " +
+                    $"'{options.PercentileMode}', operation: " +
                     $"'{options.Operation}' }}");
 
                 var result = await RunLoadAsync(client, options, cts.Token);
@@ -89,6 +91,8 @@ namespace Oracle.NoSQL.SDK.StatsLoadCheck
         {
             var config = NoSQLConfig.FromJsonFile(options.ConfigPath);
             config.StatsProfile = ParseProfile(options.Profile);
+            config.StatsPercentileMode =
+                ParsePercentileMode(options.PercentileMode);
             config.StatsEnableLog = options.EnableLog;
             config.StatsPrettyPrint = options.PrettyPrint;
             config.StatsInterval = TimeSpan.FromSeconds(options.IntervalSec);
@@ -109,6 +113,18 @@ namespace Oracle.NoSQL.SDK.StatsLoadCheck
                 "ALL" => StatsControl.Profile.All,
                 _ => throw new ArgumentException(
                     "Profile must be NONE, REGULAR, MORE, or ALL.")
+            };
+        }
+
+        private static StatsControl.PercentileMode ParsePercentileMode(
+            string value)
+        {
+            return value.ToUpperInvariant() switch
+            {
+                "EXACT" => StatsControl.PercentileMode.Exact,
+                "BUCKETED" => StatsControl.PercentileMode.Bucketed,
+                _ => throw new ArgumentException(
+                    "Percentile mode must be EXACT or BUCKETED.")
             };
         }
 
@@ -416,6 +432,10 @@ Options:
   --total <number>          Total logical operations. Default: 1000000
   --concurrency <number>    Number of concurrent workers. Default: 100
   --profile <name>          NONE|REGULAR|MORE|ALL. Default: MORE
+  --percentile-mode <mode>  EXACT|BUCKETED. EXACT stores every sample for
+                            Java parity. BUCKETED stores exact millisecond
+                            frequencies for high-volume workloads.
+                            Default: EXACT
   --interval-sec <number>   Stats interval seconds. Default: 1
   --pretty-print <bool>     Pretty-print Client stats JSON. Default: true
   --enable-log <bool>       Enable Client stats logging. Default: true
@@ -424,6 +444,12 @@ Options:
   --key field=value         Repeatable primary key field for get/delete.
   --row field=value         Repeatable row field for put/writeMultiple.
   --query <sql>             SQL for query/prepare.
+
+High-concurrency note:
+  A workload may exceed CloudSim or table throughput limits. The SDK retries
+  throttled requests, but an operation is reported as an error if its retry or
+  timeout budget is exhausted. Reduce concurrency or increase table capacity
+  when retry.throttleCount is high; investigate non-throttling errors separately.
 
 Test commands:
   # Start CloudSim first when using the default cloudsim.json config:
@@ -449,11 +475,13 @@ Examples:
   dotnet run --project Oracle.NoSQL.SDK/tests/Oracle.NoSQL.SDK.StatsLoadCheck \
     --framework net10.0 -- --operation put --table Users \
     --row id={i} --row name=user-{i} --profile ALL \
+    --percentile-mode BUCKETED \
     --total 1000 --concurrency 10
 
   dotnet run --project Oracle.NoSQL.SDK/tests/Oracle.NoSQL.SDK.StatsLoadCheck \
     --framework net10.0 -- --operation get --table Users \
-    --key id={i} --profile MORE --total 1000 --concurrency 10
+    --key id={i} --profile MORE --percentile-mode BUCKETED \
+    --total 1000 --concurrency 10
 
   dotnet run --project Oracle.NoSQL.SDK/tests/Oracle.NoSQL.SDK.StatsLoadCheck \
     --framework net10.0 -- --operation query --table Users \
@@ -469,6 +497,9 @@ Examples:
             public string Operation { get; private set; } = DefaultOperation;
 
             public string Profile { get; private set; } = DefaultProfile;
+
+            public string PercentileMode { get; private set; } =
+                DefaultPercentileMode;
 
             public string Table { get; private set; } = DefaultTable;
 
@@ -518,6 +549,10 @@ Examples:
                             break;
                         case "--profile":
                             options.Profile = RequireValue(args, ref i, arg);
+                            break;
+                        case "--percentile-mode":
+                            options.PercentileMode = RequireValue(
+                                args, ref i, arg);
                             break;
                         case "--table":
                             options.Table = RequireValue(args, ref i, arg);

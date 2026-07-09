@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2020, 2025 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026 Oracle and/or its affiliates. All rights reserved.
  *
  * Licensed under the Universal Permissive License v 1.0 as shown at
  *  https://oss.oracle.com/licenses/upl/
@@ -183,6 +183,13 @@ namespace Oracle.NoSQL.SDK.Tests
                     StatsProfile = (StatsControl.Profile)(-1),
                     Endpoint = CloudSimEndpoint
                 })
+                // invalid stats percentile mode
+                .Append(new NoSQLConfig
+                {
+                    StatsPercentileMode =
+                        (StatsControl.PercentileMode)(-1),
+                    Endpoint = CloudSimEndpoint
+                })
                 // cannot have both endpoint and region
                 .Append(new NoSQLConfig
                 {
@@ -211,6 +218,18 @@ namespace Oracle.NoSQL.SDK.Tests
                 {
                     Endpoint = CloudSimEndpoint,
                     StatsInterval = TimeSpan.FromMilliseconds(500)
+                })
+                // Java config accepts interval values in whole seconds.
+                .Append(new NoSQLConfig
+                {
+                    Endpoint = CloudSimEndpoint,
+                    StatsInterval = TimeSpan.FromMilliseconds(1500)
+                })
+                // Task.Delay cannot represent a larger period.
+                .Append(new NoSQLConfig
+                {
+                    Endpoint = CloudSimEndpoint,
+                    StatsInterval = TimeSpan.FromDays(50)
                 })
                 .Concat(from timeout in BadTimeSpans
                     select new NoSQLConfig

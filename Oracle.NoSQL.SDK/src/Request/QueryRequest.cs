@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2020, 2025 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026 Oracle and/or its affiliates. All rights reserved.
  *
  * Licensed under the Universal Permissive License v 1.0 as shown at
  *  https://oss.oracle.com/licenses/upl/
@@ -10,6 +10,7 @@ namespace Oracle.NoSQL.SDK
     using System;
     using System.Diagnostics;
     using System.IO;
+    using System.Threading;
     using Query;
     using static ValidateUtils;
 
@@ -23,6 +24,8 @@ namespace Oracle.NoSQL.SDK
     public abstract class QueryRequest : QueryRequestBase,
         ILastWriteMetadataRequest
     {
+        private int statsLogicalQueryPending;
+
         // "5" == PrepareCallback.QueryOperation.SELECT
         internal const int OperationCodeSelect = 5;
 
@@ -67,6 +70,19 @@ namespace Oracle.NoSQL.SDK
         internal VirtualScan VirtualScan { get; set; }
 
         internal bool IsInternal { get; set; }
+
+        // Advanced queries use internal QueryRequest instances for server
+        // fetches. This reference carries the user-visible request through the
+        // feature preflight without counting each internal fetch as a new query.
+        internal QueryRequest StatsLogicalQueryRequest { get; set; }
+
+        internal void DeferStatsLogicalQuery()
+        {
+            Interlocked.Exchange(ref statsLogicalQueryPending, 1);
+        }
+
+        internal bool TryConsumeStatsLogicalQuery() =>
+            Interlocked.Exchange(ref statsLogicalQueryPending, 0) == 1;
 
         internal override bool SupportsRateLimiting => true;
 

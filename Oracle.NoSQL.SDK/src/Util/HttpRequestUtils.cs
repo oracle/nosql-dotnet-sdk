@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2020, 2025 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026 Oracle and/or its affiliates. All rights reserved.
  *
  * Licensed under the Universal Permissive License v 1.0 as shown at
  *  https://oss.oracle.com/licenses/upl/
@@ -57,35 +57,28 @@ namespace Oracle.NoSQL.SDK
         }
 
         internal static async Task<ServiceResponseException>
-            CreateServiceResponseExceptionAsync(HttpResponseMessage response)
+            CreateServiceResponseExceptionAsync(HttpResponseMessage response,
+                CancellationToken cancellationToken = default)
         {
             var responseContent =
-                await response.Content.ReadAsStringAsync();
+                await response.Content.ReadAsStringAsync(cancellationToken);
             return new ServiceResponseException(response.StatusCode,
                 response.ReasonPhrase, responseContent);
         }
 
-        // Since HttpClient does not let setting timeout per request, we use
-        // cancellation token to cancel request after given timeout.  In
-        // addition, SendAsync throws TaskCanceledException if the request
-        // times out, so we implement timeout via CancellationToken, in which
-        // case we can differentiate between user cancellation and request
-        // timeout (in which case we rethrow TimeoutException).
-        internal static async Task<HttpResponseMessage> SendWithTimeoutAsync(
-            HttpClient client,
-            HttpRequestMessage message,
+        // Keeps one linked timeout active across a multi-step HTTP operation,
+        // including both response-header and response-body processing.
+        internal static async Task<T> ExecuteWithTimeoutAsync<T>(
+            Func<CancellationToken, Task<T>> operation,
             int timeoutMillis,
-            CancellationToken cancellationToken,
-            HttpCompletionOption completionOption =
-                HttpCompletionOption.ResponseContentRead)
+            CancellationToken cancellationToken)
         {
             using var linkedSource = CancellationTokenSource
                 .CreateLinkedTokenSource(cancellationToken);
             linkedSource.CancelAfter(timeoutMillis);
             try
             {
-                return await client.SendAsync(message, completionOption,
-                    linkedSource.Token);
+                return await operation(linkedSource.Token);
             }
             catch (OperationCanceledException ex)
             {
@@ -104,6 +97,25 @@ namespace Oracle.NoSQL.SDK
                 throw new TimeoutException(msg,
                     ex.Data[LastExceptionKey] as Exception);
             }
+        }
+
+        // Since HttpClient does not let setting timeout per request, we use
+        // cancellation token to cancel request after given timeout.  In
+        // addition, SendAsync throws TaskCanceledException if the request
+        // times out, so we implement timeout via CancellationToken, in which
+        // case we can differentiate between user cancellation and request
+        // timeout (in which case we rethrow TimeoutException).
+        internal static async Task<HttpResponseMessage> SendWithTimeoutAsync(
+            HttpClient client,
+            HttpRequestMessage message,
+            int timeoutMillis,
+            CancellationToken cancellationToken,
+            HttpCompletionOption completionOption =
+                HttpCompletionOption.ResponseContentRead)
+        {
+            return await ExecuteWithTimeoutAsync(
+                token => client.SendAsync(message, completionOption, token),
+                timeoutMillis, cancellationToken);
         }
 
         internal abstract class HttpRetryHandler : DelegatingHandler
@@ -135,8 +147,16 @@ namespace Oracle.NoSQL.SDK
                                 return response;
                             }
 
-                            lastException = await
-                                CreateServiceResponseExceptionAsync(response);
+                            // This response will not be returned because the
+                            // request is being retried. Dispose it before the
+                            // next attempt so its content and connection are
+                            // released deterministically.
+                            using (response)
+                            {
+                                lastException = await
+                                    CreateServiceResponseExceptionAsync(
+                                        response, cancellationToken);
+                            }
                         }
                         catch (HttpRequestException ex)
                         {

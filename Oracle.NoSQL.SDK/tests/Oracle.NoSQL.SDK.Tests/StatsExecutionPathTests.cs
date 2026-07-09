@@ -19,13 +19,13 @@ namespace Oracle.NoSQL.SDK.Tests
     // success/error outcomes into StatsControl.
     [TestClass]
     [TestCategory("Integration")]
-    [TestCategory("CloudSim")]
     public class StatsExecutionPathTests :
         TablesTestBase<StatsExecutionPathTests>
     {
         /*
-         * These tests exercise the real HTTP execution path, so they need a
-         * running Cloud Simulator.
+         * These tests exercise the real HTTP execution path. Most use a
+         * running Cloud Simulator; the ListTables test runs against on-prem
+         * KVStore and needs its HTTP proxy at the configured endpoint.
          *
          * Start CloudSim, for example:
          *
@@ -35,9 +35,12 @@ namespace Oracle.NoSQL.SDK.Tests
          *
          *   dotnet test Oracle.NoSQL.SDK/tests/Oracle.NoSQL.SDK.Tests/Oracle.NoSQL.SDK.Tests.csproj --framework net10.0 --filter StatsExecutionPathTests
          *
-         * If CloudSim is not reachable or ready at the configured endpoint,
-         * the tests are marked inconclusive instead of failing normal unit
-         * test runs.
+         * To run the on-prem ListTables path, start KVLite and its HTTP
+         * proxy, then pass Oracle.NoSQL.SDK.Samples/kvlite.json as the
+         * noSQLConfigFile test parameter (see README-DEV.md).
+         *
+         * Tests that do not match the configured service type are marked
+         * inconclusive instead of failing normal test runs.
          */
         private static readonly TableInfo Table = GetSimpleTableWithName(
             TableNamePrefix + "StatsExec" + Environment.ProcessId);
@@ -102,6 +105,7 @@ namespace Oracle.NoSQL.SDK.Tests
         }
 
         [TestMethod]
+        [TestCategory("CloudSim")]
         public async Task TestSuccessfulRequestPopulatesStatsFromHttpPath()
         {
             CheckCloudSimAvailable();
@@ -130,6 +134,7 @@ namespace Oracle.NoSQL.SDK.Tests
         }
 
         [TestMethod]
+        [TestCategory("CloudSim")]
         public async Task TestFailedRequestRoutesThroughObserveError()
         {
             CheckCloudSimAvailable();
@@ -154,6 +159,7 @@ namespace Oracle.NoSQL.SDK.Tests
         }
 
         [TestMethod]
+        [TestCategory("CloudSim")]
         public async Task TestQueryStatsArePopulatedFromHttpPath()
         {
             CheckCloudSimAvailable();
@@ -187,6 +193,7 @@ namespace Oracle.NoSQL.SDK.Tests
         }
 
         [TestMethod]
+        [TestCategory("CloudSim")]
         public async Task TestPreparedQueryStatsCountLogicalQuery()
         {
             CheckCloudSimAvailable();
@@ -216,6 +223,55 @@ namespace Oracle.NoSQL.SDK.Tests
         }
 
         [TestMethod]
+        [TestCategory("CloudSim")]
+        public async Task TestAsyncEnumerableCountsOneLogicalQuery()
+        {
+            CheckCloudSimAvailable();
+
+            using var statsClient = new NoSQLClient(
+                MakeStatsConfig(StatsControl.Profile.All));
+            for (var id = 2; id <= 3; id++)
+            {
+                var row = new MapValue
+                {
+                    ["id"] = id,
+                    ["lastName"] = "Stats",
+                    ["firstName"] = "Execution",
+                    ["info"] = new MapValue { ["source"] = "enumerable" },
+                    ["startDate"] = DateTime.UtcNow
+                };
+                Assert.IsTrue((await statsClient.PutAsync(Table.Name, row))
+                    .Success);
+            }
+
+            // Exclude setup writes from the query snapshot.
+            ((StatsControlImpl)statsClient.GetStatsControl())
+                .LogClientStatsForTest();
+
+            var sql = $"SELECT * FROM {Table.Name}";
+            var batchCount = 0;
+            var rowCount = 0;
+            await foreach (var result in statsClient
+                               .GetQueryAsyncEnumerable(sql,
+                                   new QueryOptions { Limit = 1 }))
+            {
+                batchCount++;
+                rowCount += result.Rows.Count;
+            }
+
+            Assert.IsTrue(batchCount > 1);
+            Assert.IsTrue(rowCount >= 3);
+
+            var snapshot = ((StatsControlImpl)statsClient.GetStatsControl())
+                .LogClientStatsForTest();
+            var queryStats = FindQuery(snapshot, sql);
+
+            Assert.AreEqual(1, AsLong(queryStats["count"]));
+            Assert.IsTrue(AsLong(queryStats["httpRequestCount"]) > 1);
+        }
+
+        [TestMethod]
+        [TestCategory("CloudSim")]
         public async Task TestPeriodicHandlerReceivesAndClearsSnapshot()
         {
             CheckCloudSimAvailable();
@@ -252,6 +308,33 @@ namespace Oracle.NoSQL.SDK.Tests
                 ((StatsControlImpl)statsClient.GetStatsControl())
                 .LogClientStatsForTest();
             Assert.AreEqual(0, clearedSnapshot["requests"].AsArrayValue.Count);
+        }
+
+        [TestMethod]
+        [TestCategory("KVStore")]
+        public async Task TestOnPremListTablesPopulatesStatsFromHttpPath()
+        {
+            CheckOnPrem();
+
+            using var statsClient = new NoSQLClient(MakeStatsConfig());
+            var result = await statsClient.ListTablesAsync();
+            Assert.IsNotNull(result);
+
+            var snapshot = ((StatsControlImpl)statsClient.GetStatsControl())
+                .LogClientStatsForTest();
+            var listTablesStats = FindRequest(snapshot, "ListTables");
+
+            Assert.AreEqual(1,
+                AsLong(listTablesStats["httpRequestCount"]));
+            Assert.AreEqual(0, AsLong(listTablesStats["errors"]));
+            AssertPositiveMinAvgMax(
+                listTablesStats["requestSize"].AsMapValue);
+            AssertPositiveMinAvgMax(
+                listTablesStats["resultSize"].AsMapValue);
+            AssertPositiveMinAvgMax(
+                listTablesStats["httpRequestLatencyMs"].AsMapValue,
+                allowZeroMin: true);
+            AssertConnectionStats(snapshot["connections"].AsMapValue);
         }
 
         private static NoSQLConfig MakeStatsConfig(

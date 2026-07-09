@@ -16,14 +16,59 @@ namespace Oracle.NoSQL.SDK
     // and JSON-compatible snapshot generation.
     internal sealed class Percentile
     {
-        private readonly List<long> values = new List<long>();
+        private readonly StatsControl.PercentileMode mode;
+        private readonly List<long> values;
+        private readonly Dictionary<long, long> buckets;
+        private long bucketValueCount;
+        private long[] sortedBucketKeys;
+
+        internal Percentile(StatsControl.PercentileMode mode =
+            StatsControl.PercentileMode.Exact)
+        {
+            this.mode = mode;
+            if (mode == StatsControl.PercentileMode.Exact)
+            {
+                values = new List<long>();
+            }
+            else
+            {
+                buckets = new Dictionary<long, long>();
+            }
+        }
 
         internal void AddValue(long value)
         {
-            values.Add(value);
+            if (mode == StatsControl.PercentileMode.Exact)
+            {
+                values.Add(value);
+                return;
+            }
+
+            /*
+             * Latency is already truncated to an integer millisecond before it
+             * reaches Stats.  Counting each distinct value therefore reduces
+             * storage without introducing approximate percentile boundaries.
+             */
+            if (buckets.TryGetValue(value, out var bucketCount))
+            {
+                buckets[value] = bucketCount + 1;
+            }
+            else
+            {
+                buckets[value] = 1;
+                sortedBucketKeys = null;
+            }
+            bucketValueCount++;
         }
 
         internal long GetPercentile(double percentile)
+        {
+            return mode == StatsControl.PercentileMode.Exact
+                ? GetExactPercentile(percentile)
+                : GetBucketedPercentile(percentile);
+        }
+
+        private long GetExactPercentile(double percentile)
         {
             if (values.Count == 0)
             {
@@ -40,13 +85,55 @@ namespace Oracle.NoSQL.SDK
             return values[index];
         }
 
+        private long GetBucketedPercentile(double percentile)
+        {
+            if (bucketValueCount == 0)
+            {
+                return -1;
+            }
+
+            // Use the same rank formula as Java, then walk the frequency
+            // buckets as if every original sample had been sorted separately.
+            var index = (long)Math.Round(
+                percentile * bucketValueCount - 1,
+                MidpointRounding.AwayFromZero);
+            index = Math.Max(0, Math.Min(index, bucketValueCount - 1));
+
+            sortedBucketKeys ??= buckets.Keys.OrderBy(value => value).ToArray();
+            long cumulativeCount = 0;
+            foreach (var key in sortedBucketKeys)
+            {
+                cumulativeCount += buckets[key];
+                if (cumulativeCount > index)
+                {
+                    return key;
+                }
+            }
+
+            return -1;
+        }
+
         internal long Get95thPercentile() => GetPercentile(0.95d);
 
         internal long Get99thPercentile() => GetPercentile(0.99d);
 
+        // Used by unit tests to verify that bucketed mode stores distinct
+        // millisecond values rather than retaining every request sample.
+        internal int StoredValueCount =>
+            mode == StatsControl.PercentileMode.Exact ?
+                values.Count : buckets.Count;
+
         internal void Clear()
         {
-            values.Clear();
+            if (mode == StatsControl.PercentileMode.Exact)
+            {
+                values.Clear();
+                return;
+            }
+
+            buckets.Clear();
+            bucketValueCount = 0;
+            sortedBucketKeys = null;
         }
     }
 
@@ -55,6 +142,8 @@ namespace Oracle.NoSQL.SDK
     // latency and size stats are collected only for successful requests.
     internal sealed class ReqStats
     {
+        private readonly bool collectPercentiles;
+        private readonly StatsControl.PercentileMode percentileMode;
         private long httpRequestCount;
         private long errors;
         private int reqSizeMin = int.MaxValue;
@@ -73,15 +162,22 @@ namespace Oracle.NoSQL.SDK
         private long requestLatencySum;
         private Percentile requestLatencyPercentile;
 
-        internal ReqStats(bool collectPercentiles)
+        internal ReqStats(bool collectPercentiles,
+            StatsControl.PercentileMode percentileMode =
+                StatsControl.PercentileMode.Exact)
         {
+            this.collectPercentiles = collectPercentiles;
+            this.percentileMode = percentileMode;
             if (collectPercentiles)
             {
-                requestLatencyPercentile = new Percentile();
+                requestLatencyPercentile = new Percentile(percentileMode);
             }
         }
 
         internal long HttpRequestCount => httpRequestCount;
+
+        internal ReqStats CreateEmpty() =>
+            new ReqStats(collectPercentiles, percentileMode);
 
         internal void Observe(bool error, int retries, int retryDelay,
             int rateLimitDelay, int authCount, int throttleCount, int reqSize,
@@ -307,10 +403,12 @@ namespace Oracle.NoSQL.SDK
 
             internal string Plan { get; set; }
 
-            internal QueryEntryStat(StatsControl.Profile profile,
+            internal QueryEntryStat(StatsControlImpl statsControl,
                 QueryRequest queryRequest)
             {
-                ReqStats = new ReqStats(profile >= StatsControl.Profile.More);
+                ReqStats = new ReqStats(
+                    statsControl.GetProfile() >= StatsControl.Profile.More,
+                    statsControl.PercentileStorageMode);
                 UpdatePreparedInfo(queryRequest);
             }
 
@@ -322,7 +420,10 @@ namespace Oracle.NoSQL.SDK
                     return;
                 }
 
-                Plan ??= preparedStatement.QueryPlan;
+                // Java Stats reports the locally executable driver plan, not
+                // the optional server query-plan string.
+                Plan ??= Query.PlanFormatter.Format(
+                    preparedStatement.DriverQueryPlan);
                 DoesWrites =
                     preparedStatement.OperationCode !=
                     QueryRequest.OperationCodeSelect;
@@ -348,8 +449,7 @@ namespace Oracle.NoSQL.SDK
 
             if (!queries.TryGetValue(key, out var queryStat))
             {
-                queryStat = new QueryEntryStat(
-                    statsControl.GetProfile(), queryRequest);
+                queryStat = new QueryEntryStat(statsControl, queryRequest);
                 queries.Add(key, queryStat);
             }
             else
@@ -435,7 +535,7 @@ namespace Oracle.NoSQL.SDK
     }
 
     // Top-level aggregator.  Request observations may arrive from many
-    // concurrent SDK operations while the timer is generating/clearing
+    // concurrent SDK operations while the scheduler is generating/clearing
     // snapshots, so all mutable buckets are protected by lockObj.
     internal sealed class Stats
     {
@@ -448,10 +548,8 @@ namespace Oracle.NoSQL.SDK
 
         private readonly object lockObj = new object();
         private readonly StatsControlImpl statsControl;
-        private readonly Dictionary<string, ReqStats> requests =
-            new Dictionary<string, ReqStats>();
-        private readonly ConnectionStats connectionStats =
-            new ConnectionStats();
+        private Dictionary<string, ReqStats> requests;
+        private ConnectionStats connectionStats;
         private ExtraQueryStats extraQueryStats;
         private DateTime startTime;
         private DateTime endTime;
@@ -459,10 +557,8 @@ namespace Oracle.NoSQL.SDK
         internal Stats(StatsControlImpl statsControl)
         {
             this.statsControl = statsControl;
-            foreach (var key in RequestKeys)
-            {
-                requests[key] = new ReqStats(CollectPercentiles);
-            }
+            requests = CreateRequestBuckets();
+            connectionStats = new ConnectionStats();
 
             if (statsControl.GetProfile() >= StatsControl.Profile.All)
             {
@@ -485,7 +581,8 @@ namespace Oracle.NoSQL.SDK
                 var requestName = GetRequestName(request);
                 if (!requests.TryGetValue(requestName, out var reqStats))
                 {
-                    reqStats = new ReqStats(CollectPercentiles);
+                    reqStats = new ReqStats(CollectPercentiles,
+                        statsControl.PercentileStorageMode);
                     requests[requestName] = reqStats;
                 }
 
@@ -525,50 +622,108 @@ namespace Oracle.NoSQL.SDK
         {
             lock (lockObj)
             {
-                // Generate the same high-level fields as Java:
-                // startTime/endTime/clientId/connections/queries/requests.
                 this.endTime = endTime;
-                var root = new MapValue
-                {
-                    ["startTime"] = TruncateToSecond(startTime),
-                    ["endTime"] = TruncateToSecond(this.endTime),
-                    ["clientId"] = statsControl.Id
-                };
-
-                connectionStats.ToJson(root);
-                extraQueryStats?.ToJson(root);
-
-                var reqArray = new ArrayValue();
-                root["requests"] = reqArray;
-                foreach (var key in RequestKeys)
-                {
-                    requests[key].ToJson(key, reqArray);
-                }
-
-                foreach (var pair in requests
-                             .Where(pair => !RequestKeys.Contains(pair.Key)))
-                {
-                    pair.Value.ToJson(pair.Key, reqArray);
-                }
-
-                return root;
+                return GenerateFieldValueStats(startTime, this.endTime,
+                    requests, connectionStats, extraQueryStats);
             }
+        }
+
+        internal MapValue GenerateAndClearFieldValueStats(DateTime endTime)
+        {
+            DateTime completedStartTime;
+            Dictionary<string, ReqStats> completedRequests;
+            ConnectionStats completedConnections;
+            ExtraQueryStats completedQueries;
+
+            lock (lockObj)
+            {
+                /*
+                 * Atomically hand the completed interval to the reporting
+                 * thread. New observations can use fresh buckets immediately,
+                 * while percentile sorting and JSON generation happen outside
+                 * the active request lock.
+                 */
+                completedStartTime = startTime;
+                completedRequests = requests;
+                completedConnections = connectionStats;
+                completedQueries = extraQueryStats;
+
+                requests = CreateRequestBuckets(completedRequests);
+                connectionStats = new ConnectionStats();
+                extraQueryStats = null;
+                startTime = endTime;
+                this.endTime = default;
+            }
+
+            return GenerateFieldValueStats(completedStartTime, endTime,
+                completedRequests, completedConnections, completedQueries);
         }
 
         internal void ClearStats()
         {
             lock (lockObj)
             {
-                foreach (var reqStats in requests.Values)
-                {
-                    reqStats.Clear();
-                }
-
-                connectionStats.Clear();
-                extraQueryStats?.Clear();
+                requests = CreateRequestBuckets(requests);
+                connectionStats = new ConnectionStats();
+                extraQueryStats = null;
                 startTime = DateTime.UtcNow;
                 endTime = default;
             }
+        }
+
+        private Dictionary<string, ReqStats> CreateRequestBuckets(
+            IReadOnlyDictionary<string, ReqStats> previous = null)
+        {
+            var result = new Dictionary<string, ReqStats>();
+            if (previous != null)
+            {
+                foreach (var pair in previous)
+                {
+                    result[pair.Key] = pair.Value.CreateEmpty();
+                }
+                return result;
+            }
+
+            foreach (var key in RequestKeys)
+            {
+                result[key] = new ReqStats(CollectPercentiles,
+                    statsControl.PercentileStorageMode);
+            }
+            return result;
+        }
+
+        private MapValue GenerateFieldValueStats(DateTime intervalStart,
+            DateTime intervalEnd,
+            IReadOnlyDictionary<string, ReqStats> intervalRequests,
+            ConnectionStats intervalConnections,
+            ExtraQueryStats intervalQueries)
+        {
+            // Generate the same high-level fields as Java:
+            // startTime/endTime/clientId/connections/queries/requests.
+            var root = new MapValue
+            {
+                ["startTime"] = TruncateToSecond(intervalStart),
+                ["endTime"] = TruncateToSecond(intervalEnd),
+                ["clientId"] = statsControl.Id
+            };
+
+            intervalConnections.ToJson(root);
+            intervalQueries?.ToJson(root);
+
+            var reqArray = new ArrayValue();
+            root["requests"] = reqArray;
+            foreach (var key in RequestKeys)
+            {
+                intervalRequests[key].ToJson(key, reqArray);
+            }
+
+            foreach (var pair in intervalRequests
+                         .Where(pair => !RequestKeys.Contains(pair.Key)))
+            {
+                pair.Value.ToJson(pair.Key, reqArray);
+            }
+
+            return root;
         }
 
         internal static string GetRequestName(Request request)

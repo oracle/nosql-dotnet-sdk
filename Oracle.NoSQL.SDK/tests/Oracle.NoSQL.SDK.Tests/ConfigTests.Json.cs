@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2020, 2025 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026 Oracle and/or its affiliates. All rights reserved.
  *
  * Licensed under the Universal Permissive License v 1.0 as shown at
  *  https://oss.oracle.com/licenses/upl/
@@ -54,6 +54,31 @@ namespace Oracle.NoSQL.SDK.Tests
 
             public override void Write(Utf8JsonWriter writer,
                 StatsControl.Profile value, JsonSerializerOptions options)
+            {
+                var stringValue = value.ToString();
+                var i = jsonWriteSeq++ % 3;
+                writer.WriteStringValue(i switch
+                {
+                    0 => stringValue,
+                    1 => stringValue.ToUpper(),
+                    _ => stringValue.ToLower()
+                });
+            }
+        }
+
+        private class StatsPercentileModeConverter :
+            JsonConverter<StatsControl.PercentileMode>
+        {
+            public override StatsControl.PercentileMode Read(
+                ref Utf8JsonReader reader, Type typeToConvert,
+                JsonSerializerOptions options)
+            {
+                throw new NotSupportedException();
+            }
+
+            public override void Write(Utf8JsonWriter writer,
+                StatsControl.PercentileMode value,
+                JsonSerializerOptions options)
             {
                 var stringValue = value.ToString();
                 var i = jsonWriteSeq++ % 3;
@@ -184,6 +209,7 @@ namespace Oracle.NoSQL.SDK.Tests
                 };
                 options.Converters.Add(new ServiceTypeConverter());
                 options.Converters.Add(new StatsProfileConverter());
+                options.Converters.Add(new StatsPercentileModeConverter());
                 options.Converters.Add(new TimeSpanConverter());
                 options.Converters.Add(new CharArrayConverter());
                 options.Converters.Add(new RetryHandlerConverter());

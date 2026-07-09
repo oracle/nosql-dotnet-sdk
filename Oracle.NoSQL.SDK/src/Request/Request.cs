@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2020, 2025 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026 Oracle and/or its affiliates. All rights reserved.
  *
  * Licensed under the Universal Permissive License v 1.0 as shown at
  *  https://oss.oracle.com/licenses/upl/
@@ -296,7 +296,11 @@ namespace Oracle.NoSQL.SDK
 
         internal int StatsRetryThrottleCount { get; private set; }
 
-        internal int StatsRateLimitDelayMs { get; set; }
+        // Keep server delay separate because RateLimitingRequest.Delay is a
+        // cumulative local value that is refreshed after each retry.
+        private int statsServerRateLimitDelayMs;
+
+        internal int StatsRateLimitDelayMs { get; private set; }
 
         internal int StatsRequestSize { get; set; }
 
@@ -305,6 +309,17 @@ namespace Oracle.NoSQL.SDK
         internal int StatsRequestLatencyMs { get; set; }
 
         internal int StatsConnectionCount { get; set; }
+
+        internal void AddStatsServerRateLimitDelay(int delayMs)
+        {
+            statsServerRateLimitDelayMs += delayMs;
+            StatsRateLimitDelayMs += delayMs;
+        }
+
+        internal void SetStatsLocalRateLimitDelay(int delayMs)
+        {
+            StatsRateLimitDelayMs = statsServerRateLimitDelayMs + delayMs;
+        }
 
         internal void RecordStatsRetry(Exception ex, TimeSpan delay)
         {
@@ -346,6 +361,7 @@ namespace Oracle.NoSQL.SDK
             StatsRetryDelayMs = 0;
             StatsRetryAuthCount = 0;
             StatsRetryThrottleCount = 0;
+            statsServerRateLimitDelayMs = 0;
             StatsRateLimitDelayMs = 0;
             StatsRequestSize = 0;
             StatsResponseSize = 0;

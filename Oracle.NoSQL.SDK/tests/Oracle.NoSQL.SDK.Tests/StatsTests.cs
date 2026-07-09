@@ -12,6 +12,8 @@ namespace Oracle.NoSQL.SDK.Tests
     using System.Collections.Generic;
     using System.Diagnostics.Metrics;
     using System.Linq;
+    using System.Net.Http;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Extensions.Logging;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -38,6 +40,13 @@ namespace Oracle.NoSQL.SDK.Tests
         }
 
         private static long AsLong(FieldValue value) => value.ToInt64();
+
+        private static long GetRequestCount(MapValue stats, string name)
+        {
+            var request = FindRequest(stats, name);
+            return request == null ? 0 :
+                AsLong(request["httpRequestCount"]);
+        }
 
         private static void AssertKeys(MapValue map, params string[] keys)
         {
@@ -139,6 +148,39 @@ namespace Oracle.NoSQL.SDK.Tests
         }
 
         [TestMethod]
+        public void TestBucketedPercentilesMatchExactPercentiles()
+        {
+            var exact = new Percentile(StatsControl.PercentileMode.Exact);
+            var bucketed = new Percentile(
+                StatsControl.PercentileMode.Bucketed);
+
+            // Repeated integer-millisecond values exercise frequency buckets.
+            // Both modes must select the same value for every tested rank.
+            for (var i = 0; i < 10000; i++)
+            {
+                var latency = (long)(i % 137);
+                exact.AddValue(latency);
+                bucketed.AddValue(latency);
+            }
+
+            foreach (var percentile in new[] { 0.01d, 0.5d, 0.95d, 0.99d,
+                         1.0d })
+            {
+                Assert.AreEqual(exact.GetPercentile(percentile),
+                    bucketed.GetPercentile(percentile));
+            }
+
+            Assert.AreEqual(10000, exact.StoredValueCount);
+            Assert.AreEqual(137, bucketed.StoredValueCount);
+
+            exact.Clear();
+            bucketed.Clear();
+            Assert.AreEqual(-1, exact.Get95thPercentile());
+            Assert.AreEqual(-1, bucketed.Get95thPercentile());
+            Assert.AreEqual(0, bucketed.StoredValueCount);
+        }
+
+        [TestMethod]
         public void TestReqStatsErrorsDoNotAffectLatencyOrSizes()
         {
             var reqStats = new ReqStats(false);
@@ -203,6 +245,7 @@ namespace Oracle.NoSQL.SDK.Tests
                 @"{
                     ""Endpoint"": ""localhost:8080"",
                     ""StatsProfile"": ""all"",
+                    ""StatsPercentileMode"": ""bucketed"",
                     ""StatsInterval"": 5000,
                     ""StatsPrettyPrint"": true,
                     ""StatsEnableLog"": false
@@ -210,6 +253,8 @@ namespace Oracle.NoSQL.SDK.Tests
 
             Assert.AreEqual("localhost:8080", config.Endpoint);
             Assert.AreEqual(StatsControl.Profile.All, config.StatsProfile);
+            Assert.AreEqual(StatsControl.PercentileMode.Bucketed,
+                config.StatsPercentileMode);
             Assert.AreEqual(TimeSpan.FromSeconds(5), config.StatsInterval);
             Assert.IsTrue(config.StatsPrettyPrint);
             Assert.IsFalse(config.StatsEnableLog);
@@ -234,7 +279,7 @@ namespace Oracle.NoSQL.SDK.Tests
                 TimeSpan.FromMilliseconds(7));
             request.RecordStatsRetry(new ReadThrottlingException(),
                 TimeSpan.FromMilliseconds(9));
-            request.StatsRateLimitDelayMs = 11;
+            request.AddStatsServerRateLimitDelay(11);
             SetSuccessStats(request, 100, 200, 30, 4);
 
             request.Init();
@@ -248,6 +293,48 @@ namespace Oracle.NoSQL.SDK.Tests
             Assert.AreEqual(0, request.StatsResponseSize);
             Assert.AreEqual(0, request.StatsRequestLatencyMs);
             Assert.AreEqual(0, request.StatsConnectionCount);
+        }
+
+        [TestMethod]
+        public void TestServerAndLocalRateLimitDelayAreCombined()
+        {
+            using var client = new NoSQLClient(TestConfig);
+            var request = MakeGetRequest(client);
+            using var response = new HttpResponseMessage();
+            response.Headers.TryAddWithoutValidation(
+                "x-nosql-rl-delay-ms", "37");
+
+            var serverDelay = Http.Client
+                .GetRateLimitDelayFromHeader(response);
+            Assert.AreEqual(37, serverDelay);
+
+            request.AddStatsServerRateLimitDelay(serverDelay);
+            request.SetStatsLocalRateLimitDelay(5);
+            Assert.AreEqual(42, request.StatsRateLimitDelayMs);
+
+            // A later server value and cumulative local value must replace
+            // neither component nor count the earlier local delay twice.
+            request.AddStatsServerRateLimitDelay(3);
+            request.SetStatsLocalRateLimitDelay(8);
+            Assert.AreEqual(48, request.StatsRateLimitDelayMs);
+
+            SetSuccessStats(request);
+            using var control = new StatsControlImpl(new NoSQLConfig
+            {
+                Endpoint = "localhost:8080",
+                StatsProfile = StatsControl.Profile.Regular,
+                StatsEnableLog = false
+            }, false);
+            control.Observe(request);
+            var getStats = FindRequest(
+                control.LogClientStatsForTest(), "Get");
+            Assert.AreEqual(48, AsLong(getStats["rateLimitDelayMs"]));
+
+            using var malformedResponse = new HttpResponseMessage();
+            malformedResponse.Headers.TryAddWithoutValidation(
+                HttpConstants.RateLimitDelay, "not-a-number");
+            Assert.AreEqual(0, Http.Client.GetRateLimitDelayFromHeader(
+                malformedResponse));
         }
 
         [TestMethod]
@@ -358,7 +445,7 @@ namespace Oracle.NoSQL.SDK.Tests
         public void TestHttpConnectionMetricsTracksOnlyActiveConnections()
         {
             using var metrics = new Http.HttpConnectionMetrics();
-            using var meter = metrics.MeterFactory.Create(
+            var meter = metrics.MeterFactory.Create(
                 new MeterOptions("System.Net.Http"));
             var counter = meter.CreateUpDownCounter<long>(
                 "http.client.open_connections");
@@ -375,6 +462,104 @@ namespace Oracle.NoSQL.SDK.Tests
             counter.Add(-1, activeTag);
 
             Assert.AreEqual(2, metrics.ActiveConnectionCount);
+        }
+
+        [TestMethod]
+        public void TestHttpConnectionMetricsPreservesMeasuredZero()
+        {
+            using var metrics = new Http.HttpConnectionMetrics();
+
+            Assert.IsFalse(metrics.TryGetActiveConnectionCount(
+                out var unavailableCount));
+            Assert.AreEqual(0, unavailableCount);
+
+            var meter = metrics.MeterFactory.Create(
+                new MeterOptions("System.Net.Http"));
+            var counter = meter.CreateUpDownCounter<long>(
+                "http.client.open_connections");
+            var activeTag = new KeyValuePair<string, object>(
+                "http.connection.state", "active");
+
+            Assert.IsTrue(metrics.TryGetActiveConnectionCount(
+                out var initialCount));
+            Assert.AreEqual(0, initialCount);
+
+            counter.Add(1, activeTag);
+            counter.Add(-1, activeTag);
+
+            Assert.IsTrue(metrics.TryGetActiveConnectionCount(
+                out var measuredCount));
+            Assert.AreEqual(0, measuredCount);
+        }
+
+        [TestMethod]
+        public async Task TestExecuteWithTimeoutCoversCompleteOperation()
+        {
+            var exception = await Assert.ThrowsExceptionAsync<TimeoutException>(
+                async () => await HttpRequestUtils.ExecuteWithTimeoutAsync(
+                    async token =>
+                    {
+                        await Task.Delay(TimeSpan.FromSeconds(5), token);
+                        return true;
+                    }, 50, CancellationToken.None));
+
+            StringAssert.Contains(exception.Message,
+                "HTTP Request timed out after 50 ms");
+        }
+
+        [TestMethod]
+        public void TestHttpConnectionMetricsPreservesMeterIdentityAndCaches()
+        {
+            using var metrics = new Http.HttpConnectionMetrics();
+            var tags = new[]
+            {
+                new KeyValuePair<string, object>("source", "test")
+            };
+            var first = metrics.MeterFactory.Create(new MeterOptions(
+                "System.Net.Http")
+            {
+                Version = "test-version",
+                Tags = tags
+            });
+            var second = metrics.MeterFactory.Create(new MeterOptions(
+                "System.Net.Http")
+            {
+                Version = "test-version",
+                Tags = new[]
+                {
+                    new KeyValuePair<string, object>("source", "test")
+                }
+            });
+
+            Assert.AreEqual("System.Net.Http", first.Name);
+            Assert.AreEqual("test-version", first.Version);
+            Assert.AreSame(metrics.MeterFactory, first.Scope);
+            Assert.AreSame(first, second);
+        }
+
+        [TestMethod]
+        public void TestHttpConnectionMetricsIsolatesClients()
+        {
+            using var firstMetrics = new Http.HttpConnectionMetrics();
+            using var secondMetrics = new Http.HttpConnectionMetrics();
+            var firstMeter = firstMetrics.MeterFactory.Create(
+                new MeterOptions("System.Net.Http"));
+            var secondMeter = secondMetrics.MeterFactory.Create(
+                new MeterOptions("System.Net.Http"));
+            var activeTag = new KeyValuePair<string, object>(
+                "http.connection.state", "active");
+
+            Assert.AreEqual("System.Net.Http", firstMeter.Name);
+            Assert.AreEqual("System.Net.Http", secondMeter.Name);
+            Assert.AreNotSame(firstMeter, secondMeter);
+
+            firstMeter.CreateUpDownCounter<long>(
+                "http.client.open_connections").Add(2, activeTag);
+            secondMeter.CreateUpDownCounter<long>(
+                "http.client.open_connections").Add(5, activeTag);
+
+            Assert.AreEqual(2, firstMetrics.ActiveConnectionCount);
+            Assert.AreEqual(5, secondMetrics.ActiveConnectionCount);
         }
 
         [TestMethod]
@@ -404,6 +589,40 @@ namespace Oracle.NoSQL.SDK.Tests
             Assert.IsFalse(secondSnapshot.ContainsKey("connections"));
             Assert.IsFalse(secondSnapshot.ContainsKey("queries"));
             Assert.AreEqual(0, secondSnapshot["requests"].AsArrayValue.Count);
+        }
+
+        [TestMethod]
+        public async Task TestStatsAtomicIntervalRolloverLosesNoRequests()
+        {
+            using var client = new NoSQLClient(TestConfig);
+            var control = new StatsControlImpl(TestConfig, false)
+                .SetProfile(StatsControl.Profile.More);
+            var stats = new Stats((StatsControlImpl)control);
+            const int requestCount = 5000;
+            long snapshotCount = 0;
+
+            var observing = Task.Run(() => Parallel.For(0, requestCount,
+                index =>
+                {
+                    var request = MakeGetRequest(client);
+                    SetSuccessStats(request, latency: index % 10 + 1);
+                    stats.Observe(request, false);
+                }));
+
+            while (!observing.IsCompleted)
+            {
+                snapshotCount += GetRequestCount(
+                    stats.GenerateAndClearFieldValueStats(DateTime.UtcNow),
+                    "Get");
+                await Task.Yield();
+            }
+
+            await observing;
+            snapshotCount += GetRequestCount(
+                stats.GenerateAndClearFieldValueStats(DateTime.UtcNow),
+                "Get");
+
+            Assert.AreEqual(requestCount, snapshotCount);
         }
 
         [TestMethod]
@@ -443,7 +662,7 @@ namespace Oracle.NoSQL.SDK.Tests
             var preparedStatement = new PreparedStatement
             {
                 SQLText = "SELECT * FROM Users",
-                QueryPlan = "driver plan",
+                QueryPlan = "server plan",
                 OperationCode = QueryRequest.OperationCodeSelect
             };
             var queryRequest = new QueryRequest<RecordValue>(
@@ -462,8 +681,79 @@ namespace Oracle.NoSQL.SDK.Tests
             Assert.AreEqual(0, AsLong(query["unprepared"]));
             Assert.IsTrue(query["simple"].AsBoolean);
             Assert.IsFalse(query["doesWrites"].AsBoolean);
-            Assert.AreEqual("driver plan", query["plan"].AsString);
+            Assert.IsFalse(query.ContainsKey("plan"));
             Assert.AreEqual(1, AsLong(query["httpRequestCount"]));
+        }
+
+        [TestMethod]
+        public void TestPreparedQueryStatsFormatsExistingDriverPlan()
+        {
+            using var client = new NoSQLClient(TestConfig);
+            var control = new StatsControlImpl(TestConfig, false)
+                .SetProfile(StatsControl.Profile.All);
+            var stats = new Stats((StatsControlImpl)control);
+            var preparedStatement = new PreparedStatement
+            {
+                SQLText = "SELECT * FROM Users",
+                QueryPlan = "server plan",
+                OperationCode = QueryRequest.OperationCodeSelect,
+                DriverQueryPlan = new Query.ReceiveStep
+                {
+                    ResultPosition = 2,
+                    DistributionKind = Query.DistributionKind.AllPartitions,
+                    PrimaryKeyFields = new[] { "id" }
+                }
+            };
+            var queryRequest = new QueryRequest<RecordValue>(
+                client, preparedStatement, null);
+
+            stats.ObserveQuery(queryRequest);
+            SetSuccessStats(queryRequest);
+            stats.Observe(queryRequest, false);
+
+            var plan = stats.GenerateFieldValueStats(DateTime.UtcNow)
+                ["queries"].AsArrayValue[0].AsMapValue["plan"].AsString;
+
+            StringAssert.Contains(plan, "RECV");
+            StringAssert.Contains(plan, "AllPartitions");
+            StringAssert.Contains(plan, "id");
+            Assert.AreNotEqual("server plan", plan);
+        }
+
+        [TestMethod]
+        public void TestDeferredLogicalQueryIsObservedOnceAfterPreflight()
+        {
+            using var client = new NoSQLClient(new NoSQLConfig
+            {
+                Endpoint = "localhost:8080",
+                StatsProfile = StatsControl.Profile.All,
+                StatsEnableLog = false
+            });
+            var logicalRequest = new QueryRequest<RecordValue>(client,
+                "SELECT * FROM Users",
+                new QueryOptions { LastWriteMetadata = "{}" });
+            logicalRequest.DeferStatsLogicalQuery();
+
+            // An advanced query reaches the HTTP layer through an internal
+            // request, which must admit the outer logical query only once.
+            var internalRequest = new QueryRequest<RecordValue>(client,
+                "SELECT * FROM Users", null)
+            {
+                IsInternal = true,
+                StatsLogicalQueryRequest = logicalRequest
+            };
+            internalRequest.Init();
+
+            client.ObserveDeferredQueryStats(internalRequest);
+            client.ObserveDeferredQueryStats(internalRequest);
+
+            var snapshot = ((StatsControlImpl)client.GetStatsControl())
+                .LogClientStatsForTest();
+            var queries = snapshot["queries"].AsArrayValue;
+            Assert.AreEqual(1, queries.Count);
+            Assert.AreEqual(1,
+                AsLong(queries[0].AsMapValue["count"]));
+            Assert.AreEqual(0, snapshot["requests"].AsArrayValue.Count);
         }
 
         [TestMethod]
@@ -729,6 +1019,21 @@ namespace Oracle.NoSQL.SDK.Tests
         }
 
         [TestMethod]
+        public void TestThrowingStartupLoggerDoesNotPreventConstruction()
+        {
+            using var control = new StatsControlImpl(new NoSQLConfig
+            {
+                Endpoint = "localhost:8080",
+                StatsProfile = StatsControl.Profile.Regular,
+                StatsEnableLog = true,
+                StatsLogger = new ThrowingLogger()
+            }, false);
+
+            Assert.IsTrue(control.IsStarted());
+            Assert.IsNotNull(control.GenerateStats());
+        }
+
+        [TestMethod]
         public void TestStatsEnableLogFalseStillInvokesHandler()
         {
             using var client = new NoSQLClient(TestConfig);
@@ -786,6 +1091,126 @@ namespace Oracle.NoSQL.SDK.Tests
             Assert.IsNotNull(snapshot);
             Assert.IsTrue(output.Contains(StatsControl.LogPrefix));
             Assert.IsTrue(output.Contains("\"name\":\"Get\""));
+        }
+
+        [TestMethod]
+        public async Task TestStatsControlSerializesSnapshotsLikeJava()
+        {
+            using var handlerEntered = new ManualResetEventSlim(false);
+            using var releaseHandler = new ManualResetEventSlim(false);
+            var handlerCount = 0;
+            var control = new StatsControlImpl(new NoSQLConfig
+            {
+                Endpoint = "localhost:8080",
+                StatsProfile = StatsControl.Profile.Regular,
+                StatsInterval = TimeSpan.FromHours(1),
+                StatsEnableLog = false,
+                StatsHandler = _ =>
+                {
+                    Interlocked.Increment(ref handlerCount);
+                    handlerEntered.Set();
+                    releaseHandler.Wait(TimeSpan.FromSeconds(5));
+                }
+            }, false);
+
+            try
+            {
+                var firstSnapshotTask = Task.Run(
+                    () => control.LogClientStatsForTest());
+                Assert.IsTrue(handlerEntered.Wait(TimeSpan.FromSeconds(5)));
+
+                var secondSnapshotTask = Task.Run(
+                    () => control.LogClientStatsForTest());
+                await Task.Delay(100);
+
+                Assert.IsFalse(secondSnapshotTask.IsCompleted);
+                Assert.AreEqual(1, Volatile.Read(ref handlerCount));
+
+                releaseHandler.Set();
+                var firstSnapshot = await firstSnapshotTask;
+                var secondSnapshot = await secondSnapshotTask;
+
+                Assert.IsNotNull(firstSnapshot);
+                Assert.IsNotNull(secondSnapshot);
+                Assert.AreEqual(2, Volatile.Read(ref handlerCount));
+            }
+            finally
+            {
+                releaseHandler.Set();
+                control.SetStatsHandler(null);
+                control.Shutdown();
+            }
+        }
+
+        [TestMethod]
+        public async Task TestStatsControlShutdownFlushesFinalPartialInterval()
+        {
+            using var client = new NoSQLClient(TestConfig);
+            using var handlerEntered = new ManualResetEventSlim(false);
+            using var releaseHandler = new ManualResetEventSlim(false);
+            var snapshots = new List<MapValue>();
+            var handlerCount = 0;
+            var control = new StatsControlImpl(new NoSQLConfig
+            {
+                Endpoint = "localhost:8080",
+                StatsProfile = StatsControl.Profile.Regular,
+                StatsInterval = TimeSpan.FromHours(1),
+                StatsEnableLog = false,
+                StatsHandler = snapshot =>
+                {
+                    lock (snapshots)
+                    {
+                        snapshots.Add(snapshot);
+                    }
+
+                    if (Interlocked.Increment(ref handlerCount) == 1)
+                    {
+                        handlerEntered.Set();
+                        releaseHandler.Wait(TimeSpan.FromSeconds(5));
+                    }
+                }
+            }, false);
+
+            try
+            {
+                var firstRequest = MakeGetRequest(client);
+                SetSuccessStats(firstRequest);
+                control.Observe(firstRequest);
+
+                var reportTask = Task.Run(
+                    () => control.LogClientStatsForTest());
+                Assert.IsTrue(handlerEntered.Wait(TimeSpan.FromSeconds(5)));
+
+                // The first report already swapped intervals. This request
+                // must therefore be emitted by the final shutdown snapshot.
+                var finalRequest = MakeGetRequest(client);
+                SetSuccessStats(finalRequest);
+                control.Observe(finalRequest);
+
+                var shutdownTask = Task.Run(control.Shutdown);
+                await Task.Delay(100);
+                Assert.IsFalse(shutdownTask.IsCompleted);
+
+                releaseHandler.Set();
+                await Task.WhenAll(reportTask, shutdownTask)
+                    .WaitAsync(TimeSpan.FromSeconds(5));
+
+                Assert.AreEqual(2, Volatile.Read(ref handlerCount));
+                lock (snapshots)
+                {
+                    Assert.AreEqual(2, snapshots.Count);
+                    Assert.AreEqual(1, AsLong(FindRequest(
+                        snapshots[0], "Get")["httpRequestCount"]));
+                    Assert.AreEqual(1, AsLong(FindRequest(
+                        snapshots[1], "Get")["httpRequestCount"]));
+                }
+            }
+            finally
+            {
+                releaseHandler.Set();
+                control.SetStatsHandler(null);
+                control.Shutdown();
+            }
         }
 
         [TestMethod]
@@ -1058,6 +1483,28 @@ namespace Oracle.NoSQL.SDK.Tests
             private sealed class NullScope : IDisposable
             {
                 internal static readonly NullScope Instance = new();
+
+                public void Dispose()
+                {
+                }
+            }
+        }
+
+        private sealed class ThrowingLogger : ILogger
+        {
+            public IDisposable BeginScope<TState>(TState state) =>
+                NoopScope.Instance;
+
+            public bool IsEnabled(LogLevel logLevel) => true;
+
+            public void Log<TState>(LogLevel logLevel, EventId eventId,
+                TState state, Exception exception,
+                Func<TState, Exception, string> formatter) =>
+                throw new InvalidOperationException("logger failure");
+
+            private sealed class NoopScope : IDisposable
+            {
+                internal static readonly NoopScope Instance = new();
 
                 public void Dispose()
                 {

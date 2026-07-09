@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2020, 2025 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026 Oracle and/or its affiliates. All rights reserved.
  *
  * Licensed under the Universal Permissive License v 1.0 as shown at
  *  https://oss.oracle.com/licenses/upl/
@@ -16,6 +16,24 @@ namespace Oracle.NoSQL.SDK {
 
     public partial class NoSQLClient
     {
+        private void ObserveOrDeferLogicalQuery(QueryRequest request)
+        {
+            if (request.IsInternal)
+            {
+                return;
+            }
+
+            if (request.LastWriteMetadata != null)
+            {
+                // Java checks server feature support before observing a query.
+                // The request is observed after that preflight succeeds.
+                request.DeferStatsLogicalQuery();
+                return;
+            }
+
+            StatsControl?.ObserveQuery(request);
+        }
+
         private async Task<QueryResult<TRow>>
             ExecutePreparedQueryRequestAsync<TRow>(
             QueryRequest<TRow> request,
@@ -48,17 +66,18 @@ namespace Oracle.NoSQL.SDK {
 
         private async Task<QueryResult<TRow>> ExecuteQueryRequestAsync<TRow>(
             QueryRequest<TRow> request,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            bool observeLogicalQuery = true)
         {
             request.PreparedStatement ??=
                 request.ContinuationKey?.PreparedStatement;
 
-            if (!request.IsInternal)
+            if (observeLogicalQuery)
             {
                 // Count the user-visible logical query once.  Internal query
                 // fetches are still counted as HTTP Query requests by
                 // ExecuteValidatedRequestAsync.
-                StatsControl?.ObserveQuery(request);
+                ObserveOrDeferLogicalQuery(request);
             }
 
             // If the query is not already prepared the first request will
@@ -102,11 +121,15 @@ namespace Oracle.NoSQL.SDK {
             QueryRequest<TRow> request,
             [EnumeratorCancellation] CancellationToken cancellationToken)
         {
+            // One async enumeration is one user-visible query operation.
+            // Individual result batches remain visible in httpRequestCount.
+            ObserveOrDeferLogicalQuery(request);
+
             QueryResult<TRow> result;
             do
             {
                 result = await ExecuteQueryRequestAsync(request,
-                    cancellationToken);
+                    cancellationToken, false);
 
                 if (result.ContinuationKey != null)
                 {
@@ -141,7 +164,7 @@ namespace Oracle.NoSQL.SDK {
 
             // Direct prepared-query execution bypasses ExecuteQueryRequestAsync,
             // so count the user-visible logical query here.
-            StatsControl?.ObserveQuery(request);
+            ObserveOrDeferLogicalQuery(request);
             return ExecutePreparedQueryRequestAsync(request, cancellationToken);
         }
 

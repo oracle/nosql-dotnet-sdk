@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2020, 2025 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026 Oracle and/or its affiliates. All rights reserved.
  *
  * Licensed under the Universal Permissive License v 1.0 as shown at
  *  https://oss.oracle.com/licenses/upl/
@@ -85,18 +85,54 @@ namespace Oracle.NoSQL.SDK
             return ExecuteValidatedRequestAsync(request, cancellationToken);
         }
 
+        // A last-write-metadata query is held until feature preflight succeeds.
+        // Advanced queries carry the user-visible request on an internal fetch.
+        internal void ObserveDeferredQueryStats(Request request)
+        {
+            if (request is not QueryRequest queryRequest)
+            {
+                return;
+            }
+
+            var logicalRequest = queryRequest.IsInternal
+                ? queryRequest.StatsLogicalQueryRequest
+                : queryRequest;
+            if (logicalRequest?.TryConsumeStatsLogicalQuery() == true)
+            {
+                StatsControl?.ObserveQuery(logicalRequest);
+            }
+        }
+
         internal async Task<object> ExecuteValidatedRequestAsync(
             Request request, CancellationToken cancellationToken)
         {
             request.Init();
 
+            var timeout = request.Timeout; // original request timeout
+            var startTime = DateTime.UtcNow;
+
+            if (await client.ValidateRequestFeaturesAsync(request,
+                    cancellationToken))
+            {
+                // The feature probe is part of the logical operation timeout.
+                var now = DateTime.UtcNow;
+                var remaining = startTime + timeout - now;
+                if (remaining <= TimeSpan.Zero)
+                {
+                    throw GetTimeoutException(now - startTime,
+                        request.RetryCount,
+                        new TimeoutException(
+                            "Request feature preflight exhausted the timeout"));
+                }
+                request.Timeout = remaining;
+            }
+
+            ObserveDeferredQueryStats(request);
+
             var rlReq =
                 RateLimitingHandler != null && request.SupportsRateLimiting
                     ? new RateLimitingRequest(RateLimitingHandler, request)
                     : null;
-
-            var timeout = request.Timeout; // original request timeout
-            var startTime = DateTime.UtcNow;
 
             while (true)
             {
@@ -114,8 +150,8 @@ namespace Oracle.NoSQL.SDK
                     if (rlReq != null)
                     {
                         await rlReq.Finish(result, cancellationToken);
-                        request.StatsRateLimitDelayMs =
-                            Request.ToStatsMilliseconds(rlReq.Delay);
+                        request.SetStatsLocalRateLimitDelay(
+                            Request.ToStatsMilliseconds(rlReq.Delay));
                     }
                     // Observe only the final successful outcome. Retry
                     // attempts are accumulated on the request before this.
@@ -128,8 +164,8 @@ namespace Oracle.NoSQL.SDK
                     rlReq?.HandleException(ex);
                     if (rlReq != null)
                     {
-                        request.StatsRateLimitDelayMs =
-                            Request.ToStatsMilliseconds(rlReq.Delay);
+                        request.SetStatsLocalRateLimitDelay(
+                            Request.ToStatsMilliseconds(rlReq.Delay));
                     }
 
                     if (ex is SecurityInfoNotReadyException &&
@@ -187,12 +223,24 @@ namespace Oracle.NoSQL.SDK
                         throw timeoutEx;
                     }
 
-                    request.RecordStatsRetry(ex, delay);
-
                     // This will adjust http request timeout for the time
                     // already elapsed.
                     request.Timeout = endTime - now;
-                    await Task.Delay(delay, cancellationToken);
+                    try
+                    {
+                        await Task.Delay(delay, cancellationToken);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // Cancellation during backoff is a terminal outcome.
+                        // Do not count a retry that never started.
+                        StatsControl?.ObserveError(request);
+                        throw;
+                    }
+
+                    // Count the retry only after its delay completed and the
+                    // next attempt is actually going to be made.
+                    request.RecordStatsRetry(ex, delay);
 
                     // This may help if there are many concurrent requests and
                     // the client's protocol version has been changed during

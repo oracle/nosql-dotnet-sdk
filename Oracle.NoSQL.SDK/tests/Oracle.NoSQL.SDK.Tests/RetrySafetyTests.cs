@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2020, 2025 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026 Oracle and/or its affiliates. All rights reserved.
  *
  * Licensed under the Universal Permissive License v 1.0 as shown at
  *  https://oss.oracle.com/licenses/upl/
@@ -9,7 +9,10 @@ namespace Oracle.NoSQL.SDK.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
+    using System.Net;
     using System.Net.Http;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -294,6 +297,79 @@ namespace Oracle.NoSQL.SDK.Tests
         }
 
         [TestMethod]
+        public async Task CancellationDuringBackoffRecordsTerminalErrorOnly()
+        {
+            using var retryHandler = new DelayedRetryHandler();
+            using var client = new NoSQLClient(new NoSQLConfig
+            {
+                ServiceType = ServiceType.CloudSim,
+                Endpoint = "http://localhost:1",
+                Timeout = TimeSpan.FromMinutes(2),
+                RetryHandler = retryHandler,
+                StatsProfile = StatsControl.Profile.Regular,
+                StatsEnableLog = false
+            });
+            using var cancellation = new CancellationTokenSource();
+            var request = new GetRequest<RecordValue>(client, TableName,
+                MakeKey(), null);
+            var execution = client.ExecuteRequestAsync(request,
+                cancellation.Token);
+
+            Assert.IsTrue(retryHandler.DelayRequested.Wait(
+                TimeSpan.FromSeconds(10)),
+                "The request did not reach retry backoff.");
+            cancellation.Cancel();
+
+            try
+            {
+                await execution;
+                Assert.Fail("Expected cancellation during retry backoff.");
+            }
+            catch (OperationCanceledException)
+            {
+                // Expected terminal outcome.
+            }
+
+            var snapshot = client.StatsControl.LogClientStatsForTest();
+            var getStats = snapshot["requests"].AsArrayValue
+                .Select(value => value.AsMapValue)
+                .Single(value => value["name"].AsString == "Get");
+
+            Assert.AreEqual(1, getStats["httpRequestCount"].ToInt64());
+            Assert.AreEqual(1, getStats["errors"].ToInt64());
+            Assert.AreEqual(0,
+                getStats["retry"].AsMapValue["count"].ToInt64());
+        }
+
+        [TestMethod]
+        public async Task HttpRetryHandlerDisposesOnlyIntermediateResponse()
+        {
+            var retryContent = new TrackingContent();
+            var finalContent = new TrackingContent();
+            var innerHandler = new SequenceResponseHandler(
+                new HttpResponseMessage(HttpStatusCode.ServiceUnavailable)
+                {
+                    Content = retryContent
+                },
+                new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = finalContent
+                });
+            using var invoker = new HttpMessageInvoker(
+                new HttpRequestUtils.HttpConstDelayRetryHandler(innerHandler,
+                    TimeSpan.Zero));
+            using var request = new HttpRequestMessage(HttpMethod.Get,
+                "http://localhost");
+            using var response = await invoker.SendAsync(request,
+                CancellationToken.None);
+
+            Assert.IsTrue(retryContent.IsDisposed);
+            Assert.IsFalse(finalContent.IsDisposed);
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.AreEqual("ok", await response.Content.ReadAsStringAsync());
+        }
+
+        [TestMethod]
         public void PreparedQueryWriteClassificationMatchesOperationCode()
         {
             using var client = MakeClient();
@@ -321,6 +397,56 @@ namespace Oracle.NoSQL.SDK.Tests
             }
 
             public TimeSpan GetRetryDelay(Request request) => TimeSpan.Zero;
+        }
+
+        private sealed class DelayedRetryHandler : IRetryHandler, IDisposable
+        {
+            internal ManualResetEventSlim DelayRequested { get; } = new();
+
+            public bool ShouldRetry(Request request) => true;
+
+            public TimeSpan GetRetryDelay(Request request)
+            {
+                DelayRequested.Set();
+                return TimeSpan.FromSeconds(30);
+            }
+
+            public void Dispose() => DelayRequested.Dispose();
+        }
+
+        private sealed class SequenceResponseHandler : HttpMessageHandler
+        {
+            private readonly Queue<HttpResponseMessage> responses;
+
+            internal SequenceResponseHandler(
+                params HttpResponseMessage[] responses)
+            {
+                this.responses = new Queue<HttpResponseMessage>(responses);
+            }
+
+            protected override Task<HttpResponseMessage> SendAsync(
+                HttpRequestMessage request,
+                CancellationToken cancellationToken) =>
+                Task.FromResult(responses.Dequeue());
+        }
+
+        private sealed class TrackingContent : ByteArrayContent
+        {
+            internal TrackingContent() : base(new byte[] { 111, 107 })
+            {
+            }
+
+            internal bool IsDisposed { get; private set; }
+
+            protected override void Dispose(bool disposing)
+            {
+                if (disposing)
+                {
+                    IsDisposed = true;
+                }
+
+                base.Dispose(disposing);
+            }
         }
     }
 }

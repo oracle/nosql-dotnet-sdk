@@ -69,6 +69,25 @@ namespace Oracle.NoSQL.SDK
         }
 
         /// <summary>
+        /// Storage mode used to calculate request latency percentiles.
+        /// </summary>
+        public enum PercentileMode
+        {
+            /// <summary>
+            /// Store every latency sample and use the same calculation as the
+            /// Java SDK.  This is the default for Java parity.
+            /// </summary>
+            Exact,
+
+            /// <summary>
+            /// Store a frequency count for each integer millisecond value.
+            /// Percentiles remain exact at the SDK's millisecond resolution,
+            /// while memory scales with distinct values instead of requests.
+            /// </summary>
+            Bucketed
+        }
+
+        /// <summary>
         /// Handler invoked with each generated statistics snapshot.
         /// </summary>
         /// <param name="stats">Statistics snapshot.</param>
