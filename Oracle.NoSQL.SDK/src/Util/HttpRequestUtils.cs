@@ -147,16 +147,8 @@ namespace Oracle.NoSQL.SDK
                                 return response;
                             }
 
-                            // This response will not be returned because the
-                            // request is being retried. Dispose it before the
-                            // next attempt so its content and connection are
-                            // released deterministically.
-                            using (response)
-                            {
-                                lastException = await
-                                    CreateServiceResponseExceptionAsync(
-                                        response, cancellationToken);
-                            }
+                            lastException = await
+                                CreateServiceResponseExceptionAsync(response);
                         }
                         catch (HttpRequestException ex)
                         {

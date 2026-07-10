@@ -155,8 +155,7 @@ namespace Oracle.NoSQL.SDK.Http
                 return;
             }
 
-            using var message = new HttpRequestMessage(HttpMethod.Head,
-                dataPathUri);
+            var message = new HttpRequestMessage(HttpMethod.Head, dataPathUri);
             message.Headers.Add(RequestId, Convert.ToString(
                 Interlocked.Increment(ref requestId)));
 
@@ -171,7 +170,7 @@ namespace Oracle.NoSQL.SDK.Http
                 message.Headers.Add(Namespace, ns);
             }
 
-            using var response = await SendWithTimeoutAsync(client, message,
+            var response = await SendWithTimeoutAsync(client, message,
                 request.RequestTimeoutMillis, cancellationToken);
             if (response.StatusCode != HttpStatusCode.OK)
             {

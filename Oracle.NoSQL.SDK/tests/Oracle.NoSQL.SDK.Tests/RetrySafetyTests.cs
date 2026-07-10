@@ -10,7 +10,6 @@ namespace Oracle.NoSQL.SDK.Tests
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Net;
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
@@ -342,34 +341,6 @@ namespace Oracle.NoSQL.SDK.Tests
         }
 
         [TestMethod]
-        public async Task HttpRetryHandlerDisposesOnlyIntermediateResponse()
-        {
-            var retryContent = new TrackingContent();
-            var finalContent = new TrackingContent();
-            var innerHandler = new SequenceResponseHandler(
-                new HttpResponseMessage(HttpStatusCode.ServiceUnavailable)
-                {
-                    Content = retryContent
-                },
-                new HttpResponseMessage(HttpStatusCode.OK)
-                {
-                    Content = finalContent
-                });
-            using var invoker = new HttpMessageInvoker(
-                new HttpRequestUtils.HttpConstDelayRetryHandler(innerHandler,
-                    TimeSpan.Zero));
-            using var request = new HttpRequestMessage(HttpMethod.Get,
-                "http://localhost");
-            using var response = await invoker.SendAsync(request,
-                CancellationToken.None);
-
-            Assert.IsTrue(retryContent.IsDisposed);
-            Assert.IsFalse(finalContent.IsDisposed);
-            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
-            Assert.AreEqual("ok", await response.Content.ReadAsStringAsync());
-        }
-
-        [TestMethod]
         public void PreparedQueryWriteClassificationMatchesOperationCode()
         {
             using var client = MakeClient();
@@ -412,41 +383,6 @@ namespace Oracle.NoSQL.SDK.Tests
             }
 
             public void Dispose() => DelayRequested.Dispose();
-        }
-
-        private sealed class SequenceResponseHandler : HttpMessageHandler
-        {
-            private readonly Queue<HttpResponseMessage> responses;
-
-            internal SequenceResponseHandler(
-                params HttpResponseMessage[] responses)
-            {
-                this.responses = new Queue<HttpResponseMessage>(responses);
-            }
-
-            protected override Task<HttpResponseMessage> SendAsync(
-                HttpRequestMessage request,
-                CancellationToken cancellationToken) =>
-                Task.FromResult(responses.Dequeue());
-        }
-
-        private sealed class TrackingContent : ByteArrayContent
-        {
-            internal TrackingContent() : base(new byte[] { 111, 107 })
-            {
-            }
-
-            internal bool IsDisposed { get; private set; }
-
-            protected override void Dispose(bool disposing)
-            {
-                if (disposing)
-                {
-                    IsDisposed = true;
-                }
-
-                base.Dispose(disposing);
-            }
         }
     }
 }

@@ -224,14 +224,14 @@ namespace Oracle.NoSQL.SDK.Tests
         private static bool CanUseConfigWithJson(NoSQLConfig config) =>
             (config.RetryHandler == null ||
              config.RetryHandler is NoSQLRetryHandler) &&
-            ((config.AuthorizationProvider == null) ||
-             (config.AuthorizationProvider is KVStoreAuthorizationProvider kv &&
-              kv.CredentialsProvider == null) ||
-             (config.AuthorizationProvider is IAMAuthorizationProvider iam &&
-              iam.Credentials?.PrivateKey == null &&
-              iam.CredentialsProvider == null &&
-              iam.DelegationTokenProvider == null)) &&
-            config.RateLimiterCreator == null &&
+            (config.AuthorizationProvider == null ||
+             config.AuthorizationProvider is KVStoreAuthorizationProvider kv &&
+             kv.CredentialsProvider == null ||
+             config.AuthorizationProvider is IAMAuthorizationProvider iam &&
+             iam.Credentials?.PrivateKey == null &&
+             iam.CredentialsProvider == null &&
+             iam.DelegationTokenProvider == null &&
+             config.RateLimiterCreator == null) &&
             // Callbacks cannot be represented in JSON config files, so
             // StatsHandler is covered by object/config tests instead.
             config.StatsHandler == null;

@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2020, 2026 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025 Oracle and/or its affiliates. All rights reserved.
  *
  * Licensed under the Universal Permissive License v 1.0 as shown at
  *  https://oss.oracle.com/licenses/upl/
@@ -38,25 +38,18 @@ namespace Oracle.NoSQL.SDK
         internal async Task<string> ExecuteRequestAsync(
             HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            // Callers create a one-use authentication request and transfer
-            // ownership to this method.
-            using (request)
+            Debug.Assert(request.RequestUri != null);
+            request.Headers.Host = request.RequestUri.Authority;
+
+            var response = await SendWithTimeoutAsync(httpClient, request,
+                timeoutMillis, cancellationToken);
+
+            if (response.StatusCode != HttpStatusCode.OK)
             {
-                Debug.Assert(request.RequestUri != null);
-                request.Headers.Host = request.RequestUri.Authority;
-
-                using var response = await SendWithTimeoutAsync(httpClient,
-                    request, timeoutMillis, cancellationToken);
-
-                if (response.StatusCode != HttpStatusCode.OK)
-                {
-                    throw await CreateServiceResponseExceptionAsync(response,
-                        cancellationToken);
-                }
-
-                return await response.Content.ReadAsStringAsync(
-                    cancellationToken);
+                throw await CreateServiceResponseExceptionAsync(response);
             }
+
+            return await response.Content.ReadAsStringAsync();
         }
 
         public void Dispose()
