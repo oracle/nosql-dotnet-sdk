@@ -111,28 +111,11 @@ namespace Oracle.NoSQL.SDK
             var timeout = request.Timeout; // original request timeout
             var startTime = DateTime.UtcNow;
 
-            if (await client.ValidateRequestFeaturesAsync(request,
-                    cancellationToken))
-            {
-                // The feature probe is part of the logical operation timeout.
-                var now = DateTime.UtcNow;
-                var remaining = startTime + timeout - now;
-                if (remaining <= TimeSpan.Zero)
-                {
-                    throw GetTimeoutException(now - startTime,
-                        request.RetryCount,
-                        new TimeoutException(
-                            "Request feature preflight exhausted the timeout"));
-                }
-                request.Timeout = remaining;
-            }
-
-            ObserveDeferredQueryStats(request);
-
             var rlReq =
                 RateLimitingHandler != null && request.SupportsRateLimiting
                     ? new RateLimitingRequest(RateLimitingHandler, request)
                     : null;
+            var requestFeaturesValidated = false;
 
             while (true)
             {
@@ -141,6 +124,30 @@ namespace Oracle.NoSQL.SDK
                     if (rlReq != null)
                     {
                         await rlReq.Start(cancellationToken);
+                    }
+
+                    if (!requestFeaturesValidated)
+                    {
+                        if (await client.ValidateRequestFeaturesAsync(request,
+                                cancellationToken))
+                        {
+                            // Feature probing is part of the logical operation
+                            // timeout, including any probe retries and delays.
+                            var now = DateTime.UtcNow;
+                            var remaining = startTime + timeout - now;
+                            if (remaining <= TimeSpan.Zero)
+                            {
+                                throw new TimeoutException(
+                                    "Request feature preflight exhausted " +
+                                    "the timeout");
+                            }
+                            request.Timeout = remaining;
+                        }
+
+                        requestFeaturesValidated = true;
+                        // Match Java's ordering: admit the logical query only
+                        // after server feature validation has succeeded.
+                        ObserveDeferredQueryStats(request);
                     }
 
                     var result = await client.ExecuteRequestAsync(request,

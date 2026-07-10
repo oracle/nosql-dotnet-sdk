@@ -341,6 +341,58 @@ namespace Oracle.NoSQL.SDK.Tests
         }
 
         [TestMethod]
+        public async Task FeatureProbeFailureUsesRetryAndTerminalStatsPath()
+        {
+            var retryHandler = new RetryOnceHandler();
+            using var client = new NoSQLClient(new NoSQLConfig
+            {
+                ServiceType = ServiceType.CloudSim,
+                Endpoint = "http://localhost:1",
+                Timeout = TimeSpan.FromSeconds(5),
+                RetryHandler = retryHandler,
+                StatsProfile = StatsControl.Profile.All,
+                StatsEnableLog = false
+            });
+            var preparedStatement = new PreparedStatement
+            {
+                SQLText = "SELECT * FROM RetrySafetyTable",
+                OperationCode = QueryRequest.OperationCodeSelect
+            };
+            var request = new QueryRequest<RecordValue>(client,
+                preparedStatement,
+                new QueryOptions { LastWriteMetadata = "{}" });
+            request.DeferStatsLogicalQuery();
+
+            await Assert.ThrowsExceptionAsync<HttpRequestException>(
+                () => client.ExecuteRequestAsync(request, default));
+
+            Assert.AreEqual(2, retryHandler.ShouldRetryCalls);
+            Assert.AreEqual(2, request.RetryCount);
+
+            var snapshot = client.StatsControl.LogClientStatsForTest();
+            var queryStats = snapshot["requests"].AsArrayValue
+                .Select(value => value.AsMapValue)
+                .Single(value => value["name"].AsString == "Query");
+            Assert.AreEqual(1,
+                queryStats["httpRequestCount"].ToInt64());
+            Assert.AreEqual(1, queryStats["errors"].ToInt64());
+            Assert.AreEqual(1,
+                queryStats["retry"].AsMapValue["count"].ToInt64());
+
+            // The failed HTTP operation is present in ALL-profile query
+            // details, but the logical query was not admitted before its
+            // feature preflight succeeded.
+            var logicalQueryStats = snapshot["queries"].AsArrayValue
+                .Single().AsMapValue;
+            Assert.AreEqual(0, logicalQueryStats["count"].ToInt64());
+            Assert.AreEqual(1,
+                logicalQueryStats["httpRequestCount"].ToInt64());
+            Assert.AreEqual(1, logicalQueryStats["errors"].ToInt64());
+            Assert.AreEqual(1, logicalQueryStats["retry"].AsMapValue
+                ["count"].ToInt64());
+        }
+
+        [TestMethod]
         public void PreparedQueryWriteClassificationMatchesOperationCode()
         {
             using var client = MakeClient();
@@ -366,6 +418,16 @@ namespace Oracle.NoSQL.SDK.Tests
                 ShouldRetryCalls++;
                 return true;
             }
+
+            public TimeSpan GetRetryDelay(Request request) => TimeSpan.Zero;
+        }
+
+        private sealed class RetryOnceHandler : IRetryHandler
+        {
+            internal int ShouldRetryCalls { get; private set; }
+
+            public bool ShouldRetry(Request request) =>
+                ++ShouldRetryCalls == 1;
 
             public TimeSpan GetRetryDelay(Request request) => TimeSpan.Zero;
         }
