@@ -245,8 +245,10 @@ namespace Oracle.NoSQL.SDK
                         throw;
                     }
 
-                    // Count the retry only after its delay completed and the
-                    // next attempt is actually going to be made.
+                    // Count the retry after its delay completes and the retry
+                    // policy commits to another execution cycle, matching Java
+                    // semantics. Preparation or validation may still fail
+                    // before the HTTP send.
                     request.RecordStatsRetry(ex, delay);
 
                     // This may help if there are many concurrent requests and

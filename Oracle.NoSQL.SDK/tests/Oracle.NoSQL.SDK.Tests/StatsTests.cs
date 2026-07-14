@@ -148,39 +148,6 @@ namespace Oracle.NoSQL.SDK.Tests
         }
 
         [TestMethod]
-        public void TestBucketedPercentilesMatchExactPercentiles()
-        {
-            var exact = new Percentile(StatsControl.PercentileMode.Exact);
-            var bucketed = new Percentile(
-                StatsControl.PercentileMode.Bucketed);
-
-            // Repeated integer-millisecond values exercise frequency buckets.
-            // Both modes must select the same value for every tested rank.
-            for (var i = 0; i < 10000; i++)
-            {
-                var latency = (long)(i % 137);
-                exact.AddValue(latency);
-                bucketed.AddValue(latency);
-            }
-
-            foreach (var percentile in new[] { 0.01d, 0.5d, 0.95d, 0.99d,
-                         1.0d })
-            {
-                Assert.AreEqual(exact.GetPercentile(percentile),
-                    bucketed.GetPercentile(percentile));
-            }
-
-            Assert.AreEqual(10000, exact.StoredValueCount);
-            Assert.AreEqual(137, bucketed.StoredValueCount);
-
-            exact.Clear();
-            bucketed.Clear();
-            Assert.AreEqual(-1, exact.Get95thPercentile());
-            Assert.AreEqual(-1, bucketed.Get95thPercentile());
-            Assert.AreEqual(0, bucketed.StoredValueCount);
-        }
-
-        [TestMethod]
         public void TestReqStatsErrorsDoNotAffectLatencyOrSizes()
         {
             var reqStats = new ReqStats(false);
@@ -245,7 +212,6 @@ namespace Oracle.NoSQL.SDK.Tests
                 @"{
                     ""Endpoint"": ""localhost:8080"",
                     ""StatsProfile"": ""all"",
-                    ""StatsPercentileMode"": ""bucketed"",
                     ""StatsInterval"": 5000,
                     ""StatsPrettyPrint"": true,
                     ""StatsEnableLog"": false
@@ -253,8 +219,6 @@ namespace Oracle.NoSQL.SDK.Tests
 
             Assert.AreEqual("localhost:8080", config.Endpoint);
             Assert.AreEqual(StatsControl.Profile.All, config.StatsProfile);
-            Assert.AreEqual(StatsControl.PercentileMode.Bucketed,
-                config.StatsPercentileMode);
             Assert.AreEqual(TimeSpan.FromSeconds(5), config.StatsInterval);
             Assert.IsTrue(config.StatsPrettyPrint);
             Assert.IsFalse(config.StatsEnableLog);

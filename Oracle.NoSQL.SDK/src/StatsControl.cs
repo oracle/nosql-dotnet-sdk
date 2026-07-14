@@ -69,25 +69,6 @@ namespace Oracle.NoSQL.SDK
         }
 
         /// <summary>
-        /// Storage mode used to calculate request latency percentiles.
-        /// </summary>
-        public enum PercentileMode
-        {
-            /// <summary>
-            /// Store every latency sample and use the same calculation as the
-            /// Java SDK.  This is the default for Java parity.
-            /// </summary>
-            Exact,
-
-            /// <summary>
-            /// Store a frequency count for each integer millisecond value.
-            /// Percentiles remain exact at the SDK's millisecond resolution,
-            /// while memory scales with distinct values instead of requests.
-            /// </summary>
-            Bucketed
-        }
-
-        /// <summary>
         /// Handler invoked with each generated statistics snapshot.
         /// </summary>
         /// <param name="stats">Statistics snapshot.</param>
@@ -100,7 +81,12 @@ namespace Oracle.NoSQL.SDK
         public abstract TimeSpan GetInterval();
 
         /// <summary>
-        /// Sets the statistics collection profile.
+        /// Sets the configured statistics collection profile. For parity with
+        /// the Java SDK, this method does not start or stop collection and does
+        /// not rebuild an existing statistics aggregator. Request bucket
+        /// capabilities such as percentile collection are fixed when the
+        /// aggregator is first created. Use <see cref="Stop"/> to disable an
+        /// already-running collector before setting <see cref="Profile.None"/>.
         /// </summary>
         /// <param name="profile">Statistics collection profile.</param>
         /// <returns>This instance.</returns>
@@ -140,13 +126,18 @@ namespace Oracle.NoSQL.SDK
         public abstract StatsHandler GetStatsHandler();
 
         /// <summary>
-        /// Starts statistics collection.
+        /// Starts statistics collection. If the current profile is
+        /// <see cref="Profile.None"/>, no aggregator is created; select a
+        /// collecting profile and call this method again.
         /// </summary>
         public abstract void Start();
 
         /// <summary>
-        /// Stops statistics collection.  The control object may be started
-        /// again later.
+        /// Stops collection of new statistics. For parity with the Java SDK,
+        /// an existing periodic reporting scheduler remains active and may
+        /// report statistics collected before this method was called. Periodic
+        /// reporting ends when the client or control object is disposed. The
+        /// control object may be started again later.
         /// </summary>
         public abstract void Stop();
 

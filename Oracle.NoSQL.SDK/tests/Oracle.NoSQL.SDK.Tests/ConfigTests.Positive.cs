@@ -119,8 +119,6 @@ namespace Oracle.NoSQL.SDK.Tests
             Assert.AreEqual(config.MaxMemoryMB, clientConfig.MaxMemoryMB);
             Assert.AreEqual(config.Compartment, clientConfig.Compartment);
             Assert.AreEqual(config.StatsProfile, clientConfig.StatsProfile);
-            Assert.AreEqual(config.StatsPercentileMode,
-                clientConfig.StatsPercentileMode);
             Assert.AreEqual(config.StatsInterval, clientConfig.StatsInterval);
             Assert.AreEqual(config.StatsPrettyPrint,
                 clientConfig.StatsPrettyPrint);
@@ -380,7 +378,6 @@ namespace Oracle.NoSQL.SDK.Tests
                 // Stats options should round-trip through config cloning and
                 // client initialization like the other public config options.
                 Endpoint = CloudSimEndpoint,
-                StatsPercentileMode = StatsControl.PercentileMode.Bucketed,
                 StatsInterval = TimeSpan.FromSeconds(5),
                 StatsPrettyPrint = true,
                 StatsEnableLog = true,

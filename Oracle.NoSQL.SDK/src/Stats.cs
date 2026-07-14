@@ -16,59 +16,14 @@ namespace Oracle.NoSQL.SDK
     // and JSON-compatible snapshot generation.
     internal sealed class Percentile
     {
-        private readonly StatsControl.PercentileMode mode;
-        private readonly List<long> values;
-        private readonly Dictionary<long, long> buckets;
-        private long bucketValueCount;
-        private long[] sortedBucketKeys;
-
-        internal Percentile(StatsControl.PercentileMode mode =
-            StatsControl.PercentileMode.Exact)
-        {
-            this.mode = mode;
-            if (mode == StatsControl.PercentileMode.Exact)
-            {
-                values = new List<long>();
-            }
-            else
-            {
-                buckets = new Dictionary<long, long>();
-            }
-        }
+        private readonly List<long> values = new List<long>();
 
         internal void AddValue(long value)
         {
-            if (mode == StatsControl.PercentileMode.Exact)
-            {
-                values.Add(value);
-                return;
-            }
-
-            /*
-             * Latency is already truncated to an integer millisecond before it
-             * reaches Stats.  Counting each distinct value therefore reduces
-             * storage without introducing approximate percentile boundaries.
-             */
-            if (buckets.TryGetValue(value, out var bucketCount))
-            {
-                buckets[value] = bucketCount + 1;
-            }
-            else
-            {
-                buckets[value] = 1;
-                sortedBucketKeys = null;
-            }
-            bucketValueCount++;
+            values.Add(value);
         }
 
         internal long GetPercentile(double percentile)
-        {
-            return mode == StatsControl.PercentileMode.Exact
-                ? GetExactPercentile(percentile)
-                : GetBucketedPercentile(percentile);
-        }
-
-        private long GetExactPercentile(double percentile)
         {
             if (values.Count == 0)
             {
@@ -85,55 +40,13 @@ namespace Oracle.NoSQL.SDK
             return values[index];
         }
 
-        private long GetBucketedPercentile(double percentile)
-        {
-            if (bucketValueCount == 0)
-            {
-                return -1;
-            }
-
-            // Use the same rank formula as Java, then walk the frequency
-            // buckets as if every original sample had been sorted separately.
-            var index = (long)Math.Round(
-                percentile * bucketValueCount - 1,
-                MidpointRounding.AwayFromZero);
-            index = Math.Max(0, Math.Min(index, bucketValueCount - 1));
-
-            sortedBucketKeys ??= buckets.Keys.OrderBy(value => value).ToArray();
-            long cumulativeCount = 0;
-            foreach (var key in sortedBucketKeys)
-            {
-                cumulativeCount += buckets[key];
-                if (cumulativeCount > index)
-                {
-                    return key;
-                }
-            }
-
-            return -1;
-        }
-
         internal long Get95thPercentile() => GetPercentile(0.95d);
 
         internal long Get99thPercentile() => GetPercentile(0.99d);
 
-        // Used by unit tests to verify that bucketed mode stores distinct
-        // millisecond values rather than retaining every request sample.
-        internal int StoredValueCount =>
-            mode == StatsControl.PercentileMode.Exact ?
-                values.Count : buckets.Count;
-
         internal void Clear()
         {
-            if (mode == StatsControl.PercentileMode.Exact)
-            {
-                values.Clear();
-                return;
-            }
-
-            buckets.Clear();
-            bucketValueCount = 0;
-            sortedBucketKeys = null;
+            values.Clear();
         }
     }
 
@@ -143,7 +56,6 @@ namespace Oracle.NoSQL.SDK
     internal sealed class ReqStats
     {
         private readonly bool collectPercentiles;
-        private readonly StatsControl.PercentileMode percentileMode;
         private long httpRequestCount;
         private long errors;
         private int reqSizeMin = int.MaxValue;
@@ -162,22 +74,19 @@ namespace Oracle.NoSQL.SDK
         private long requestLatencySum;
         private Percentile requestLatencyPercentile;
 
-        internal ReqStats(bool collectPercentiles,
-            StatsControl.PercentileMode percentileMode =
-                StatsControl.PercentileMode.Exact)
+        internal ReqStats(bool collectPercentiles)
         {
             this.collectPercentiles = collectPercentiles;
-            this.percentileMode = percentileMode;
             if (collectPercentiles)
             {
-                requestLatencyPercentile = new Percentile(percentileMode);
+                requestLatencyPercentile = new Percentile();
             }
         }
 
         internal long HttpRequestCount => httpRequestCount;
 
         internal ReqStats CreateEmpty() =>
-            new ReqStats(collectPercentiles, percentileMode);
+            new ReqStats(collectPercentiles);
 
         internal void Observe(bool error, int retries, int retryDelay,
             int rateLimitDelay, int authCount, int throttleCount, int reqSize,
@@ -407,8 +316,7 @@ namespace Oracle.NoSQL.SDK
                 QueryRequest queryRequest)
             {
                 ReqStats = new ReqStats(
-                    statsControl.GetProfile() >= StatsControl.Profile.More,
-                    statsControl.PercentileStorageMode);
+                    statsControl.GetProfile() >= StatsControl.Profile.More);
                 UpdatePreparedInfo(queryRequest);
             }
 
@@ -581,8 +489,7 @@ namespace Oracle.NoSQL.SDK
                 var requestName = GetRequestName(request);
                 if (!requests.TryGetValue(requestName, out var reqStats))
                 {
-                    reqStats = new ReqStats(CollectPercentiles,
-                        statsControl.PercentileStorageMode);
+                    reqStats = new ReqStats(CollectPercentiles);
                     requests[requestName] = reqStats;
                 }
 
@@ -686,8 +593,7 @@ namespace Oracle.NoSQL.SDK
 
             foreach (var key in RequestKeys)
             {
-                result[key] = new ReqStats(CollectPercentiles,
-                    statsControl.PercentileStorageMode);
+                result[key] = new ReqStats(CollectPercentiles);
             }
             return result;
         }

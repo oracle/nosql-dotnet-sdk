@@ -652,22 +652,6 @@ namespace Oracle.NoSQL.SDK
             StatsControl.Profile.None;
 
         /// <summary>
-        /// Gets or sets how request latency percentile samples are stored.
-        /// </summary>
-        /// <remarks>
-        /// This setting applies to the <see cref="StatsControl.Profile.More"/>
-        /// and <see cref="StatsControl.Profile.All"/> profiles.  Bucketed mode
-        /// uses one exact bucket per integer millisecond value and is useful for
-        /// high-volume workloads because it does not retain every request.
-        /// </remarks>
-        /// <value>
-        /// Percentile storage mode.  The default is
-        /// <see cref="StatsControl.PercentileMode.Exact"/> for Java parity.
-        /// </value>
-        public StatsControl.PercentileMode StatsPercentileMode { get; set; } =
-            StatsControl.PercentileMode.Exact;
-
-        /// <summary>
         /// Gets or sets the interval for periodic statistics snapshots.
         /// </summary>
         /// <remarks>
@@ -697,11 +681,17 @@ namespace Oracle.NoSQL.SDK
         /// Gets or sets whether statistics snapshots are written to
         /// <see cref="StatsLogger"/>.
         /// </summary>
+        /// <remarks>
+        /// Unlike the Java SDK, the .NET logging abstraction does not create
+        /// or configure a default logging provider. Applications must supply
+        /// <see cref="StatsLogger"/> to receive statistics log output. This
+        /// property controls whether the SDK writes snapshots to that logger;
+        /// it does not change the logger's configured log level.
+        /// </remarks>
         /// <value>
         /// <c>true</c> to write statistics snapshots to
-        /// <see cref="StatsLogger"/>, otherwise <c>false</c>.  The default
-        /// is <c>true</c>, matching the Java SDK behavior when statistics
-        /// are enabled.
+        /// <see cref="StatsLogger"/>, otherwise <c>false</c>. The default is
+        /// <c>true</c>.
         /// </value>
         /// <seealso cref="StatsControl"/>
         public bool StatsEnableLog { get; set; } = true;

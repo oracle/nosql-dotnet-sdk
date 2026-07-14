@@ -183,13 +183,6 @@ namespace Oracle.NoSQL.SDK.Tests
                     StatsProfile = (StatsControl.Profile)(-1),
                     Endpoint = CloudSimEndpoint
                 })
-                // invalid stats percentile mode
-                .Append(new NoSQLConfig
-                {
-                    StatsPercentileMode =
-                        (StatsControl.PercentileMode)(-1),
-                    Endpoint = CloudSimEndpoint
-                })
                 // cannot have both endpoint and region
                 .Append(new NoSQLConfig
                 {

@@ -377,7 +377,6 @@ dotnet run --project Oracle.NoSQL.SDK/tests/Oracle.NoSQL.SDK.StatsLoadCheck \
   --operation basicFlow \
   --table Users \
   --profile ALL \
-  --percentile-mode EXACT \
   --interval-sec 1 \
   --pretty-print true \
   --enable-log true \
@@ -401,21 +400,6 @@ access controls and retention policy to stats logs as to other application
 diagnostic data.  A `StatsHandler` runs on the periodic reporting path and
 should return promptly; applications should queue expensive processing to
 their own worker rather than block the handler.
-
-`EXACT` is the default percentile mode and stores every latency sample using
-the same calculation as the Java SDK.  For high-volume workloads, the load
-checker accepts `--percentile-mode BUCKETED`.  Bucketed mode stores a count for
-each observed integer millisecond value, so p95 and p99 remain exact at the
-SDK's millisecond resolution while memory scales with distinct latency values
-instead of request count.  The equivalent application configuration is:
-
-```csharp
-config.StatsPercentileMode = StatsControl.PercentileMode.Bucketed;
-```
-
-The mode affects percentile storage only.  It does not change min, max,
-average, request counts, output field names, or profiles.  `REGULAR` does not
-collect p95/p99, so the setting only has an effect with `MORE` and `ALL`.
 
 High-concurrency load checks may exceed Cloud Simulator or configured table
 throughput.  The SDK retries throttled requests, but an operation is reported

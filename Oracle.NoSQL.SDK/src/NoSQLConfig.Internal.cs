@@ -53,31 +53,6 @@ namespace Oracle.NoSQL.SDK
             }
         }
 
-        private class StatsPercentileModeConverter :
-            JsonConverter<StatsControl.PercentileMode>
-        {
-            public override StatsControl.PercentileMode Read(
-                ref Utf8JsonReader reader, Type typeToConvert,
-                JsonSerializerOptions options)
-            {
-                if (reader.TokenType == JsonTokenType.Number)
-                {
-                    return (StatsControl.PercentileMode)reader.GetInt32();
-                }
-
-                return (StatsControl.PercentileMode)Enum.Parse(
-                    typeof(StatsControl.PercentileMode), reader.GetString(),
-                    true);
-            }
-
-            public override void Write(Utf8JsonWriter writer,
-                StatsControl.PercentileMode value,
-                JsonSerializerOptions options)
-            {
-                throw new NotSupportedException();
-            }
-        }
-
         private class TimeSpanConverter : JsonConverter<TimeSpan>
         {
             public override TimeSpan Read(ref Utf8JsonReader reader,
@@ -225,8 +200,6 @@ namespace Oracle.NoSQL.SDK
             JsonSerializerOptions.Converters.Add(
                 new StatsProfileConverter());
             JsonSerializerOptions.Converters.Add(
-                new StatsPercentileModeConverter());
-            JsonSerializerOptions.Converters.Add(
                 new TimeSpanConverter());
             JsonSerializerOptions.Converters.Add(
                 new CharArrayConverter());
@@ -334,7 +307,6 @@ namespace Oracle.NoSQL.SDK
             CheckEnumValue(ServiceType);
             CheckEnumValue(Consistency);
             CheckEnumValue(StatsProfile);
-            CheckEnumValue(StatsPercentileMode);
             CheckTimeout(Timeout);
             ValidateStatsInterval();
             CheckTimeout(TableDDLTimeout, nameof(TableDDLTimeout));

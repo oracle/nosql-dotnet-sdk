@@ -53,7 +53,6 @@ namespace Oracle.NoSQL.SDK
             bool rateLimitingEnabled)
         {
             profile = config.StatsProfile;
-            PercentileStorageMode = config.StatsPercentileMode;
             Interval = config.StatsInterval;
             prettyPrint = config.StatsPrettyPrint;
             enableLog = config.StatsEnableLog;
@@ -69,8 +68,6 @@ namespace Oracle.NoSQL.SDK
         }
 
         internal string Id => id;
-
-        internal StatsControl.PercentileMode PercentileStorageMode { get; }
 
         internal TimeSpan Interval { get; }
 
