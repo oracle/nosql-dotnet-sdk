@@ -299,6 +299,12 @@ namespace Oracle.NoSQL.SDK.Tests
                 HttpConstants.RateLimitDelay, "not-a-number");
             Assert.AreEqual(0, Http.Client.GetRateLimitDelayFromHeader(
                 malformedResponse));
+
+            using var negativeResponse = new HttpResponseMessage();
+            negativeResponse.Headers.TryAddWithoutValidation(
+                HttpConstants.RateLimitDelay, "-1");
+            Assert.AreEqual(0, Http.Client.GetRateLimitDelayFromHeader(
+                negativeResponse));
         }
 
         [TestMethod]

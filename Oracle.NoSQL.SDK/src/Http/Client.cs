@@ -76,7 +76,8 @@ namespace Oracle.NoSQL.SDK.Http
 
             var value = values.FirstOrDefault();
             return !string.IsNullOrEmpty(value) &&
-                   int.TryParse(value, out var delayMs) ? delayMs : 0;
+                   int.TryParse(value, out var delayMs) &&
+                   delayMs >= 0 ? delayMs : 0;
         }
 
         internal static long? GetEnabledFeatures(HttpResponseMessage response)
@@ -155,7 +156,8 @@ namespace Oracle.NoSQL.SDK.Http
                 return;
             }
 
-            var message = new HttpRequestMessage(HttpMethod.Head, dataPathUri);
+            using var message = new HttpRequestMessage(HttpMethod.Head,
+                dataPathUri);
             message.Headers.Add(RequestId, Convert.ToString(
                 Interlocked.Increment(ref requestId)));
 
@@ -170,7 +172,7 @@ namespace Oracle.NoSQL.SDK.Http
                 message.Headers.Add(Namespace, ns);
             }
 
-            var response = await SendWithTimeoutAsync(client, message,
+            using var response = await SendWithTimeoutAsync(client, message,
                 request.RequestTimeoutMillis, cancellationToken);
             if (response.StatusCode != HttpStatusCode.OK)
             {
@@ -215,19 +217,16 @@ namespace Oracle.NoSQL.SDK.Http
 
         internal int ServerSerialVersion => serverSerialVersion;
 
-        private int AcquiredConnectionCount
+        private int GetAcquiredConnectionCount()
         {
-            get
+            if (connectionMetrics.TryGetActiveConnectionCount(
+                    out var activeConnections))
             {
-                if (connectionMetrics.TryGetActiveConnectionCount(
-                        out var activeConnections))
-                {
-                    // Zero is a valid measured connection count.
-                    return activeConnections;
-                }
-
-                return Volatile.Read(ref activeHttpExchanges);
+                // Zero is a valid measured connection count.
+                return activeConnections;
             }
+
+            return Volatile.Read(ref activeHttpExchanges);
         }
 
         internal static HttpMessageHandler CreateHandler(
@@ -354,7 +353,7 @@ namespace Oracle.NoSQL.SDK.Http
 
                         // Sample while the response still owns an active
                         // connection. A measured zero must remain zero.
-                        connectionCount = AcquiredConnectionCount;
+                        connectionCount = GetAcquiredConnectionCount();
                         connectionSampled = true;
                         request.StatsConnectionCount = connectionCount;
                         serverRateLimitDelayMs =
