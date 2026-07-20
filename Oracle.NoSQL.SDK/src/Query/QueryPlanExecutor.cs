@@ -308,6 +308,12 @@ namespace Oracle.NoSQL.SDK.Query {
                 ContinuationKey = continuationKey
             };
 
+            if (continuationKey != null)
+            {
+                continuationKey.StatsFeatureValidationSucceeded =
+                    Request.StatsFeatureValidationSucceeded;
+            }
+
             CheckAddDriverQueryTrace();
 
             if (queryTraces != null)

@@ -53,7 +53,7 @@ namespace Oracle.NoSQL.SDK
 
         internal const string ServerSerialVersion = "x-nosql-serial-version";
 
-        internal const string RateLimitDelay = "X-Nosql-RL-Delay-Ms";
+        internal const string RateLimitDelay = "x-nosql-rl-delay-ms";
 
         internal static readonly string NoSQLDataPath =
             $"{NoSQLVersion}/{NoSQLPathName}/{DataPathName}";

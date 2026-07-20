@@ -147,8 +147,12 @@ namespace Oracle.NoSQL.SDK
                                 return response;
                             }
 
-                            lastException = await
-                                CreateServiceResponseExceptionAsync(response);
+                            using (response)
+                            {
+                                lastException = await
+                                    CreateServiceResponseExceptionAsync(
+                                        response, cancellationToken);
+                            }
                         }
                         catch (HttpRequestException ex)
                         {

@@ -9,7 +9,9 @@ namespace Oracle.NoSQL.SDK.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
+    using System.Net;
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
@@ -341,6 +343,41 @@ namespace Oracle.NoSQL.SDK.Tests
         }
 
         [TestMethod]
+        public async Task RetryHandlerFailureRecordsTerminalErrorOnce()
+        {
+            var retryHandler = new ThrowingRetryHandler();
+            using var client = new NoSQLClient(new NoSQLConfig
+            {
+                ServiceType = ServiceType.CloudSim,
+                Endpoint = "http://localhost:1",
+                Timeout = TimeSpan.FromSeconds(1),
+                RetryHandler = retryHandler,
+                StatsProfile = StatsControl.Profile.Regular,
+                StatsEnableLog = false
+            });
+            var request = new GetRequest<RecordValue>(client, TableName,
+                MakeKey(), null);
+
+            var exception = await Assert.ThrowsExceptionAsync<
+                InvalidOperationException>(
+                () => client.ExecuteRequestAsync(request, default));
+
+            Assert.AreEqual(ThrowingRetryHandler.ErrorMessage,
+                exception.Message);
+            Assert.AreEqual(1, retryHandler.ShouldRetryCalls);
+
+            var snapshot = client.StatsControl.LogClientStatsForTest();
+            var getStats = snapshot["requests"].AsArrayValue
+                .Select(value => value.AsMapValue)
+                .Single(value => value["name"].AsString == "Get");
+
+            Assert.AreEqual(1, getStats["httpRequestCount"].ToInt64());
+            Assert.AreEqual(1, getStats["errors"].ToInt64());
+            Assert.AreEqual(0,
+                getStats["retry"].AsMapValue["count"].ToInt64());
+        }
+
+        [TestMethod]
         public async Task FeatureProbeFailureUsesRetryAndTerminalStatsPath()
         {
             var retryHandler = new RetryOnceHandler();
@@ -393,6 +430,37 @@ namespace Oracle.NoSQL.SDK.Tests
         }
 
         [TestMethod]
+        [Timeout(5000)]
+        public async Task RetryableResponseBodyHonorsCancellation()
+        {
+            using var innerHandler = new BlockingRetryableResponseHandler();
+            using var retryHandler =
+                new HttpRequestUtils.HttpConstDelayRetryHandler(
+                    innerHandler, TimeSpan.Zero);
+            using var httpClient = new HttpClient(retryHandler);
+            using var request = new HttpRequestMessage(HttpMethod.Get,
+                "http://localhost/");
+            using var cancellation = new CancellationTokenSource(
+                TimeSpan.FromMilliseconds(100));
+
+            try
+            {
+                await httpClient.SendAsync(request,
+                    HttpCompletionOption.ResponseHeadersRead,
+                    cancellation.Token);
+                Assert.Fail("Expected cancellation while reading the " +
+                    "retryable response body.");
+            }
+            catch (OperationCanceledException)
+            {
+                // The retry handler must propagate cancellation into the
+                // response-body read instead of waiting indefinitely.
+            }
+
+            Assert.IsTrue(innerHandler.Content.IsDisposed);
+        }
+
+        [TestMethod]
         public void PreparedQueryWriteClassificationMatchesOperationCode()
         {
             using var client = MakeClient();
@@ -432,6 +500,21 @@ namespace Oracle.NoSQL.SDK.Tests
             public TimeSpan GetRetryDelay(Request request) => TimeSpan.Zero;
         }
 
+        private sealed class ThrowingRetryHandler : IRetryHandler
+        {
+            internal const string ErrorMessage = "Retry policy failed";
+
+            internal int ShouldRetryCalls { get; private set; }
+
+            public bool ShouldRetry(Request request)
+            {
+                ShouldRetryCalls++;
+                throw new InvalidOperationException(ErrorMessage);
+            }
+
+            public TimeSpan GetRetryDelay(Request request) => TimeSpan.Zero;
+        }
+
         private sealed class DelayedRetryHandler : IRetryHandler, IDisposable
         {
             internal ManualResetEventSlim DelayRequested { get; } = new();
@@ -445,6 +528,47 @@ namespace Oracle.NoSQL.SDK.Tests
             }
 
             public void Dispose() => DelayRequested.Dispose();
+        }
+
+        private sealed class BlockingRetryableResponseHandler :
+            HttpMessageHandler
+        {
+            internal BlockingContent Content { get; } = new BlockingContent();
+
+            protected override Task<HttpResponseMessage> SendAsync(
+                HttpRequestMessage request,
+                CancellationToken cancellationToken) =>
+                Task.FromResult(new HttpResponseMessage(
+                    HttpStatusCode.ServiceUnavailable)
+                {
+                    Content = Content
+                });
+        }
+
+        private sealed class BlockingContent : HttpContent
+        {
+            internal bool IsDisposed { get; private set; }
+
+            protected override Task SerializeToStreamAsync(Stream stream,
+                TransportContext context) =>
+                Task.Delay(Timeout.InfiniteTimeSpan);
+
+            protected override Task SerializeToStreamAsync(Stream stream,
+                TransportContext context,
+                CancellationToken cancellationToken) =>
+                Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+
+            protected override bool TryComputeLength(out long length)
+            {
+                length = -1;
+                return false;
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                IsDisposed = true;
+                base.Dispose(disposing);
+            }
         }
     }
 }

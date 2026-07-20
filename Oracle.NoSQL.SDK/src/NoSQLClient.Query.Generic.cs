@@ -16,14 +16,16 @@ namespace Oracle.NoSQL.SDK {
 
     public partial class NoSQLClient
     {
-        private void ObserveOrDeferLogicalQuery(QueryRequest request)
+        internal void ObserveOrDeferLogicalQuery(QueryRequest request)
         {
             if (request.IsInternal)
             {
                 return;
             }
 
-            if (request.LastWriteMetadata != null)
+            request.RestoreStatsFeatureValidationFromContinuation();
+            if (request.LastWriteMetadata != null &&
+                !request.StatsFeatureValidationSucceeded)
             {
                 // Java checks server feature support before observing a query.
                 // The request is observed after that preflight succeeds.
@@ -74,8 +76,8 @@ namespace Oracle.NoSQL.SDK {
 
             if (observeLogicalQuery)
             {
-                // Count the user-visible logical query once.  Internal query
-                // fetches are still counted as HTTP Query requests by
+                // Count this user-visible query API execution. Internal query
+                // fetches are still counted only as HTTP Query requests by
                 // ExecuteValidatedRequestAsync.
                 ObserveOrDeferLogicalQuery(request);
             }
@@ -121,15 +123,14 @@ namespace Oracle.NoSQL.SDK {
             QueryRequest<TRow> request,
             [EnumeratorCancellation] CancellationToken cancellationToken)
         {
-            // One async enumeration is one user-visible query operation.
-            // Individual result batches remain visible in httpRequestCount.
-            ObserveOrDeferLogicalQuery(request);
-
             QueryResult<TRow> result;
             do
             {
+                // Each continuation batch is equivalent to one QueryAsync
+                // call. The first call is unprepared; later calls reuse the
+                // prepared statement carried by the continuation key.
                 result = await ExecuteQueryRequestAsync(request,
-                    cancellationToken, false);
+                    cancellationToken);
 
                 if (result.ContinuationKey != null)
                 {

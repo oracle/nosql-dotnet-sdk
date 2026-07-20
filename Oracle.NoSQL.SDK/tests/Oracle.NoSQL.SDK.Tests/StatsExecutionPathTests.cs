@@ -224,7 +224,60 @@ namespace Oracle.NoSQL.SDK.Tests
 
         [TestMethod]
         [TestCategory("CloudSim")]
-        public async Task TestAsyncEnumerableCountsOneLogicalQuery()
+        public async Task
+            TestContinuationQueryCountsOnlyFirstCallUnprepared()
+        {
+            CheckCloudSimAvailable();
+
+            using var statsClient = new NoSQLClient(
+                MakeStatsConfig(StatsControl.Profile.All));
+            for (var id = 2; id <= 3; id++)
+            {
+                var row = new MapValue
+                {
+                    ["id"] = id,
+                    ["lastName"] = "Stats",
+                    ["firstName"] = "Continuation",
+                    ["info"] = new MapValue
+                    {
+                        ["source"] = "continuation-query-test"
+                    },
+                    ["startDate"] = DateTime.UtcNow
+                };
+                Assert.IsTrue((await statsClient.PutAsync(Table.Name, row))
+                    .Success);
+            }
+
+            // Exclude setup writes from the query snapshot.
+            ((StatsControlImpl)statsClient.GetStatsControl())
+                .LogClientStatsForTest();
+
+            var sql = $"SELECT * FROM {Table.Name}";
+            var options = new QueryOptions { Limit = 1 };
+            var callCount = 0;
+            var rowCount = 0;
+            do
+            {
+                var result = await statsClient.QueryAsync(sql, options);
+                callCount++;
+                rowCount += result.Rows.Count;
+                options.ContinuationKey = result.ContinuationKey;
+            } while (options.ContinuationKey != null);
+
+            Assert.IsTrue(callCount > 1);
+            Assert.IsTrue(rowCount >= 3);
+
+            var snapshot = ((StatsControlImpl)statsClient.GetStatsControl())
+                .LogClientStatsForTest();
+            var queryStats = FindQuery(snapshot, sql);
+
+            Assert.AreEqual(callCount, AsLong(queryStats["count"]));
+            Assert.AreEqual(1, AsLong(queryStats["unprepared"]));
+        }
+
+        [TestMethod]
+        [TestCategory("CloudSim")]
+        public async Task TestAsyncEnumerableCountsEachContinuationCall()
         {
             CheckCloudSimAvailable();
 
@@ -266,8 +319,84 @@ namespace Oracle.NoSQL.SDK.Tests
                 .LogClientStatsForTest();
             var queryStats = FindQuery(snapshot, sql);
 
-            Assert.AreEqual(1, AsLong(queryStats["count"]));
-            Assert.IsTrue(AsLong(queryStats["httpRequestCount"]) > 1);
+            Assert.AreEqual(batchCount, AsLong(queryStats["count"]));
+            Assert.AreEqual(1, AsLong(queryStats["unprepared"]));
+            Assert.IsTrue(AsLong(queryStats["httpRequestCount"]) >=
+                batchCount);
+        }
+
+        [TestMethod]
+        [TestCategory("CloudSim")]
+        public async Task
+            TestAdvancedQueryMetadataPreservesLogicalQueryCount()
+        {
+            CheckCloudSimAvailable();
+
+            using var statsClient = new NoSQLClient(
+                MakeStatsConfig(StatsControl.Profile.All));
+            for (var id = 2; id <= 3; id++)
+            {
+                var row = new MapValue
+                {
+                    ["id"] = id,
+                    ["lastName"] = "Stats",
+                    ["firstName"] = "Metadata",
+                    ["info"] = new MapValue
+                    {
+                        ["source"] = "metadata-query-test"
+                    },
+                    ["startDate"] = DateTime.UtcNow
+                };
+                Assert.IsTrue((await statsClient.PutAsync(Table.Name, row))
+                    .Success);
+            }
+
+            // Exclude setup writes so both HTTP counts belong only to the
+            // advanced query executed through the public client API.
+            ((StatsControlImpl)statsClient.GetStatsControl())
+                .LogClientStatsForTest();
+
+            var sql = $"SELECT * FROM {Table.Name}";
+            var batchCount = 0;
+            var rowCount = 0;
+            try
+            {
+                await foreach (var result in statsClient
+                                   .GetQueryAsyncEnumerable(sql,
+                                       new QueryOptions
+                                       {
+                                           Limit = 1,
+                                           LastWriteMetadata = "{}"
+                                       }))
+                {
+                    batchCount++;
+                    rowCount += result.Rows.Count;
+                }
+            }
+            catch (NotSupportedException ex) when (
+                ex.Message.Contains("Last write metadata",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                Assert.Inconclusive(
+                    "The configured server does not support last-write " +
+                    "metadata: " + ex.Message);
+            }
+
+            Assert.IsTrue(batchCount > 1);
+            Assert.IsTrue(rowCount >= 3);
+
+            var snapshot = ((StatsControlImpl)statsClient.GetStatsControl())
+                .LogClientStatsForTest();
+            var requestStats = FindRequest(snapshot, "Query");
+            var queryStats = FindQuery(snapshot, sql);
+            var requestCount = AsLong(requestStats["httpRequestCount"]);
+            var queryRequestCount =
+                AsLong(queryStats["httpRequestCount"]);
+
+            Assert.AreEqual(batchCount, AsLong(queryStats["count"]));
+            Assert.AreEqual(1, AsLong(queryStats["unprepared"]));
+            Assert.IsTrue(queryRequestCount > 1);
+            Assert.AreEqual(requestCount, queryRequestCount);
         }
 
         [TestMethod]

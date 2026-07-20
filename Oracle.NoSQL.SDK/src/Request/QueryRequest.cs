@@ -25,6 +25,7 @@ namespace Oracle.NoSQL.SDK
         ILastWriteMetadataRequest
     {
         private int statsLogicalQueryPending;
+        private int statsFeatureValidationSucceeded;
 
         // "5" == PrepareCallback.QueryOperation.SELECT
         internal const int OperationCodeSelect = 5;
@@ -83,6 +84,20 @@ namespace Oracle.NoSQL.SDK
 
         internal bool TryConsumeStatsLogicalQuery() =>
             Interlocked.Exchange(ref statsLogicalQueryPending, 0) == 1;
+
+        internal bool StatsFeatureValidationSucceeded =>
+            Volatile.Read(ref statsFeatureValidationSucceeded) != 0;
+
+        internal void MarkStatsFeatureValidationSucceeded() =>
+            Interlocked.Exchange(ref statsFeatureValidationSucceeded, 1);
+
+        internal void RestoreStatsFeatureValidationFromContinuation()
+        {
+            if (ContinuationKey?.StatsFeatureValidationSucceeded == true)
+            {
+                MarkStatsFeatureValidationSucceeded();
+            }
+        }
 
         internal override bool SupportsRateLimiting => true;
 
@@ -174,7 +189,10 @@ namespace Oracle.NoSQL.SDK
         /// </value>
         public bool IsPrepared { get; }
 
-        internal override bool IsPreparedQuery => IsPrepared;
+        // IsPrepared records which public QueryAsync overload was used.
+        // Stats need the current state because continuation keys restore the
+        // prepared statement after an initial unprepared execution.
+        internal override bool IsPreparedQuery => PreparedStatement != null;
 
         /// <summary>
         /// Gets the options for the Query operation.
@@ -266,6 +284,8 @@ namespace Oracle.NoSQL.SDK
             {
                 queryResult.ContinuationKey.PreparedStatement =
                     PreparedStatement;
+                queryResult.ContinuationKey.StatsFeatureValidationSucceeded =
+                    StatsFeatureValidationSucceeded;
             }
 
             // Batch number is used for query tracing.

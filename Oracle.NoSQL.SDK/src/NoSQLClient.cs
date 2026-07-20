@@ -315,16 +315,29 @@ namespace Oracle.NoSQL.SDK {
         /// </seealso>
         protected void Dispose(bool disposing)
         {
-            if (disposing && !disposed)
+            if (!disposing)
             {
-                // Flush and stop stats before releasing the HTTP client and
-                // other resources.
-                StatsControl?.Shutdown();
-                client.Dispose();
-                Config.ReleaseResources();
-                RateLimitingHandler?.Dispose();
+                return;
+            }
+
+            lock (disposeLock)
+            {
+                if (disposed)
+                {
+                    return;
+                }
+
+                // Mark disposal before flushing stats because the user
+                // StatsHandler may call Dispose() re-entrantly.
                 disposed = true;
             }
+
+            // Flush and stop stats before releasing the HTTP client and
+            // other resources.
+            StatsControl?.Shutdown();
+            client.Dispose();
+            Config.ReleaseResources();
+            RateLimitingHandler?.Dispose();
         }
 
         /// <summary>

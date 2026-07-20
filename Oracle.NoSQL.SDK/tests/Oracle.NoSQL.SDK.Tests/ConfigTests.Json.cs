@@ -261,6 +261,16 @@ namespace Oracle.NoSQL.SDK.Tests
             });
         }
 
+        [TestMethod]
+        public void TestStatsProfileRejectsCombinedNames()
+        {
+            const string jsonConfig =
+                "{\"StatsProfile\":\"Regular,More\"}";
+
+            AssertThrowsDerived<ArgumentException>(() =>
+                NoSQLConfig.FromJsonString(jsonConfig));
+        }
+
     }
 
 }

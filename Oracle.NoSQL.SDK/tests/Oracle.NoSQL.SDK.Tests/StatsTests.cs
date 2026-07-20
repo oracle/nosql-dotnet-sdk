@@ -106,6 +106,31 @@ namespace Oracle.NoSQL.SDK.Tests
         }
 
         [TestMethod]
+        public void TestPercentileFrequencyAggregationPreservesExactRanks()
+        {
+            var percentile = new Percentile();
+
+            for (var i = 0; i < 94; i++)
+            {
+                percentile.AddValue(1);
+            }
+            for (var i = 0; i < 4; i++)
+            {
+                percentile.AddValue(10);
+            }
+            for (var i = 0; i < 2; i++)
+            {
+                percentile.AddValue(20);
+            }
+
+            Assert.AreEqual(10, percentile.Get95thPercentile());
+            Assert.AreEqual(20, percentile.Get99thPercentile());
+
+            percentile.Clear();
+            Assert.AreEqual(-1, percentile.Get95thPercentile());
+        }
+
+        [TestMethod]
         public void TestReqStatsSuccessAggregationAndPercentiles()
         {
             var reqStats = new ReqStats(true);
@@ -191,6 +216,27 @@ namespace Oracle.NoSQL.SDK.Tests
             Assert.IsFalse(map.ContainsKey("httpRequestLatencyMs"));
             Assert.IsFalse(map.ContainsKey("requestSize"));
             Assert.IsFalse(map.ContainsKey("resultSize"));
+        }
+
+        [TestMethod]
+        public void TestReqStatsRetryAggregatesDoNotOverflowIntBoundary()
+        {
+            var reqStats = new ReqStats(false);
+
+            reqStats.Observe(true, int.MaxValue, int.MaxValue, 0,
+                int.MaxValue, int.MaxValue, 0, 0, 0);
+            reqStats.Observe(true, int.MaxValue, int.MaxValue, 0,
+                int.MaxValue, int.MaxValue, 0, 0, 0);
+
+            var map = new MapValue();
+            reqStats.ToMapValue(map);
+            var retry = map["retry"].AsMapValue;
+            var expected = 2L * int.MaxValue;
+
+            Assert.AreEqual(expected, AsLong(retry["count"]));
+            Assert.AreEqual(expected, AsLong(retry["delayMs"]));
+            Assert.AreEqual(expected, AsLong(retry["authCount"]));
+            Assert.AreEqual(expected, AsLong(retry["throttleCount"]));
         }
 
         [TestMethod]
@@ -305,6 +351,34 @@ namespace Oracle.NoSQL.SDK.Tests
                 HttpConstants.RateLimitDelay, "-1");
             Assert.AreEqual(0, Http.Client.GetRateLimitDelayFromHeader(
                 negativeResponse));
+        }
+
+        [TestMethod]
+        public void TestRateLimitDelayDoesNotOverflowIntBoundary()
+        {
+            using var client = new NoSQLClient(TestConfig);
+            var request = MakeGetRequest(client);
+
+            request.AddStatsServerRateLimitDelay(int.MaxValue);
+            request.AddStatsServerRateLimitDelay(int.MaxValue);
+            request.SetStatsLocalRateLimitDelay(int.MaxValue);
+
+            var expectedDelay = 3L * int.MaxValue;
+            Assert.AreEqual(expectedDelay, request.StatsRateLimitDelayMs);
+
+            SetSuccessStats(request);
+            using var control = new StatsControlImpl(new NoSQLConfig
+            {
+                Endpoint = "localhost:8080",
+                StatsProfile = StatsControl.Profile.Regular,
+                StatsEnableLog = false
+            }, false);
+            control.Observe(request);
+
+            var getStats = FindRequest(
+                control.LogClientStatsForTest(), "Get");
+            Assert.AreEqual(expectedDelay,
+                AsLong(getStats["rateLimitDelayMs"]));
         }
 
         [TestMethod]
@@ -684,10 +758,162 @@ namespace Oracle.NoSQL.SDK.Tests
             var plan = stats.GenerateFieldValueStats(DateTime.UtcNow)
                 ["queries"].AsArrayValue[0].AsMapValue["plan"].AsString;
 
-            StringAssert.Contains(plan, "RECV");
-            StringAssert.Contains(plan, "AllPartitions");
-            StringAssert.Contains(plan, "id");
+            Assert.AreEqual(
+                "RECV([2])\n[\n" +
+                "  DistributionKind : ALL_PARTITIONS,\n" +
+                "  Primary Key Fields : id,\n\n" +
+                "]", plan);
             Assert.AreNotEqual("server plan", plan);
+        }
+
+        [TestMethod]
+        public void TestPlanFormatterDistinguishesSFWGrouping()
+        {
+            static string FormatSFW(int groupColumnCount) =>
+                Query.PlanFormatter.Format(new Query.SFWStep
+                {
+                    GroupColumnCount = groupColumnCount,
+                    FromVarName = "$t",
+                    FromStep = new Query.VarRefStep { VarName = "$t" },
+                    ColumnSteps = new Query.PlanStep[]
+                    {
+                        new Query.VarRefStep { VarName = "$column" }
+                    }
+                });
+
+            Assert.IsFalse(FormatSFW(-1).Contains("GROUP BY:"));
+            StringAssert.Contains(FormatSFW(0),
+                "GROUP BY:\n  No grouping expressions");
+            StringAssert.Contains(FormatSFW(1),
+                "Grouping by the first expression in the SELECT list");
+            StringAssert.Contains(FormatSFW(2),
+                "Grouping by the first 2 expressions in the SELECT list");
+        }
+
+        [TestMethod]
+        public void TestPlanFormatterUsesGroupColumnNames()
+        {
+            var plan = Query.PlanFormatter.Format(new Query.GroupStep
+            {
+                GroupingColumnCount = 2,
+                ColumnNames = new[]
+                {
+                    "department", "location", "employeeCount"
+                },
+                AggregateFuncCodes = new[] { Query.SQLFuncCode.CountStar },
+                InputStep = new Query.VarRefStep { VarName = "$input" }
+            });
+
+            const string grouping =
+                "Grouping Columns : department, location";
+            const string aggregate = "Aggregate Functions : FN_COUNT_STAR";
+            var groupingIndex = plan.IndexOf(grouping,
+                StringComparison.Ordinal);
+            var aggregateIndex = plan.IndexOf(aggregate,
+                StringComparison.Ordinal);
+            var inputIndex = plan.IndexOf("VAR_REF",
+                StringComparison.Ordinal);
+
+            Assert.IsTrue(groupingIndex >= 0);
+            Assert.IsTrue(aggregateIndex > groupingIndex);
+            Assert.IsTrue(inputIndex > aggregateIndex);
+            Assert.IsFalse(plan.Contains("Grouping Columns : 2"));
+            Assert.IsFalse(plan.Contains("Column Names :"));
+        }
+
+        [TestMethod]
+        public void TestPlanFormatterSeparatesSortMetadataFromInput()
+        {
+            var plan = Query.PlanFormatter.Format(new Query.SortStep
+            {
+                InputStep = new Query.VarRefStep { VarName = "$input" },
+                SortSpecs = new[]
+                {
+                    new Query.SortSpec("name", false, false)
+                }
+            });
+
+            Assert.AreEqual(
+                "SORT([0])\n[\n" +
+                "  VAR_REF($input)([0])\n" +
+                "  Sort Fields : name,\n\n" +
+                "]", plan);
+        }
+
+        [TestMethod]
+        public void TestPlanFormatterUsesJavaExpressionLayout()
+        {
+            var arithmetic = Query.PlanFormatter.Format(
+                new Query.ArithmeticOpStep
+                {
+                    ResultPosition = 3,
+                    Opcode = Query.ArithmeticOpcode.AddSubtract,
+                    OpSequence = "+-",
+                    ArgSteps = new Query.PlanStep[]
+                    {
+                        new Query.ConstStep
+                        {
+                            ResultPosition = 1,
+                            Value = new IntegerValue(2)
+                        },
+                        new Query.VarRefStep
+                        {
+                            ResultPosition = 2,
+                            VarName = "$value"
+                        }
+                    }
+                });
+
+            Assert.AreEqual(
+                "OP_ADD_SUB([3])\n[\n" +
+                "  +,\n" +
+                "  CONST([1])\n" +
+                "  [\n" +
+                "    2\n" +
+                "  ],\n" +
+                "  -,\n" +
+                "  VAR_REF($value)([2])\n" +
+                "]", arithmetic);
+
+            var field = Query.PlanFormatter.Format(new Query.FieldStep
+            {
+                ResultPosition = 4,
+                InputStep = new Query.VarRefStep
+                {
+                    ResultPosition = 1,
+                    VarName = "$row"
+                },
+                FieldName = "name"
+            });
+
+            Assert.AreEqual(
+                "FIELD_STEP([4])\n[\n" +
+                "  VAR_REF($row)([1]),\n" +
+                "  name\n" +
+                "]", field);
+        }
+
+        [TestMethod]
+        public void TestPlanFormatterUsesJavaFunctionAndExternalVarLayout()
+        {
+            var collect = Query.PlanFormatter.Format(
+                new Query.FuncCollectStep
+                {
+                    ResultPosition = 5,
+                    IsDistinct = true,
+                    InputStep = new Query.ExtVarRefStep
+                    {
+                        ResultPosition = 2,
+                        VarName = "$external",
+                        VarPosition = 7
+                    }
+                });
+
+            Assert.AreEqual(
+                "FN_COLLECT([5])\n[\n" +
+                "  \"distinct\" : true,\n" +
+                "  EXTENAL_VAR_REF($external, 7)([2])\n" +
+                "]", collect);
         }
 
         [TestMethod]
@@ -724,6 +950,46 @@ namespace Oracle.NoSQL.SDK.Tests
             Assert.AreEqual(1,
                 AsLong(queries[0].AsMapValue["count"]));
             Assert.AreEqual(0, snapshot["requests"].AsArrayValue.Count);
+        }
+
+        [TestMethod]
+        public void TestValidatedMetadataContinuationIsObservedImmediately()
+        {
+            using var client = new NoSQLClient(new NoSQLConfig
+            {
+                Endpoint = "localhost:8080",
+                StatsProfile = StatsControl.Profile.All,
+                StatsEnableLog = false
+            });
+            var firstRequest = new QueryRequest<RecordValue>(client,
+                "SELECT * FROM Users",
+                new QueryOptions { LastWriteMetadata = "{}" });
+            firstRequest.DeferStatsLogicalQuery();
+            client.ObserveDeferredQueryStats(firstRequest);
+
+            var continuationResult = new QueryResult<RecordValue>
+            {
+                ContinuationKey = new QueryContinuationKey()
+            };
+            firstRequest.ApplyResult(continuationResult);
+            var continuationRequest = new QueryRequest<RecordValue>(client,
+                "SELECT * FROM Users", new QueryOptions
+                {
+                    ContinuationKey = continuationResult.ContinuationKey,
+                    LastWriteMetadata = "{}"
+                });
+
+            // This represents a continuation satisfied from buffered rows: no
+            // HTTP path is available to consume another deferred observation.
+            client.ObserveOrDeferLogicalQuery(continuationRequest);
+
+            var snapshot = ((StatsControlImpl)client.GetStatsControl())
+                .LogClientStatsForTest();
+            var queries = snapshot["queries"].AsArrayValue;
+            Assert.AreEqual(1, queries.Count);
+            Assert.AreEqual(2,
+                AsLong(queries[0].AsMapValue["count"]));
+            Assert.IsFalse(continuationRequest.TryConsumeStatsLogicalQuery());
         }
 
         [TestMethod]
@@ -769,6 +1035,14 @@ namespace Oracle.NoSQL.SDK.Tests
             SetSuccessStats(queryRequest, 100, 300, 10, 1);
             stats.Observe(queryRequest, false);
 
+            // Model a continuation call after the first server response has
+            // supplied the prepared statement.
+            queryRequest.PreparedStatement = new PreparedStatement
+            {
+                SQLText = queryRequest.Statement,
+                OperationCode = QueryRequest.OperationCodeSelect
+            };
+
             stats.ObserveQuery(queryRequest);
             SetSuccessStats(queryRequest, 120, 360, 20, 1);
             stats.Observe(queryRequest, false);
@@ -784,7 +1058,8 @@ namespace Oracle.NoSQL.SDK.Tests
             var query = queries[0].AsMapValue;
             Assert.AreEqual("SELECT * FROM Users", query["query"].AsString);
             Assert.AreEqual(3, AsLong(query["count"]));
-            Assert.AreEqual(3, AsLong(query["unprepared"]));
+            Assert.AreEqual(1, AsLong(query["unprepared"]));
+            Assert.IsTrue(query["simple"].AsBoolean);
             Assert.AreEqual(3, AsLong(query["httpRequestCount"]));
             AssertMinAvgMax(query["requestSize"].AsMapValue, 100, 120, 140);
             AssertMinAvgMax(query["resultSize"].AsMapValue, 300, 360, 420);
@@ -793,7 +1068,7 @@ namespace Oracle.NoSQL.SDK.Tests
         }
 
         [TestMethod]
-        public void TestQueryErrorStatsFollowJavaNestedQueryBehavior()
+        public void TestQueryErrorsDoNotAffectLatencyOrSizes()
         {
             using var client = new NoSQLClient(TestConfig);
             var control = new StatsControlImpl(TestConfig, false)
@@ -823,12 +1098,14 @@ namespace Oracle.NoSQL.SDK.Tests
             var queryStats = generated["queries"].AsArrayValue[0].AsMapValue;
             Assert.AreEqual(2, AsLong(queryStats["httpRequestCount"]));
             Assert.AreEqual(1, AsLong(queryStats["errors"]));
-            Assert.AreEqual(99.0, queryStats["requestSize"]
-                .AsMapValue["avg"].AsDouble);
-            Assert.AreEqual(299.0, queryStats["resultSize"]
-                .AsMapValue["avg"].AsDouble);
-            Assert.AreEqual(9.0, queryStats["httpRequestLatencyMs"]
-                .AsMapValue["avg"].AsDouble);
+            AssertMinAvgMax(queryStats["requestSize"].AsMapValue,
+                100, 100, 100);
+            AssertMinAvgMax(queryStats["resultSize"].AsMapValue,
+                300, 300, 300);
+            var latency = queryStats["httpRequestLatencyMs"].AsMapValue;
+            AssertMinAvgMax(latency, 10, 10, 10);
+            Assert.AreEqual(10, AsLong(latency["95th"]));
+            Assert.AreEqual(10, AsLong(latency["99th"]));
         }
 
         [TestMethod]
@@ -1312,7 +1589,7 @@ namespace Oracle.NoSQL.SDK.Tests
         }
 
         [TestMethod]
-        public void TestStatsControlStartBeforeProfileNeedsRestart()
+        public void TestStatsControlStartBeforeProfileActivatesOnProfileChange()
         {
             using var client = new NoSQLClient(TestConfig);
             using var control = new StatsControlImpl(new NoSQLConfig
@@ -1322,18 +1599,15 @@ namespace Oracle.NoSQL.SDK.Tests
             }, false);
 
             control.Start();
+            Assert.IsFalse(control.IsStarted());
+            Assert.IsNull(control.GenerateStats());
+
             control.SetProfile(StatsControl.Profile.Regular);
+            Assert.IsTrue(control.IsStarted());
 
             var getRequest = MakeGetRequest(client);
             SetSuccessStats(getRequest);
             control.Observe(getRequest);
-
-            Assert.IsNull(control.GenerateStats());
-
-            control.Start();
-            var restartedRequest = MakeGetRequest(client);
-            SetSuccessStats(restartedRequest);
-            control.Observe(restartedRequest);
 
             var snapshot = control.LogClientStatsForTest();
 
@@ -1422,6 +1696,28 @@ namespace Oracle.NoSQL.SDK.Tests
             control.Shutdown();
         }
 
+        [TestMethod]
+        public void TestClientDisposeIsSafeFromStatsHandler()
+        {
+            var authorizationProvider =
+                new SingleDisposeAuthorizationProvider();
+            NoSQLClient client = null;
+            client = new NoSQLClient(new NoSQLConfig
+            {
+                ServiceType = ServiceType.KVStore,
+                Endpoint = "localhost:8080",
+                AuthorizationProvider = authorizationProvider,
+                StatsProfile = StatsControl.Profile.Regular,
+                StatsEnableLog = false,
+                StatsHandler = _ => client.Dispose()
+            });
+
+            client.Dispose();
+            client.Dispose();
+
+            Assert.AreEqual(1, authorizationProvider.DisposeCount);
+        }
+
         private sealed class TestLogger : ILogger
         {
             internal List<string> Messages { get; } = new List<string>();
@@ -1478,6 +1774,29 @@ namespace Oracle.NoSQL.SDK.Tests
 
                 public void Dispose()
                 {
+                }
+            }
+        }
+
+        private sealed class SingleDisposeAuthorizationProvider :
+            IAuthorizationProvider, IDisposable
+        {
+            internal int DisposeCount { get; private set; }
+
+            public void ConfigureAuthorization(NoSQLConfig config)
+            {
+            }
+
+            public Task ApplyAuthorizationAsync(Request request,
+                HttpRequestMessage message,
+                CancellationToken cancellationToken) => Task.CompletedTask;
+
+            public void Dispose()
+            {
+                if (++DisposeCount > 1)
+                {
+                    throw new InvalidOperationException(
+                        "Authorization provider disposed more than once.");
                 }
             }
         }

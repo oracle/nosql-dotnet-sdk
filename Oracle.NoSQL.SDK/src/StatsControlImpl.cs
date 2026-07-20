@@ -78,9 +78,15 @@ namespace Oracle.NoSQL.SDK
             CheckEnumValue(profile);
             lock (lockObj)
             {
-                // Match Java: setProfile changes the configured profile but
-                // does not start, stop, or rebuild an existing Stats object.
                 this.profile = profile;
+
+                // Start() may have been requested while the profile was NONE.
+                // Activate that pending request as soon as a collecting
+                // profile is selected, without rebuilding existing stats.
+                if (enableCollection)
+                {
+                    EnsureStats();
+                }
             }
             return this;
         }
@@ -113,8 +119,8 @@ namespace Oracle.NoSQL.SDK
                     return;
                 }
 
-                EnsureStats();
                 enableCollection = true;
+                EnsureStats();
             }
         }
 
@@ -123,7 +129,8 @@ namespace Oracle.NoSQL.SDK
             enableCollection = false;
         }
 
-        public override bool IsStarted() => enableCollection && !disposed;
+        public override bool IsStarted() =>
+            enableCollection && stats != null && !disposed;
 
         private void EnsureStats()
         {

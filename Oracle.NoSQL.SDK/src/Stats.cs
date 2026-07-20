@@ -16,28 +16,49 @@ namespace Oracle.NoSQL.SDK
     // and JSON-compatible snapshot generation.
     internal sealed class Percentile
     {
-        private readonly List<long> values = new List<long>();
+        // Latencies are integral milliseconds, so retain one counter per
+        // distinct value instead of one list entry per successful request.
+        // This preserves exact percentile results while bounding storage by
+        // the number of distinct observed latency values.
+        private readonly SortedDictionary<long, long> frequencies =
+            new SortedDictionary<long, long>();
+        private long valueCount;
 
         internal void AddValue(long value)
         {
-            values.Add(value);
+            frequencies.TryGetValue(value, out var frequency);
+            frequencies[value] = frequency + 1;
+            valueCount++;
         }
 
         internal long GetPercentile(double percentile)
         {
-            if (values.Count == 0)
+            if (valueCount == 0)
             {
                 return -1;
             }
 
             // Keep the same exact percentile calculation as the Java SDK:
-            // sort all samples, then use round(percentile * count - 1).
-            values.Sort();
-            var index = (int)Math.Round(
-                percentile * values.Count - 1,
+            // use round(percentile * count - 1), then locate that rank in the
+            // ordered frequency table.
+            var index = (long)Math.Round(
+                percentile * valueCount - 1,
                 MidpointRounding.AwayFromZero);
-            index = Math.Max(0, Math.Min(index, values.Count - 1));
-            return values[index];
+            index = Math.Max(0, Math.Min(index, valueCount - 1));
+
+            long cumulativeCount = 0;
+            long lastValue = -1;
+            foreach (var pair in frequencies)
+            {
+                lastValue = pair.Key;
+                cumulativeCount += pair.Value;
+                if (index < cumulativeCount)
+                {
+                    return pair.Key;
+                }
+            }
+
+            return lastValue;
         }
 
         internal long Get95thPercentile() => GetPercentile(0.95d);
@@ -46,7 +67,8 @@ namespace Oracle.NoSQL.SDK
 
         internal void Clear()
         {
-            values.Clear();
+            frequencies.Clear();
+            valueCount = 0;
         }
     }
 
@@ -64,11 +86,11 @@ namespace Oracle.NoSQL.SDK
         private int resSizeMin = int.MaxValue;
         private int resSizeMax;
         private long resSizeSum;
-        private int retryAuthCount;
-        private int retryThrottleCount;
-        private int retryCount;
-        private int retryDelayMs;
-        private int rateLimitDelayMs;
+        private long retryAuthCount;
+        private long retryThrottleCount;
+        private long retryCount;
+        private long retryDelayMs;
+        private long rateLimitDelayMs;
         private int requestLatencyMin = int.MaxValue;
         private int requestLatencyMax;
         private long requestLatencySum;
@@ -89,7 +111,7 @@ namespace Oracle.NoSQL.SDK
             new ReqStats(collectPercentiles);
 
         internal void Observe(bool error, int retries, int retryDelay,
-            int rateLimitDelay, int authCount, int throttleCount, int reqSize,
+            long rateLimitDelay, int authCount, int throttleCount, int reqSize,
             int resSize, int requestLatency)
         {
             httpRequestCount++;
@@ -104,39 +126,6 @@ namespace Oracle.NoSQL.SDK
                 errors++;
                 return;
             }
-
-            reqSizeMin = Math.Min(reqSizeMin, reqSize);
-            reqSizeMax = Math.Max(reqSizeMax, reqSize);
-            reqSizeSum += reqSize;
-
-            resSizeMin = Math.Min(resSizeMin, resSize);
-            resSizeMax = Math.Max(resSizeMax, resSize);
-            resSizeSum += resSize;
-
-            requestLatencyMin = Math.Min(requestLatencyMin, requestLatency);
-            requestLatencyMax = Math.Max(requestLatencyMax, requestLatency);
-            requestLatencySum += requestLatency;
-
-            requestLatencyPercentile?.AddValue(requestLatency);
-        }
-
-        internal void ObserveQuery(bool error, int retries, int retryDelay,
-            int rateLimitDelay, int authCount, int throttleCount, int reqSize,
-            int resSize, int requestLatency)
-        {
-            // Nested query stats follow Java behavior: the HTTP attempt is
-            // counted even on error, and missing values are represented by -1.
-            httpRequestCount++;
-            if (error)
-            {
-                errors++;
-            }
-
-            retryCount += retries;
-            retryDelayMs += retryDelay;
-            retryAuthCount += authCount;
-            retryThrottleCount += throttleCount;
-            rateLimitDelayMs += rateLimitDelay;
 
             reqSizeMin = Math.Min(reqSizeMin, reqSize);
             reqSizeMax = Math.Max(reqSizeMax, reqSize);
@@ -391,18 +380,17 @@ namespace Oracle.NoSQL.SDK
             }
 
             var queryStat = GetExtraQueryStat(queryRequest);
-            // Keep Java parity for nested query stats: failed query HTTP
-            // requests are counted, with missing size/latency represented by
-            // -1 before aggregation.
-            queryStat.ReqStats.ObserveQuery(error,
+            // Failed query HTTP requests contribute errors and retry fields,
+            // but not latency or size measurements, matching request buckets.
+            queryStat.ReqStats.Observe(error,
                 request.StatsRetryCount,
                 request.StatsRetryDelayMs,
                 request.StatsRateLimitDelayMs,
                 request.StatsRetryAuthCount,
                 request.StatsRetryThrottleCount,
-                error ? -1 : request.StatsRequestSize,
-                error ? -1 : request.StatsResponseSize,
-                error ? -1 : request.StatsRequestLatencyMs);
+                request.StatsRequestSize,
+                request.StatsResponseSize,
+                request.StatsRequestLatencyMs);
         }
 
         internal void ToJson(MapValue root)

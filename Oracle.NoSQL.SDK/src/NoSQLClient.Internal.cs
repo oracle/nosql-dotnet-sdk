@@ -22,6 +22,7 @@ namespace Oracle.NoSQL.SDK
         private Http.Client client;
         private readonly object lockObj = new object();
         private volatile TopologyInfo queryTopology;
+        private readonly object disposeLock = new object();
         private bool disposed;
 
         internal NoSQLConfig Config { get; private set; }
@@ -97,6 +98,12 @@ namespace Oracle.NoSQL.SDK
             var logicalRequest = queryRequest.IsInternal
                 ? queryRequest.StatsLogicalQueryRequest
                 : queryRequest;
+            if (logicalRequest?.LastWriteMetadata != null)
+            {
+                // Preserve successful feature preflight for continuation calls
+                // that may be satisfied entirely from driver-buffered rows.
+                logicalRequest.MarkStatsFeatureValidationSucceeded();
+            }
             if (logicalRequest?.TryConsumeStatsLogicalQuery() == true)
             {
                 StatsControl?.ObserveQuery(logicalRequest);
@@ -117,150 +124,142 @@ namespace Oracle.NoSQL.SDK
                     : null;
             var requestFeaturesValidated = false;
 
-            while (true)
+            try
             {
-                try
+                while (true)
                 {
-                    if (rlReq != null)
-                    {
-                        await rlReq.Start(cancellationToken);
-                    }
-
-                    if (!requestFeaturesValidated)
-                    {
-                        if (await client.ValidateRequestFeaturesAsync(request,
-                                cancellationToken))
-                        {
-                            // Feature probing is part of the logical operation
-                            // timeout, including any probe retries and delays.
-                            var now = DateTime.UtcNow;
-                            var remaining = startTime + timeout - now;
-                            if (remaining <= TimeSpan.Zero)
-                            {
-                                throw new TimeoutException(
-                                    "Request feature preflight exhausted " +
-                                    "the timeout");
-                            }
-                            request.Timeout = remaining;
-                        }
-
-                        requestFeaturesValidated = true;
-                        // Match Java's ordering: admit the logical query only
-                        // after server feature validation has succeeded.
-                        ObserveDeferredQueryStats(request);
-                    }
-
-                    var result = await client.ExecuteRequestAsync(request,
-                        cancellationToken);
-                    request.ApplyResult(result);
-
-                    if (rlReq != null)
-                    {
-                        await rlReq.Finish(result, cancellationToken);
-                        request.SetStatsLocalRateLimitDelay(
-                            Request.ToStatsMilliseconds(rlReq.Delay));
-                    }
-                    // Observe only the final successful outcome. Retry
-                    // attempts are accumulated on the request before this.
-                    StatsControl?.Observe(request);
-                    return result;
-                }
-                catch (Exception ex)
-                {
-                    request.AddException(ex);
-                    rlReq?.HandleException(ex);
-                    if (rlReq != null)
-                    {
-                        request.SetStatsLocalRateLimitDelay(
-                            Request.ToStatsMilliseconds(rlReq.Delay));
-                    }
-
-                    if (ex is SecurityInfoNotReadyException &&
-                        timeout < Config.SecurityInfoNotReadyTimeout)
-                    {
-                        timeout = Config.SecurityInfoNotReadyTimeout;
-                    }
-
-                    var endTime = startTime + timeout;
-                    var now = DateTime.UtcNow;
-
-                    if (now < endTime &&
-                        request.HandleUnsupportedProtocol(ex))
-                    {
-                        // Since we changed client's protocol version(s), we
-                        // need to update protocol version(s) and revalidate
-                        // the request before continuing.
-                        request.UpdateProtocolVersion();
-                        request.Validate();
-                        continue;
-                    }
-
-                    // Every ObserveError below is for a terminal failure,
-                    // after retry policy has decided no more attempts remain.
-                    if (ex is TimeoutException)
-                    {
-                        var timeoutEx = GetTimeoutException(now - startTime,
-                            request.RetryCount, ex);
-                        StatsControl?.ObserveError(request);
-                        throw timeoutEx;
-                    }
-
-                    if (IsRetryableNetworkException(ex) &&
-                        !request.CanRetryOnNetworkException)
-                    {
-                        StatsControl?.ObserveError(request);
-                        throw;
-                    }
-
-                    if (!IsRetryableException(ex) ||
-                        !Config.RetryHandler.ShouldRetry(request))
-                    {
-                        StatsControl?.ObserveError(request);
-                        throw;
-                    }
-
-                    var delay = Config.RetryHandler.GetRetryDelay(request);
-                    endTime -= delay;
-
-                    if (now >= endTime)
-                    {
-                        var timeoutEx = GetTimeoutException(now - startTime,
-                            request.RetryCount, ex);
-                        StatsControl?.ObserveError(request);
-                        throw timeoutEx;
-                    }
-
-                    // This will adjust http request timeout for the time
-                    // already elapsed.
-                    request.Timeout = endTime - now;
                     try
                     {
+                        if (rlReq != null)
+                        {
+                            await rlReq.Start(cancellationToken);
+                        }
+
+                        if (!requestFeaturesValidated)
+                        {
+                            if (await client.ValidateRequestFeaturesAsync(
+                                    request, cancellationToken))
+                            {
+                                // Feature probing is part of the logical
+                                // operation timeout, including any probe
+                                // retries and delays.
+                                var now = DateTime.UtcNow;
+                                var remaining = startTime + timeout - now;
+                                if (remaining <= TimeSpan.Zero)
+                                {
+                                    throw new TimeoutException(
+                                        "Request feature preflight exhausted " +
+                                        "the timeout");
+                                }
+                                request.Timeout = remaining;
+                            }
+
+                            requestFeaturesValidated = true;
+                            // Match Java's ordering: admit the logical query
+                            // only after server feature validation succeeds.
+                            ObserveDeferredQueryStats(request);
+                        }
+
+                        var result = await client.ExecuteRequestAsync(request,
+                            cancellationToken);
+                        request.ApplyResult(result);
+
+                        if (rlReq != null)
+                        {
+                            await rlReq.Finish(result, cancellationToken);
+                            request.SetStatsLocalRateLimitDelay(
+                                Request.ToStatsMilliseconds(rlReq.Delay));
+                        }
+                        // Observe only the final successful outcome. Retry
+                        // attempts are accumulated on the request before this.
+                        StatsControl?.Observe(request);
+                        return result;
+                    }
+                    catch (Exception ex)
+                    {
+                        request.AddException(ex);
+                        rlReq?.HandleException(ex);
+                        if (rlReq != null)
+                        {
+                            request.SetStatsLocalRateLimitDelay(
+                                Request.ToStatsMilliseconds(rlReq.Delay));
+                        }
+
+                        if (ex is SecurityInfoNotReadyException &&
+                            timeout < Config.SecurityInfoNotReadyTimeout)
+                        {
+                            timeout = Config.SecurityInfoNotReadyTimeout;
+                        }
+
+                        var endTime = startTime + timeout;
+                        var now = DateTime.UtcNow;
+
+                        if (now < endTime &&
+                            request.HandleUnsupportedProtocol(ex))
+                        {
+                            // Since we changed client's protocol version(s),
+                            // update protocol version(s) and revalidate the
+                            // request before continuing.
+                            request.UpdateProtocolVersion();
+                            request.Validate();
+                            continue;
+                        }
+
+                        if (ex is TimeoutException)
+                        {
+                            throw GetTimeoutException(now - startTime,
+                                request.RetryCount, ex);
+                        }
+
+                        if (IsRetryableNetworkException(ex) &&
+                            !request.CanRetryOnNetworkException)
+                        {
+                            throw;
+                        }
+
+                        if (!IsRetryableException(ex) ||
+                            !Config.RetryHandler.ShouldRetry(request))
+                        {
+                            throw;
+                        }
+
+                        var delay = Config.RetryHandler.GetRetryDelay(request);
+                        endTime -= delay;
+
+                        if (now >= endTime)
+                        {
+                            throw GetTimeoutException(now - startTime,
+                                request.RetryCount, ex);
+                        }
+
+                        // This will adjust http request timeout for the time
+                        // already elapsed.
+                        request.Timeout = endTime - now;
                         await Task.Delay(delay, cancellationToken);
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        // Cancellation during backoff is a terminal outcome.
-                        // Do not count a retry that never started.
-                        StatsControl?.ObserveError(request);
-                        throw;
-                    }
 
-                    // Count the retry after its delay completes and the retry
-                    // policy commits to another execution cycle, matching Java
-                    // semantics. Preparation or validation may still fail
-                    // before the HTTP send.
-                    request.RecordStatsRetry(ex, delay);
+                        // Count the retry after its delay completes and the
+                        // retry policy commits to another execution cycle,
+                        // matching Java semantics. Preparation or validation
+                        // may still fail before the HTTP send.
+                        request.RecordStatsRetry(ex, delay);
 
-                    // This may help if there are many concurrent requests and
-                    // the client's protocol version has been changed during
-                    // retry delay thus avoiding retrying with wrong protocol
-                    // version.
-                    if (request.HasProtocolChanged())
-                    {
-                        request.UpdateProtocolVersion();
-                        request.Validate();
+                        // This may help if there are many concurrent requests
+                        // and the client's protocol version changed during the
+                        // retry delay, avoiding a retry with the wrong version.
+                        if (request.HasProtocolChanged())
+                        {
+                            request.UpdateProtocolVersion();
+                            request.Validate();
+                        }
                     }
                 }
+            }
+            catch
+            {
+                // Record every terminal execution failure exactly once,
+                // including exceptions raised by retry policy or revalidation.
+                StatsControl?.ObserveError(request);
+                throw;
             }
         }
 

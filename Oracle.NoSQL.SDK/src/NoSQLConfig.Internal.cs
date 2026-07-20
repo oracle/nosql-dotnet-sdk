@@ -42,8 +42,20 @@ namespace Oracle.NoSQL.SDK
                     return (StatsControl.Profile)reader.GetInt32();
                 }
 
-                return (StatsControl.Profile)Enum.Parse(
-                    typeof(StatsControl.Profile), reader.GetString(), true);
+                var profileName = reader.GetString();
+                if (Enum.TryParse(profileName, true,
+                        out StatsControl.Profile profile) &&
+                    Enum.IsDefined(typeof(StatsControl.Profile), profile) &&
+                    string.Equals(profile.ToString(), profileName,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    return profile;
+                }
+
+                // Profile is not a flags enum. Enum.Parse would otherwise
+                // accept values such as "Regular,More" and combine them.
+                throw new JsonException(
+                    $"Invalid statistics profile: {profileName}");
             }
 
             public override void Write(Utf8JsonWriter writer,

@@ -81,12 +81,16 @@ namespace Oracle.NoSQL.SDK
         public abstract TimeSpan GetInterval();
 
         /// <summary>
-        /// Sets the configured statistics collection profile. For parity with
-        /// the Java SDK, this method does not start or stop collection and does
-        /// not rebuild an existing statistics aggregator. Request bucket
-        /// capabilities such as percentile collection are fixed when the
-        /// aggregator is first created. Use <see cref="Stop"/> to disable an
-        /// already-running collector before setting <see cref="Profile.None"/>.
+        /// Sets the configured statistics collection profile. This method
+        /// does not itself request that collection start or stop and does not
+        /// rebuild an existing statistics aggregator. If <see cref="Start"/>
+        /// was previously called while the profile was
+        /// <see cref="Profile.None"/>, selecting a collecting profile creates
+        /// the aggregator and activates that pending start request. Request
+        /// bucket capabilities such as percentile collection are fixed when
+        /// the aggregator is first created. Use <see cref="Stop"/> to disable
+        /// an already-running collector before setting
+        /// <see cref="Profile.None"/>.
         /// </summary>
         /// <param name="profile">Statistics collection profile.</param>
         /// <returns>This instance.</returns>
@@ -127,8 +131,10 @@ namespace Oracle.NoSQL.SDK
 
         /// <summary>
         /// Starts statistics collection. If the current profile is
-        /// <see cref="Profile.None"/>, no aggregator is created; select a
-        /// collecting profile and call this method again.
+        /// <see cref="Profile.None"/>, the start request is remembered but no
+        /// aggregator is created and <see cref="IsStarted"/> remains false.
+        /// Selecting a collecting profile later activates collection without
+        /// another call to this method.
         /// </summary>
         public abstract void Start();
 
@@ -136,15 +142,15 @@ namespace Oracle.NoSQL.SDK
         /// Stops collection of new statistics. For parity with the Java SDK,
         /// an existing periodic reporting scheduler remains active and may
         /// report statistics collected before this method was called. Periodic
-        /// reporting ends when the client or control object is disposed. The
-        /// control object may be started again later.
+        /// reporting ends when the owning client is disposed. Collection may
+        /// be started again later while the client remains active.
         /// </summary>
         public abstract void Stop();
 
         /// <summary>
-        /// Gets whether statistics collection is currently started.
+        /// Gets whether statistics collection is currently active.
         /// </summary>
-        /// <returns><c>true</c> if statistics collection is started.</returns>
+        /// <returns><c>true</c> if statistics collection is active.</returns>
         public abstract bool IsStarted();
     }
 }

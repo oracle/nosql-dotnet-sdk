@@ -7,12 +7,11 @@
 
 namespace Oracle.NoSQL.SDK.Query
 {
-    using System;
     using System.Text;
 
-    // Produces the driver-plan text used by ALL-profile query statistics.
-    // The plan is already present in PreparedStatement, so formatting it does
-    // not add a service request or alter query execution.
+    // Produces the Java-compatible driver-plan text used by ALL-profile query
+    // statistics. The plan is already present in PreparedStatement, so
+    // formatting it does not add a service request or alter query execution.
     internal static class PlanFormatter
     {
         internal static string Format(PlanStep step)
@@ -30,15 +29,49 @@ namespace Oracle.NoSQL.SDK.Query
         private static void AppendStep(StringBuilder builder, PlanStep step,
             int indent)
         {
+            // Java renders variable references as single-line iterators rather
+            // than using the standard name/[content] block.
+            if (step is VarRefStep variable)
+            {
+                Indent(builder, indent);
+                builder.Append("VAR_REF(").Append(variable.VarName)
+                    .Append(")([").Append(step.ResultPosition).Append("])");
+                return;
+            }
+
+            if (step is ExtVarRefStep external)
+            {
+                Indent(builder, indent);
+                // EXTENAL is intentionally spelled as in Java's driver-plan
+                // format, which is the compatibility contract for this text.
+                builder.Append("EXTENAL_VAR_REF(").Append(external.VarName)
+                    .Append(", ").Append(external.VarPosition).Append(")([")
+                    .Append(step.ResultPosition).Append("])");
+                return;
+            }
+
             Indent(builder, indent);
-            builder.Append(step.Name).Append("([")
-                .Append(step.ResultPosition).Append("])").AppendLine();
+            builder.Append(GetStepName(step)).Append("([")
+                .Append(step.ResultPosition).Append("])\n");
             Indent(builder, indent);
-            builder.AppendLine("[");
+            builder.Append("[\n");
             AppendContent(builder, step, indent + 2);
-            builder.AppendLine();
+            builder.Append('\n');
             Indent(builder, indent);
             builder.Append(']');
+        }
+
+        private static string GetStepName(PlanStep step)
+        {
+            if (step is ArithmeticOpStep arithmetic)
+            {
+                return arithmetic.Opcode == ArithmeticOpcode.AddSubtract ?
+                    "OP_ADD_SUB" : "OP_MULT_DIV";
+            }
+
+            // Java names this iterator FN_COLLECT and emits distinctness in
+            // its content instead of encoding it in the iterator name.
+            return step is FuncCollectStep ? "FN_COLLECT" : step.Name;
         }
 
         private static void AppendContent(StringBuilder builder, PlanStep step,
@@ -47,119 +80,238 @@ namespace Oracle.NoSQL.SDK.Query
             switch (step)
             {
                 case SortStep sort:
-                    AppendChild(builder, "INPUT", sort.InputStep, indent);
-                    AppendSortSpecs(builder, sort.SortSpecs, indent);
+                    AppendStep(builder, sort.InputStep, indent);
+                    if (sort.SortSpecs != null && sort.SortSpecs.Length > 0)
+                    {
+                        builder.Append('\n');
+                        AppendSortFields(builder, sort.SortSpecs, indent);
+                    }
                     break;
                 case SFWStep sfw:
-                    AppendChild(builder, "FROM", sfw.FromStep, indent);
-                    if (!string.IsNullOrEmpty(sfw.FromVarName))
-                    {
-                        builder.Append(" as ").Append(sfw.FromVarName);
-                    }
-                    builder.AppendLine().AppendLine();
-                    AppendChildren(builder, "SELECT", sfw.ColumnSteps,
-                        indent);
-                    AppendOptionalChild(builder, "OFFSET", sfw.OffsetStep,
-                        indent);
-                    AppendOptionalChild(builder, "LIMIT", sfw.LimitStep,
-                        indent);
+                    AppendSFW(builder, sfw, indent);
                     break;
                 case ReceiveStep receive:
-                    AppendValue(builder, "DistributionKind",
-                        receive.DistributionKind, indent);
-                    AppendSortSpecs(builder, receive.SortSpecs, indent);
-                    AppendValues(builder, "Primary Key Fields",
-                        receive.PrimaryKeyFields, indent);
+                    AppendReceive(builder, receive, indent);
                     break;
                 case ConstStep constant:
-                    AppendValue(builder, "Value", constant.Value, indent);
-                    break;
-                case VarRefStep variable:
-                    AppendValue(builder, "Variable", variable.VarName,
-                        indent);
-                    break;
-                case ExtVarRefStep external:
-                    AppendValue(builder, "Variable", external.VarName,
-                        indent);
-                    AppendValue(builder, "Position", external.VarPosition,
-                        indent);
+                    Indent(builder, indent);
+                    builder.Append(constant.Value.ToJsonString());
                     break;
                 case FieldStep field:
-                    AppendChild(builder, "INPUT", field.InputStep, indent);
-                    builder.AppendLine();
-                    AppendValue(builder, "Field", field.FieldName, indent);
+                    AppendStep(builder, field.InputStep, indent);
+                    builder.Append(",\n");
+                    Indent(builder, indent);
+                    builder.Append(field.FieldName);
                     break;
                 case ArithmeticOpStep arithmetic:
-                    AppendChildren(builder, "ARGUMENTS", arithmetic.ArgSteps,
-                        indent);
-                    AppendValue(builder, "Operators", arithmetic.OpSequence,
-                        indent);
+                    AppendArithmetic(builder, arithmetic, indent);
+                    break;
+                case FuncCollectStep collect:
+                    Indent(builder, indent);
+                    builder.Append("\"distinct\" : ")
+                        .Append(collect.IsDistinct ? "true" : "false")
+                        .Append(",\n");
+                    AppendStep(builder, collect.InputStep, indent);
                     break;
                 case AggregateFuncStep aggregate:
-                    AppendChild(builder, "INPUT", aggregate.InputStep,
-                        indent);
+                    AppendStep(builder, aggregate.InputStep, indent);
                     break;
                 case FuncSizeStep size:
-                    AppendChild(builder, "INPUT", size.InputStep, indent);
+                    AppendStep(builder, size.InputStep, indent);
                     break;
                 case GroupStep group:
-                    AppendChild(builder, "INPUT", group.InputStep, indent);
-                    builder.AppendLine();
-                    AppendValue(builder, "Grouping Columns",
-                        group.GroupingColumnCount, indent);
-                    AppendValues(builder, "Column Names", group.ColumnNames,
-                        indent);
-                    AppendValues(builder, "Aggregate Functions",
-                        group.AggregateFuncCodes, indent);
+                    AppendGroupStep(builder, group, indent);
                     break;
             }
         }
 
-        private static void AppendChild(StringBuilder builder, string label,
-            PlanStep child, int indent)
+        private static void AppendSFW(StringBuilder builder, SFWStep sfw,
+            int indent)
         {
             Indent(builder, indent);
-            builder.Append(label).AppendLine(":");
-            if (child != null)
+            builder.Append("FROM:\n");
+            AppendStep(builder, sfw.FromStep, indent);
+            if (!string.IsNullOrEmpty(sfw.FromVarName))
             {
-                AppendStep(builder, child, indent);
+                builder.Append(" as ").Append(sfw.FromVarName);
             }
-        }
+            builder.Append("\n\n");
 
-        private static void AppendOptionalChild(StringBuilder builder,
-            string label, PlanStep child, int indent)
-        {
-            if (child == null)
-            {
-                return;
-            }
+            AppendGroupBy(builder, sfw.GroupColumnCount, indent);
 
-            builder.AppendLine().AppendLine();
-            AppendChild(builder, label, child, indent);
-        }
-
-        private static void AppendChildren(StringBuilder builder, string label,
-            PlanStep[] children, int indent)
-        {
             Indent(builder, indent);
-            builder.Append(label).AppendLine(":");
-            if (children == null)
+            builder.Append("SELECT:\n");
+            if (sfw.ColumnSteps != null)
             {
-                return;
-            }
-
-            for (var index = 0; index < children.Length; index++)
-            {
-                AppendStep(builder, children[index], indent);
-                if (index < children.Length - 1)
+                for (var index = 0; index < sfw.ColumnSteps.Length; index++)
                 {
-                    builder.AppendLine(",");
+                    AppendStep(builder, sfw.ColumnSteps[index], indent);
+                    if (index < sfw.ColumnSteps.Length - 1)
+                    {
+                        builder.Append(",\n");
+                    }
                 }
             }
-            builder.AppendLine();
+
+            AppendOptionalStep(builder, "OFFSET", sfw.OffsetStep, indent);
+            AppendOptionalStep(builder, "LIMIT", sfw.LimitStep, indent);
         }
 
-        private static void AppendSortSpecs(StringBuilder builder,
+        private static void AppendReceive(StringBuilder builder,
+            ReceiveStep receive, int indent)
+        {
+            Indent(builder, indent);
+            builder.Append("DistributionKind : ")
+                .Append(GetDistributionName(receive.DistributionKind))
+                .Append(",\n");
+            AppendSortFields(builder, receive.SortSpecs, indent);
+            AppendStringValues(builder, "Primary Key Fields",
+                receive.PrimaryKeyFields, indent);
+        }
+
+        private static string GetDistributionName(DistributionKind kind)
+        {
+            switch (kind)
+            {
+                case DistributionKind.SinglePartition:
+                    return "SINGLE_PARTITION";
+                case DistributionKind.AllPartitions:
+                    return "ALL_PARTITIONS";
+                case DistributionKind.AllShards:
+                    return "ALL_SHARDS";
+                default:
+                    return kind.ToString();
+            }
+        }
+
+        private static void AppendArithmetic(StringBuilder builder,
+            ArithmeticOpStep arithmetic, int indent)
+        {
+            if (arithmetic.ArgSteps == null)
+            {
+                return;
+            }
+
+            for (var index = 0; index < arithmetic.ArgSteps.Length; index++)
+            {
+                Indent(builder, indent);
+                builder.Append(arithmetic.OpSequence[index]).Append(",\n");
+                AppendStep(builder, arithmetic.ArgSteps[index], indent);
+                if (index < arithmetic.ArgSteps.Length - 1)
+                {
+                    builder.Append(",\n");
+                }
+            }
+        }
+
+        private static void AppendGroupBy(StringBuilder builder,
+            int groupColumnCount, int indent)
+        {
+            if (groupColumnCount < 0)
+            {
+                return;
+            }
+
+            Indent(builder, indent);
+            builder.Append("GROUP BY:\n");
+            Indent(builder, indent);
+            if (groupColumnCount == 0)
+            {
+                builder.Append("No grouping expressions");
+            }
+            else if (groupColumnCount == 1)
+            {
+                builder.Append(
+                    "Grouping by the first expression in the SELECT list");
+            }
+            else
+            {
+                builder.Append("Grouping by the first ")
+                    .Append(groupColumnCount)
+                    .Append(" expressions in the SELECT list");
+            }
+            builder.Append("\n\n");
+        }
+
+        private static void AppendGroupStep(StringBuilder builder,
+            GroupStep group, int indent)
+        {
+            Indent(builder, indent);
+            builder.Append("Grouping Columns : ");
+            for (var index = 0; index < group.GroupingColumnCount; index++)
+            {
+                builder.Append(group.ColumnNames[index]);
+                if (index < group.GroupingColumnCount - 1)
+                {
+                    builder.Append(", ");
+                }
+            }
+            builder.Append('\n');
+
+            Indent(builder, indent);
+            builder.Append("Aggregate Functions : ");
+            if (group.AggregateFuncCodes != null)
+            {
+                for (var index = 0;
+                     index < group.AggregateFuncCodes.Length;
+                     index++)
+                {
+                    builder.Append(GetFunctionName(
+                        group.AggregateFuncCodes[index]));
+                    if (index < group.AggregateFuncCodes.Length - 1)
+                    {
+                        builder.Append(",\n");
+                    }
+                }
+            }
+            builder.Append('\n');
+
+            if (group.InputStep != null)
+            {
+                AppendStep(builder, group.InputStep, indent);
+            }
+        }
+
+        private static string GetFunctionName(SQLFuncCode code)
+        {
+            switch (code)
+            {
+                case SQLFuncCode.CountStar:
+                    return "FN_COUNT_STAR";
+                case SQLFuncCode.Count:
+                    return "FN_COUNT";
+                case SQLFuncCode.CountNumbers:
+                    return "FN_COUNT_NUMBERS";
+                case SQLFuncCode.Sum:
+                    return "FN_SUM";
+                case SQLFuncCode.Min:
+                    return "FN_MIN";
+                case SQLFuncCode.Max:
+                    return "FN_MAX";
+                case SQLFuncCode.ArrayCollect:
+                    return "FN_ARRAY_COLLECT";
+                case SQLFuncCode.ArrayCollectDistinct:
+                    return "FN_ARRAY_COLLECT_DISTINCT";
+                default:
+                    return code.ToString();
+            }
+        }
+
+        private static void AppendOptionalStep(StringBuilder builder,
+            string label, PlanStep step, int indent)
+        {
+            if (step == null)
+            {
+                return;
+            }
+
+            builder.Append("\n\n");
+            Indent(builder, indent);
+            builder.Append(label).Append(":\n");
+            AppendStep(builder, step, indent);
+        }
+
+        private static void AppendSortFields(StringBuilder builder,
             SortSpec[] specs, int indent)
         {
             if (specs == null || specs.Length == 0)
@@ -171,21 +323,17 @@ namespace Oracle.NoSQL.SDK.Query
             builder.Append("Sort Fields : ");
             for (var index = 0; index < specs.Length; index++)
             {
-                var spec = specs[index];
-                builder.Append(spec.FieldName)
-                    .Append(spec.IsDescending ? " DESC" : " ASC")
-                    .Append(spec.NullsFirst ? " NULLS FIRST" :
-                        " NULLS LAST");
+                builder.Append(specs[index].FieldName);
                 if (index < specs.Length - 1)
                 {
                     builder.Append(", ");
                 }
             }
-            builder.AppendLine();
+            builder.Append(",\n");
         }
 
-        private static void AppendValues<T>(StringBuilder builder,
-            string label, T[] values, int indent)
+        private static void AppendStringValues(StringBuilder builder,
+            string label, string[] values, int indent)
         {
             if (values == null || values.Length == 0)
             {
@@ -194,14 +342,7 @@ namespace Oracle.NoSQL.SDK.Query
 
             Indent(builder, indent);
             builder.Append(label).Append(" : ")
-                .AppendJoin(", ", values).AppendLine();
-        }
-
-        private static void AppendValue(StringBuilder builder, string label,
-            object value, int indent)
-        {
-            Indent(builder, indent);
-            builder.Append(label).Append(" : ").Append(value).AppendLine();
+                .AppendJoin(", ", values).Append(",\n");
         }
 
         private static void Indent(StringBuilder builder, int count) =>

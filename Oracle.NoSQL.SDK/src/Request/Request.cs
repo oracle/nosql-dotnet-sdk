@@ -298,9 +298,9 @@ namespace Oracle.NoSQL.SDK
 
         // Keep server delay separate because RateLimitingRequest.Delay is a
         // cumulative local value that is refreshed after each retry.
-        private int statsServerRateLimitDelayMs;
+        private long statsServerRateLimitDelayMs;
 
-        internal int StatsRateLimitDelayMs { get; private set; }
+        internal long StatsRateLimitDelayMs { get; private set; }
 
         internal int StatsRequestSize { get; set; }
 
