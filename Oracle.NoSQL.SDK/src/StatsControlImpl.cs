@@ -37,10 +37,14 @@ namespace Oracle.NoSQL.SDK
         // cannot overlap, matching Java's single-thread stats executor.
         private readonly object statsLogLock = new object();
 
-        // Detects shutdown from inside a StatsHandler so the final report can
-        // be deferred until the current callback returns without recursion.
-        private readonly AsyncLocal<bool> insideStatsLog =
-            new AsyncLocal<bool>();
+        /*
+         * Detects shutdown from inside a StatsHandler so the final report can
+         * be deferred until the current callback returns without recursion.
+         * The shared scope expires when reporting ends, which prevents an
+         * inherited ExecutionContext in a later task from looking active.
+         */
+        private readonly AsyncLocal<StatsLogScope> statsLogScope =
+            new AsyncLocal<StatsLogScope>();
 
         // Owns the lifetime of the sequential fixed-rate scheduler.
         private CancellationTokenSource schedulerCancellation;
@@ -62,7 +66,6 @@ namespace Oracle.NoSQL.SDK
 
             if (profile != Profile.None)
             {
-                LogStartupSafe();
                 Start();
             }
         }
@@ -139,6 +142,9 @@ namespace Oracle.NoSQL.SDK
             if (profile != Profile.None && stats == null)
             {
                 stats = new Stats(this);
+                // Emit startup metadata when collection actually becomes
+                // active, including when it is enabled after construction.
+                LogStartupSafe();
                 StartScheduler();
             }
         }
@@ -345,7 +351,9 @@ namespace Oracle.NoSQL.SDK
                     return null;
                 }
 
-                insideStatsLog.Value = true;
+                var previousScope = statsLogScope.Value;
+                var currentScope = new StatsLogScope();
+                statsLogScope.Value = currentScope;
                 try
                 {
                     var snapshot = TryLogClientStats();
@@ -365,7 +373,8 @@ namespace Oracle.NoSQL.SDK
                 }
                 finally
                 {
-                    insideStatsLog.Value = false;
+                    currentScope.Expire();
+                    statsLogScope.Value = previousScope;
                 }
             }
         }
@@ -393,6 +402,15 @@ namespace Oracle.NoSQL.SDK
                 return null;
             }
 
+            // Freeze the logger payload before passing the mutable MapValue
+            // to application code. A handler may modify the snapshot, but it
+            // must not alter the SDK log record.
+            var logOutput = enableLog ? LogPrefix + snapshot.ToJsonString(
+                prettyPrint ? new JsonOutputOptions
+                {
+                    Indented = true
+                } : null) : null;
+
             try
             {
                 // The handler is the .NET equivalent of Java's StatsHandler
@@ -405,14 +423,9 @@ namespace Oracle.NoSQL.SDK
                 // interfere with request execution.
             }
 
-            if (enableLog && snapshot != null)
+            if (logOutput != null)
             {
-                logger.LogInformation("{StatsLog}",
-                    LogPrefix + snapshot.ToJsonString(
-                        prettyPrint ? new JsonOutputOptions
-                        {
-                            Indented = true
-                        } : null));
+                logger.LogInformation("{StatsLog}", logOutput);
             }
 
             return snapshot;
@@ -436,7 +449,7 @@ namespace Oracle.NoSQL.SDK
                 currentStats = stats;
             }
 
-            if (insideStatsLog.Value)
+            if (statsLogScope.Value?.IsActive == true)
             {
                 /*
                  * Shutdown was called from the user StatsHandler. The active
@@ -462,6 +475,18 @@ namespace Oracle.NoSQL.SDK
         public void Dispose()
         {
             Shutdown();
+        }
+
+        private sealed class StatsLogScope
+        {
+            private int isActive = 1;
+
+            internal bool IsActive => Volatile.Read(ref isActive) != 0;
+
+            internal void Expire()
+            {
+                Interlocked.Exchange(ref isActive, 0);
+            }
         }
     }
 }

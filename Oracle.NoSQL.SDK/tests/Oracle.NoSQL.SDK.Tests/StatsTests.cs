@@ -1266,6 +1266,34 @@ namespace Oracle.NoSQL.SDK.Tests
         }
 
         [TestMethod]
+        public void TestStatsControlLogsStartupWhenEnabledAtRuntime()
+        {
+            var logger = new TestLogger();
+
+            using var control = new StatsControlImpl(new NoSQLConfig
+            {
+                Endpoint = "localhost:8080",
+                StatsProfile = StatsControl.Profile.None,
+                StatsInterval = TimeSpan.FromHours(1),
+                StatsEnableLog = true,
+                StatsLogger = logger
+            }, false);
+
+            Assert.AreEqual(0, logger.Messages.Count);
+
+            control.SetProfile(StatsControl.Profile.Regular);
+            control.Start();
+
+            var output = logger.SingleMessage;
+            Assert.IsTrue(output.StartsWith(StatsControl.LogPrefix));
+            Assert.IsTrue(output.Contains("\"profile\":\"REGULAR\""));
+
+            // Repeated starts must not emit duplicate startup metadata.
+            control.Start();
+            Assert.AreEqual(1, logger.Messages.Count);
+        }
+
+        [TestMethod]
         public void TestThrowingStartupLoggerDoesNotPreventConstruction()
         {
             using var control = new StatsControlImpl(new NoSQLConfig
@@ -1338,6 +1366,32 @@ namespace Oracle.NoSQL.SDK.Tests
             Assert.IsNotNull(snapshot);
             Assert.IsTrue(output.Contains(StatsControl.LogPrefix));
             Assert.IsTrue(output.Contains("\"name\":\"Get\""));
+        }
+
+        [TestMethod]
+        public void TestStatsHandlerMutationDoesNotChangeLogOutput()
+        {
+            using var client = new NoSQLClient(TestConfig);
+            var logger = new TestLogger();
+
+            using var control = new StatsControlImpl(new NoSQLConfig
+            {
+                Endpoint = "localhost:8080",
+                StatsProfile = StatsControl.Profile.Regular,
+                StatsEnableLog = true,
+                StatsLogger = logger,
+                StatsHandler = snapshot => snapshot.Clear()
+            }, false);
+
+            var request = MakeGetRequest(client);
+            SetSuccessStats(request);
+            control.Observe(request);
+
+            control.LogClientStatsForTest();
+            var output = logger.Messages.Last();
+
+            Assert.IsTrue(output.Contains("\"name\":\"Get\""));
+            Assert.IsTrue(output.Contains("\"httpRequestCount\":1"));
         }
 
         [TestMethod]
@@ -1455,6 +1509,73 @@ namespace Oracle.NoSQL.SDK.Tests
             finally
             {
                 releaseHandler.Set();
+                control.SetStatsHandler(null);
+                control.Shutdown();
+            }
+        }
+
+        [TestMethod]
+        public async Task TestShutdownFromExpiredInheritedReportScopeFlushes()
+        {
+            using var client = new NoSQLClient(TestConfig);
+            using var releaseShutdown = new ManualResetEventSlim(false);
+            var snapshots = new List<MapValue>();
+            Task shutdownTask = null;
+            StatsControlImpl control = null;
+            var handlerCount = 0;
+
+            control = new StatsControlImpl(new NoSQLConfig
+            {
+                Endpoint = "localhost:8080",
+                StatsProfile = StatsControl.Profile.Regular,
+                StatsInterval = TimeSpan.FromHours(1),
+                StatsEnableLog = false,
+                StatsHandler = snapshot =>
+                {
+                    lock (snapshots)
+                    {
+                        snapshots.Add(snapshot);
+                    }
+
+                    if (Interlocked.Increment(ref handlerCount) == 1)
+                    {
+                        // Task.Run inherits the current ExecutionContext. It
+                        // must not retain an active reporting marker after
+                        // this handler and report have completed.
+                        shutdownTask = Task.Run(() =>
+                        {
+                            releaseShutdown.Wait();
+                            control.Shutdown();
+                        });
+                    }
+                }
+            }, false);
+
+            try
+            {
+                var firstRequest = MakeGetRequest(client);
+                SetSuccessStats(firstRequest);
+                control.Observe(firstRequest);
+                control.LogClientStatsForTest();
+
+                var finalRequest = MakeGetRequest(client);
+                SetSuccessStats(finalRequest);
+                control.Observe(finalRequest);
+
+                releaseShutdown.Set();
+                await shutdownTask.WaitAsync(TimeSpan.FromSeconds(5));
+
+                Assert.AreEqual(2, Volatile.Read(ref handlerCount));
+                lock (snapshots)
+                {
+                    Assert.AreEqual(2, snapshots.Count);
+                    Assert.AreEqual(1, AsLong(FindRequest(
+                        snapshots[1], "Get")["httpRequestCount"]));
+                }
+            }
+            finally
+            {
+                releaseShutdown.Set();
                 control.SetStatsHandler(null);
                 control.Shutdown();
             }
