@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2020, 2025 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026 Oracle and/or its affiliates. All rights reserved.
  *
  * Licensed under the Universal Permissive License v 1.0 as shown at
  *  https://oss.oracle.com/licenses/upl/
@@ -25,6 +25,41 @@ namespace Oracle.NoSQL.SDK
 
             public override void Write(Utf8JsonWriter writer,
                 ServiceType value, JsonSerializerOptions options)
+            {
+                throw new NotSupportedException();
+            }
+        }
+
+        private class StatsProfileConverter :
+            JsonConverter<StatsControl.Profile>
+        {
+            public override StatsControl.Profile Read(
+                ref Utf8JsonReader reader, Type typeToConvert,
+                JsonSerializerOptions options)
+            {
+                if (reader.TokenType == JsonTokenType.Number)
+                {
+                    return (StatsControl.Profile)reader.GetInt32();
+                }
+
+                var profileName = reader.GetString();
+                if (Enum.TryParse(profileName, true,
+                        out StatsControl.Profile profile) &&
+                    Enum.IsDefined(typeof(StatsControl.Profile), profile) &&
+                    string.Equals(profile.ToString(), profileName,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    return profile;
+                }
+
+                // Profile is not a flags enum. Enum.Parse would otherwise
+                // accept values such as "Regular,More" and combine them.
+                throw new JsonException(
+                    $"Invalid statistics profile: {profileName}");
+            }
+
+            public override void Write(Utf8JsonWriter writer,
+                StatsControl.Profile value, JsonSerializerOptions options)
             {
                 throw new NotSupportedException();
             }
@@ -175,6 +210,8 @@ namespace Oracle.NoSQL.SDK
             JsonSerializerOptions.Converters.Add(
                 new ServiceTypeConverter());
             JsonSerializerOptions.Converters.Add(
+                new StatsProfileConverter());
+            JsonSerializerOptions.Converters.Add(
                 new TimeSpanConverter());
             JsonSerializerOptions.Converters.Add(
                 new CharArrayConverter());
@@ -281,7 +318,9 @@ namespace Oracle.NoSQL.SDK
         {
             CheckEnumValue(ServiceType);
             CheckEnumValue(Consistency);
+            CheckEnumValue(StatsProfile);
             CheckTimeout(Timeout);
+            ValidateStatsInterval();
             CheckTimeout(TableDDLTimeout, nameof(TableDDLTimeout));
             CheckTimeout(AdminTimeout, nameof(AdminTimeout));
             CheckTimeout(SecurityInfoNotReadyTimeout,
@@ -300,6 +339,31 @@ namespace Oracle.NoSQL.SDK
             // AuthorizationProvider is validated in ConfigureAuthorization().
 
             RateLimitingHandler.ValidateConfig(this);
+        }
+
+        private void ValidateStatsInterval()
+        {
+            CheckTimeout(StatsInterval, nameof(StatsInterval));
+            if (StatsInterval < TimeSpan.FromSeconds(1))
+            {
+                throw new ArgumentException(
+                    $"{nameof(StatsInterval)} must be at least 1 second.");
+            }
+
+            if (StatsInterval.Ticks % TimeSpan.TicksPerSecond != 0)
+            {
+                throw new ArgumentException(
+                    $"{nameof(StatsInterval)} must be a whole number of " +
+                    "seconds.");
+            }
+
+            // Task.Delay accepts at most UInt32.MaxValue - 1 milliseconds.
+            if (StatsInterval.TotalMilliseconds > uint.MaxValue - 1L)
+            {
+                throw new ArgumentException(
+                    $"{nameof(StatsInterval)} exceeds the maximum supported " +
+                    "timer interval.");
+            }
         }
 
         internal void Init()

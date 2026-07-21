@@ -35,6 +35,8 @@ namespace Oracle.NoSQL.SDK
             doesWrites = request.DoesWrites;
         }
 
+        internal TimeSpan Delay => readDelay + writeDelay;
+
         internal async Task Start(CancellationToken cancellationToken)
         {
             // This is the case for PrepareRequest and un-prepared

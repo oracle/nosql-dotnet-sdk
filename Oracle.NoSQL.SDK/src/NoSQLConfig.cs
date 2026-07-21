@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2020, 2025 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026 Oracle and/or its affiliates. All rights reserved.
  *
  * Licensed under the Universal Permissive License v 1.0 as shown at
  *  https://oss.oracle.com/licenses/upl/
@@ -10,6 +10,8 @@ namespace Oracle.NoSQL.SDK
     using System;
     using System.IO;
     using System.Text.Json;
+    using System.Text.Json.Serialization;
+    using Microsoft.Extensions.Logging;
 
     /// <summary>
     /// Represents configuration required to instantiate
@@ -637,6 +639,89 @@ namespace Oracle.NoSQL.SDK
         /// <seealso cref="IRetryHandler"/>
         /// <seealso cref="NoSQLRetryHandler"/>
         public IRetryHandler RetryHandler { get; set; }
+
+        /// <summary>
+        /// Gets or sets the statistics collection profile.
+        /// </summary>
+        /// <value>
+        /// The statistics collection profile.  The default is
+        /// <see cref="StatsControl.Profile.None"/>.
+        /// </value>
+        /// <seealso cref="StatsControl"/>
+        public StatsControl.Profile StatsProfile { get; set; } =
+            StatsControl.Profile.None;
+
+        /// <summary>
+        /// Gets or sets the interval for periodic statistics snapshots.
+        /// </summary>
+        /// <remarks>
+        /// When using JSON configuration, this value is represented as the
+        /// number of milliseconds, like other <see cref="TimeSpan"/>
+        /// configuration properties.
+        /// </remarks>
+        /// <value>
+        /// Statistics interval as a whole number of seconds.  The default is
+        /// 10 minutes and the minimum value is 1 second.
+        /// </value>
+        /// <seealso cref="StatsControl"/>
+        public TimeSpan StatsInterval { get; set; } =
+            TimeSpan.FromSeconds(600);
+
+        /// <summary>
+        /// Gets or sets whether statistics JSON is pretty-printed.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> to pretty-print statistics JSON, otherwise
+        /// <c>false</c>.  The default is <c>false</c>.
+        /// </value>
+        /// <seealso cref="StatsControl"/>
+        public bool StatsPrettyPrint { get; set; }
+
+        /// <summary>
+        /// Gets or sets whether statistics snapshots are written to
+        /// <see cref="StatsLogger"/>.
+        /// </summary>
+        /// <remarks>
+        /// Unlike the Java SDK, the .NET logging abstraction does not create
+        /// or configure a default logging provider. Applications must supply
+        /// <see cref="StatsLogger"/> to receive statistics log output. This
+        /// property controls whether the SDK writes snapshots to that logger;
+        /// it does not change the logger's configured log level.
+        /// </remarks>
+        /// <value>
+        /// <c>true</c> to write statistics snapshots to
+        /// <see cref="StatsLogger"/>, otherwise <c>false</c>. The default is
+        /// <c>true</c>.
+        /// </value>
+        /// <seealso cref="StatsControl"/>
+        public bool StatsEnableLog { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets the handler invoked with each generated statistics
+        /// snapshot.
+        /// </summary>
+        /// <remarks>
+        /// The handler is called after an interval snapshot is generated and
+        /// the next collection interval has started with fresh counters.
+        /// </remarks>
+        /// <value>Statistics handler or <c>null</c>.</value>
+        /// <seealso cref="StatsControl"/>
+        [JsonIgnore]
+        public StatsControl.StatsHandler StatsHandler { get; set; }
+
+        /// <summary>
+        /// Gets or sets the logger used for statistics log output.
+        /// </summary>
+        /// <remarks>
+        /// This logger is used only when <see cref="StatsEnableLog"/> is
+        /// <c>true</c>.  Applications may provide a logger from their
+        /// Microsoft.Extensions.Logging setup to route statistics snapshots
+        /// to console, files, OpenTelemetry, or another configured provider.
+        /// </remarks>
+        /// <value>Statistics logger or <c>null</c>.</value>
+        /// <seealso cref="StatsControl"/>
+        [JsonIgnore]
+        public ILogger StatsLogger { get; set; }
 
         /// <summary>
         /// Gets or sets the authorization provider.

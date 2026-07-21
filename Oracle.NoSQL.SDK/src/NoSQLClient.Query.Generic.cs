@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2020, 2025 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026 Oracle and/or its affiliates. All rights reserved.
  *
  * Licensed under the Universal Permissive License v 1.0 as shown at
  *  https://oss.oracle.com/licenses/upl/
@@ -16,6 +16,26 @@ namespace Oracle.NoSQL.SDK {
 
     public partial class NoSQLClient
     {
+        internal void ObserveOrDeferLogicalQuery(QueryRequest request)
+        {
+            if (request.IsInternal)
+            {
+                return;
+            }
+
+            request.RestoreStatsFeatureValidationFromContinuation();
+            if (request.LastWriteMetadata != null &&
+                !request.StatsFeatureValidationSucceeded)
+            {
+                // Java checks server feature support before observing a query.
+                // The request is observed after that preflight succeeds.
+                request.DeferStatsLogicalQuery();
+                return;
+            }
+
+            StatsControl?.ObserveQuery(request);
+        }
+
         private async Task<QueryResult<TRow>>
             ExecutePreparedQueryRequestAsync<TRow>(
             QueryRequest<TRow> request,
@@ -48,10 +68,19 @@ namespace Oracle.NoSQL.SDK {
 
         private async Task<QueryResult<TRow>> ExecuteQueryRequestAsync<TRow>(
             QueryRequest<TRow> request,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            bool observeLogicalQuery = true)
         {
             request.PreparedStatement ??=
                 request.ContinuationKey?.PreparedStatement;
+
+            if (observeLogicalQuery)
+            {
+                // Count this user-visible query API execution. Internal query
+                // fetches are still counted only as HTTP Query requests by
+                // ExecuteValidatedRequestAsync.
+                ObserveOrDeferLogicalQuery(request);
+            }
 
             // If the query is not already prepared the first request will
             // prepare it.
@@ -97,6 +126,9 @@ namespace Oracle.NoSQL.SDK {
             QueryResult<TRow> result;
             do
             {
+                // Each continuation batch is equivalent to one QueryAsync
+                // call. The first call is unprepared; later calls reuse the
+                // prepared statement carried by the continuation key.
                 result = await ExecuteQueryRequestAsync(request,
                     cancellationToken);
 
@@ -131,6 +163,9 @@ namespace Oracle.NoSQL.SDK {
                 options);
             request.Validate();
 
+            // Direct prepared-query execution bypasses ExecuteQueryRequestAsync,
+            // so count the user-visible logical query here.
+            ObserveOrDeferLogicalQuery(request);
             return ExecutePreparedQueryRequestAsync(request, cancellationToken);
         }
 

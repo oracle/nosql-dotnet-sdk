@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2020, 2025 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026 Oracle and/or its affiliates. All rights reserved.
  *
  * Licensed under the Universal Permissive License v 1.0 as shown at
  *  https://oss.oracle.com/licenses/upl/
@@ -10,6 +10,7 @@ namespace Oracle.NoSQL.SDK
     using System;
     using System.Diagnostics;
     using System.IO;
+    using System.Threading;
     using Query;
     using static ValidateUtils;
 
@@ -23,6 +24,9 @@ namespace Oracle.NoSQL.SDK
     public abstract class QueryRequest : QueryRequestBase,
         ILastWriteMetadataRequest
     {
+        private int statsLogicalQueryPending;
+        private int statsFeatureValidationSucceeded;
+
         // "5" == PrepareCallback.QueryOperation.SELECT
         internal const int OperationCodeSelect = 5;
 
@@ -49,6 +53,8 @@ namespace Oracle.NoSQL.SDK
 
         internal QueryOptions Options { get; set; }
 
+        internal virtual bool IsPreparedQuery => false;
+
         internal Consistency Consistency =>
             Options?.Consistency ?? Config.Consistency;
 
@@ -65,6 +71,33 @@ namespace Oracle.NoSQL.SDK
         internal VirtualScan VirtualScan { get; set; }
 
         internal bool IsInternal { get; set; }
+
+        // Advanced queries use internal QueryRequest instances for server
+        // fetches. This reference carries the user-visible request through the
+        // feature preflight without counting each internal fetch as a new query.
+        internal QueryRequest StatsLogicalQueryRequest { get; set; }
+
+        internal void DeferStatsLogicalQuery()
+        {
+            Interlocked.Exchange(ref statsLogicalQueryPending, 1);
+        }
+
+        internal bool TryConsumeStatsLogicalQuery() =>
+            Interlocked.Exchange(ref statsLogicalQueryPending, 0) == 1;
+
+        internal bool StatsFeatureValidationSucceeded =>
+            Volatile.Read(ref statsFeatureValidationSucceeded) != 0;
+
+        internal void MarkStatsFeatureValidationSucceeded() =>
+            Interlocked.Exchange(ref statsFeatureValidationSucceeded, 1);
+
+        internal void RestoreStatsFeatureValidationFromContinuation()
+        {
+            if (ContinuationKey?.StatsFeatureValidationSucceeded == true)
+            {
+                MarkStatsFeatureValidationSucceeded();
+            }
+        }
 
         internal override bool SupportsRateLimiting => true;
 
@@ -156,6 +189,11 @@ namespace Oracle.NoSQL.SDK
         /// </value>
         public bool IsPrepared { get; }
 
+        // IsPrepared records which public QueryAsync overload was used.
+        // Stats need the current state because continuation keys restore the
+        // prepared statement after an initial unprepared execution.
+        internal override bool IsPreparedQuery => PreparedStatement != null;
+
         /// <summary>
         /// Gets the options for the Query operation.
         /// </summary>
@@ -246,6 +284,8 @@ namespace Oracle.NoSQL.SDK
             {
                 queryResult.ContinuationKey.PreparedStatement =
                     PreparedStatement;
+                queryResult.ContinuationKey.StatsFeatureValidationSucceeded =
+                    StatsFeatureValidationSucceeded;
             }
 
             // Batch number is used for query tracing.

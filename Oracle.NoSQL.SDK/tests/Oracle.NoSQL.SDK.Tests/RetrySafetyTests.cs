@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2020, 2025 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026 Oracle and/or its affiliates. All rights reserved.
  *
  * Licensed under the Universal Permissive License v 1.0 as shown at
  *  https://oss.oracle.com/licenses/upl/
@@ -9,7 +9,11 @@ namespace Oracle.NoSQL.SDK.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+    using System.Net;
     using System.Net.Http;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -294,6 +298,169 @@ namespace Oracle.NoSQL.SDK.Tests
         }
 
         [TestMethod]
+        public async Task CancellationDuringBackoffRecordsTerminalErrorOnly()
+        {
+            using var retryHandler = new DelayedRetryHandler();
+            using var client = new NoSQLClient(new NoSQLConfig
+            {
+                ServiceType = ServiceType.CloudSim,
+                Endpoint = "http://localhost:1",
+                Timeout = TimeSpan.FromMinutes(2),
+                RetryHandler = retryHandler,
+                StatsProfile = StatsControl.Profile.Regular,
+                StatsEnableLog = false
+            });
+            using var cancellation = new CancellationTokenSource();
+            var request = new GetRequest<RecordValue>(client, TableName,
+                MakeKey(), null);
+            var execution = client.ExecuteRequestAsync(request,
+                cancellation.Token);
+
+            Assert.IsTrue(retryHandler.DelayRequested.Wait(
+                TimeSpan.FromSeconds(10)),
+                "The request did not reach retry backoff.");
+            cancellation.Cancel();
+
+            try
+            {
+                await execution;
+                Assert.Fail("Expected cancellation during retry backoff.");
+            }
+            catch (OperationCanceledException)
+            {
+                // Expected terminal outcome.
+            }
+
+            var snapshot = client.StatsControl.LogClientStatsForTest();
+            var getStats = snapshot["requests"].AsArrayValue
+                .Select(value => value.AsMapValue)
+                .Single(value => value["name"].AsString == "Get");
+
+            Assert.AreEqual(1, getStats["httpRequestCount"].ToInt64());
+            Assert.AreEqual(1, getStats["errors"].ToInt64());
+            Assert.AreEqual(0,
+                getStats["retry"].AsMapValue["count"].ToInt64());
+        }
+
+        [TestMethod]
+        public async Task RetryHandlerFailureRecordsTerminalErrorOnce()
+        {
+            var retryHandler = new ThrowingRetryHandler();
+            using var client = new NoSQLClient(new NoSQLConfig
+            {
+                ServiceType = ServiceType.CloudSim,
+                Endpoint = "http://localhost:1",
+                Timeout = TimeSpan.FromSeconds(1),
+                RetryHandler = retryHandler,
+                StatsProfile = StatsControl.Profile.Regular,
+                StatsEnableLog = false
+            });
+            var request = new GetRequest<RecordValue>(client, TableName,
+                MakeKey(), null);
+
+            var exception = await Assert.ThrowsExceptionAsync<
+                InvalidOperationException>(
+                () => client.ExecuteRequestAsync(request, default));
+
+            Assert.AreEqual(ThrowingRetryHandler.ErrorMessage,
+                exception.Message);
+            Assert.AreEqual(1, retryHandler.ShouldRetryCalls);
+
+            var snapshot = client.StatsControl.LogClientStatsForTest();
+            var getStats = snapshot["requests"].AsArrayValue
+                .Select(value => value.AsMapValue)
+                .Single(value => value["name"].AsString == "Get");
+
+            Assert.AreEqual(1, getStats["httpRequestCount"].ToInt64());
+            Assert.AreEqual(1, getStats["errors"].ToInt64());
+            Assert.AreEqual(0,
+                getStats["retry"].AsMapValue["count"].ToInt64());
+        }
+
+        [TestMethod]
+        public async Task FeatureProbeFailureUsesRetryAndTerminalStatsPath()
+        {
+            var retryHandler = new RetryOnceHandler();
+            using var client = new NoSQLClient(new NoSQLConfig
+            {
+                ServiceType = ServiceType.CloudSim,
+                Endpoint = "http://localhost:1",
+                Timeout = TimeSpan.FromSeconds(5),
+                RetryHandler = retryHandler,
+                StatsProfile = StatsControl.Profile.All,
+                StatsEnableLog = false
+            });
+            var preparedStatement = new PreparedStatement
+            {
+                SQLText = "SELECT * FROM RetrySafetyTable",
+                OperationCode = QueryRequest.OperationCodeSelect
+            };
+            var request = new QueryRequest<RecordValue>(client,
+                preparedStatement,
+                new QueryOptions { LastWriteMetadata = "{}" });
+            request.DeferStatsLogicalQuery();
+
+            await Assert.ThrowsExceptionAsync<HttpRequestException>(
+                () => client.ExecuteRequestAsync(request, default));
+
+            Assert.AreEqual(2, retryHandler.ShouldRetryCalls);
+            Assert.AreEqual(2, request.RetryCount);
+
+            var snapshot = client.StatsControl.LogClientStatsForTest();
+            var queryStats = snapshot["requests"].AsArrayValue
+                .Select(value => value.AsMapValue)
+                .Single(value => value["name"].AsString == "Query");
+            Assert.AreEqual(1,
+                queryStats["httpRequestCount"].ToInt64());
+            Assert.AreEqual(1, queryStats["errors"].ToInt64());
+            Assert.AreEqual(1,
+                queryStats["retry"].AsMapValue["count"].ToInt64());
+
+            // The failed HTTP operation is present in ALL-profile query
+            // details, but the logical query was not admitted before its
+            // feature preflight succeeded.
+            var logicalQueryStats = snapshot["queries"].AsArrayValue
+                .Single().AsMapValue;
+            Assert.AreEqual(0, logicalQueryStats["count"].ToInt64());
+            Assert.AreEqual(1,
+                logicalQueryStats["httpRequestCount"].ToInt64());
+            Assert.AreEqual(1, logicalQueryStats["errors"].ToInt64());
+            Assert.AreEqual(1, logicalQueryStats["retry"].AsMapValue
+                ["count"].ToInt64());
+        }
+
+        [TestMethod]
+        [Timeout(5000)]
+        public async Task RetryableResponseBodyHonorsCancellation()
+        {
+            using var innerHandler = new BlockingRetryableResponseHandler();
+            using var retryHandler =
+                new HttpRequestUtils.HttpConstDelayRetryHandler(
+                    innerHandler, TimeSpan.Zero);
+            using var httpClient = new HttpClient(retryHandler);
+            using var request = new HttpRequestMessage(HttpMethod.Get,
+                "http://localhost/");
+            using var cancellation = new CancellationTokenSource(
+                TimeSpan.FromMilliseconds(100));
+
+            try
+            {
+                await httpClient.SendAsync(request,
+                    HttpCompletionOption.ResponseHeadersRead,
+                    cancellation.Token);
+                Assert.Fail("Expected cancellation while reading the " +
+                    "retryable response body.");
+            }
+            catch (OperationCanceledException)
+            {
+                // The retry handler must propagate cancellation into the
+                // response-body read instead of waiting indefinitely.
+            }
+
+            Assert.IsTrue(innerHandler.Content.IsDisposed);
+        }
+
+        [TestMethod]
         public void PreparedQueryWriteClassificationMatchesOperationCode()
         {
             using var client = MakeClient();
@@ -321,6 +488,87 @@ namespace Oracle.NoSQL.SDK.Tests
             }
 
             public TimeSpan GetRetryDelay(Request request) => TimeSpan.Zero;
+        }
+
+        private sealed class RetryOnceHandler : IRetryHandler
+        {
+            internal int ShouldRetryCalls { get; private set; }
+
+            public bool ShouldRetry(Request request) =>
+                ++ShouldRetryCalls == 1;
+
+            public TimeSpan GetRetryDelay(Request request) => TimeSpan.Zero;
+        }
+
+        private sealed class ThrowingRetryHandler : IRetryHandler
+        {
+            internal const string ErrorMessage = "Retry policy failed";
+
+            internal int ShouldRetryCalls { get; private set; }
+
+            public bool ShouldRetry(Request request)
+            {
+                ShouldRetryCalls++;
+                throw new InvalidOperationException(ErrorMessage);
+            }
+
+            public TimeSpan GetRetryDelay(Request request) => TimeSpan.Zero;
+        }
+
+        private sealed class DelayedRetryHandler : IRetryHandler, IDisposable
+        {
+            internal ManualResetEventSlim DelayRequested { get; } = new();
+
+            public bool ShouldRetry(Request request) => true;
+
+            public TimeSpan GetRetryDelay(Request request)
+            {
+                DelayRequested.Set();
+                return TimeSpan.FromSeconds(30);
+            }
+
+            public void Dispose() => DelayRequested.Dispose();
+        }
+
+        private sealed class BlockingRetryableResponseHandler :
+            HttpMessageHandler
+        {
+            internal BlockingContent Content { get; } = new BlockingContent();
+
+            protected override Task<HttpResponseMessage> SendAsync(
+                HttpRequestMessage request,
+                CancellationToken cancellationToken) =>
+                Task.FromResult(new HttpResponseMessage(
+                    HttpStatusCode.ServiceUnavailable)
+                {
+                    Content = Content
+                });
+        }
+
+        private sealed class BlockingContent : HttpContent
+        {
+            internal bool IsDisposed { get; private set; }
+
+            protected override Task SerializeToStreamAsync(Stream stream,
+                TransportContext context) =>
+                Task.Delay(Timeout.InfiniteTimeSpan);
+
+            protected override Task SerializeToStreamAsync(Stream stream,
+                TransportContext context,
+                CancellationToken cancellationToken) =>
+                Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+
+            protected override bool TryComputeLength(out long length)
+            {
+                length = -1;
+                return false;
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                IsDisposed = true;
+                base.Dispose(disposing);
+            }
         }
     }
 }

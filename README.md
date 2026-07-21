@@ -272,13 +272,36 @@ remove unused properties.  The following templates are provided:
 allows you to customize configuration. Copy that file and fill in appropriate
 values as described in
 [Supply Credentials to the Application](https://oracle.github.io/nosql-dotnet-sdk/tutorials/connect-cloud.html#supply).
-* **cloudsim.json** is used if you are running against the cloud simulator.
-You may use this file directly as config file if you are running the cloud
-simulator on localhost on port 8080. If the cloud simulator has been started on
-a different host or port, change the endpoint. See
+* **cloudsim.json** is a ready-to-run default config for the cloud simulator.
+You may use this file directly if you are running the cloud simulator on
+localhost on port 8080. If the cloud simulator has been started on a different
+host or port, change the endpoint. See
 [Using the Cloud Simulator](https://oracle.github.io/nosql-dotnet-sdk/tutorials/connect-cloud.html#cloudsim).
+* **kvlite.json** is a ready-to-run default config for a local on-premise
+KVStore/KVLite proxy running on localhost on port 8080.
+For local non-secure KVLite testing, start KVLite with security disabled and
+then start the HTTP proxy against the same helper host:
+
+```bash
+java -jar lib/kvstore.jar kvlite \
+  -store kvstore \
+  -root kvroot-5100-nosec \
+  -host localhost \
+  -port 5100 \
+  -secure-config disable
+
+java -jar lib/httpproxy.jar \
+  -helperHosts localhost:5100 \
+  -storeName kvstore \
+  -httpPort 8080
+```
+
+The non-secure mode is important for this sample config. A secure KVLite store
+requires matching proxy security options; otherwise the proxy cannot connect to
+the store.
 * **kvstore\_template.json** is used to access on-premise NoSQL Database via
-the proxy.  Copy that file and fill in appropriate values as described in
+the proxy in a non-default setup.  Copy that file and fill in appropriate
+values as described in
 [Configuring the SDK](https://oracle.github.io/nosql-dotnet-sdk/tutorials/connect-on-prem.html#config).
 Also see
 [Example Quick Start](https://oracle.github.io/nosql-dotnet-sdk/tutorials/connect-on-prem.html#quickstart).
@@ -303,6 +326,87 @@ For example:
 cd Oracle.NoSQL.SDK.Samples/BasicExample
 dotnet run -f net8.0 -- my_config.json
 ```
+
+## StatsControl Validation
+
+StatsControl unit tests do not require a running service:
+
+```bash
+dotnet test Oracle.NoSQL.SDK/tests/Oracle.NoSQL.SDK.Tests/Oracle.NoSQL.SDK.Tests.csproj \
+  --no-restore \
+  --filter StatsTests
+```
+
+Most StatsControl execution-path tests require the Oracle NoSQL Database
+Cloud Simulator. From the extracted Cloud Simulator directory, start it on
+the default local endpoint:
+
+```bash
+./runCloudSim -root ./cloudsim-root -httpPort 8080 -storePort 5010
+```
+
+Then run:
+
+```bash
+dotnet test Oracle.NoSQL.SDK/tests/Oracle.NoSQL.SDK.Tests/Oracle.NoSQL.SDK.Tests.csproj \
+  --framework net10.0 \
+  --no-restore \
+  --filter StatsExecutionPathTests
+```
+
+The execution-path suite also contains an on-premise `ListTables` stats test.
+After starting non-secure KVLite and its HTTP proxy as described above, run:
+
+```bash
+dotnet test Oracle.NoSQL.SDK/tests/Oracle.NoSQL.SDK.Tests/Oracle.NoSQL.SDK.Tests.csproj \
+  --framework net10.0 \
+  --no-restore \
+  --filter StatsExecutionPathTests -- \
+  TestRunParameters.Parameter\(name=\"noSQLConfigFile\",value=\"Oracle.NoSQL.SDK.Samples/kvlite.json\"\)
+```
+
+With a Cloud Simulator configuration, the on-premise test is inconclusive.
+With a KVStore configuration, the Cloud Simulator-only tests are
+inconclusive and the on-premise `ListTables` test runs.
+
+To manually inspect generated stats output, run:
+
+```bash
+dotnet run --project Oracle.NoSQL.SDK/tests/Oracle.NoSQL.SDK.StatsLoadCheck \
+  --framework net10.0 -- \
+  --operation basicFlow \
+  --table Users \
+  --profile ALL \
+  --interval-sec 1 \
+  --pretty-print true \
+  --enable-log true \
+  --total 1 \
+  --concurrency 1
+```
+
+Stats logging uses `Microsoft.Extensions.Logging.ILogger`.  The load-check
+tool wires `--enable-log true` to a small console logger so the output remains
+visible.  Applications that use `NoSQLConfig.StatsEnableLog = true` should set
+`NoSQLConfig.StatsLogger` from their own logging setup.  Unlike Java's default
+`java.util.logging` logger, the .NET logging abstraction does not select an
+output provider for the application.  If no logger is supplied, collection
+and `StatsHandler` callbacks still work, but interval snapshots are not written
+to a log destination.
+
+The `ALL` profile includes query text and, when available, the driver query
+plan.  Query text can contain table names, schema details, or literal values.
+Use `MORE` when query-level diagnostics are not required, and apply the same
+access controls and retention policy to stats logs as to other application
+diagnostic data.  A `StatsHandler` runs on the periodic reporting path and
+should return promptly; applications should queue expensive processing to
+their own worker rather than block the handler.
+
+High-concurrency load checks may exceed Cloud Simulator or configured table
+throughput.  The SDK retries throttled requests, but an operation is reported
+as an error if its retry or overall timeout budget is exhausted.  A high
+`retry.throttleCount` indicates capacity pressure; reduce `--concurrency` or
+increase table capacity where appropriate.  Non-throttling errors should be
+investigated separately rather than treated as expected load-test behavior.
 
 ## Help
 

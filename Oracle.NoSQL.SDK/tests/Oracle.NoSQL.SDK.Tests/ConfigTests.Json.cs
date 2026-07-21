@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2020, 2025 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026 Oracle and/or its affiliates. All rights reserved.
  *
  * Licensed under the Universal Permissive License v 1.0 as shown at
  *  https://oss.oracle.com/licenses/upl/
@@ -30,6 +30,30 @@ namespace Oracle.NoSQL.SDK.Tests
 
             public override void Write(Utf8JsonWriter writer,
                 ServiceType value, JsonSerializerOptions options)
+            {
+                var stringValue = value.ToString();
+                var i = jsonWriteSeq++ % 3;
+                writer.WriteStringValue(i switch
+                {
+                    0 => stringValue,
+                    1 => stringValue.ToUpper(),
+                    _ => stringValue.ToLower()
+                });
+            }
+        }
+
+        private class StatsProfileConverter :
+            JsonConverter<StatsControl.Profile>
+        {
+            public override StatsControl.Profile Read(
+                ref Utf8JsonReader reader, Type typeToConvert,
+                JsonSerializerOptions options)
+            {
+                throw new NotSupportedException();
+            }
+
+            public override void Write(Utf8JsonWriter writer,
+                StatsControl.Profile value, JsonSerializerOptions options)
             {
                 var stringValue = value.ToString();
                 var i = jsonWriteSeq++ % 3;
@@ -159,6 +183,7 @@ namespace Oracle.NoSQL.SDK.Tests
                     WriteIndented = true
                 };
                 options.Converters.Add(new ServiceTypeConverter());
+                options.Converters.Add(new StatsProfileConverter());
                 options.Converters.Add(new TimeSpanConverter());
                 options.Converters.Add(new CharArrayConverter());
                 options.Converters.Add(new RetryHandlerConverter());
@@ -180,7 +205,10 @@ namespace Oracle.NoSQL.SDK.Tests
              iam.Credentials?.PrivateKey == null &&
              iam.CredentialsProvider == null &&
              iam.DelegationTokenProvider == null &&
-             config.RateLimiterCreator == null);
+             config.RateLimiterCreator == null) &&
+            // Callbacks cannot be represented in JSON config files, so
+            // StatsHandler is covered by object/config tests instead.
+            config.StatsHandler == null;
 
         private static IEnumerable<object[]> PositiveJsonDataSource =>
             from config in GoodConfigs where CanUseConfigWithJson(config)
@@ -231,6 +259,16 @@ namespace Oracle.NoSQL.SDK.Tests
             {
                 var noSQLClient = new NoSQLClient(ConfigFilePath);
             });
+        }
+
+        [TestMethod]
+        public void TestStatsProfileRejectsCombinedNames()
+        {
+            const string jsonConfig =
+                "{\"StatsProfile\":\"Regular,More\"}";
+
+            AssertThrowsDerived<ArgumentException>(() =>
+                NoSQLConfig.FromJsonString(jsonConfig));
         }
 
     }

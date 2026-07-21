@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2020, 2025 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026 Oracle and/or its affiliates. All rights reserved.
  *
  * Licensed under the Universal Permissive License v 1.0 as shown at
  *  https://oss.oracle.com/licenses/upl/
@@ -8,6 +8,7 @@
 namespace Oracle.NoSQL.SDK.Http
 {
     using System;
+    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.Net;
@@ -29,8 +30,14 @@ namespace Oracle.NoSQL.SDK.Http
 
         private readonly NoSQLConfig config;
         private readonly ProtocolHandler protocolHandler;
+        private readonly HttpConnectionMetrics connectionMetrics =
+            new HttpConnectionMetrics();
         private readonly HttpClient client;
         private int requestId;
+        // System.Net.Http active-connection metrics are the primary source
+        // for connection stats. This request counter is only a fallback for
+        // runtimes where the connection metric is unavailable.
+        private int activeHttpExchanges;
         // Does it need to be volatile?
         private int serverSerialVersion;
         private long enabledFeatures;
@@ -54,6 +61,23 @@ namespace Oracle.NoSQL.SDK.Http
             }
 
             return ver;
+        }
+
+        internal static int GetRateLimitDelayFromHeader(
+            HttpResponseMessage response)
+        {
+            // The service/proxy reports server-side throttling delay on a
+            // successful response using the same header as the Java SDK.
+            if (!response.Headers.TryGetValues(RateLimitDelay,
+                    out var values))
+            {
+                return 0;
+            }
+
+            var value = values.FirstOrDefault();
+            return !string.IsNullOrEmpty(value) &&
+                   int.TryParse(value, out var delayMs) &&
+                   delayMs >= 0 ? delayMs : 0;
         }
 
         internal static long? GetEnabledFeatures(HttpResponseMessage response)
@@ -132,7 +156,8 @@ namespace Oracle.NoSQL.SDK.Http
                 return;
             }
 
-            var message = new HttpRequestMessage(HttpMethod.Head, dataPathUri);
+            using var message = new HttpRequestMessage(HttpMethod.Head,
+                dataPathUri);
             message.Headers.Add(RequestId, Convert.ToString(
                 Interlocked.Increment(ref requestId)));
 
@@ -147,7 +172,7 @@ namespace Oracle.NoSQL.SDK.Http
                 message.Headers.Add(Namespace, ns);
             }
 
-            var response = await SendWithTimeoutAsync(client, message,
+            using var response = await SendWithTimeoutAsync(client, message,
                 request.RequestTimeoutMillis, cancellationToken);
             if (response.StatusCode != HttpStatusCode.OK)
             {
@@ -192,10 +217,28 @@ namespace Oracle.NoSQL.SDK.Http
 
         internal int ServerSerialVersion => serverSerialVersion;
 
+        private int GetAcquiredConnectionCount()
+        {
+            if (connectionMetrics.TryGetActiveConnectionCount(
+                    out var activeConnections))
+            {
+                // Zero is a valid measured connection count.
+                return activeConnections;
+            }
+
+            return Volatile.Read(ref activeHttpExchanges);
+        }
+
         internal static HttpMessageHandler CreateHandler(
-            ConnectionOptions connectionOptions)
+            ConnectionOptions connectionOptions,
+            HttpConnectionMetrics connectionMetrics = null)
         {
             var handler = new HttpClientHandler();
+            if (connectionMetrics != null)
+            {
+                handler.MeterFactory = connectionMetrics.MeterFactory;
+            }
+
             if (connectionOptions != null &&
                 (connectionOptions.TrustedRootCertificates != null ||
                 connectionOptions.DisableHostnameVerification))
@@ -215,13 +258,32 @@ namespace Oracle.NoSQL.SDK.Http
                    IsHttpRequestExceptionRetryable(httpEx);
         }
 
+        internal async Task<bool> ValidateRequestFeaturesAsync(Request request,
+            CancellationToken cancellationToken)
+        {
+            if (request is not ILastWriteMetadataRequest metadataRequest ||
+                !metadataRequest.HasLastWriteMetadata)
+            {
+                return false;
+            }
+
+            if (!await IsFeatureEnabledAsync(FeatureFlagLastWriteMetadata,
+                    request, cancellationToken))
+            {
+                throw new NotSupportedException(
+                    "Last write metadata is not supported by this server");
+            }
+
+            return true;
+        }
+
         internal Client(NoSQLConfig config, ProtocolHandler protocolHandler)
         {
             this.config = config;
             this.protocolHandler = protocolHandler;
 
-            client = new HttpClient(CreateHandler(config.ConnectionOptions),
-                true)
+            client = new HttpClient(CreateHandler(config.ConnectionOptions,
+                connectionMetrics), true)
             {
                 BaseAddress = config.Uri
             };
@@ -240,31 +302,23 @@ namespace Oracle.NoSQL.SDK.Http
             var startTime = DateTime.UtcNow;
             var timeoutMillis = request.RequestTimeoutMillis;
 
-            if (request is ILastWriteMetadataRequest metadataRequest &&
-                metadataRequest.HasLastWriteMetadata &&
-                !await IsFeatureEnabledAsync(FeatureFlagLastWriteMetadata,
-                    request, cancellationToken))
-            {
-                throw new NotSupportedException(
-                    "Last write metadata is not supported by this server");
-            }
-
-            var message = new HttpRequestMessage(HttpMethod.Post,
+            using var message = new HttpRequestMessage(HttpMethod.Post,
                 dataPathUri);
 
             timeoutMillis = GetRemainingTimeoutMillis(startTime,
                 timeoutMillis);
             request.RequestTimeoutMillis = timeoutMillis;
 
-            var stream = new MemoryStream();
-            protocolHandler.StartWrite(stream, request);
-            request.Serialize(protocolHandler.Serializer, stream);
+            using var requestStream = new MemoryStream();
+            protocolHandler.StartWrite(requestStream, request);
+            request.Serialize(protocolHandler.Serializer, requestStream);
+            request.StatsRequestSize = (int)requestStream.Position;
 
-            message.Content = new ByteArrayContent(stream.GetBuffer(), 0,
-                (int)stream.Position);
+            message.Content = new ByteArrayContent(requestStream.GetBuffer(),
+                0, (int)requestStream.Position);
             message.Content.Headers.ContentType = new MediaTypeHeaderValue(
                 protocolHandler.ContentType);
-            message.Content.Headers.ContentLength = stream.Position;
+            message.Content.Headers.ContentLength = requestStream.Position;
 
             message.Headers.Add(RequestId, Convert.ToString(
                 Interlocked.Increment(ref requestId)));
@@ -281,28 +335,87 @@ namespace Oracle.NoSQL.SDK.Http
                 message.Headers.Add(Namespace, ns);
             }
 
-            var response = await SendWithTimeoutAsync(client, message,
-                timeoutMillis, cancellationToken);
-            if (response.StatusCode != HttpStatusCode.OK)
+            // Match Java stats semantics: latency starts after serialization
+            // and authorization, and ends after the response is deserialized.
+            var stopwatch = Stopwatch.StartNew();
+            var connectionCount = 0;
+            var connectionSampled = false;
+            var serverRateLimitDelayMs = 0;
+            Interlocked.Increment(ref activeHttpExchanges);
+            try
             {
-                throw await CreateServiceResponseExceptionAsync(response);
+                var buffer = await ExecuteWithTimeoutAsync(
+                    async timeoutToken =>
+                    {
+                        using var response = await client.SendAsync(message,
+                            HttpCompletionOption.ResponseHeadersRead,
+                            timeoutToken);
+
+                        // Sample while the response still owns an active
+                        // connection. A measured zero must remain zero.
+                        connectionCount = GetAcquiredConnectionCount();
+                        connectionSampled = true;
+                        request.StatsConnectionCount = connectionCount;
+                        serverRateLimitDelayMs =
+                            GetRateLimitDelayFromHeader(response);
+
+                        if (response.StatusCode != HttpStatusCode.OK)
+                        {
+                            throw await CreateServiceResponseExceptionAsync(
+                                response, timeoutToken);
+                        }
+
+                        UpdateCachedResponseInfo(response);
+
+                        // Keep the same timeout active until the complete
+                        // response body has been received.
+                        return await response.Content.ReadAsByteArrayAsync(
+                            timeoutToken);
+                    }, timeoutMillis, cancellationToken);
+
+                request.StatsResponseSize = buffer.Length;
+
+                using var responseStream = new MemoryStream(buffer, 0,
+                    buffer.Length, false, true);
+                protocolHandler.StartRead(responseStream, request);
+                var result = request.Deserialize(protocolHandler.Serializer,
+                    responseStream);
+                request.AddStatsServerRateLimitDelay(
+                    serverRateLimitDelayMs);
+                stopwatch.Stop();
+                request.StatsRequestLatencyMs =
+                    Request.ToStatsMilliseconds(stopwatch.Elapsed);
+                return result;
             }
+            catch
+            {
+                if (!connectionSampled)
+                {
+                    // A failure before response headers (for example DNS or
+                    // TLS) must not invent a socket from request concurrency.
+                    if (connectionMetrics.TryGetActiveConnectionCount(
+                            out var activeConnections))
+                    {
+                        request.StatsConnectionCount = activeConnections;
+                    }
+                    else
+                    {
+                        request.StatsConnectionCount = 0;
+                    }
+                }
 
-            UpdateCachedResponseInfo(response);
-
-            // The stream returned by ReadAsStreamAsync(), even though it is
-            // usually a MemoryStream, doesn't allow access to the buffer
-            // via MemoryStream.GetBuffer() which is needed for
-            // deserialization, so we have to use ReadAsByteArrayAsync().
-            var buffer = await response.Content.ReadAsByteArrayAsync();
-            stream = new MemoryStream(buffer, 0, buffer.Length, false, true);
-            protocolHandler.StartRead(stream, request);
-            return request.Deserialize(protocolHandler.Serializer, stream);
+                throw;
+            }
+            finally
+            {
+                Interlocked.Decrement(ref activeHttpExchanges);
+            }
         }
 
         public void Dispose()
         {
             client.Dispose();
+            connectionMetrics.Dispose();
         }
     }
 }

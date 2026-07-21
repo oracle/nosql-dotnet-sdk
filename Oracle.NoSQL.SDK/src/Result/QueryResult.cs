@@ -180,6 +180,10 @@ namespace Oracle.NoSQL.SDK
 
         internal QueryRuntime Runtime { get; set; }
 
+        // Carries successful last-write-metadata feature preflight across
+        // public query continuation calls, including locally buffered batches.
+        internal bool StatsFeatureValidationSucceeded { get; set; }
+
         internal QueryContinuationKey()
         {
         }
