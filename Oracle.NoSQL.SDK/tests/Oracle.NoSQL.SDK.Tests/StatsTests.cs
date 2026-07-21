@@ -25,6 +25,9 @@ namespace Oracle.NoSQL.SDK.Tests
     [DoNotParallelize]
     public class StatsTests
     {
+        private static readonly JavaCompatibleMapValueExporter
+            MapValueExporter = new JavaCompatibleMapValueExporter();
+
         private static readonly NoSQLConfig TestConfig = new NoSQLConfig
         {
             Endpoint = "localhost:8080"
@@ -40,6 +43,19 @@ namespace Oracle.NoSQL.SDK.Tests
         }
 
         private static long AsLong(FieldValue value) => value.ToInt64();
+
+        private static MapValue ToMapValue(StatsSnapshot snapshot) =>
+            MapValueExporter.Export(snapshot);
+
+        private static MapValue ToMapValue(ReqStats stats) =>
+            MapValueExporter.ExportRequest(
+                stats.CreateSnapshot(null, true));
+
+        private static MapValue GenerateStats(Stats stats) =>
+            ToMapValue(stats.Snapshot(DateTime.UtcNow));
+
+        private static MapValue RotateStats(Stats stats) =>
+            ToMapValue(stats.Rotate(DateTime.UtcNow));
 
         private static long GetRequestCount(MapValue stats, string name)
         {
@@ -141,8 +157,7 @@ namespace Oracle.NoSQL.SDK.Tests
             reqStats.Observe(false, 0, 0, 0, 0, 0, 90, 130, 4);
             reqStats.Observe(false, 0, 0, 0, 0, 0, 100, 140, 100);
 
-            var map = new MapValue();
-            reqStats.ToMapValue(map);
+            var map = ToMapValue(reqStats);
 
             Assert.AreEqual(5, AsLong(map["httpRequestCount"]));
             Assert.AreEqual(0, AsLong(map["errors"]));
@@ -180,8 +195,7 @@ namespace Oracle.NoSQL.SDK.Tests
             reqStats.Observe(true, 2, 100, 0, 1, 1, 500, 600, 700);
             reqStats.Observe(false, 0, 0, 0, 0, 0, 50, 40, 10);
 
-            var map = new MapValue();
-            reqStats.ToMapValue(map);
+            var map = ToMapValue(reqStats);
 
             Assert.AreEqual(2, AsLong(map["httpRequestCount"]));
             Assert.AreEqual(1, AsLong(map["errors"]));
@@ -208,8 +222,7 @@ namespace Oracle.NoSQL.SDK.Tests
 
             reqStats.Observe(true, 1, 50, 0, 0, 1, 100, 100, 100);
 
-            var map = new MapValue();
-            reqStats.ToMapValue(map);
+            var map = ToMapValue(reqStats);
 
             Assert.AreEqual(1, AsLong(map["httpRequestCount"]));
             Assert.AreEqual(1, AsLong(map["errors"]));
@@ -228,8 +241,7 @@ namespace Oracle.NoSQL.SDK.Tests
             reqStats.Observe(true, int.MaxValue, int.MaxValue, 0,
                 int.MaxValue, int.MaxValue, 0, 0, 0);
 
-            var map = new MapValue();
-            reqStats.ToMapValue(map);
+            var map = ToMapValue(reqStats);
             var retry = map["retry"].AsMapValue;
             var expected = 2L * int.MaxValue;
 
@@ -473,7 +485,7 @@ namespace Oracle.NoSQL.SDK.Tests
             SetSuccessStats(tableRequest, 120, 80, 20, 4);
             stats.Observe(tableRequest, false);
 
-            var generated = stats.GenerateFieldValueStats(DateTime.UtcNow);
+            var generated = GenerateStats(stats);
 
             Assert.IsNotNull(FindRequest(generated, "Get"));
             Assert.IsNotNull(FindRequest(generated, "Table"));
@@ -623,13 +635,13 @@ namespace Oracle.NoSQL.SDK.Tests
             stats.ObserveQuery(queryRequest);
             stats.Observe(queryRequest, false);
 
-            var firstSnapshot = stats.GenerateFieldValueStats(DateTime.UtcNow);
+            var firstSnapshot = GenerateStats(stats);
             Assert.IsTrue(firstSnapshot.ContainsKey("connections"));
             Assert.IsTrue(firstSnapshot.ContainsKey("queries"));
             Assert.AreEqual(2, firstSnapshot["requests"].AsArrayValue.Count);
 
             stats.ClearStats();
-            var secondSnapshot = stats.GenerateFieldValueStats(DateTime.UtcNow);
+            var secondSnapshot = GenerateStats(stats);
             Assert.IsFalse(secondSnapshot.ContainsKey("connections"));
             Assert.IsFalse(secondSnapshot.ContainsKey("queries"));
             Assert.AreEqual(0, secondSnapshot["requests"].AsArrayValue.Count);
@@ -656,14 +668,14 @@ namespace Oracle.NoSQL.SDK.Tests
             while (!observing.IsCompleted)
             {
                 snapshotCount += GetRequestCount(
-                    stats.GenerateAndClearFieldValueStats(DateTime.UtcNow),
+                    RotateStats(stats),
                     "Get");
                 await Task.Yield();
             }
 
             await observing;
             snapshotCount += GetRequestCount(
-                stats.GenerateAndClearFieldValueStats(DateTime.UtcNow),
+                RotateStats(stats),
                 "Get");
 
             Assert.AreEqual(requestCount, snapshotCount);
@@ -686,7 +698,7 @@ namespace Oracle.NoSQL.SDK.Tests
             stats.ObserveQuery(queryRequest);
             stats.Observe(queryRequest, false);
 
-            var generated = stats.GenerateFieldValueStats(DateTime.UtcNow);
+            var generated = GenerateStats(stats);
 
             AssertKeys(generated, "startTime", "endTime", "clientId",
                 "connections", "queries", "requests");
@@ -716,7 +728,7 @@ namespace Oracle.NoSQL.SDK.Tests
             SetSuccessStats(queryRequest, 100, 300, 10, 1);
             stats.Observe(queryRequest, false);
 
-            var query = stats.GenerateFieldValueStats(DateTime.UtcNow)
+            var query = GenerateStats(stats)
                 ["queries"].AsArrayValue[0].AsMapValue;
 
             Assert.AreEqual("SELECT * FROM Users",
@@ -755,7 +767,7 @@ namespace Oracle.NoSQL.SDK.Tests
             SetSuccessStats(queryRequest);
             stats.Observe(queryRequest, false);
 
-            var plan = stats.GenerateFieldValueStats(DateTime.UtcNow)
+            var plan = GenerateStats(stats)
                 ["queries"].AsArrayValue[0].AsMapValue["plan"].AsString;
 
             Assert.AreEqual(
@@ -764,6 +776,40 @@ namespace Oracle.NoSQL.SDK.Tests
                 "  Primary Key Fields : id,\n\n" +
                 "]", plan);
             Assert.AreNotEqual("server plan", plan);
+        }
+
+        [TestMethod]
+        public void TestQueryPlanFormattingFailureDoesNotDropRequestStats()
+        {
+            using var client = new NoSQLClient(TestConfig);
+            var stats = new Stats("client", StatsControl.Profile.All);
+            var preparedStatement = new PreparedStatement
+            {
+                SQLText = "SELECT * FROM Users",
+                OperationCode = QueryRequest.OperationCodeSelect,
+                // A missing constant value makes this synthetic plan invalid
+                // for formatting while leaving the request itself observable.
+                DriverQueryPlan = new Query.ConstStep
+                {
+                    ResultPosition = 1
+                }
+            };
+            var queryRequest = new QueryRequest<RecordValue>(
+                client, preparedStatement, null);
+
+            stats.ObserveQuery(queryRequest);
+            SetSuccessStats(queryRequest);
+            stats.Observe(queryRequest, false);
+
+            var snapshot = GenerateStats(stats);
+            var requestStats = FindRequest(snapshot, "Query");
+            var queryStats = snapshot["queries"].AsArrayValue[0].AsMapValue;
+
+            Assert.AreEqual(1,
+                AsLong(requestStats["httpRequestCount"]));
+            Assert.AreEqual(1,
+                AsLong(queryStats["httpRequestCount"]));
+            Assert.IsFalse(queryStats.ContainsKey("plan"));
         }
 
         [TestMethod]
@@ -1011,7 +1057,7 @@ namespace Oracle.NoSQL.SDK.Tests
             SetSuccessStats(queryRequest);
             stats.Observe(queryRequest, false);
 
-            var query = stats.GenerateFieldValueStats(DateTime.UtcNow)
+            var query = GenerateStats(stats)
                 ["queries"].AsArrayValue[0].AsMapValue;
 
             Assert.AreEqual("INSERT INTO Users VALUES(1, \"user-1\")",
@@ -1051,7 +1097,7 @@ namespace Oracle.NoSQL.SDK.Tests
             SetSuccessStats(queryRequest, 140, 420, 30, 1);
             stats.Observe(queryRequest, false);
 
-            var queries = stats.GenerateFieldValueStats(DateTime.UtcNow)
+            var queries = GenerateStats(stats)
                 ["queries"].AsArrayValue;
             Assert.AreEqual(1, queries.Count);
 
@@ -1084,7 +1130,7 @@ namespace Oracle.NoSQL.SDK.Tests
             SetSuccessStats(queryRequest, 500, 600, 700, 1);
             stats.Observe(queryRequest, true);
 
-            var generated = stats.GenerateFieldValueStats(DateTime.UtcNow);
+            var generated = GenerateStats(stats);
             var requestStats = FindRequest(generated, "Query");
             Assert.AreEqual(2, AsLong(requestStats["httpRequestCount"]));
             Assert.AreEqual(1, AsLong(requestStats["errors"]));
@@ -1115,7 +1161,7 @@ namespace Oracle.NoSQL.SDK.Tests
             using var control = new StatsControlImpl(new NoSQLConfig
             {
                 Endpoint = "localhost:8080",
-                StatsProfile = StatsControl.Profile.More,
+                StatsProfile = StatsControl.Profile.Regular,
                 StatsEnableLog = false
             }, false);
 
@@ -1140,6 +1186,18 @@ namespace Oracle.NoSQL.SDK.Tests
             Assert.AreEqual(1, AsLong(FindRequest(snapshot, "Query")
                 ["httpRequestCount"]));
             Assert.AreEqual(1, snapshot["queries"].AsArrayValue.Count);
+
+            var queryLatency = snapshot["queries"].AsArrayValue[0]
+                .AsMapValue["httpRequestLatencyMs"].AsMapValue;
+            Assert.AreEqual(30, AsLong(queryLatency["95th"]));
+            Assert.AreEqual(30, AsLong(queryLatency["99th"]));
+
+            // Java keeps top-level request buckets at the capabilities they
+            // had when the collector was created.
+            var requestLatency = FindRequest(snapshot, "Query")
+                ["httpRequestLatencyMs"].AsMapValue;
+            Assert.IsFalse(requestLatency.ContainsKey("95th"));
+            Assert.IsFalse(requestLatency.ContainsKey("99th"));
         }
 
         [TestMethod]
@@ -1158,7 +1216,7 @@ namespace Oracle.NoSQL.SDK.Tests
             });
 
             var getStats = FindRequest(
-                stats.GenerateFieldValueStats(DateTime.UtcNow), "Get");
+                GenerateStats(stats), "Get");
 
             Assert.AreEqual(1000, AsLong(getStats["httpRequestCount"]));
             Assert.AreEqual(0, AsLong(getStats["errors"]));
@@ -1166,6 +1224,82 @@ namespace Oracle.NoSQL.SDK.Tests
                 .AsMapValue["min"]));
             Assert.AreEqual(10, AsLong(getStats["httpRequestLatencyMs"]
                 .AsMapValue["max"]));
+        }
+
+        [TestMethod]
+        public void TestStatsObservationCapturesRequestState()
+        {
+            using var client = new NoSQLClient(TestConfig);
+            var request = MakeGetRequest(client);
+            SetSuccessStats(request, 50, 60, 10, 2);
+
+            var observation = StatsObservation.FromRequest(request,
+                false, false);
+
+            // Request instances remain mutable during execution. Once the
+            // terminal observation is created, later mutations must not alter
+            // what the collector records.
+            SetSuccessStats(request, 500, 600, 100, 20);
+
+            var collector = new Stats("client", StatsControl.Profile.More);
+            collector.Record(observation);
+            var getStats = FindRequest(
+                GenerateStats(collector), "Get");
+
+            AssertMinAvgMax(getStats["requestSize"].AsMapValue,
+                50, 50, 50);
+            AssertMinAvgMax(getStats["resultSize"].AsMapValue,
+                60, 60, 60);
+            AssertMinAvgMax(getStats["httpRequestLatencyMs"].AsMapValue,
+                10, 10, 10);
+            AssertMinAvgMax(
+                GenerateStats(collector)
+                    ["connections"].AsMapValue,
+                2, 2, 2);
+        }
+
+        [TestMethod]
+        public void TestStatsRotationIsolatesCompletedInterval()
+        {
+            using var client = new NoSQLClient(TestConfig);
+            var collector = new Stats("client",
+                StatsControl.Profile.Regular);
+            var firstRequest = MakeGetRequest(client);
+            SetSuccessStats(firstRequest);
+            collector.Observe(firstRequest, false);
+
+            var completed = collector.Rotate(DateTime.UtcNow);
+            var firstView = ToMapValue(completed);
+            var secondView = ToMapValue(completed);
+
+            // Every consumer receives an independent mutable compatibility
+            // view of the immutable completed interval.
+            firstView.Clear();
+            Assert.AreEqual(1, GetRequestCount(secondView, "Get"));
+
+            var activeInterval = GenerateStats(collector);
+            Assert.AreEqual(0, GetRequestCount(activeInterval, "Get"));
+
+            var secondRequest = MakeGetRequest(client);
+            SetSuccessStats(secondRequest);
+            collector.Observe(secondRequest, false);
+            Assert.AreEqual(1, GetRequestCount(
+                GenerateStats(collector), "Get"));
+            Assert.AreEqual(1, GetRequestCount(secondView, "Get"));
+        }
+
+        [TestMethod]
+        public void TestStatsRotationDoesNotOverwriteProfile()
+        {
+            var collector = new Stats("client",
+                StatsControl.Profile.Regular);
+
+            collector.UpdateProfile(StatsControl.Profile.All);
+            collector.Rotate(DateTime.UtcNow);
+
+            // Rotation owns interval state only. SetProfile/UpdateProfile is
+            // the sole owner of the collector's current profile.
+            Assert.IsTrue(collector.IncludesQueryDetails);
         }
 
         [TestMethod]
@@ -1336,7 +1470,11 @@ namespace Oracle.NoSQL.SDK.Tests
             var snapshot = control.LogClientStatsForTest();
 
             Assert.AreEqual(1, handlerCount);
+            // The immutable internal snapshot is converted only once; the
+            // logger and handler consume the same Java-compatible view.
             Assert.AreSame(snapshot, handledStats);
+            Assert.AreEqual(snapshot.ToJsonString(),
+                handledStats.ToJsonString());
             Assert.AreEqual(0, logger.Messages.Count);
         }
 
@@ -1361,11 +1499,14 @@ namespace Oracle.NoSQL.SDK.Tests
             control.Observe(request);
 
             var snapshot = control.LogClientStatsForTest();
-            var output = logger.Messages.Last();
 
             Assert.IsNotNull(snapshot);
-            Assert.IsTrue(output.Contains(StatsControl.LogPrefix));
-            Assert.IsTrue(output.Contains("\"name\":\"Get\""));
+            Assert.IsTrue(logger.Messages.Any(output =>
+                output.Contains(StatsControl.LogPrefix) &&
+                output.Contains("\"name\":\"Get\"")));
+            Assert.IsTrue(logger.Messages.Any(output =>
+                output.Contains("Stats exception") &&
+                output.Contains("handler failure")));
         }
 
         [TestMethod]
@@ -1748,7 +1889,7 @@ namespace Oracle.NoSQL.SDK.Tests
             moreStats.ObserveQuery(moreQuery);
             moreStats.Observe(moreQuery, false);
 
-            Assert.IsFalse(moreStats.GenerateFieldValueStats(DateTime.UtcNow)
+            Assert.IsFalse(GenerateStats(moreStats)
                 .ContainsKey("queries"));
 
             var allControl = new StatsControlImpl(TestConfig, false)
@@ -1759,7 +1900,7 @@ namespace Oracle.NoSQL.SDK.Tests
             allStats.ObserveQuery(allQuery);
             allStats.Observe(allQuery, false);
 
-            var queries = allStats.GenerateFieldValueStats(DateTime.UtcNow)
+            var queries = GenerateStats(allStats)
                 ["queries"].AsArrayValue;
             Assert.AreEqual(1, queries.Count);
             var query = queries[0].AsMapValue;
@@ -1797,6 +1938,8 @@ namespace Oracle.NoSQL.SDK.Tests
             var firstSnapshot = control.LogClientStatsForTest();
             Assert.AreEqual(1, handlerCount);
             Assert.AreSame(firstSnapshot, handledStats);
+            Assert.AreEqual(firstSnapshot.ToJsonString(),
+                handledStats.ToJsonString());
             Assert.IsNotNull(FindRequest(firstSnapshot, "Get"));
 
             var secondSnapshot = control.LogClientStatsForTest();

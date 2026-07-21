@@ -9,11 +9,10 @@ namespace Oracle.NoSQL.SDK
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
 
     // Internal implementation of Java-compatible client statistics.  The
-    // public surface is StatsControl; this file owns the aggregation buckets
-    // and JSON-compatible snapshot generation.
+    // public surface is StatsControl; this file owns aggregation buckets and
+    // creates immutable typed snapshots for independent exporters.
     internal sealed class Percentile
     {
         // Latencies are integral milliseconds, so retain one counter per
@@ -110,9 +109,9 @@ namespace Oracle.NoSQL.SDK
         internal ReqStats CreateEmpty() =>
             new ReqStats(collectPercentiles);
 
-        internal void Observe(bool error, int retries, int retryDelay,
-            long rateLimitDelay, int authCount, int throttleCount, int reqSize,
-            int resSize, int requestLatency)
+        internal void Observe(bool error, long retries, long retryDelay,
+            long rateLimitDelay, long authCount, long throttleCount,
+            int reqSize, int resSize, int requestLatency)
         {
             httpRequestCount++;
             retryCount += retries;
@@ -142,80 +141,41 @@ namespace Oracle.NoSQL.SDK
             requestLatencyPercentile?.AddValue(requestLatency);
         }
 
-        internal void ToJson(string requestName, ArrayValue reqArray)
+        internal RequestStatsSnapshot CreateSnapshot(string requestName,
+            bool includeEmpty = false)
         {
-            if (httpRequestCount == 0)
+            if (httpRequestCount == 0 && !includeEmpty)
             {
-                return;
+                return null;
             }
-
-            var mapValue = new MapValue
-            {
-                ["name"] = requestName
-            };
-            ToMapValue(mapValue);
-            reqArray.Add(mapValue);
-        }
-
-        internal void ToMapValue(MapValue mapValue)
-        {
-            mapValue["httpRequestCount"] = httpRequestCount;
-            mapValue["errors"] = errors;
-
-            mapValue["retry"] = new MapValue
-            {
-                ["count"] = retryCount,
-                ["delayMs"] = retryDelayMs,
-                ["authCount"] = retryAuthCount,
-                ["throttleCount"] = retryThrottleCount
-            };
-            mapValue["rateLimitDelayMs"] = rateLimitDelayMs;
 
             var successCount = httpRequestCount - errors;
-            if (successCount <= 0)
+            MetricStatsSnapshot? latency = null;
+            MetricStatsSnapshot? requestSize = null;
+            MetricStatsSnapshot? resultSize = null;
+            if (successCount > 0 && requestLatencyMax > 0)
             {
-                return;
+                latency = new MetricStatsSnapshot(requestLatencyMin,
+                    requestLatencyMax,
+                    1.0 * requestLatencySum / successCount,
+                    requestLatencyPercentile?.Get95thPercentile(),
+                    requestLatencyPercentile?.Get99thPercentile());
+            }
+            if (successCount > 0 && reqSizeMax > 0)
+            {
+                requestSize = new MetricStatsSnapshot(reqSizeMin, reqSizeMax,
+                    1.0 * reqSizeSum / successCount);
+            }
+            if (successCount > 0 && resSizeMax > 0)
+            {
+                resultSize = new MetricStatsSnapshot(resSizeMin, resSizeMax,
+                    1.0 * resSizeSum / successCount);
             }
 
-            if (requestLatencyMax > 0)
-            {
-                var latency = new MapValue
-                {
-                    ["min"] = requestLatencyMin,
-                    ["max"] = requestLatencyMax,
-                    ["avg"] = 1.0 * requestLatencySum / successCount
-                };
-
-                if (requestLatencyPercentile != null)
-                {
-                    latency["95th"] =
-                        requestLatencyPercentile.Get95thPercentile();
-                    latency["99th"] =
-                        requestLatencyPercentile.Get99thPercentile();
-                }
-
-                mapValue["httpRequestLatencyMs"] = latency;
-            }
-
-            if (reqSizeMax > 0)
-            {
-                mapValue["requestSize"] = new MapValue
-                {
-                    ["min"] = reqSizeMin,
-                    ["max"] = reqSizeMax,
-                    ["avg"] = 1.0 * reqSizeSum / successCount
-                };
-            }
-
-            if (resSizeMax > 0)
-            {
-                mapValue["resultSize"] = new MapValue
-                {
-                    ["min"] = resSizeMin,
-                    ["max"] = resSizeMax,
-                    ["avg"] = 1.0 * resSizeSum / successCount
-                };
-            }
+            return new RequestStatsSnapshot(requestName, httpRequestCount,
+                errors, new RetryStatsSnapshot(retryCount, retryDelayMs,
+                    retryAuthCount, retryThrottleCount), rateLimitDelayMs,
+                latency, requestSize, resultSize);
         }
 
         internal void Clear()
@@ -258,19 +218,15 @@ namespace Oracle.NoSQL.SDK
             count++;
         }
 
-        internal void ToJson(MapValue root)
+        internal ConnectionStatsSnapshot? CreateSnapshot()
         {
             if (count == 0)
             {
-                return;
+                return null;
             }
 
-            root["connections"] = new MapValue
-            {
-                ["min"] = min,
-                ["max"] = max,
-                ["avg"] = 1.0 * sum / count
-            };
+            return new ConnectionStatsSnapshot(min, max,
+                1.0 * sum / count);
         }
 
         internal void Clear()
@@ -301,29 +257,25 @@ namespace Oracle.NoSQL.SDK
 
             internal string Plan { get; set; }
 
-            internal QueryEntryStat(StatsControlImpl statsControl,
-                QueryRequest queryRequest)
+            internal QueryEntryStat(bool collectPercentiles,
+                in QueryStatsObservation query)
             {
-                ReqStats = new ReqStats(
-                    statsControl.GetProfile() >= StatsControl.Profile.More);
-                UpdatePreparedInfo(queryRequest);
+                ReqStats = new ReqStats(collectPercentiles);
+                UpdatePreparedInfo(query);
             }
 
-            internal void UpdatePreparedInfo(QueryRequest queryRequest)
+            internal void UpdatePreparedInfo(
+                in QueryStatsObservation query)
             {
-                var preparedStatement = queryRequest.PreparedStatement;
-                if (preparedStatement == null)
+                if (!query.Prepared)
                 {
                     return;
                 }
 
                 // Java Stats reports the locally executable driver plan, not
                 // the optional server query-plan string.
-                Plan ??= Query.PlanFormatter.Format(
-                    preparedStatement.DriverQueryPlan);
-                DoesWrites =
-                    preparedStatement.OperationCode !=
-                    QueryRequest.OperationCodeSelect;
+                Plan ??= query.Plan;
+                DoesWrites = query.DoesWrites;
             }
         }
 
@@ -331,97 +283,85 @@ namespace Oracle.NoSQL.SDK
 
         private readonly Dictionary<string, QueryEntryStat> queries =
             new Dictionary<string, QueryEntryStat>();
-        private readonly StatsControlImpl statsControl;
+        private readonly bool collectPercentiles;
 
-        internal ExtraQueryStats(StatsControlImpl statsControl)
+        internal ExtraQueryStats(bool collectPercentiles)
         {
-            this.statsControl = statsControl;
+            this.collectPercentiles = collectPercentiles;
         }
 
-        private QueryEntryStat GetExtraQueryStat(QueryRequest queryRequest)
+        private QueryEntryStat GetExtraQueryStat(
+            in QueryStatsObservation query)
         {
-            var sql = queryRequest.Statement ??
-                      queryRequest.PreparedStatement?.SQLText;
-            var key = sql ?? NullQueryKey;
+            var key = query.Query ?? NullQueryKey;
 
             if (!queries.TryGetValue(key, out var queryStat))
             {
-                queryStat = new QueryEntryStat(statsControl, queryRequest);
+                queryStat = new QueryEntryStat(collectPercentiles, query);
                 queries.Add(key, queryStat);
             }
             else
             {
-                queryStat.UpdatePreparedInfo(queryRequest);
+                queryStat.UpdatePreparedInfo(query);
             }
 
             return queryStat;
         }
 
-        internal void ObserveQuery(QueryRequest queryRequest)
+        internal void ObserveQuery(in QueryStatsObservation query)
         {
-            var queryStat = GetExtraQueryStat(queryRequest);
+            var queryStat = GetExtraQueryStat(query);
             queryStat.Count++;
-            if (!queryRequest.IsPreparedQuery)
+            if (!query.Prepared)
             {
                 queryStat.Unprepared++;
             }
             else
             {
-                queryStat.Simple = queryRequest.PreparedStatement
-                    .IsSimpleQuery;
+                queryStat.Simple = query.Simple;
             }
         }
 
-        internal void ObserveQuery(Request request, bool error)
+        internal void ObserveRequest(in StatsObservation observation)
         {
-            if (request is not QueryRequest queryRequest)
+            if (!observation.HasQuery)
             {
                 return;
             }
 
-            var queryStat = GetExtraQueryStat(queryRequest);
+            var queryStat = GetExtraQueryStat(observation.Query);
             // Failed query HTTP requests contribute errors and retry fields,
             // but not latency or size measurements, matching request buckets.
-            queryStat.ReqStats.Observe(error,
-                request.StatsRetryCount,
-                request.StatsRetryDelayMs,
-                request.StatsRateLimitDelayMs,
-                request.StatsRetryAuthCount,
-                request.StatsRetryThrottleCount,
-                request.StatsRequestSize,
-                request.StatsResponseSize,
-                request.StatsRequestLatencyMs);
+            queryStat.ReqStats.Observe(observation.Error,
+                observation.RetryCount,
+                observation.RetryDelayMs,
+                observation.RateLimitDelayMs,
+                observation.RetryAuthCount,
+                observation.RetryThrottleCount,
+                observation.RequestSize,
+                observation.ResponseSize,
+                observation.LatencyMs);
         }
 
-        internal void ToJson(MapValue root)
+        internal IList<QueryStatsSnapshot> CreateSnapshot()
         {
+            var result = new List<QueryStatsSnapshot>(queries.Count);
             if (queries.Count == 0)
             {
-                return;
+                return result;
             }
-
-            var queryArray = new ArrayValue();
-            root["queries"] = queryArray;
 
             foreach (var pair in queries)
             {
-                var queryValue = new MapValue
-                {
-                    ["query"] = pair.Key == NullQueryKey ? "null" : pair.Key,
-                    ["count"] = pair.Value.Count,
-                    ["unprepared"] = pair.Value.Unprepared,
-                    ["simple"] = pair.Value.Simple,
-                    ["doesWrites"] = pair.Value.DoesWrites
-                };
-
-                if (pair.Value.Plan != null)
-                {
-                    queryValue["plan"] = pair.Value.Plan;
-                }
-
-                pair.Value.ReqStats.ToMapValue(queryValue);
-                queryArray.Add(queryValue);
+                result.Add(new QueryStatsSnapshot(
+                    pair.Key == NullQueryKey ? "null" : pair.Key,
+                    pair.Value.Count, pair.Value.Unprepared,
+                    pair.Value.Simple, pair.Value.DoesWrites,
+                    pair.Value.Plan,
+                    pair.Value.ReqStats.CreateSnapshot(null, true)));
             }
+
+            return result;
         }
 
         internal void Clear()
@@ -433,7 +373,7 @@ namespace Oracle.NoSQL.SDK
     // Top-level aggregator.  Request observations may arrive from many
     // concurrent SDK operations while the scheduler is generating/clearing
     // snapshots, so all mutable buckets are protected by lockObj.
-    internal sealed class Stats
+    internal sealed class Stats : IStatsCollector
     {
         private static readonly string[] RequestKeys =
         {
@@ -443,87 +383,122 @@ namespace Oracle.NoSQL.SDK
         };
 
         private readonly object lockObj = new object();
-        private readonly StatsControlImpl statsControl;
+        private readonly string clientId;
+        private readonly bool collectPercentiles;
+        private volatile StatsControl.Profile profile;
         private Dictionary<string, ReqStats> requests;
         private ConnectionStats connectionStats;
         private ExtraQueryStats extraQueryStats;
         private DateTime startTime;
-        private DateTime endTime;
 
         internal Stats(StatsControlImpl statsControl)
+            : this(statsControl.Id, statsControl.GetProfile())
         {
-            this.statsControl = statsControl;
+        }
+
+        internal Stats(string clientId, StatsControl.Profile profile)
+        {
+            this.clientId = clientId;
+            this.profile = profile;
+            collectPercentiles = profile >= StatsControl.Profile.More;
             requests = CreateRequestBuckets();
             connectionStats = new ConnectionStats();
 
-            if (statsControl.GetProfile() >= StatsControl.Profile.All)
+            if (CollectQueryStats)
             {
-                extraQueryStats = new ExtraQueryStats(statsControl);
+                extraQueryStats = new ExtraQueryStats(
+                    CollectQueryPercentiles);
             }
 
             startTime = DateTime.UtcNow;
         }
 
         private bool CollectPercentiles =>
-            statsControl.GetProfile() >= StatsControl.Profile.More;
+            collectPercentiles;
 
         private bool CollectQueryStats =>
-            statsControl.GetProfile() >= StatsControl.Profile.All;
+            profile >= StatsControl.Profile.All;
 
-        internal void Observe(Request request, bool error)
+        // Java evaluates the current profile when creating query statistics.
+        // Top-level request buckets keep their original percentile capability,
+        // while query buckets created after switching to ALL include them.
+        private bool CollectQueryPercentiles =>
+            profile >= StatsControl.Profile.More;
+
+        public bool IncludesQueryDetails => CollectQueryStats;
+
+        public void UpdateProfile(StatsControl.Profile profile)
+        {
+            this.profile = profile;
+        }
+
+        public void Record(in StatsObservation observation)
         {
             lock (lockObj)
             {
-                var requestName = GetRequestName(request);
-                if (!requests.TryGetValue(requestName, out var reqStats))
+                if (observation.Kind ==
+                    StatsObservation.ObservationKind.Query)
+                {
+                    if (CollectQueryStats)
+                    {
+                        extraQueryStats ??=
+                            new ExtraQueryStats(CollectQueryPercentiles);
+                        extraQueryStats.ObserveQuery(observation.Query);
+                    }
+                    return;
+                }
+
+                if (!requests.TryGetValue(observation.RequestName,
+                        out var reqStats))
                 {
                     reqStats = new ReqStats(CollectPercentiles);
-                    requests[requestName] = reqStats;
+                    requests[observation.RequestName] = reqStats;
                 }
 
-                reqStats.Observe(error,
-                    request.StatsRetryCount,
-                    request.StatsRetryDelayMs,
-                    request.StatsRateLimitDelayMs,
-                    request.StatsRetryAuthCount,
-                    request.StatsRetryThrottleCount,
-                    request.StatsRequestSize,
-                    request.StatsResponseSize,
-                    request.StatsRequestLatencyMs);
+                reqStats.Observe(observation.Error,
+                    observation.RetryCount,
+                    observation.RetryDelayMs,
+                    observation.RateLimitDelayMs,
+                    observation.RetryAuthCount,
+                    observation.RetryThrottleCount,
+                    observation.RequestSize,
+                    observation.ResponseSize,
+                    observation.LatencyMs);
 
-                connectionStats.Observe(request.StatsConnectionCount);
+                connectionStats.Observe(observation.ConnectionCount);
 
-                if (CollectQueryStats)
+                if (CollectQueryStats && observation.HasQuery)
                 {
-                    extraQueryStats ??= new ExtraQueryStats(statsControl);
-                    extraQueryStats.ObserveQuery(request, error);
+                    extraQueryStats ??=
+                        new ExtraQueryStats(CollectQueryPercentiles);
+                    extraQueryStats.ObserveRequest(observation);
                 }
             }
+        }
+
+        internal void Observe(Request request, bool error)
+        {
+            var observation = StatsObservation.FromRequest(request, error,
+                CollectQueryStats);
+            Record(observation);
         }
 
         internal void ObserveQuery(QueryRequest queryRequest)
         {
-            lock (lockObj)
-            {
-                if (CollectQueryStats)
-                {
-                    extraQueryStats ??= new ExtraQueryStats(statsControl);
-                    extraQueryStats.ObserveQuery(queryRequest);
-                }
-            }
+            var observation = StatsObservation.FromQuery(queryRequest);
+            Record(observation);
         }
 
-        internal MapValue GenerateFieldValueStats(DateTime endTime)
+        public StatsSnapshot Snapshot(DateTime endTime)
         {
             lock (lockObj)
             {
-                this.endTime = endTime;
-                return GenerateFieldValueStats(startTime, this.endTime,
-                    requests, connectionStats, extraQueryStats);
+                return CreateSnapshot(startTime, endTime, requests,
+                    connectionStats, extraQueryStats);
             }
         }
 
-        internal MapValue GenerateAndClearFieldValueStats(DateTime endTime)
+        public StatsSnapshot Rotate(DateTime endTime)
         {
             DateTime completedStartTime;
             Dictionary<string, ReqStats> completedRequests;
@@ -532,12 +507,9 @@ namespace Oracle.NoSQL.SDK
 
             lock (lockObj)
             {
-                /*
-                 * Atomically hand the completed interval to the reporting
-                 * thread. New observations can use fresh buckets immediately,
-                 * while percentile sorting and JSON generation happen outside
-                 * the active request lock.
-                 */
+                // Detach the completed interval under a short lock. New
+                // observations immediately use fresh buckets while snapshot
+                // materialization proceeds outside the request-path lock.
                 completedStartTime = startTime;
                 completedRequests = requests;
                 completedConnections = connectionStats;
@@ -545,12 +517,13 @@ namespace Oracle.NoSQL.SDK
 
                 requests = CreateRequestBuckets(completedRequests);
                 connectionStats = new ConnectionStats();
-                extraQueryStats = null;
+                extraQueryStats = CollectQueryStats
+                    ? new ExtraQueryStats(CollectQueryPercentiles)
+                    : null;
                 startTime = endTime;
-                this.endTime = default;
             }
 
-            return GenerateFieldValueStats(completedStartTime, endTime,
+            return CreateSnapshot(completedStartTime, endTime,
                 completedRequests, completedConnections, completedQueries);
         }
 
@@ -560,9 +533,10 @@ namespace Oracle.NoSQL.SDK
             {
                 requests = CreateRequestBuckets(requests);
                 connectionStats = new ConnectionStats();
-                extraQueryStats = null;
+                extraQueryStats = CollectQueryStats
+                    ? new ExtraQueryStats(CollectQueryPercentiles)
+                    : null;
                 startTime = DateTime.UtcNow;
-                endTime = default;
             }
         }
 
@@ -586,38 +560,40 @@ namespace Oracle.NoSQL.SDK
             return result;
         }
 
-        private MapValue GenerateFieldValueStats(DateTime intervalStart,
+        private StatsSnapshot CreateSnapshot(DateTime intervalStart,
             DateTime intervalEnd,
             IReadOnlyDictionary<string, ReqStats> intervalRequests,
             ConnectionStats intervalConnections,
             ExtraQueryStats intervalQueries)
         {
-            // Generate the same high-level fields as Java:
-            // startTime/endTime/clientId/connections/queries/requests.
-            var root = new MapValue
-            {
-                ["startTime"] = TruncateToSecond(intervalStart),
-                ["endTime"] = TruncateToSecond(intervalEnd),
-                ["clientId"] = statsControl.Id
-            };
-
-            intervalConnections.ToJson(root);
-            intervalQueries?.ToJson(root);
-
-            var reqArray = new ArrayValue();
-            root["requests"] = reqArray;
+            var requestSnapshots = new List<RequestStatsSnapshot>();
             foreach (var key in RequestKeys)
             {
-                intervalRequests[key].ToJson(key, reqArray);
+                var request = intervalRequests[key].CreateSnapshot(key);
+                if (request != null)
+                {
+                    requestSnapshots.Add(request);
+                }
             }
 
-            foreach (var pair in intervalRequests
-                         .Where(pair => !RequestKeys.Contains(pair.Key)))
+            foreach (var pair in intervalRequests)
             {
-                pair.Value.ToJson(pair.Key, reqArray);
+                if (Array.IndexOf(RequestKeys, pair.Key) >= 0)
+                {
+                    continue;
+                }
+
+                var request = pair.Value.CreateSnapshot(pair.Key);
+                if (request != null)
+                {
+                    requestSnapshots.Add(request);
+                }
             }
 
-            return root;
+            return new StatsSnapshot(intervalStart, intervalEnd, clientId,
+                intervalConnections.CreateSnapshot(),
+                intervalQueries?.CreateSnapshot() ??
+                new List<QueryStatsSnapshot>(), requestSnapshots);
         }
 
         internal static string GetRequestName(Request request)
@@ -673,12 +649,5 @@ namespace Oracle.NoSQL.SDK
                 : typeName;
         }
 
-        private static DateTime TruncateToSecond(DateTime value)
-        {
-            var utc = value.ToUniversalTime();
-            return new DateTime(
-                utc.Ticks - utc.Ticks % TimeSpan.TicksPerSecond,
-                DateTimeKind.Utc);
-        }
     }
 }
