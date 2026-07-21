@@ -72,9 +72,11 @@ namespace Oracle.NoSQL.SDK.Tests
         private static void AssertMinAvgMax(MapValue map, int min,
             double avg, int max)
         {
-            Assert.AreEqual(min, AsLong(map["min"]));
+            // The public compatibility view historically exposes min/max as
+            // IntegerValue even though internal sums and counters use long.
+            Assert.AreEqual(min, map["min"].AsInt32);
             Assert.AreEqual(avg, map["avg"].AsDouble);
-            Assert.AreEqual(max, AsLong(map["max"]));
+            Assert.AreEqual(max, map["max"].AsInt32);
         }
 
         private static GetRequest<RecordValue> MakeGetRequest(
@@ -491,8 +493,8 @@ namespace Oracle.NoSQL.SDK.Tests
             Assert.IsNotNull(FindRequest(generated, "Table"));
 
             var connections = generated["connections"].AsMapValue;
-            Assert.AreEqual(2, AsLong(connections["min"]));
-            Assert.AreEqual(4, AsLong(connections["max"]));
+            Assert.AreEqual(2, connections["min"].AsInt32);
+            Assert.AreEqual(4, connections["max"].AsInt32);
             Assert.AreEqual(3.0, connections["avg"].AsDouble);
             Assert.IsFalse(connections.ContainsKey("count"));
         }
@@ -776,6 +778,31 @@ namespace Oracle.NoSQL.SDK.Tests
                 "  Primary Key Fields : id,\n\n" +
                 "]", plan);
             Assert.AreNotEqual("server plan", plan);
+        }
+
+        [TestMethod]
+        public void TestQueryPlanFormattingIsCachedByPlan()
+        {
+            using var client = new NoSQLClient(TestConfig);
+            var preparedStatement = new PreparedStatement
+            {
+                SQLText = "SELECT * FROM Users",
+                OperationCode = QueryRequest.OperationCodeSelect,
+                DriverQueryPlan = new Query.ReceiveStep
+                {
+                    ResultPosition = 2,
+                    DistributionKind =
+                        Query.DistributionKind.AllPartitions
+                }
+            };
+            var queryRequest = new QueryRequest<RecordValue>(
+                client, preparedStatement, null);
+
+            var first = QueryStatsObservation.FromRequest(queryRequest);
+            var second = QueryStatsObservation.FromRequest(queryRequest);
+
+            Assert.IsNotNull(first.Plan);
+            Assert.AreSame(first.Plan, second.Plan);
         }
 
         [TestMethod]
@@ -1470,9 +1497,9 @@ namespace Oracle.NoSQL.SDK.Tests
             var snapshot = control.LogClientStatsForTest();
 
             Assert.AreEqual(1, handlerCount);
-            // The immutable internal snapshot is converted only once; the
-            // logger and handler consume the same Java-compatible view.
-            Assert.AreSame(snapshot, handledStats);
+            // Each exporter receives the immutable typed snapshot and creates
+            // its own mutable compatibility view.
+            Assert.AreNotSame(snapshot, handledStats);
             Assert.AreEqual(snapshot.ToJsonString(),
                 handledStats.ToJsonString());
             Assert.AreEqual(0, logger.Messages.Count);
@@ -1528,11 +1555,12 @@ namespace Oracle.NoSQL.SDK.Tests
             SetSuccessStats(request);
             control.Observe(request);
 
-            control.LogClientStatsForTest();
+            var snapshot = control.LogClientStatsForTest();
             var output = logger.Messages.Last();
 
             Assert.IsTrue(output.Contains("\"name\":\"Get\""));
             Assert.IsTrue(output.Contains("\"httpRequestCount\":1"));
+            Assert.IsNotNull(FindRequest(snapshot, "Get"));
         }
 
         [TestMethod]
@@ -1937,7 +1965,7 @@ namespace Oracle.NoSQL.SDK.Tests
 
             var firstSnapshot = control.LogClientStatsForTest();
             Assert.AreEqual(1, handlerCount);
-            Assert.AreSame(firstSnapshot, handledStats);
+            Assert.AreNotSame(firstSnapshot, handledStats);
             Assert.AreEqual(firstSnapshot.ToJsonString(),
                 handledStats.ToJsonString());
             Assert.IsNotNull(FindRequest(firstSnapshot, "Get"));

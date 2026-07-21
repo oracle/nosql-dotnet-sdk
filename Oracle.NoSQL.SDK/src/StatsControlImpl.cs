@@ -61,11 +61,13 @@ namespace Oracle.NoSQL.SDK
             loggerExporter = new LoggerStatsExporter(
                 config.StatsEnableLog,
                 config.StatsLogger ?? NullLogger.Instance,
-                () => prettyPrint);
+                () => prettyPrint,
+                mapValueExporter);
             exporters = new IStatsExporter[]
             {
                 loggerExporter,
-                new HandlerStatsExporter(() => statsHandler)
+                new HandlerStatsExporter(() => statsHandler,
+                    mapValueExporter)
             };
 
             if (profile != Profile.None)
@@ -214,8 +216,15 @@ namespace Oracle.NoSQL.SDK
 
             try
             {
+                var collector = stats;
+                if (collector == null ||
+                    !collector.IncludesQueryDetails)
+                {
+                    return;
+                }
+
                 var observation = StatsObservation.FromQuery(queryRequest);
-                stats?.Record(observation);
+                collector.Record(observation);
             }
             catch
             {
@@ -395,15 +404,13 @@ namespace Oracle.NoSQL.SDK
                 return null;
             }
 
-            // Convert once, log first, and then invoke the handler. Logging
-            // first prevents handler mutation from changing the log record.
-            var applicationSnapshot =
-                mapValueExporter.Export(immutableSnapshot);
+            // Each exporter receives the immutable snapshot and creates its
+            // own compatibility view, isolating logger and handler output.
             foreach (var exporter in exporters)
             {
                 try
                 {
-                    exporter.Export(applicationSnapshot);
+                    exporter.Export(immutableSnapshot);
                 }
                 catch (Exception ex)
                 {
@@ -413,7 +420,7 @@ namespace Oracle.NoSQL.SDK
                 }
             }
 
-            return applicationSnapshot;
+            return mapValueExporter.Export(immutableSnapshot);
         }
 
         internal void Shutdown()

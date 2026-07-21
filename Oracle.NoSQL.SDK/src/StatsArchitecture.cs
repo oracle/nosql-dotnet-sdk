@@ -11,6 +11,8 @@ namespace Oracle.NoSQL.SDK
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Reflection;
+    using System.Runtime.CompilerServices;
+    using System.Threading;
     using Microsoft.Extensions.Logging;
     using Query;
 
@@ -108,15 +110,21 @@ namespace Oracle.NoSQL.SDK
     // retain a QueryRequest or PreparedStatement owned by request execution.
     internal readonly struct QueryStatsObservation
     {
+        private static readonly ConditionalWeakTable<PlanStep, Lazy<string>>
+            FormattedPlans =
+                new ConditionalWeakTable<PlanStep, Lazy<string>>();
+
         private QueryStatsObservation(string query, bool prepared,
-            bool simple, bool doesWrites, string plan)
+            bool simple, bool doesWrites, Lazy<string> plan)
         {
             Query = query;
             Prepared = prepared;
             Simple = simple;
             DoesWrites = doesWrites;
-            Plan = plan;
+            this.plan = plan;
         }
+
+        private readonly Lazy<string> plan;
 
         internal string Query { get; }
 
@@ -126,7 +134,7 @@ namespace Oracle.NoSQL.SDK
 
         internal bool DoesWrites { get; }
 
-        internal string Plan { get; }
+        internal string Plan => plan?.Value;
 
         internal static QueryStatsObservation FromRequest(
             QueryRequest request)
@@ -139,7 +147,22 @@ namespace Oracle.NoSQL.SDK
                 preparedStatement != null &&
                 preparedStatement.OperationCode !=
                 QueryRequest.OperationCodeSelect,
-                FormatPlan(preparedStatement?.DriverQueryPlan));
+                GetFormattedPlan(preparedStatement?.DriverQueryPlan));
+        }
+
+        private static Lazy<string> GetFormattedPlan(PlanStep plan)
+        {
+            if (plan == null)
+            {
+                return null;
+            }
+
+            // A prepared plan can be reused by logical and terminal query
+            // observations. Cache one lazy formatter per plan object so plan
+            // text is produced only if ALL-profile output actually needs it.
+            return FormattedPlans.GetValue(plan, value =>
+                new Lazy<string>(() => FormatPlan(value),
+                    LazyThreadSafetyMode.ExecutionAndPublication));
         }
 
         private static string FormatPlan(PlanStep plan)
@@ -358,8 +381,8 @@ namespace Oracle.NoSQL.SDK
                 var connections = snapshot.Connections.Value;
                 root["connections"] = new MapValue
                 {
-                    ["min"] = connections.Min,
-                    ["max"] = connections.Max,
+                    ["min"] = ToInt32(connections.Min),
+                    ["max"] = ToInt32(connections.Max),
                     ["avg"] = connections.Average
                 };
             }
@@ -447,46 +470,54 @@ namespace Oracle.NoSQL.SDK
         {
             var value = new MapValue
             {
-                ["min"] = snapshot.Min,
-                ["max"] = snapshot.Max,
+                ["min"] = ToInt32(snapshot.Min),
+                ["max"] = ToInt32(snapshot.Max),
                 ["avg"] = snapshot.Average
             };
             if (includePercentiles && snapshot.Percentile95.HasValue)
             {
-                value["95th"] = snapshot.Percentile95.Value;
-                value["99th"] = snapshot.Percentile99.Value;
+                value["95th"] = ToInt32(snapshot.Percentile95.Value);
+                value["99th"] = ToInt32(snapshot.Percentile99.Value);
             }
             return value;
         }
+
+        // These values originate as request-path Int32 measurements. Keep the
+        // established IntegerValue output contract even though immutable
+        // snapshot storage uses long for aggregation safety.
+        private static int ToInt32(long value) => checked((int)value);
 
         private static string FormatTime(DateTime value) =>
             value.ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss'Z'");
     }
 
-    // Exporters consume one Java-compatible view of each immutable snapshot.
-    // The logger runs before the handler, so handler mutation cannot change
-    // the already-emitted log record.
+    // Exporters consume immutable snapshots and create independent
+    // Java-compatible views. A mutable handler view can therefore never
+    // affect the logger or a future exporter.
     internal interface IStatsExporter
     {
-        void Export(MapValue snapshot);
+        void Export(StatsSnapshot snapshot);
     }
 
     internal sealed class HandlerStatsExporter : IStatsExporter
     {
         private readonly Func<StatsControl.StatsHandler> getHandler;
+        private readonly JavaCompatibleMapValueExporter mapValueExporter;
 
         internal HandlerStatsExporter(
-            Func<StatsControl.StatsHandler> getHandler)
+            Func<StatsControl.StatsHandler> getHandler,
+            JavaCompatibleMapValueExporter mapValueExporter)
         {
             this.getHandler = getHandler;
+            this.mapValueExporter = mapValueExporter;
         }
 
-        public void Export(MapValue snapshot)
+        public void Export(StatsSnapshot snapshot)
         {
             var handler = getHandler();
             if (handler != null)
             {
-                handler(snapshot);
+                handler(mapValueExporter.Export(snapshot));
             }
         }
     }
@@ -496,24 +527,28 @@ namespace Oracle.NoSQL.SDK
         private readonly bool enabled;
         private readonly ILogger logger;
         private readonly Func<bool> getPrettyPrint;
+        private readonly JavaCompatibleMapValueExporter mapValueExporter;
 
         internal LoggerStatsExporter(bool enabled, ILogger logger,
-            Func<bool> getPrettyPrint)
+            Func<bool> getPrettyPrint,
+            JavaCompatibleMapValueExporter mapValueExporter)
         {
             this.enabled = enabled;
             this.logger = logger;
             this.getPrettyPrint = getPrettyPrint;
+            this.mapValueExporter = mapValueExporter;
         }
 
-        public void Export(MapValue snapshot)
+        public void Export(StatsSnapshot snapshot)
         {
             if (!enabled)
             {
                 return;
             }
 
+            var mapValue = mapValueExporter.Export(snapshot);
             logger.LogInformation("{StatsLog}", StatsControl.LogPrefix +
-                snapshot.ToJsonString(getPrettyPrint()
+                mapValue.ToJsonString(getPrettyPrint()
                     ? new JsonOutputOptions { Indented = true }
                     : null));
         }
