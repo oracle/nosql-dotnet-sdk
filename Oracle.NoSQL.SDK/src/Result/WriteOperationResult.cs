@@ -51,6 +51,12 @@ namespace Oracle.NoSQL.SDK
             set => ExistingVersion = value;
         }
 
+        DateTime? IWriteResult<TRow>.ExistingCreationTime
+        {
+            get => ExistingCreationTime;
+            set => ExistingCreationTime = value;
+        }
+
         DateTime? IWriteResult<TRow>.ExistingModificationTime
         {
             get => ExistingModificationTime;
@@ -136,6 +142,21 @@ namespace Oracle.NoSQL.SDK
         /// <seealso cref="PutResult{TRow}.ExistingLastWriteMetadata"/>
         /// <seealso cref="DeleteResult{TRow}.ExistingLastWriteMetadata"/>
         public string ExistingLastWriteMetadata { get; internal set; }
+
+        /// <summary>
+        /// Gets the creation time of existing row if the Put or Delete
+        /// operation returned it.
+        /// </summary>
+        /// <remarks>
+        /// This value is equivalent to
+        /// <see cref="PutResult{TRow}.ExistingCreationTime"/> or
+        /// <see cref="DeleteResult{TRow}.ExistingCreationTime"/> for Put and
+        /// Delete operations respectively.
+        /// </remarks>
+        /// <inheritdoc cref="PutResult{TRow}.ExistingCreationTime" path="value"/>
+        /// <seealso cref="PutResult{TRow}.ExistingCreationTime"/>
+        /// <seealso cref="DeleteResult{TRow}.ExistingCreationTime"/>
+        public DateTime? ExistingCreationTime { get; internal set; }
 
         /// <summary>
         /// Gets the modification time of existing row if the conditional Put

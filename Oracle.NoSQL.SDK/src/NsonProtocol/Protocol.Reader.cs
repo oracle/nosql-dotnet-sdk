@@ -297,6 +297,10 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             {
                 switch (field)
                 {
+                    case FieldNames.CreationTime:
+                        result.ExistingCreationTime =
+                            ReadOptionalTimestamp(reader);
+                        return true;
                     case FieldNames.ExistingModTime:
                         result.ExistingModificationTime =
                             ReadOptionalTimestamp(reader);

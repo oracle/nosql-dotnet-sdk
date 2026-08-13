@@ -68,6 +68,12 @@ namespace Oracle.NoSQL.SDK
             set => ExistingVersion = value;
         }
 
+        DateTime? IWriteResult<TRow>.ExistingCreationTime
+        {
+            get => ExistingCreationTime;
+            set => ExistingCreationTime = value;
+        }
+
         DateTime? IWriteResult<TRow>.ExistingModificationTime
         {
             get => ExistingModificationTime;
@@ -120,6 +126,18 @@ namespace Oracle.NoSQL.SDK
         /// <seealso cref="NoSQLClient.DeleteAsync"/>
         /// <seealso cref="DeleteOptions.ReturnExisting"/>
         public RowVersion ExistingVersion { get; internal set; }
+
+        /// <summary>
+        /// Gets the creation time of existing row if available.
+        /// </summary>
+        /// <inheritdoc cref="ExistingRow" path="remarks"/>
+        /// <value>
+        /// The creation time of existing row in UTC if available, otherwise
+        /// <c>null</c>.
+        /// </value>
+        /// <seealso cref="NoSQLClient.DeleteAsync"/>
+        /// <seealso cref="DeleteOptions.ReturnExisting"/>
+        public DateTime? ExistingCreationTime { get; internal set; }
 
         /// <summary>
         /// Gets the JSON last-write metadata of existing row if available.

@@ -139,6 +139,10 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                         case FieldNames.RowVersion:
                             result.Version = ReadRowVersion(reader);
                             return true;
+                        case FieldNames.CreationTime:
+                            result.CreationTime =
+                                ReadOptionalTimestamp(reader);
+                            return true;
                         case FieldNames.ExpirationTime:
                             result.ExpirationTime =
                                 ReadOptionalTimestamp(reader);

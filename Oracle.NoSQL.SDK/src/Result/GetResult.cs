@@ -71,6 +71,16 @@ namespace Oracle.NoSQL.SDK
         public DateTime? ExpirationTime { get; internal set; }
 
         /// <summary>
+        /// Gets the system-generated creation time of the row.
+        /// </summary>
+        /// <value>
+        /// Creation time of the row in UTC if available from the server, or
+        /// <c>null</c> if the row does not exist or the server does not
+        /// provide this value.
+        /// </value>
+        public DateTime? CreationTime { get; internal set; }
+
+        /// <summary>
         /// Gets the modification time of the row.
         /// </summary>
         /// <value>
