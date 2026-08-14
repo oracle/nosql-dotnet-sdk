@@ -19,7 +19,9 @@ namespace Oracle.NoSQL.SDK
     {
         internal const short QueryV3 = 3;
         internal const short QueryV4 = 4;
-        internal const short DefaultQueryVersion = QueryV4;
+        internal const short QueryV5 = 5;
+        internal const short QueryV6 = 6;
+        internal const short DefaultQueryVersion = QueryV6;
 
         internal QueryRequestBase(NoSQLClient client) : base(client)
         {

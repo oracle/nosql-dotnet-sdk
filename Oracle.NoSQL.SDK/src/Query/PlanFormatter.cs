@@ -122,6 +122,16 @@ namespace Oracle.NoSQL.SDK.Query
                 case GroupStep group:
                     AppendGroupStep(builder, group, indent);
                     break;
+                case UnionStep union:
+                    for (var i = 0; i < union.BranchSteps.Length; i++)
+                    {
+                        AppendStep(builder, union.BranchSteps[i], indent);
+                        if (i < union.BranchSteps.Length - 1)
+                        {
+                            builder.Append(",\n");
+                        }
+                    }
+                    break;
             }
         }
 
