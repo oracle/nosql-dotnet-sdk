@@ -44,6 +44,39 @@ namespace Oracle.NoSQL.SDK.Tests
         }
 
         [TestMethod]
+        public void TestUnionBranchNamespaceOverridesQueryOptions()
+        {
+            var statement = new PreparedStatement();
+            statement.AddQueryBranch(new PreparedStatement.QueryBranch
+            {
+                ProxyStatement = new byte[] { 1 },
+                Namespace = "firstNamespace"
+            });
+            statement.AddQueryBranch(new PreparedStatement.QueryBranch
+            {
+                ProxyStatement = new byte[] { 2 },
+                Namespace = "secondNamespace"
+            });
+
+            using var client = new NoSQLClient(new NoSQLConfig
+            {
+                ServiceType = ServiceType.CloudSim,
+                Endpoint = "http://localhost:8080",
+                Namespace = "configNamespace"
+            });
+            var request = new QueryRequest<RecordValue>(client, statement,
+                new QueryOptions
+                {
+                    Namespace = "optionsNamespace"
+                });
+
+            request.UnionBranch = 0;
+            Assert.AreEqual("firstNamespace", request.Namespace);
+            request.UnionBranch = 1;
+            Assert.AreEqual("secondNamespace", request.Namespace);
+        }
+
+        [TestMethod]
         public void TestQueryVersionFallbackFromV6ToV3()
         {
             var handler = new ProtocolHandler();

@@ -120,6 +120,13 @@ namespace Oracle.NoSQL.SDK
         internal override string InternalTableName =>
             PreparedStatement?.GetTableName(UnionBranch);
 
+        // A V6 UNION plan has one proxy statement per branch. The proxy must
+        // receive the namespace paired with the selected branch, matching the
+        // Java driver's QueryRequest.getNamespace() behavior.
+        internal override string Namespace => PreparedStatement != null
+            ? PreparedStatement.GetNamespace(UnionBranch)
+            : base.Namespace;
+
         internal QueryContinuationKey ContinuationKey =>
             Options?.ContinuationKey;
 

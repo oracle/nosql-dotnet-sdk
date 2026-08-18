@@ -475,6 +475,52 @@ namespace Oracle.NoSQL.SDK.Tests
             } while (options.ContinuationKey != null);
         }
 
+        [TestMethod]
+        public async Task TestUnionAllSequentialContinuationAsync()
+        {
+            await VerifyUnionAllContinuationAsync(false);
+        }
+
+        [TestMethod]
+        public async Task TestUnionAllSortedContinuationAsync()
+        {
+            await VerifyUnionAllContinuationAsync(true);
+        }
+
+        private static async Task VerifyUnionAllContinuationAsync(
+            bool sorted)
+        {
+            CheckOnPrem();
+
+            var select = $"SELECT shardId, pkString FROM {Fixture.Table.Name}";
+            var sql = select + " UNION ALL " + select;
+            if (sorted)
+            {
+                sql += " ORDER BY shardId, pkString";
+            }
+
+            var statement = await client.PrepareAsync(sql);
+            var options = new QueryOptions
+            {
+                // Each call can issue only one proxy fetch. A one-row limit
+                // exercises UNION branch switching and continuation state.
+                Limit = 1
+            };
+            var rowCount = 0;
+            var queryCallCount = 0;
+
+            do
+            {
+                var result = await client.QueryAsync(statement, options);
+                rowCount += result.Rows.Count;
+                queryCallCount++;
+                options.ContinuationKey = result.ContinuationKey;
+            } while (options.ContinuationKey != null);
+
+            Assert.AreEqual(Fixture.Rows.Count() * 2, rowCount);
+            Assert.IsTrue(queryCallCount > 1);
+        }
+
         [DataTestMethod]
         [DynamicData(nameof(PreparedQueryDataSource))]
         public async Task TestPreparedQueryAsyncEnumerableAsync(QTest test,

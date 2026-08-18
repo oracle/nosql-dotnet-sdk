@@ -171,6 +171,31 @@ namespace Oracle.NoSQL.SDK.Tests
             Assert.IsTrue(result.Success);
         }
 
+        [TestMethod]
+        public async Task TestUnionQueryUsesBranchNamespaceAsync()
+        {
+            await PutRowAsync(Fixture.Table, GoodRow);
+
+            var select = $"SELECT * FROM {FullTableName}";
+            var statement = await invalidNsClient.PrepareAsync(
+                select + " UNION ALL " + select);
+            var options = new QueryOptions
+            {
+                Limit = 1
+            };
+            var rowCount = 0;
+
+            do
+            {
+                var result = await invalidNsClient.QueryAsync(statement,
+                    options);
+                rowCount += result.Rows.Count;
+                options.ContinuationKey = result.ContinuationKey;
+            } while (options.ContinuationKey != null);
+
+            Assert.AreEqual(2, rowCount);
+        }
+
         // We will shorten the rest of DML tests to only focus on options
 
         [TestMethod]

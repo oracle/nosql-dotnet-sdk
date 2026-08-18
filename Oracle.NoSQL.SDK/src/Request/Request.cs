@@ -112,7 +112,7 @@ namespace Oracle.NoSQL.SDK
         internal string Compartment =>
             BaseOptions?.Compartment ?? Config.Compartment;
 
-        internal string Namespace =>
+        internal virtual string Namespace =>
             BaseOptions?.Namespace ?? Config.Namespace;
 
         internal int RequestTimeoutMillis { get; set; }
