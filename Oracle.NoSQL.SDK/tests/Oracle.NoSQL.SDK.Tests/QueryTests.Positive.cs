@@ -492,11 +492,22 @@ namespace Oracle.NoSQL.SDK.Tests
         {
             CheckOnPrem();
 
-            var select = $"SELECT shardId, pkString FROM {Fixture.Table.Name}";
-            var sql = select + " UNION ALL " + select;
+            var select = sorted
+                ? $"SELECT shardId, pkString FROM {Fixture.Table.Name}"
+                : $"SELECT 1 AS branch, shardId, pkString FROM " +
+                  Fixture.Table.Name;
+            var secondSelect = sorted
+                ? select
+                : $"SELECT 2 AS branch, shardId, pkString FROM " +
+                  Fixture.Table.Name;
+            var union = select + " UNION ALL " + secondSelect;
+            var sql = union;
             if (sorted)
             {
-                sql += " ORDER BY shardId, pkString";
+                // ORDER BY belongs to a UNION branch. Wrap the UNION in an
+                // outer query to order the combined result.
+                sql = "SELECT $u.shardId, $u.pkString FROM (" + union +
+                    ") AS $u ORDER BY $u.shardId, $u.pkString";
             }
 
             var statement = await client.PrepareAsync(sql);
@@ -506,19 +517,47 @@ namespace Oracle.NoSQL.SDK.Tests
                 // exercises UNION branch switching and continuation state.
                 Limit = 1
             };
-            var rowCount = 0;
+            var rows = new List<RecordValue>();
             var queryCallCount = 0;
 
             do
             {
                 var result = await client.QueryAsync(statement, options);
-                rowCount += result.Rows.Count;
+                rows.AddRange(result.Rows);
                 queryCallCount++;
                 options.ContinuationKey = result.ContinuationKey;
             } while (options.ContinuationKey != null);
 
-            Assert.AreEqual(Fixture.Rows.Count() * 2, rowCount);
+            Assert.AreEqual(Fixture.Rows.Count() * 2, rows.Count);
             Assert.IsTrue(queryCallCount > 1);
+
+            if (!sorted)
+            {
+                // UNION ALL without ORDER BY must drain branch 1 before
+                // advancing to branch 2, even when every row has a separate
+                // continuation key.
+                var branchBoundary = Fixture.Rows.Count();
+                for (var i = 0; i < rows.Count; i++)
+                {
+                    Assert.AreEqual(i < branchBoundary ? 1 : 2,
+                        rows[i]["branch"].AsInt32);
+                }
+                return;
+            }
+
+            // A sorted UNION must maintain its order across continuation
+            // keys, including equal rows supplied by the two branches.
+            for (var i = 1; i < rows.Count; i++)
+            {
+                var previous = rows[i - 1];
+                var current = rows[i];
+                var shardComparison = previous["shardId"].AsInt32.CompareTo(
+                    current["shardId"].AsInt32);
+                Assert.IsTrue(shardComparison < 0 ||
+                    shardComparison == 0 && string.CompareOrdinal(
+                        previous["pkString"].AsString,
+                        current["pkString"].AsString) <= 0);
+            }
         }
 
         [DataTestMethod]

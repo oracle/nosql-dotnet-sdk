@@ -63,6 +63,17 @@ namespace Oracle.NoSQL.SDK.Query
             var wasStarted = state.IsStarted;
             state.IsStarted = true;
             runtime.UnionBranch = branch;
+
+            // Each user Query call permits only one proxy fetch. Defer an
+            // unstarted branch before its ReceiveIterator enters sort phase
+            // 1, which expects the continuation requirement to be recorded.
+            if (!wasStarted && runtime.FetchDone &&
+                !runtime.NeedContinuation)
+            {
+                runtime.NeedContinuation = true;
+                return false;
+            }
+
             if (!await state.Iterator.NextAsync(cancellationToken))
             {
                 // ReceiveIterator intentionally returns false without setting
