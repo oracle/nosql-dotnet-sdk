@@ -131,11 +131,12 @@ namespace Oracle.NoSQL.SDK {
         /// </para>
         /// <para>
         /// It is also possible to return information about the existing row.
-        /// The row, including its <see cref="RowVersion"/> and modification
-        /// time can be optionally returned as part of
+        /// The row, including its <see cref="RowVersion"/>, creation time,
+        /// and modification time can be optionally returned as part of
         /// <see cref="PutResult{TRow}"/> via properties
         /// <see cref="PutResult{TRow}.ExistingRow"/>,
         /// <see cref="PutResult{TRow}.ExistingVersion"/> and
+        /// <see cref="PutResult{TRow}.ExistingCreationTime"/>,
         /// <see cref="PutResult{TRow}.ExistingModificationTime"/>. The
         /// existing row information will only be returned if
         /// <see cref="PutOptions.ReturnExisting"/> is <c>true</c> and one of
