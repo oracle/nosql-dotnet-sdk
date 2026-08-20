@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 **Added**
 * Latest OCI region codes
+* Added server-generated creation-time metadata to Get, Put, Delete, and
+  WriteMany results when returned by the service.
 
 ## [5.2.3]
 
