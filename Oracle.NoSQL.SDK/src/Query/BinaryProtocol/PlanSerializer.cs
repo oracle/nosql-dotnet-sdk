@@ -32,7 +32,8 @@ namespace Oracle.NoSQL.SDK.Query.BinaryProtocol
             FnMinMax = 41,
             Group = 65,
             Sort2 = 66,
-            FnCollect = 78
+            FnCollect = 78,
+            Union = 90
         }
 
         private static void DeserializeBase(MemoryStream stream,
@@ -100,11 +101,11 @@ namespace Oracle.NoSQL.SDK.Query.BinaryProtocol
         }
 
         private static SortStep DeserializeSortStep(MemoryStream stream,
-            StepType stepType)
+            StepType stepType, short queryVersion)
         {
             var step = new SortStep();
             DeserializeBase(stream, step);
-            step.InputStep = DeserializeStep(stream);
+            step.InputStep = DeserializeStep(stream, queryVersion);
             step.SortSpecs = DeserializeSortSpecs(stream, step);
             step.CountMemory = stepType != StepType.Sort2 ||
                 ReadBoolean(stream);
@@ -112,7 +113,8 @@ namespace Oracle.NoSQL.SDK.Query.BinaryProtocol
             return step;
         }
 
-        private static SFWStep DeserializeSFWStep(MemoryStream stream)
+        private static SFWStep DeserializeSFWStep(MemoryStream stream,
+            short queryVersion)
         {
             var step = new SFWStep();
             DeserializeBase(stream, step);
@@ -120,10 +122,10 @@ namespace Oracle.NoSQL.SDK.Query.BinaryProtocol
             step.GroupColumnCount = ReadUnpackedInt32(stream);
             step.FromVarName = ReadString(stream);
             step.IsSelectStar = ReadBoolean(stream);
-            step.ColumnSteps = DeserializeMultipleSteps(stream);
-            step.FromStep = DeserializeStep(stream);
-            step.OffsetStep = DeserializeStep(stream);
-            step.LimitStep = DeserializeStep(stream);
+            step.ColumnSteps = DeserializeMultipleSteps(stream, queryVersion);
+            step.FromStep = DeserializeStep(stream, queryVersion);
+            step.OffsetStep = DeserializeStep(stream, queryVersion);
+            step.LimitStep = DeserializeStep(stream, queryVersion);
             ValidateSFWStep(step);
             return step;
         }
@@ -170,39 +172,41 @@ namespace Oracle.NoSQL.SDK.Query.BinaryProtocol
             return step;
         }
 
-        private static FieldStep DeserializeFieldStep(MemoryStream stream)
+        private static FieldStep DeserializeFieldStep(MemoryStream stream,
+            short queryVersion)
         {
             var step = new FieldStep();
             DeserializeBase(stream, step);
-            step.InputStep = DeserializeStep(stream);
+            step.InputStep = DeserializeStep(stream, queryVersion);
             step.FieldName = ReadString(stream);
             ValidateFieldStep(step);
             return step;
         }
 
         private static ArithmeticOpStep DeserializeArithmeticStep(
-            MemoryStream stream)
+            MemoryStream stream, short queryVersion)
         {
             var step = new ArithmeticOpStep();
             DeserializeBase(stream, step);
             step.Opcode = (ArithmeticOpcode)ReadUnpackedInt16(stream);
-            step.ArgSteps = DeserializeMultipleSteps(stream);
+            step.ArgSteps = DeserializeMultipleSteps(stream, queryVersion);
             step.OpSequence = ReadString(stream);
             ValidateArithmeticOpStep(step);
             return step;
         }
 
-        private static FuncSumStep DeserializeFuncSumStep(MemoryStream stream)
+        private static FuncSumStep DeserializeFuncSumStep(MemoryStream stream,
+            short queryVersion)
         {
             var step = new FuncSumStep();
             DeserializeBase(stream, step);
-            step.InputStep = DeserializeStep(stream);
+            step.InputStep = DeserializeStep(stream, queryVersion);
             ValidateFuncSumStep(step);
             return step;
         }
 
         private static FuncMinMaxStep DeserializeFuncMinMaxStep(
-            MemoryStream stream)
+            MemoryStream stream, short queryVersion)
         {
             var step = new FuncMinMaxStep();
             DeserializeBase(stream, step);
@@ -215,36 +219,38 @@ namespace Oracle.NoSQL.SDK.Query.BinaryProtocol
                     $"min/max operation: {code}");
             }
 
-            step.InputStep = DeserializeStep(stream);
+            step.InputStep = DeserializeStep(stream, queryVersion);
             ValidateFuncMinMaxStep(step);
             return step;
         }
 
-        private static FuncSizeStep DeserializeFuncSizeStep(MemoryStream stream)
+        private static FuncSizeStep DeserializeFuncSizeStep(MemoryStream stream,
+            short queryVersion)
         {
             var step = new FuncSizeStep();
             DeserializeBase(stream, step);
-            step.InputStep = DeserializeStep(stream);
+            step.InputStep = DeserializeStep(stream, queryVersion);
             ValidateFuncSizeStep(step);
             return step;
         }
 
         private static FuncCollectStep DeserializeFuncCollectStep(
-            MemoryStream stream)
+            MemoryStream stream, short queryVersion)
         {
             var step = new FuncCollectStep();
             DeserializeBase(stream, step);
             step.IsDistinct = ReadBoolean(stream);
-            step.InputStep = DeserializeStep(stream);
+            step.InputStep = DeserializeStep(stream, queryVersion);
             ValidateFuncCollectStep(step);
             return step;
         }
 
-        private static GroupStep DeserializeGroupStep(MemoryStream stream)
+        private static GroupStep DeserializeGroupStep(MemoryStream stream,
+            short queryVersion)
         {
             var step = new GroupStep();
             DeserializeBase(stream, step);
-            step.InputStep = DeserializeStep(stream);
+            step.InputStep = DeserializeStep(stream, queryVersion);
             step.GroupingColumnCount = ReadUnpackedInt32(stream);
             CheckNotNegative(step.GroupingColumnCount,
                 "group by column count", step);
@@ -272,16 +278,31 @@ namespace Oracle.NoSQL.SDK.Query.BinaryProtocol
             step.IsDistinct = ReadBoolean(stream);
             step.RemoveResult = ReadBoolean(stream);
             step.CountMemory = ReadBoolean(stream);
+            step.IsRegrouping = queryVersion >= QueryRequestBase.QueryV6 &&
+                ReadBoolean(stream);
             ValidateGroupStep(step);
             return step;
         }
 
-        private static PlanStep[] DeserializeMultipleSteps(MemoryStream stream)
+        private static UnionStep DeserializeUnionStep(MemoryStream stream,
+            short queryVersion)
         {
-            return ReadArray(stream, DeserializeStep);
+            var step = new UnionStep();
+            DeserializeBase(stream, step);
+            step.BranchSteps = DeserializeMultipleSteps(stream, queryVersion);
+            step.SortSpecs = DeserializeSortSpecs(stream, step);
+            ValidateUnionStep(step);
+            return step;
         }
 
-        internal static PlanStep DeserializeStep(MemoryStream stream)
+        private static PlanStep[] DeserializeMultipleSteps(MemoryStream stream,
+            short queryVersion)
+        {
+            return ReadArray(stream, s => DeserializeStep(s, queryVersion));
+        }
+
+        internal static PlanStep DeserializeStep(MemoryStream stream,
+            short queryVersion = QueryRequestBase.QueryV3)
         {
             var stepType = (StepType)ReadByte(stream);
             switch (stepType)
@@ -289,9 +310,9 @@ namespace Oracle.NoSQL.SDK.Query.BinaryProtocol
                 case StepType.None:
                     return null;
                 case StepType.Sort: case StepType.Sort2:
-                    return DeserializeSortStep(stream, stepType);
+                    return DeserializeSortStep(stream, stepType, queryVersion);
                 case StepType.SFW:
-                    return DeserializeSFWStep(stream);
+                    return DeserializeSFWStep(stream, queryVersion);
                 case StepType.Recv:
                     return DeserializeReceiveStep(stream);
                 case StepType.Const:
@@ -301,19 +322,21 @@ namespace Oracle.NoSQL.SDK.Query.BinaryProtocol
                 case StepType.ExternalVarRef:
                     return DeserializeExtVarRefStep(stream);
                 case StepType.FieldStep:
-                    return DeserializeFieldStep(stream);
+                    return DeserializeFieldStep(stream, queryVersion);
                 case StepType.ArithOp:
-                    return DeserializeArithmeticStep(stream);
+                    return DeserializeArithmeticStep(stream, queryVersion);
                 case StepType.FnSum:
-                    return DeserializeFuncSumStep(stream);
+                    return DeserializeFuncSumStep(stream, queryVersion);
                 case StepType.FnMinMax:
-                    return DeserializeFuncMinMaxStep(stream);
+                    return DeserializeFuncMinMaxStep(stream, queryVersion);
                 case StepType.FnSize:
-                    return DeserializeFuncSizeStep(stream);
+                    return DeserializeFuncSizeStep(stream, queryVersion);
                 case StepType.FnCollect:
-                    return DeserializeFuncCollectStep(stream);
+                    return DeserializeFuncCollectStep(stream, queryVersion);
                 case StepType.Group:
-                    return DeserializeGroupStep(stream);
+                    return DeserializeGroupStep(stream, queryVersion);
+                case StepType.Union:
+                    return DeserializeUnionStep(stream, queryVersion);
                 default:
                     throw new BadProtocolException(
                         "Query plan: received invalid or unsupported step " +

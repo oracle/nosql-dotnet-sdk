@@ -244,5 +244,22 @@ namespace Oracle.NoSQL.SDK.Query
             CheckStepExists(step.InputStep, "input", step);
         }
 
+        internal static void ValidateUnionStep(UnionStep step)
+        {
+            ValidateBase(step);
+            CheckNotEmpty(step.BranchSteps, "branch steps", step);
+            for (var i = 0; i < step.BranchSteps.Length; i++)
+            {
+                CheckStepExists(step.BranchSteps[i], "branch", step, i);
+                if (!step.BranchSteps[i].IsAsync)
+                {
+                    throw new BadProtocolException(
+                        "Query plan: unexpected sync step " +
+                        step.BranchSteps[i].Name +
+                        " for UNION branch " + i);
+                }
+            }
+        }
+
     }
 }

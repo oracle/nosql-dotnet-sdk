@@ -112,6 +112,7 @@ namespace Oracle.NoSQL.SDK.Query {
 
             queryRequest.ShardId = shardId;
             queryRequest.VirtualScan = virtualScan;
+            queryRequest.UnionBranch = runtime.UnionBranch;
             queryRequest.StatsLogicalQueryRequest = runtime.Request;
 
             var result = (QueryResult<RecordValue>)

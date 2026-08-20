@@ -60,6 +60,8 @@ namespace Oracle.NoSQL.SDK.Query {
 
         internal bool FetchDone { get; set; }
 
+        internal int UnionBranch { get; set; }
+
         internal bool NeedContinuation
         {
             get => continuationKey != null;

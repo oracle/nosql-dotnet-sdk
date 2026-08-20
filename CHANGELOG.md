@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 **Added**
 * Latest OCI region codes
+* Added on-premises query protocol V6 support, including UNION ALL query
+  plans and V6 iterators.
 
 ## [5.2.3]
 

@@ -60,6 +60,7 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             internal const string Query = "q";
             internal const string QueryName = "qn";
             internal const string QueryVersion = "qv";
+            internal const string QueryBranches = "qb";
             internal const string Range = "rg";
             internal const string RangePath = "rp";
             internal const string ReadThrottleCount = "rt";
@@ -164,6 +165,8 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             internal const string VirtualScans = "vssa";
             internal const string VirtualScanSID = "vssid";
             internal const string VirtualScanPID = "vspid";
+            internal const string VirtualScanNumTables = "vsnt";
+            internal const string VirtualScanCurrentIndexRange = "vscir";
             internal const string VirtualScanPrimKey = "vspk";
             internal const string VirtualScanSecKey = "vssk";
             internal const string VirtualScanMoveAfter = "vsma";

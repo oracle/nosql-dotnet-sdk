@@ -312,10 +312,27 @@ namespace Oracle.NoSQL.SDK.Query
 
         internal bool CountMemory { get; set; }
 
+        internal bool IsRegrouping { get; set; }
+
         internal override PlanAsyncIterator CreateAsyncIterator(
             QueryRuntime runtime)
         {
             return new GroupIterator(runtime, this);
+        }
+    }
+
+    internal class UnionStep : PlanAsyncStep
+    {
+        internal override string Name => "UNION";
+
+        internal PlanStep[] BranchSteps { get; set; }
+
+        internal SortSpec[] SortSpecs { get; set; }
+
+        internal override PlanAsyncIterator CreateAsyncIterator(
+            QueryRuntime runtime)
+        {
+            return new UnionIterator(runtime, this);
         }
     }
 
