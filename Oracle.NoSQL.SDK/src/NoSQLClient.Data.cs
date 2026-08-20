@@ -394,11 +394,14 @@ namespace Oracle.NoSQL.SDK {
         /// </para>
         /// <para>
         /// It is also possible to return information about the existing row.
-        /// The row, its version and modification time can be optionally
-        /// returned as part of <see cref="DeleteResult{TRow}"/> via
-        /// properties <see cref="DeleteResult{TRow}.ExistingRow"/>,
-        /// <see cref="DeleteResult{TRow}.ExistingVersion"/> and
-        /// <see cref="DeleteResult{TRow}.ExistingModificationTime"/>. The
+        /// The row, including its <see cref="RowVersion"/>, creation time,
+        /// and modification time can be optionally returned as part of
+        /// <see cref="DeleteResult{TRow}"/> via the
+        /// <see cref="DeleteResult{TRow}.ExistingRow"/>,
+        /// <see cref="DeleteResult{TRow}.ExistingVersion"/>,
+        /// <see cref="DeleteResult{TRow}.ExistingCreationTime"/>,
+        /// and <see cref="DeleteResult{TRow}.ExistingModificationTime"/>
+        /// properties. The
         /// existing row information will only be returned if
         /// <see cref="DeleteOptions.ReturnExisting"/> is <c>true</c> and one
         /// of the following occurs:
