@@ -130,10 +130,23 @@ namespace Oracle.NoSQL.SDK
         /// <summary>
         /// Gets the creation time of existing row if available.
         /// </summary>
-        /// <inheritdoc cref="ExistingRow" path="remarks"/>
+        /// <remarks>
+        /// This value is available only if
+        /// <see cref="DeleteOptions.ReturnExisting"/> was set to <c>true</c>
+        /// and under one of the conditions described in the remarks section
+        /// of <see cref="NoSQLClient.DeleteAsync"/>.
+        /// </remarks>
         /// <value>
+        /// <para>
         /// The creation time of existing row in UTC if available, otherwise
         /// <c>null</c>.
+        /// </para>
+        /// <para>
+        /// For rows written by server versions earlier than 25.3, the server
+        /// returns the row's modification time as its creation time. For rows
+        /// written by versions earlier than 19.5, the server returns zero,
+        /// which this SDK exposes as <c>null</c>.
+        /// </para>
         /// </value>
         /// <seealso cref="NoSQLClient.DeleteAsync"/>
         /// <seealso cref="DeleteOptions.ReturnExisting"/>

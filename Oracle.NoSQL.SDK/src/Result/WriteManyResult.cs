@@ -101,9 +101,10 @@ namespace Oracle.NoSQL.SDK
         /// resulted in the entire operation aborting.
         /// </summary>
         /// <value>
-        /// Index of the failed Put or Delete sub operation in the
-        /// <see cref="WriteManyResult{TRow}.Results"/> list if the entire
-        /// operation was aborted, otherwise <c>null</c>.
+        /// Zero-based index of the failed Put or Delete sub operation in the
+        /// submitted operations if the entire operation was aborted,
+        /// otherwise <c>null</c>. The <see cref="Results"/> property is
+        /// <c>null</c> when the operation is aborted.
         /// </value>
         public int? FailedOperationIndex { get; internal set; }
 
@@ -111,6 +112,12 @@ namespace Oracle.NoSQL.SDK
         /// Gets the result of the failed Put or Delete sub operation that
         /// resulted in the entire operation aborting.
         /// </summary>
+        /// <remarks>
+        /// If the failed sub operation returns existing-row information,
+        /// its creation time is available through
+        /// <see cref="WriteOperationResult{TRow}.ExistingCreationTime"/>,
+        /// subject to that property's availability and older-row behavior.
+        /// </remarks>
         /// <value>
         /// Result of the failed Put or Delete sub operation if the entire
         /// operation was aborted, otherwise <c>null</c>.

@@ -8,6 +8,7 @@
 namespace Oracle.NoSQL.SDK.Tests
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using NsonProtocol;
@@ -16,6 +17,19 @@ namespace Oracle.NoSQL.SDK.Tests
     public class CreationTimeProtocolTests
     {
         private const long CreationTimeMillis = 1786513124792;
+
+        public static IEnumerable<object[]> TimestampCases => new[]
+        {
+            // A native creation time differs from the modification time.
+            new object[] { (long?)CreationTimeMillis, CreationTimeMillis + 1000 },
+            // A supporting server supplies the modification time for a
+            // pre-25.3 row, and zero for a pre-19.5 row.
+            new object[] { (long?)CreationTimeMillis, CreationTimeMillis },
+            new object[] { (long?)0, 0L },
+            // Missing/zero ct must not be synthesized from a nonzero md/em.
+            new object[] { null, CreationTimeMillis },
+            new object[] { (long?)0, CreationTimeMillis }
+        };
 
         [TestMethod]
         public void TestGetDeserializesCreationTime()
@@ -80,13 +94,177 @@ namespace Oracle.NoSQL.SDK.Tests
         [TestMethod]
         public void TestReturnInfoTreatsMissingAndZeroCreationTimeAsUnavailable()
         {
-            var missingResult = new PutResult<RecordValue>();
-            DeserializeReturnInfo(missingResult, null);
-            Assert.IsNull(missingResult.ExistingCreationTime);
+            foreach (var creationTime in new long?[] { null, 0 })
+            {
+                foreach (var result in new IWriteResult<RecordValue>[]
+                         {
+                             new PutResult<RecordValue>(),
+                             new DeleteResult<RecordValue>(),
+                             new WriteOperationResult<RecordValue>()
+                         })
+                {
+                    DeserializeReturnInfo(result, creationTime);
+                    Assert.IsNull(result.ExistingCreationTime);
+                }
+            }
+        }
 
-            var zeroResult = new PutResult<RecordValue>();
-            DeserializeReturnInfo(zeroResult, 0);
-            Assert.IsNull(zeroResult.ExistingCreationTime);
+        [DataTestMethod]
+        [DynamicData(nameof(TimestampCases))]
+        public void TestGetPreservesServerTimestampSemantics(
+            long? creationTime, long modificationTime)
+        {
+            using var client = MakeClient();
+            var request = new GetRequest<RecordValue>(client, "table",
+                new MapValue(), null);
+            using var stream = CreateResponse(writer =>
+            {
+                writer.StartMap(Protocol.FieldNames.Row);
+                writer.StartMap(Protocol.FieldNames.Value);
+                writer.WriteInt32("id", 1);
+                writer.EndMap();
+                WriteTimestamps(writer, creationTime, modificationTime,
+                    Protocol.FieldNames.ModificationTime);
+                writer.EndMap();
+            });
+
+            var result = new RequestSerializer().DeserializeGet(stream, request);
+            Assert.IsNotNull(result.Row);
+            AssertTimestamp(creationTime, result.CreationTime);
+            AssertTimestamp(modificationTime, result.ModificationTime);
+        }
+
+        [DataTestMethod]
+        [DynamicData(nameof(TimestampCases))]
+        public void TestConditionalWriteResponsesPreserveServerTimestamps(
+            long? creationTime, long modificationTime)
+        {
+            using var client = MakeClient();
+            using var stream = CreateResponse(writer =>
+            {
+                writer.WriteBoolean(Protocol.FieldNames.Success, false);
+                WriteReturnInfo(writer, creationTime, modificationTime);
+            });
+            var serializer = new RequestSerializer();
+            var put = serializer.DeserializePut(stream,
+                new PutIfAbsentRequest<RecordValue>(client, "table",
+                    new RecordValue(), new PutOptions { ReturnExisting = true }));
+            Assert.IsFalse(put.Success);
+            AssertTimestamp(creationTime, put.ExistingCreationTime);
+            AssertTimestamp(modificationTime, put.ExistingModificationTime);
+
+            stream.Position = 0;
+            var delete = serializer.DeserializeDelete(stream,
+                new DeleteRequest<RecordValue>(client, "table", new MapValue(),
+                    new DeleteOptions { ReturnExisting = true }));
+            Assert.IsFalse(delete.Success);
+            AssertTimestamp(creationTime, delete.ExistingCreationTime);
+            AssertTimestamp(modificationTime, delete.ExistingModificationTime);
+        }
+
+        [DataTestMethod]
+        [DynamicData(nameof(TimestampCases))]
+        public void TestWriteManyFailureAndNonAbortingResponses(
+            long? creationTime, long modificationTime)
+        {
+            using var client = MakeClient();
+            foreach (var abort in new[] { true, false })
+            {
+                var request = new WriteManyRequest<RecordValue>(client, "table",
+                    new WriteOperationCollection()
+                        .AddPut(new MapValue { ["id"] = 0 })
+                        .AddPutIfAbsent(new MapValue { ["id"] = 1 },
+                            new PutOptions { ReturnExisting = true }),
+                    new WriteManyOptions { AbortIfUnsuccessful = abort });
+                using var stream = CreateResponse(writer =>
+                {
+                    if (abort)
+                    {
+                        writer.StartMap(Protocol.FieldNames.WmFailure);
+                        writer.WriteInt32(Protocol.FieldNames.WmFailIndex, 1);
+                        writer.StartMap(Protocol.FieldNames.WmFailResult);
+                    }
+                    else
+                    {
+                        writer.StartArray(Protocol.FieldNames.WmSuccess);
+                        writer.StartMap();
+                        writer.WriteBoolean(Protocol.FieldNames.Success, true);
+                        writer.EndMap();
+                        writer.StartMap();
+                    }
+
+                    writer.WriteBoolean(Protocol.FieldNames.Success, false);
+                    WriteReturnInfo(writer, creationTime, modificationTime);
+                    writer.EndMap();
+                    if (abort)
+                    {
+                        writer.EndMap();
+                    }
+                    else
+                    {
+                        writer.EndArray();
+                    }
+                });
+
+                var result = new RequestSerializer()
+                    .DeserializeWriteMany<RecordValue>(stream, request);
+                WriteOperationResult<RecordValue> failed;
+                if (abort)
+                {
+                    Assert.IsFalse(result.Success);
+                    Assert.AreEqual(1, result.FailedOperationIndex);
+                    Assert.IsNull(result.Results);
+                    failed = result.FailedOperationResult;
+                }
+                else
+                {
+                    Assert.IsTrue(result.Success);
+                    Assert.IsNull(result.FailedOperationIndex);
+                    Assert.IsNull(result.FailedOperationResult);
+                    Assert.AreEqual(2, result.Results.Count);
+                    Assert.IsTrue(result.Results[0].Success);
+                    failed = result.Results[1];
+                }
+
+                Assert.IsNotNull(failed);
+                Assert.IsFalse(failed.Success);
+                AssertTimestamp(creationTime, failed.ExistingCreationTime);
+                AssertTimestamp(modificationTime, failed.ExistingModificationTime);
+            }
+        }
+
+        private static void WriteReturnInfo(NsonWriter writer,
+            long? creationTime, long modificationTime)
+        {
+            writer.StartMap(Protocol.FieldNames.ReturnInfo);
+            WriteTimestamps(writer, creationTime, modificationTime,
+                Protocol.FieldNames.ExistingModTime);
+            writer.EndMap();
+        }
+
+        private static void WriteTimestamps(NsonWriter writer,
+            long? creationTime, long modificationTime, string modificationField)
+        {
+            if (creationTime.HasValue)
+            {
+                writer.WriteInt64(Protocol.FieldNames.CreationTime,
+                    creationTime.Value);
+            }
+            writer.WriteInt64(modificationField, modificationTime);
+        }
+
+        private static void AssertTimestamp(long? millis, DateTime? actual)
+        {
+            if (!millis.HasValue || millis == 0)
+            {
+                Assert.IsNull(actual);
+            }
+            else
+            {
+                Assert.AreEqual(DateTime.UnixEpoch.AddMilliseconds(millis.Value),
+                    actual);
+                Assert.AreEqual(DateTimeKind.Utc, actual.Value.Kind);
+            }
         }
 
         private static NoSQLClient MakeClient() => new NoSQLClient(

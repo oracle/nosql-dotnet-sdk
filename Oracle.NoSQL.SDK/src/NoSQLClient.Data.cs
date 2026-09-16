@@ -166,9 +166,10 @@ namespace Oracle.NoSQL.SDK {
         /// <see cref="PutOptions.IfPresent"/> or
         /// <see cref="PutOptions.MatchVersion"/> is specified) and the
         /// operation replaces existing row. In these cases, the row, its
-        /// version and modification time will be returned as they were before
-        /// the put operation took place. Note that this information might not
-        /// be available with older servers. Also note that if
+        /// version, creation time and modification time will be returned as
+        /// they were before the put operation took place. Note that this
+        /// information might not be available with older servers. Also note
+        /// that if
         /// <see cref="PutOptions.MatchVersion"/> is specified and the
         /// operation succeeds, the existing row information will not be
         /// returned.
@@ -418,10 +419,10 @@ namespace Oracle.NoSQL.SDK {
         /// <item>
         /// <description>
         /// <see cref="DeleteOptions.MatchVersion"/> is not specified and the
-        /// delete operation succeeds, in which case the row, its version and
-        /// modification time will be returned as they were before the
-        /// deletion. Note that this information might not be available with
-        /// older servers. Also note that if
+        /// delete operation succeeds, in which case the row, its version,
+        /// creation time and modification time will be returned as they were
+        /// before the deletion. Note that this information might not be
+        /// available with older servers. Also note that if
         /// <see cref="DeleteOptions.MatchVersion"/> is specified and the
         /// operation succeeds, the existing row information will not be
         /// returned.

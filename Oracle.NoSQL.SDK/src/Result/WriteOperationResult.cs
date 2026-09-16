@@ -148,12 +148,33 @@ namespace Oracle.NoSQL.SDK
         /// operation returned it.
         /// </summary>
         /// <remarks>
+        /// <para>
         /// This value is equivalent to
         /// <see cref="PutResult{TRow}.ExistingCreationTime"/> or
         /// <see cref="DeleteResult{TRow}.ExistingCreationTime"/> for Put and
         /// Delete operations respectively.
+        /// The corresponding <see cref="PutOptions.ReturnExisting"/> or
+        /// <see cref="DeleteOptions.ReturnExisting"/> option must be
+        /// <c>true</c>, and the operation must return existing-row information.
+        /// </para>
+        /// <para>
+        /// This also applies to
+        /// <see cref="WriteManyResult{TRow}.FailedOperationResult"/> when a
+        /// conditional failure aborts the batch.
+        /// </para>
         /// </remarks>
-        /// <inheritdoc cref="PutResult{TRow}.ExistingCreationTime" path="value"/>
+        /// <value>
+        /// <para>
+        /// The creation time of existing row in UTC if available, otherwise
+        /// <c>null</c>.
+        /// </para>
+        /// <para>
+        /// For rows written by server versions earlier than 25.3, the server
+        /// returns the row's modification time as its creation time. For rows
+        /// written by versions earlier than 19.5, the server returns zero,
+        /// which this SDK exposes as <c>null</c>.
+        /// </para>
+        /// </value>
         /// <seealso cref="PutResult{TRow}.ExistingCreationTime"/>
         /// <seealso cref="DeleteResult{TRow}.ExistingCreationTime"/>
         public DateTime? ExistingCreationTime { get; internal set; }
