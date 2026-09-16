@@ -52,7 +52,7 @@ namespace Oracle.NoSQL.SDK.Tests
         }
 
         [TestMethod]
-        public void TestGetTreatsMissingAndZeroCreationTimeAsUnavailable()
+        public void TestGetMissingRowHasNoCreationTime()
         {
             using var client = MakeClient();
             var request = new GetRequest<RecordValue>(client, "table",
@@ -61,17 +61,55 @@ namespace Oracle.NoSQL.SDK.Tests
             using var missingStream = CreateResponse(_ => { });
             var missingResult = new RequestSerializer().DeserializeGet(
                 missingStream, request);
+            Assert.IsNull(missingResult.Row);
+            Assert.IsNull(missingResult.Version);
+            Assert.IsNull(missingResult.ModificationTime);
             Assert.IsNull(missingResult.CreationTime);
+        }
 
-            using var zeroStream = CreateResponse(writer =>
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public void TestGetExistingRowWithoutCreationTimePreservesMetadata(
+            bool writeZeroCreationTime)
+        {
+            using var client = MakeClient();
+            var request = new GetRequest<RecordValue>(client, "table",
+                new MapValue { ["id"] = 1 }, null);
+            // Opaque version bytes are only round-tripped by this decoder
+            // test; they are not interpreted or submitted to a server.
+            var versionBytes = new byte[] { 0, 1, 127, 128, 255 };
+            using var stream = CreateResponse(writer =>
             {
                 writer.StartMap(Protocol.FieldNames.Row);
-                writer.WriteInt64(Protocol.FieldNames.CreationTime, 0);
+                if (writeZeroCreationTime)
+                {
+                    writer.WriteInt64(Protocol.FieldNames.CreationTime, 0);
+                }
+                // Include a real row payload and metadata after ct so this
+                // cannot pass by treating the response as a missing row or
+                // by stopping deserialization at an unavailable timestamp.
+                writer.StartMap(Protocol.FieldNames.Value);
+                writer.WriteInt32("id", 1);
+                writer.WriteString("name", "legacy-row");
+                writer.EndMap();
+                writer.WriteByteArray(Protocol.FieldNames.RowVersion,
+                    versionBytes);
+                writer.WriteInt64(Protocol.FieldNames.ModificationTime,
+                    CreationTimeMillis);
                 writer.EndMap();
             });
-            var zeroResult = new RequestSerializer().DeserializeGet(
-                zeroStream, request);
-            Assert.IsNull(zeroResult.CreationTime);
+
+            var result = new RequestSerializer().DeserializeGet(stream, request);
+
+            Assert.IsNotNull(result.Row);
+            Assert.AreEqual(2, result.Row.Count);
+            Assert.AreEqual(1, result.Row["id"].AsInt32);
+            Assert.AreEqual("legacy-row", result.Row["name"].AsString);
+            Assert.IsNotNull(result.Version);
+            CollectionAssert.AreEqual(versionBytes, result.Version.InternalBytes);
+            AssertTimestamp(CreationTimeMillis, result.ModificationTime);
+            Assert.IsNull(result.CreationTime);
         }
 
         [TestMethod]
@@ -117,12 +155,15 @@ namespace Oracle.NoSQL.SDK.Tests
             using var client = MakeClient();
             var request = new GetRequest<RecordValue>(client, "table",
                 new MapValue(), null);
+            var versionBytes = new byte[] { 1, 2, 3, 255 };
             using var stream = CreateResponse(writer =>
             {
                 writer.StartMap(Protocol.FieldNames.Row);
                 writer.StartMap(Protocol.FieldNames.Value);
                 writer.WriteInt32("id", 1);
                 writer.EndMap();
+                writer.WriteByteArray(Protocol.FieldNames.RowVersion,
+                    versionBytes);
                 WriteTimestamps(writer, creationTime, modificationTime,
                     Protocol.FieldNames.ModificationTime);
                 writer.EndMap();
@@ -130,6 +171,10 @@ namespace Oracle.NoSQL.SDK.Tests
 
             var result = new RequestSerializer().DeserializeGet(stream, request);
             Assert.IsNotNull(result.Row);
+            Assert.AreEqual(1, result.Row.Count);
+            Assert.AreEqual(1, result.Row["id"].AsInt32);
+            Assert.IsNotNull(result.Version);
+            CollectionAssert.AreEqual(versionBytes, result.Version.InternalBytes);
             AssertTimestamp(creationTime, result.CreationTime);
             AssertTimestamp(modificationTime, result.ModificationTime);
         }
