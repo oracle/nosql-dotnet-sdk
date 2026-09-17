@@ -170,10 +170,11 @@ namespace Oracle.NoSQL.SDK
         /// <c>null</c>.
         /// </para>
         /// <para>
-        /// For rows written by server versions earlier than 25.3, the server
-        /// returns the row's modification time as its creation time. For rows
-        /// written by versions earlier than 19.5, the server returns zero,
-        /// which this SDK exposes as <c>null</c>.
+        /// On-premises creation-time generation requires KV 26.1 or later
+        /// with system compatibility version 26.1 enabled. Creation times for
+        /// rows written before enablement are not reliable. A missing or zero
+        /// server value is exposed as <c>null</c>; this SDK does not infer
+        /// creation time from modification time.
         /// </para>
         /// </value>
         /// <seealso cref="NoSQLClient.PutAsync"/>

@@ -20,9 +20,6 @@ namespace Oracle.NoSQL.SDK.Tests
     {
         private const int ShardId = 1;
 
-        private static readonly Version CreationTimeVersion =
-            new Version("25.3");
-
         private static readonly TableInfo Table = new TableInfo(
             TableNamePrefix + "CreationTime" +
             Guid.NewGuid().ToString("N").Substring(0, 8),
@@ -382,11 +379,7 @@ namespace Oracle.NoSQL.SDK.Tests
 
         private static void CheckCreationTimeSupport()
         {
-            if (KVVersion != null && KVVersion < CreationTimeVersion)
-            {
-                Assert.Inconclusive(
-                    "This test requires server creation-time support");
-            }
+            CreationTimeTestCapabilities.CheckSupported(KVVersion);
         }
 
         private static DateTime GetRequiredCreationTime(
