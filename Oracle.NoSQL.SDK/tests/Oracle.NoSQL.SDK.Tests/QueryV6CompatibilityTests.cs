@@ -87,7 +87,9 @@ namespace Oracle.NoSQL.SDK.Tests
             Assert.AreEqual("optionsNamespace", request.Namespace);
 
             request.Options = null;
-            Assert.AreEqual("configNamespace", request.Namespace);
+            Assert.AreEqual("secondNamespace", request.Namespace);
+            request.UnionBranch = 0;
+            Assert.AreEqual("firstNamespace", request.Namespace);
 
             using var noDefaultClient = new NoSQLClient(new NoSQLConfig
             {
@@ -402,6 +404,10 @@ namespace Oracle.NoSQL.SDK.Tests
             client.SetQueryTopology(new TopologyInfo(10, new[] { 5, 6 },
                 "storeTwo"));
 
+            runtime.ConstructionUnionBranch = 0;
+            Assert.AreEqual(4, runtime.GetConstructionTopology().SequenceNumber);
+            runtime.ConstructionUnionBranch = 1;
+            Assert.AreEqual(7, runtime.GetConstructionTopology().SequenceNumber);
             Assert.AreEqual(4, runtime.StoreTopologies[0].SequenceNumber);
             Assert.AreEqual(7, runtime.StoreTopologies[1].SequenceNumber);
 
@@ -446,6 +452,91 @@ namespace Oracle.NoSQL.SDK.Tests
                 "Missing topology for store " + storeName);
         }
 
+        [DataTestMethod]
+        [DataRow(-1, 0)]
+        [DataRow(-1, 2)]
+        [DataRow(0, 0)]
+        [DataRow(0, 2)]
+        [DataRow(1, 2)]
+        [DataRow(2, 2)]
+        public void TestUnionSortAttributesFollowSortKeys(int fieldCount,
+            int specCount)
+        {
+            var step = (UnionStep)DeserializeV6Step(90, stream =>
+            {
+                WriteStepArray(stream, 2, WriteReceiveStep);
+                WriteSortInfo(stream, fieldCount, specCount);
+            });
+            if (fieldCount < 0)
+            {
+                Assert.IsNull(step.SortSpecs);
+            }
+            else
+            {
+                Assert.IsNotNull(step.SortSpecs);
+                Assert.AreEqual(fieldCount, step.SortSpecs.Length);
+                for (var i = 0; i < fieldCount; i++)
+                {
+                    Assert.AreEqual("field" + i, step.SortSpecs[i].FieldName);
+                    Assert.AreEqual(i % 2 != 0, step.SortSpecs[i].IsDescending);
+                }
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow(1, 0)]
+        [DataRow(2, 1)]
+        [DataRow(3, 2)]
+        public void TestUnionRejectsMissingSortAttributes(int fieldCount,
+            int specCount)
+        {
+            Assert.ThrowsException<BadProtocolException>(() =>
+                DeserializeV6Step(90, stream =>
+                {
+                    WriteStepArray(stream, 2, WriteReceiveStep);
+                    WriteSortInfo(stream, fieldCount, specCount);
+                }));
+        }
+
+        [TestMethod]
+        public void TestReceiveStillRejectsMismatchedSortAttributes()
+        {
+            Assert.ThrowsException<BadProtocolException>(() =>
+                DeserializeV6Step(17, stream =>
+                {
+                    BinaryProtocol.WriteUnpackedInt16(stream,
+                        (short)DistributionKind.AllPartitions);
+                    WriteSortInfo(stream, 1, 2);
+                    BinaryProtocol.WritePackedInt32(stream, -1);
+                }));
+        }
+
+        private static void WriteSortInfo(MemoryStream stream, int fieldCount,
+            int specCount)
+        {
+            BinaryProtocol.WritePackedInt32(stream, fieldCount);
+            for (var i = 0; i < fieldCount; i++)
+            {
+                BinaryProtocol.WriteString(stream, "field" + i);
+            }
+            BinaryProtocol.WritePackedInt32(stream, specCount);
+            for (var i = 0; i < specCount; i++)
+            {
+                BinaryProtocol.WriteBoolean(stream, i % 2 != 0);
+                BinaryProtocol.WriteBoolean(stream, false);
+            }
+        }
+
+        private static void WriteReceiveStep(MemoryStream stream)
+        {
+            BinaryProtocol.WriteByte(stream, 17);
+            WriteBase(stream);
+            BinaryProtocol.WriteUnpackedInt16(stream,
+                (short)DistributionKind.AllPartitions);
+            WriteSortInfo(stream, -1, -1);
+            BinaryProtocol.WritePackedInt32(stream, -1);
+        }
+
         private static ConstStep IntegerConstant(int position, int value) =>
             new ConstStep
             {
@@ -460,9 +551,14 @@ namespace Oracle.NoSQL.SDK.Tests
             BinaryProtocol.WriteByte(stream, type);
             WriteBase(stream);
             writeContent(stream);
+            // Packed writers reserve maximum-width space beyond Position.
+            stream.SetLength(stream.Position);
             stream.Position = 0;
-            return PlanSerializer.DeserializeStep(stream,
+            var step = PlanSerializer.DeserializeStep(stream,
                 QueryRequestBase.QueryV6);
+            Assert.AreEqual(stream.Length, stream.Position,
+                "The complete plan payload must be consumed");
+            return step;
         }
 
         private static void WriteStepArray(MemoryStream stream, int count,

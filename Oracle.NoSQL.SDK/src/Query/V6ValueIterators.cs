@@ -382,6 +382,13 @@ namespace Oracle.NoSQL.SDK.Query
                 result.Value = leftValue.QueryCompare(rightValue);
                 return;
             }
+            if (leftType == DbType.Timestamp && rightType == DbType.Timestamp)
+            {
+                // JSON omits trailing fractional zeros. Its lexical order
+                // (notably the trailing 'Z') is not chronological order.
+                result.Value = leftValue.QueryCompare(rightValue);
+                return;
+            }
             if ((leftType == DbType.String || leftType == DbType.Timestamp) &&
                 (rightType == DbType.String || rightType == DbType.Timestamp))
             {

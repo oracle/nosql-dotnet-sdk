@@ -222,6 +222,17 @@ namespace Oracle.NoSQL.SDK.Tests
             }
         }
 
+        internal static async Task CheckUnionSupportedAsync(string tableName)
+        {
+            QueryTestCapabilities.CheckUnionSupported(
+                client.Config.ServiceType, KVVersion);
+            // KV and proxy versions can differ. Negotiate using an ordinary
+            // query before sending UNION, which requires query protocol V6.
+            await client.PrepareAsync($"SELECT * FROM {tableName}");
+            QueryTestCapabilities.CheckUnionQueryVersion(
+                client.ProtocolHandler.QueryVersion);
+        }
+
         internal static void CheckNotOnPrem()
         {
             if (IsOnPrem)

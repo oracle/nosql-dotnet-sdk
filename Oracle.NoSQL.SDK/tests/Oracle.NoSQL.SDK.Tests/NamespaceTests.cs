@@ -1,6 +1,7 @@
 namespace Oracle.NoSQL.SDK.Tests
 {
     using System;
+    using System.Collections.Generic;
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using static TestTables;
@@ -174,6 +175,7 @@ namespace Oracle.NoSQL.SDK.Tests
         [TestMethod]
         public async Task TestUnionQueryUsesBranchNamespaceAsync()
         {
+            await CheckUnionSupportedAsync(FullTableName);
             await PutRowAsync(Fixture.Table, GoodRow);
 
             var select = $"SELECT * FROM {FullTableName}";
@@ -184,9 +186,12 @@ namespace Oracle.NoSQL.SDK.Tests
                 Limit = 1
             };
             var rowCount = 0;
+            var calls = 0;
 
             do
             {
+                Assert.IsTrue(++calls <= 20,
+                    "UNION continuation did not terminate");
                 var result = await invalidNsClient.QueryAsync(statement,
                     options);
                 rowCount += result.Rows.Count;
@@ -194,6 +199,49 @@ namespace Oracle.NoSQL.SDK.Tests
             } while (options.ContinuationKey != null);
 
             Assert.AreEqual(2, rowCount);
+        }
+
+        [TestMethod]
+        public async Task TestUnionQueryUsesDifferentBranchNamespacesAsync()
+        {
+            await CheckUnionSupportedAsync(FullTableName);
+            var secondNamespace = "test_union_ns_" + Guid.NewGuid().ToString("N");
+            var secondTable = GetAllTypesTableWithName(
+                $"{secondNamespace}:{TableName}");
+            await client.ExecuteAdminWithCompletionAsync(
+                $"CREATE NAMESPACE {secondNamespace}");
+            try
+            {
+                await CreateTableAsync(secondTable);
+                await PutRowAsync(Fixture.Table, GoodRow);
+                await PutRowAsync(secondTable, GoodRow);
+                var statement = await invalidNsClient.PrepareAsync(
+                    $"SELECT 1 AS branch FROM {FullTableName} UNION ALL " +
+                    $"SELECT 2 AS branch FROM {secondTable.Name}");
+                Assert.AreEqual(NamespaceName, statement.GetNamespace(0));
+                Assert.AreEqual(secondNamespace, statement.GetNamespace(1));
+                var options = new QueryOptions { Limit = 1 };
+                var branches = new List<int>();
+                var calls = 0;
+                do
+                {
+                    Assert.IsTrue(++calls <= 20,
+                        "Cross-namespace UNION continuation did not terminate");
+                    var result = await invalidNsClient.QueryAsync(statement,
+                        options);
+                    foreach (var row in result.Rows)
+                    {
+                        branches.Add(row["branch"].AsInt32);
+                    }
+                    options.ContinuationKey = result.ContinuationKey;
+                } while (options.ContinuationKey != null);
+                CollectionAssert.AreEqual(new[] { 1, 2 }, branches);
+            }
+            finally
+            {
+                await client.ExecuteAdminWithCompletionAsync(
+                    $"DROP NAMESPACE {secondNamespace} CASCADE");
+            }
         }
 
         // We will shorten the rest of DML tests to only focus on options

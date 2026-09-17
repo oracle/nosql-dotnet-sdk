@@ -128,16 +128,20 @@ namespace Oracle.NoSQL.SDK
         internal override string InternalTableName =>
             PreparedStatement?.GetTableName(UnionBranch);
 
-        // An explicit request or configured namespace takes precedence. If
-        // neither is present, a V6 UNION request uses its branch namespace.
-        internal override string Namespace => base.Namespace ??
-            PreparedStatement?.GetNamespace(UnionBranch);
+        // Match Java: explicit request, selected prepared branch, then the
+        // client default. base.Namespace already includes the client default.
+        internal override string Namespace => Options?.Namespace ??
+            PreparedStatement?.GetNamespace(UnionBranch) ?? Config.Namespace;
 
         internal QueryContinuationKey ContinuationKey =>
             Options?.ContinuationKey;
 
         internal override int QueryTopologySequenceNumber =>
-            BaseTopology?.SequenceNumber ?? base.QueryTopologySequenceNumber;
+            // A captured but unknown topology must remain -1 even if another
+            // request subsequently populates the client's live cache.
+            StoreTopologySnapshot != null
+                ? BaseTopology?.SequenceNumber ?? -1
+                : BaseTopology?.SequenceNumber ?? base.QueryTopologySequenceNumber;
 
         internal string LastWriteMetadata => Options?.LastWriteMetadata;
 

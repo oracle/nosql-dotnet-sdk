@@ -37,16 +37,15 @@ namespace Oracle.NoSQL.SDK
 
         internal TopologyInfo QueryTopology => queryTopology;
 
-        internal TopologyInfo GetQueryTopology(string storeName)
+        // Capture the default and named-store topologies under the same lock
+        // used by updates. Query runtimes must not re-read the live cache.
+        internal (TopologyInfo BaseTopology,
+            IReadOnlyList<TopologyInfo> StoreTopologies) GetQueryTopologySnapshot()
         {
-            if (storeName == null)
-            {
-                return QueryTopology;
-            }
             lock (lockObj)
             {
-                return storeTopologies.TryGetValue(storeName, out var topology)
-                    ? topology : null;
+                return (queryTopology,
+                    new List<TopologyInfo>(storeTopologies.Values));
             }
         }
 

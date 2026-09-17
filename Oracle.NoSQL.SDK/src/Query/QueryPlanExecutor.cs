@@ -110,18 +110,35 @@ namespace Oracle.NoSQL.SDK.Query {
                 InitExternalVariables();
             }
 
-            BaseTopology = client.QueryTopology;
-            StoreTopologies = client.StoreTopologies;
+            var topologySnapshot = client.GetQueryTopologySnapshot();
+            BaseTopology = topologySnapshot.BaseTopology;
+            StoreTopologies = topologySnapshot.StoreTopologies;
             if (preparedStatement.QueryBranches.Count > 1)
             {
                 branchTopologies = new TopologyInfo[
                     preparedStatement.QueryBranches.Count];
                 for (var i = 0; i < branchTopologies.Length; i++)
                 {
-                    branchTopologies[i] = client.GetQueryTopology(
+                    branchTopologies[i] = GetSnapshotTopology(
                         preparedStatement.GetStoreName(i));
                 }
             }
+        }
+
+        private TopologyInfo GetSnapshotTopology(string storeName)
+        {
+            if (storeName == null)
+            {
+                return BaseTopology;
+            }
+            foreach (var topology in StoreTopologies)
+            {
+                if (topology.StoreName == storeName)
+                {
+                    return topology;
+                }
+            }
+            return null;
         }
 
         internal TopologyInfo GetConstructionTopology() =>

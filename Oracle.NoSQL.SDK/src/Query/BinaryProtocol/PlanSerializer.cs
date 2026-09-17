@@ -67,7 +67,16 @@ namespace Oracle.NoSQL.SDK.Query.BinaryProtocol
                     ReadBoolean(memoryStream)));
 
             var specCount = specs?.Length ?? 0;
-            if (fieldCount != specCount)
+            var isUnion = parent is UnionStep;
+            // Java UNION uses the sort-key array to select its execution
+            // mode. Grouped UNION plans can carry extra attributes (one per
+            // branch), including when there are zero grouping keys. Consume
+            // all attributes but use only those corresponding to actual keys.
+            if (isUnion && fields == null)
+            {
+                return null;
+            }
+            if (isUnion ? fieldCount > specCount : fieldCount != specCount)
             {
                 throw new BadProtocolException(
                     "Query plan: received non-matching number of " +
@@ -77,7 +86,9 @@ namespace Oracle.NoSQL.SDK.Query.BinaryProtocol
 
             if (fieldCount == 0)
             {
-                return null;
+                // An empty key array still selects sorted UNION execution;
+                // only a null key array means sequential execution.
+                return isUnion ? Array.Empty<SortSpec>() : null;
             }
 
             Debug.Assert(fields != null && specs != null);
