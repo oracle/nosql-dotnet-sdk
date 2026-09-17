@@ -21,7 +21,9 @@ namespace Oracle.NoSQL.SDK {
         /// <see cref="GetResult{TRow}.Row"/> property. If matching row
         /// does not exist, the operation is still successful and
         /// <see cref="GetResult{TRow}.Row"/> property will be set to
-        /// <c>null</c>.
+        /// <c>null</c>.  If the row exists and the service provides it, its
+        /// system-generated creation time is available through
+        /// <see cref="GetResult{TRow}.CreationTime"/>.
         /// </remarks>
         /// <example>
         /// Executing Get operation on table with schema MyTable(id LONG,
@@ -131,12 +133,14 @@ namespace Oracle.NoSQL.SDK {
         /// </para>
         /// <para>
         /// It is also possible to return information about the existing row.
-        /// The row, including its <see cref="RowVersion"/> and modification
-        /// time can be optionally returned as part of
-        /// <see cref="PutResult{TRow}"/> via properties
+        /// The row, including its <see cref="RowVersion"/>, creation time,
+        /// and modification time can be optionally returned as part of
+        /// <see cref="PutResult{TRow}"/> via the
         /// <see cref="PutResult{TRow}.ExistingRow"/>,
-        /// <see cref="PutResult{TRow}.ExistingVersion"/> and
-        /// <see cref="PutResult{TRow}.ExistingModificationTime"/>. The
+        /// <see cref="PutResult{TRow}.ExistingVersion"/>,
+        /// <see cref="PutResult{TRow}.ExistingCreationTime"/>,
+        /// and <see cref="PutResult{TRow}.ExistingModificationTime"/>
+        /// properties. The
         /// existing row information will only be returned if
         /// <see cref="PutOptions.ReturnExisting"/> is <c>true</c> and one of
         /// the following occurs:
@@ -162,9 +166,10 @@ namespace Oracle.NoSQL.SDK {
         /// <see cref="PutOptions.IfPresent"/> or
         /// <see cref="PutOptions.MatchVersion"/> is specified) and the
         /// operation replaces existing row. In these cases, the row, its
-        /// version and modification time will be returned as they were before
-        /// the put operation took place. Note that this information might not
-        /// be available with older servers. Also note that if
+        /// version, creation time and modification time will be returned as
+        /// they were before the put operation took place. Note that this
+        /// information might not be available with older servers. Also note
+        /// that if
         /// <see cref="PutOptions.MatchVersion"/> is specified and the
         /// operation succeeds, the existing row information will not be
         /// returned.
@@ -392,11 +397,14 @@ namespace Oracle.NoSQL.SDK {
         /// </para>
         /// <para>
         /// It is also possible to return information about the existing row.
-        /// The row, its version and modification time can be optionally
-        /// returned as part of <see cref="DeleteResult{TRow}"/> via
-        /// properties <see cref="DeleteResult{TRow}.ExistingRow"/>,
-        /// <see cref="DeleteResult{TRow}.ExistingVersion"/> and
-        /// <see cref="DeleteResult{TRow}.ExistingModificationTime"/>. The
+        /// The row, including its <see cref="RowVersion"/>, creation time,
+        /// and modification time can be optionally returned as part of
+        /// <see cref="DeleteResult{TRow}"/> via the
+        /// <see cref="DeleteResult{TRow}.ExistingRow"/>,
+        /// <see cref="DeleteResult{TRow}.ExistingVersion"/>,
+        /// <see cref="DeleteResult{TRow}.ExistingCreationTime"/>,
+        /// and <see cref="DeleteResult{TRow}.ExistingModificationTime"/>
+        /// properties. The
         /// existing row information will only be returned if
         /// <see cref="DeleteOptions.ReturnExisting"/> is <c>true</c> and one
         /// of the following occurs:
@@ -411,10 +419,10 @@ namespace Oracle.NoSQL.SDK {
         /// <item>
         /// <description>
         /// <see cref="DeleteOptions.MatchVersion"/> is not specified and the
-        /// delete operation succeeds, in which case the row, its version and
-        /// modification time will be returned as they were before the
-        /// deletion. Note that this information might not be available with
-        /// older servers. Also note that if
+        /// delete operation succeeds, in which case the row, its version,
+        /// creation time and modification time will be returned as they were
+        /// before the deletion. Note that this information might not be
+        /// available with older servers. Also note that if
         /// <see cref="DeleteOptions.MatchVersion"/> is specified and the
         /// operation succeeds, the existing row information will not be
         /// returned.

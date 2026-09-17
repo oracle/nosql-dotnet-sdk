@@ -51,6 +51,12 @@ namespace Oracle.NoSQL.SDK
             set => ExistingVersion = value;
         }
 
+        DateTime? IWriteResult<TRow>.ExistingCreationTime
+        {
+            get => ExistingCreationTime;
+            set => ExistingCreationTime = value;
+        }
+
         DateTime? IWriteResult<TRow>.ExistingModificationTime
         {
             get => ExistingModificationTime;
@@ -136,6 +142,42 @@ namespace Oracle.NoSQL.SDK
         /// <seealso cref="PutResult{TRow}.ExistingLastWriteMetadata"/>
         /// <seealso cref="DeleteResult{TRow}.ExistingLastWriteMetadata"/>
         public string ExistingLastWriteMetadata { get; internal set; }
+
+        /// <summary>
+        /// Gets the creation time of existing row if the Put or Delete
+        /// operation returned it.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// This value is equivalent to
+        /// <see cref="PutResult{TRow}.ExistingCreationTime"/> or
+        /// <see cref="DeleteResult{TRow}.ExistingCreationTime"/> for Put and
+        /// Delete operations respectively.
+        /// The corresponding <see cref="PutOptions.ReturnExisting"/> or
+        /// <see cref="DeleteOptions.ReturnExisting"/> option must be
+        /// <c>true</c>, and the operation must return existing-row information.
+        /// </para>
+        /// <para>
+        /// This also applies to
+        /// <see cref="WriteManyResult{TRow}.FailedOperationResult"/> when a
+        /// conditional failure aborts the batch.
+        /// </para>
+        /// </remarks>
+        /// <value>
+        /// <para>
+        /// The creation time of existing row in UTC if available, otherwise
+        /// <c>null</c>.
+        /// </para>
+        /// <para>
+        /// For rows written by server versions earlier than 25.3, the server
+        /// returns the row's modification time as its creation time. For rows
+        /// written by versions earlier than 19.5, the server returns zero,
+        /// which this SDK exposes as <c>null</c>.
+        /// </para>
+        /// </value>
+        /// <seealso cref="PutResult{TRow}.ExistingCreationTime"/>
+        /// <seealso cref="DeleteResult{TRow}.ExistingCreationTime"/>
+        public DateTime? ExistingCreationTime { get; internal set; }
 
         /// <summary>
         /// Gets the modification time of existing row if the conditional Put

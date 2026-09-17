@@ -70,6 +70,12 @@ namespace Oracle.NoSQL.SDK
             set => ExistingVersion = value;
         }
 
+        DateTime? IWriteResult<TRow>.ExistingCreationTime
+        {
+            get => ExistingCreationTime;
+            set => ExistingCreationTime = value;
+        }
+
         DateTime? IWriteResult<TRow>.ExistingModificationTime
         {
             get => ExistingModificationTime;
@@ -148,6 +154,31 @@ namespace Oracle.NoSQL.SDK
         /// <seealso cref="NoSQLClient.PutAsync"/>
         /// <seealso cref="PutOptions.ReturnExisting"/>
         public RowVersion ExistingVersion { get; internal set; }
+
+        /// <summary>
+        /// Gets the creation time of existing row.
+        /// </summary>
+        /// <remarks>
+        /// This value is available only if
+        /// <see cref="PutOptions.ReturnExisting"/> was set to <c>true</c>
+        /// and under one of the conditions described in the remarks section
+        /// of <see cref="NoSQLClient.PutAsync"/>.
+        /// </remarks>
+        /// <value>
+        /// <para>
+        /// The creation time of existing row in UTC if available, otherwise
+        /// <c>null</c>.
+        /// </para>
+        /// <para>
+        /// For rows written by server versions earlier than 25.3, the server
+        /// returns the row's modification time as its creation time. For rows
+        /// written by versions earlier than 19.5, the server returns zero,
+        /// which this SDK exposes as <c>null</c>.
+        /// </para>
+        /// </value>
+        /// <seealso cref="NoSQLClient.PutAsync"/>
+        /// <seealso cref="PutOptions.ReturnExisting"/>
+        public DateTime? ExistingCreationTime { get; internal set; }
 
         /// <summary>
         /// Gets the modification time of existing row.

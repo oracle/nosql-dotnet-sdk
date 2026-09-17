@@ -123,6 +123,7 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             // row metadata
             internal const string Row = "r";
             internal const string RowVersion = "rv";
+            internal const string CreationTime = "ct";
             internal const string ExpirationTime = "xp";
             internal const string ModificationTime = "md";
 
