@@ -66,7 +66,7 @@ namespace Oracle.NoSQL.SDK
 
         internal int ShardId { get; set; } = -1;
 
-        internal TopologyInfo BaseTopology { get; set; }
+        internal QueryTopologySnapshot ExecutionTopology { get; set; }
 
         internal VirtualScan VirtualScan { get; set; }
 
@@ -120,7 +120,11 @@ namespace Oracle.NoSQL.SDK
             Options?.ContinuationKey;
 
         internal override int QueryTopologySequenceNumber =>
-            BaseTopology?.SequenceNumber ?? base.QueryTopologySequenceNumber;
+            ExecutionTopology?.LegacySequenceNumber ??
+            base.QueryTopologySequenceNumber;
+
+        internal override QueryTopologySnapshot TopologySnapshot =>
+            ExecutionTopology ?? base.TopologySnapshot;
 
         internal string LastWriteMetadata => Options?.LastWriteMetadata;
 

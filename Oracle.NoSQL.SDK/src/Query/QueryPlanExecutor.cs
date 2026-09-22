@@ -36,6 +36,8 @@ namespace Oracle.NoSQL.SDK.Query {
 
         internal TopologyInfo BaseTopology { get; }
 
+        internal QueryTopologySnapshot TopologySnapshot { get; }
+
         internal long MaxMemory { get; set; }
 
         // Used only for error reporting
@@ -100,7 +102,26 @@ namespace Oracle.NoSQL.SDK.Query {
                 InitExternalVariables();
             }
 
-            BaseTopology = client.QueryTopology;
+            TopologySnapshot = client.GetQueryTopologySnapshot();
+            if (preparedStatement.StoreName == null)
+            {
+                BaseTopology = TopologySnapshot.LegacyTopology;
+            }
+            else if (TopologySnapshot.StoreTopologies.TryGetValue(
+                preparedStatement.StoreName, out var topology))
+            {
+                BaseTopology = topology;
+            }
+
+            if (BaseTopology == null)
+            {
+                var identity = preparedStatement.StoreName == null
+                    ? "legacy topology"
+                    : "topology for store " + preparedStatement.StoreName;
+                throw new PrepareQueryException(
+                    $"Missing {identity} for prepared query. " +
+                    "Prepare the query again using this client.");
+            }
         }
 
         private void InitExternalVariables()
@@ -256,6 +277,7 @@ namespace Oracle.NoSQL.SDK.Query {
             CancellationToken cancellationToken)
         {
             Request = queryRequest;
+            Request.ExecutionTopology = TopologySnapshot;
             Request.Init();
             MaxMemory = queryRequest.MaxMemory;
 

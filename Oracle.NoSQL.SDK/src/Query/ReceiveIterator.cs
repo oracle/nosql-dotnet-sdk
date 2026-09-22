@@ -45,7 +45,7 @@ namespace Oracle.NoSQL.SDK.Query {
                     QueryLabel = runtime.Request.Options?.QueryLabel
                 })
             {
-                BaseTopology = runtime.BaseTopology,
+                ExecutionTopology = runtime.TopologySnapshot,
                 IsInternal = true
             };
 
