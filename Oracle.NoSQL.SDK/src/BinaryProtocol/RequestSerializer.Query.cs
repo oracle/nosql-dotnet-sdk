@@ -121,6 +121,14 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
         public void SerializeQuery<TRow>(MemoryStream stream,
             QueryRequest<TRow> request)
         {
+            if (request.PreparedStatement?.StoreName != null)
+            {
+                throw new PrepareQueryException(
+                    "The negotiated protocol cannot execute a store-aware " +
+                    "prepared statement. Prepare the query again using " +
+                    "this client.");
+            }
+
             WriteOpcode(stream, Opcode.Query);
             SerializeRequest(stream, request);
             WriteConsistency(stream, request.Consistency);

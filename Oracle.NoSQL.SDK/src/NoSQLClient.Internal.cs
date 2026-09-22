@@ -8,6 +8,7 @@
 namespace Oracle.NoSQL.SDK
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Runtime.CompilerServices;
@@ -15,13 +16,18 @@ namespace Oracle.NoSQL.SDK
     using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
+    using Query;
     using static ValidateUtils;
 
     public partial class NoSQLClient
     {
         private Http.Client client;
         private readonly object lockObj = new object();
+        // Legacy proxies return a single unnamed topology.
         private volatile TopologyInfo queryTopology;
+        private readonly ConcurrentDictionary<string, TopologyInfo>
+            storeTopologies = new ConcurrentDictionary<string, TopologyInfo>(
+                StringComparer.Ordinal);
         private readonly object disposeLock = new object();
         private bool disposed;
 
@@ -34,6 +40,19 @@ namespace Oracle.NoSQL.SDK
         internal StatsControlImpl StatsControl { get; private set; }
 
         internal TopologyInfo QueryTopology => queryTopology;
+
+        internal QueryTopologySnapshot GetQueryTopologySnapshot() =>
+            new QueryTopologySnapshot(QueryTopology, storeTopologies.ToArray());
+
+        internal void SetStoreTopologies(IEnumerable<TopologyInfo> topologies)
+        {
+            foreach (var topology in topologies)
+            {
+                storeTopologies.AddOrUpdate(topology.StoreName, topology,
+                    (_, current) => current.SequenceNumber <
+                        topology.SequenceNumber ? topology : current);
+            }
+        }
 
         internal int ServerSerialVersion => client.ServerSerialVersion;
 

@@ -89,6 +89,14 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                     statement ??= new PreparedStatement();
                     statement.ProxyStatement = reader.ReadByteArray();
                     return true;
+                case FieldNames.QueryBranches:
+                    statement ??= new PreparedStatement();
+                    ReadQueryBranch(reader, statement);
+                    return true;
+                case FieldNames.QueryBranchStores:
+                    statement ??= new PreparedStatement();
+                    statement.StoreName = ReadQueryStoreName(reader);
+                    return true;
                 case FieldNames.DriverQueryPlan:
                     statement ??= new PreparedStatement();
                     var stream = GetMemoryStreamWithVisibleBuffer(
@@ -128,6 +136,56 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                 default:
                     return false;
             }
+        }
+
+        private static void CheckSingleQueryBranch(NsonReader reader)
+        {
+            reader.ExpectType(DbType.Array);
+            if (reader.Count != 1)
+            {
+                throw new BadProtocolException(
+                    "Expected one prepared query branch; this SDK does " +
+                    "not support multi-branch query plans. Received: " +
+                    reader.Count);
+            }
+        }
+
+        private static string ReadQueryStoreName(NsonReader reader)
+        {
+            CheckSingleQueryBranch(reader);
+            reader.Next();
+            var storeName = reader.ReadString();
+            if (string.IsNullOrWhiteSpace(storeName))
+            {
+                throw new BadProtocolException(
+                    "Prepared query branch is missing a nonempty store id");
+            }
+
+            return storeName;
+        }
+
+        private static void ReadQueryBranch(NsonReader reader,
+            PreparedStatement statement)
+        {
+            CheckSingleQueryBranch(reader);
+            reader.Next();
+            ReadMap(reader, field =>
+            {
+                switch (field)
+                {
+                    case FieldNames.PreparedQuery:
+                        statement.ProxyStatement = reader.ReadByteArray();
+                        return true;
+                    case FieldNames.TableName:
+                        statement.TableName = reader.ReadString();
+                        return true;
+                    case FieldNames.Namespace:
+                        statement.Namespace = reader.ReadString();
+                        return true;
+                    default:
+                        return false;
+                }
+            });
         }
 
         // Validates the server portion of the prepared statement from the
@@ -328,17 +386,24 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                 SQLText = request.Statement
             };
             MutableTopologyInfo mti = null;
+            TopologyInfo topologyInfo = null;
 
             DeserializeResponse(reader,
                 field => ProcessPreparedStatementField(reader, field,
-                    ref statement, ref mti), request, statement);
-            ValidatePreparedStatement(statement);
+                    ref statement, ref mti), request, statement,
+                hasStoreTopologies =>
+                {
+                    ValidatePreparedStatement(statement);
+                    if (mti != null && !hasStoreTopologies)
+                    {
+                        topologyInfo = mti.ToTopologyInfo();
+                        ValidateTopologyInfo(topologyInfo);
+                    }
+                });
             
             // Only for query <= V3.
-            if (mti != null)
+            if (topologyInfo != null)
             {
-                var topologyInfo = mti.ToTopologyInfo();
-                ValidateTopologyInfo(topologyInfo);
                 request.Client.SetQueryTopology(topologyInfo);
             }
 
@@ -394,6 +459,8 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                     request.PreparedStatement.IsSimpleQuery);
                 writer.WriteByteArray(FieldNames.PreparedQuery,
                     request.PreparedStatement.ProxyStatement);
+                OptionallyWriteString(writer, FieldNames.StoreId,
+                    request.PreparedStatement.StoreName);
 
                 var variables = request.PreparedStatement.variables;
                 if (variables != null)
@@ -458,6 +525,7 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             var result = new QueryResult<TRow>();
             PreparedStatement preparedStatement = null;
             MutableTopologyInfo mti = null;
+            TopologyInfo topologyInfo = null;
 
             DeserializeResponse(reader, field =>
             {
@@ -494,7 +562,18 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                         return ProcessPreparedStatementField(reader, field,
                             ref preparedStatement, ref mti);
                 }
-            }, request, result);
+            }, request, result, hasStoreTopologies =>
+            {
+                if (request.PreparedStatement == null)
+                {
+                    ValidatePreparedStatement(preparedStatement);
+                }
+                if (mti != null && !hasStoreTopologies)
+                {
+                    topologyInfo = mti.ToTopologyInfo();
+                    ValidateTopologyInfo(topologyInfo);
+                }
+            });
 
             /*
              * If the QueryRequest was not initially prepared, the prepared
@@ -504,18 +583,15 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
              */
             if (request.PreparedStatement == null)
             {
-                ValidatePreparedStatement(preparedStatement);
                 preparedStatement.SQLText = request.Statement;
                 preparedStatement.ConsumedCapacity = result.ConsumedCapacity;
                 result.PreparedStatement = preparedStatement;
             }
 
-            if (mti != null)
+            if (topologyInfo != null)
             {
                 // We received updated topology info. This can happen here
                 // only for query V3 and below.
-                var topologyInfo = mti.ToTopologyInfo();
-                ValidateTopologyInfo(topologyInfo);
                 request.Client.SetQueryTopology(topologyInfo);
             }
 

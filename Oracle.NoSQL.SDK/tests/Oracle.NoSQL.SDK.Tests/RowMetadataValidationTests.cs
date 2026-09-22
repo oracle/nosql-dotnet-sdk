@@ -161,6 +161,7 @@ namespace Oracle.NoSQL.SDK.Tests
         public void TestInternalQueryRequestCopiesLastWriteMetadata()
         {
             using var client = MakeClient();
+            client.SetQueryTopology(new TopologyInfo(1, new[] { 1 }));
             var metadata = "{\"source\":\"test\"}";
             var preparedStatement = new PreparedStatement
             {
