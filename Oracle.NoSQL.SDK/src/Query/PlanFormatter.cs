@@ -156,7 +156,7 @@ namespace Oracle.NoSQL.SDK.Query
                     builder.Append('\n');
                     Indent(builder, indent);
                     builder.Append(']');
-                    if (union.SortSpecs != null && union.SortSpecs.Length > 0)
+                    if (union.SortSpecs != null)
                     {
                         builder.Append(",\n");
                         AppendUnionSortSpecs(builder, union.SortSpecs, indent);

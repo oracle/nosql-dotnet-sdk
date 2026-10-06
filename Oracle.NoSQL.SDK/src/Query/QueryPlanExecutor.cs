@@ -26,6 +26,10 @@ namespace Oracle.NoSQL.SDK.Query {
         internal ConsumedCapacity consumedCapacity;
         internal QueryContinuationKey continuationKey;
 
+        // Query tracing numbers batches across the lifetime of this runtime,
+        // including continuation calls that provide new QueryOptions.
+        internal int BatchNumber { get; set; }
+
         internal NoSQLClient Client { get; }
 
         internal FieldValue[] ResultRegistry { get; }
