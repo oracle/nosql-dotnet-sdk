@@ -159,6 +159,7 @@ namespace Oracle.NoSQL.SDK.Query
     internal abstract class CollectAggregatorBase : ValueAggregator
     {
         private protected readonly bool toSortResults;
+        private protected readonly bool isRegrouping;
 
         private protected abstract void AddValue(FieldValue value);
         
@@ -175,9 +176,11 @@ namespace Oracle.NoSQL.SDK.Query
         private protected override FieldValue GetInitialValue() =>
             new ArrayValue();
 
-        private protected CollectAggregatorBase(bool toSortResults)
+        private protected CollectAggregatorBase(bool toSortResults,
+            bool isRegrouping)
         {
             this.toSortResults = toSortResults;
+            this.isRegrouping = isRegrouping;
         }
 
         internal override long Aggregate(FieldValue value, bool countMemory)
@@ -187,11 +190,17 @@ namespace Oracle.NoSQL.SDK.Query
                 return 0;
             }
 
+            if (!isRegrouping)
+            {
+                AddValue(value);
+                return countMemory ? GetMemorySize(value.GetMemorySize()) : 0;
+            }
+
             if (!(value is ArrayValue))
             {
                 throw new InvalidOperationException(
-                    "Query: input value for array_collect is not an " +
-                    "ArrayValue");
+                    "Query: regrouped input value for array_collect is not " +
+                    "an ArrayValue");
             }
 
             long mem = 0;
@@ -201,7 +210,7 @@ namespace Oracle.NoSQL.SDK.Query
                 AddValue(elem);
                 if (countMemory)
                 {
-                    mem += GetMemorySize(value.GetMemorySize());
+                    mem += GetMemorySize(elem.GetMemorySize());
                 }
             }
 
@@ -223,7 +232,8 @@ namespace Oracle.NoSQL.SDK.Query
         private protected override long GetMemorySize(long valueSize) =>
             GetListEntrySize(valueSize);
 
-        internal CollectAggregator(bool toSortResults) : base(toSortResults)
+        internal CollectAggregator(bool toSortResults, bool isRegrouping) :
+            base(toSortResults, isRegrouping)
         {
         }
     }
@@ -242,9 +252,37 @@ namespace Oracle.NoSQL.SDK.Query
         private protected override long GetMemorySize(long valueSize) =>
             GetHashSetEntrySize(valueSize);
 
-        internal CollectDistinctAggregator(bool toSortResults) :
-            base(toSortResults)
+        internal CollectDistinctAggregator(bool toSortResults,
+            bool isRegrouping) : base(toSortResults, isRegrouping)
         {
+        }
+
+        // The proxy always sends array_collect_distinct partial results as
+        // arrays. Unlike ordinary array_collect, this is independent of the
+        // regrouping flag (matching GroupIter in the Java driver).
+        internal override long Aggregate(FieldValue value, bool countMemory)
+        {
+            if (value == FieldValue.Null || value == FieldValue.Empty)
+            {
+                return 0;
+            }
+
+            if (!(value is ArrayValue array))
+            {
+                throw new InvalidOperationException(
+                    "Query: input value for array_collect_distinct is not an ArrayValue");
+            }
+
+            long memory = 0;
+            foreach (var element in array)
+            {
+                AddValue(element);
+                if (countMemory)
+                {
+                    memory += GetMemorySize(element.GetMemorySize());
+                }
+            }
+            return memory;
         }
 
         internal override FieldValue Result

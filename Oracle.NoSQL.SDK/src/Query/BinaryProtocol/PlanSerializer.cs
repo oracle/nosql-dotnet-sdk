@@ -25,14 +25,21 @@ namespace Oracle.NoSQL.SDK.Query.BinaryProtocol
             Const = 0,
             VarRef = 1,
             ExternalVarRef = 2,
+            ArrayConstructor = 3,
+            ValueCompare = 5,
+            AndOr = 7,
             FieldStep = 11,
             ArithOp = 8,
             FnSize = 15,
+            Case = 19,
+            IsNull = 26,
             FnSum = 39,
             FnMinMax = 41,
             Group = 65,
             Sort2 = 66,
-            FnCollect = 78
+            FnCollect = 78,
+            SeqAggr = 48,
+            Union = 90
         }
 
         private static void DeserializeBase(MemoryStream stream,
@@ -60,7 +67,16 @@ namespace Oracle.NoSQL.SDK.Query.BinaryProtocol
                     ReadBoolean(memoryStream)));
 
             var specCount = specs?.Length ?? 0;
-            if (fieldCount != specCount)
+            var isUnion = parent is UnionStep;
+            // Java UNION uses the sort-key array to select its execution
+            // mode. Grouped UNION plans can carry extra attributes (one per
+            // branch), including when there are zero grouping keys. Consume
+            // all attributes but use only those corresponding to actual keys.
+            if (isUnion && fields == null)
+            {
+                return null;
+            }
+            if (isUnion ? fieldCount > specCount : fieldCount != specCount)
             {
                 throw new BadProtocolException(
                     "Query plan: received non-matching number of " +
@@ -70,7 +86,9 @@ namespace Oracle.NoSQL.SDK.Query.BinaryProtocol
 
             if (fieldCount == 0)
             {
-                return null;
+                // An empty key array still selects sorted UNION execution;
+                // only a null key array means sequential execution.
+                return isUnion ? Array.Empty<SortSpec>() : null;
             }
 
             Debug.Assert(fields != null && specs != null);
@@ -99,12 +117,25 @@ namespace Oracle.NoSQL.SDK.Query.BinaryProtocol
             return (SQLFuncCode)val;
         }
 
+        private static QueryFuncCode DeserializeQueryFuncCode(
+            MemoryStream stream, PlanStep parent)
+        {
+            var value = ReadUnpackedInt16(stream);
+            if (!Enum.IsDefined(typeof(QueryFuncCode), (int)value))
+            {
+                throw new BadProtocolException(
+                    $"Query plan: received invalid function code: {value} " +
+                    $"in {parent.Name} step");
+            }
+            return (QueryFuncCode)value;
+        }
+
         private static SortStep DeserializeSortStep(MemoryStream stream,
-            StepType stepType)
+            StepType stepType, short queryVersion)
         {
             var step = new SortStep();
             DeserializeBase(stream, step);
-            step.InputStep = DeserializeStep(stream);
+            step.InputStep = DeserializeStep(stream, queryVersion);
             step.SortSpecs = DeserializeSortSpecs(stream, step);
             step.CountMemory = stepType != StepType.Sort2 ||
                 ReadBoolean(stream);
@@ -112,7 +143,8 @@ namespace Oracle.NoSQL.SDK.Query.BinaryProtocol
             return step;
         }
 
-        private static SFWStep DeserializeSFWStep(MemoryStream stream)
+        private static SFWStep DeserializeSFWStep(MemoryStream stream,
+            short queryVersion)
         {
             var step = new SFWStep();
             DeserializeBase(stream, step);
@@ -120,10 +152,10 @@ namespace Oracle.NoSQL.SDK.Query.BinaryProtocol
             step.GroupColumnCount = ReadUnpackedInt32(stream);
             step.FromVarName = ReadString(stream);
             step.IsSelectStar = ReadBoolean(stream);
-            step.ColumnSteps = DeserializeMultipleSteps(stream);
-            step.FromStep = DeserializeStep(stream);
-            step.OffsetStep = DeserializeStep(stream);
-            step.LimitStep = DeserializeStep(stream);
+            step.ColumnSteps = DeserializeMultipleSteps(stream, queryVersion);
+            step.FromStep = DeserializeStep(stream, queryVersion);
+            step.OffsetStep = DeserializeStep(stream, queryVersion);
+            step.LimitStep = DeserializeStep(stream, queryVersion);
             ValidateSFWStep(step);
             return step;
         }
@@ -170,39 +202,41 @@ namespace Oracle.NoSQL.SDK.Query.BinaryProtocol
             return step;
         }
 
-        private static FieldStep DeserializeFieldStep(MemoryStream stream)
+        private static FieldStep DeserializeFieldStep(MemoryStream stream,
+            short queryVersion)
         {
             var step = new FieldStep();
             DeserializeBase(stream, step);
-            step.InputStep = DeserializeStep(stream);
+            step.InputStep = DeserializeStep(stream, queryVersion);
             step.FieldName = ReadString(stream);
             ValidateFieldStep(step);
             return step;
         }
 
         private static ArithmeticOpStep DeserializeArithmeticStep(
-            MemoryStream stream)
+            MemoryStream stream, short queryVersion)
         {
             var step = new ArithmeticOpStep();
             DeserializeBase(stream, step);
             step.Opcode = (ArithmeticOpcode)ReadUnpackedInt16(stream);
-            step.ArgSteps = DeserializeMultipleSteps(stream);
+            step.ArgSteps = DeserializeMultipleSteps(stream, queryVersion);
             step.OpSequence = ReadString(stream);
             ValidateArithmeticOpStep(step);
             return step;
         }
 
-        private static FuncSumStep DeserializeFuncSumStep(MemoryStream stream)
+        private static FuncSumStep DeserializeFuncSumStep(MemoryStream stream,
+            short queryVersion)
         {
             var step = new FuncSumStep();
             DeserializeBase(stream, step);
-            step.InputStep = DeserializeStep(stream);
+            step.InputStep = DeserializeStep(stream, queryVersion);
             ValidateFuncSumStep(step);
             return step;
         }
 
         private static FuncMinMaxStep DeserializeFuncMinMaxStep(
-            MemoryStream stream)
+            MemoryStream stream, short queryVersion)
         {
             var step = new FuncMinMaxStep();
             DeserializeBase(stream, step);
@@ -215,36 +249,38 @@ namespace Oracle.NoSQL.SDK.Query.BinaryProtocol
                     $"min/max operation: {code}");
             }
 
-            step.InputStep = DeserializeStep(stream);
+            step.InputStep = DeserializeStep(stream, queryVersion);
             ValidateFuncMinMaxStep(step);
             return step;
         }
 
-        private static FuncSizeStep DeserializeFuncSizeStep(MemoryStream stream)
+        private static FuncSizeStep DeserializeFuncSizeStep(MemoryStream stream,
+            short queryVersion)
         {
             var step = new FuncSizeStep();
             DeserializeBase(stream, step);
-            step.InputStep = DeserializeStep(stream);
+            step.InputStep = DeserializeStep(stream, queryVersion);
             ValidateFuncSizeStep(step);
             return step;
         }
 
         private static FuncCollectStep DeserializeFuncCollectStep(
-            MemoryStream stream)
+            MemoryStream stream, short queryVersion)
         {
             var step = new FuncCollectStep();
             DeserializeBase(stream, step);
             step.IsDistinct = ReadBoolean(stream);
-            step.InputStep = DeserializeStep(stream);
+            step.InputStep = DeserializeStep(stream, queryVersion);
             ValidateFuncCollectStep(step);
             return step;
         }
 
-        private static GroupStep DeserializeGroupStep(MemoryStream stream)
+        private static GroupStep DeserializeGroupStep(MemoryStream stream,
+            short queryVersion)
         {
             var step = new GroupStep();
             DeserializeBase(stream, step);
-            step.InputStep = DeserializeStep(stream);
+            step.InputStep = DeserializeStep(stream, queryVersion);
             step.GroupingColumnCount = ReadUnpackedInt32(stream);
             CheckNotNegative(step.GroupingColumnCount,
                 "group by column count", step);
@@ -272,16 +308,101 @@ namespace Oracle.NoSQL.SDK.Query.BinaryProtocol
             step.IsDistinct = ReadBoolean(stream);
             step.RemoveResult = ReadBoolean(stream);
             step.CountMemory = ReadBoolean(stream);
+            // Before V6 the regrouping flag was not sent. Preserve the
+            // existing C# behavior for those proxy partial array results.
+            step.IsRegrouping = queryVersion < QueryRequestBase.QueryV6 ||
+                ReadBoolean(stream);
             ValidateGroupStep(step);
             return step;
         }
 
-        private static PlanStep[] DeserializeMultipleSteps(MemoryStream stream)
+        private static UnionStep DeserializeUnionStep(MemoryStream stream,
+            short queryVersion)
         {
-            return ReadArray(stream, DeserializeStep);
+            var step = new UnionStep();
+            DeserializeBase(stream, step);
+            step.BranchSteps = DeserializeMultipleSteps(stream, queryVersion);
+            step.SortSpecs = DeserializeSortSpecs(stream, step);
+            ValidateUnionStep(step);
+            return step;
         }
 
-        internal static PlanStep DeserializeStep(MemoryStream stream)
+        private static ArrayConstructorStep DeserializeArrayConstructorStep(
+            MemoryStream stream, short queryVersion)
+        {
+            var step = new ArrayConstructorStep();
+            DeserializeBase(stream, step);
+            step.IsConditional = ReadBoolean(stream);
+            step.ArgSteps = DeserializeMultipleSteps(stream, queryVersion);
+            ValidateArrayConstructorStep(step);
+            return step;
+        }
+
+        private static ValueCompareStep DeserializeValueCompareStep(
+            MemoryStream stream, short queryVersion)
+        {
+            var step = new ValueCompareStep();
+            DeserializeBase(stream, step);
+            step.FuncCode = DeserializeQueryFuncCode(stream, step);
+            step.LeftStep = DeserializeStep(stream, queryVersion);
+            step.RightStep = DeserializeStep(stream, queryVersion);
+            ValidateValueCompareStep(step);
+            return step;
+        }
+
+        private static AndOrStep DeserializeAndOrStep(MemoryStream stream,
+            short queryVersion)
+        {
+            var step = new AndOrStep();
+            DeserializeBase(stream, step);
+            step.FuncCode = DeserializeQueryFuncCode(stream, step);
+            step.ArgSteps = DeserializeMultipleSteps(stream, queryVersion);
+            ValidateAndOrStep(step);
+            return step;
+        }
+
+        private static CaseStep DeserializeCaseStep(MemoryStream stream,
+            short queryVersion)
+        {
+            var step = new CaseStep();
+            DeserializeBase(stream, step);
+            step.ConditionSteps = DeserializeMultipleSteps(stream, queryVersion);
+            step.ThenSteps = DeserializeMultipleSteps(stream, queryVersion);
+            step.ElseStep = DeserializeStep(stream, queryVersion);
+            ValidateCaseStep(step);
+            return step;
+        }
+
+        private static IsNullStep DeserializeIsNullStep(MemoryStream stream,
+            short queryVersion)
+        {
+            var step = new IsNullStep();
+            DeserializeBase(stream, step);
+            step.FuncCode = DeserializeQueryFuncCode(stream, step);
+            step.InputStep = DeserializeStep(stream, queryVersion);
+            ValidateIsNullStep(step);
+            return step;
+        }
+
+        private static SeqAggregateStep DeserializeSeqAggregateStep(
+            MemoryStream stream, short queryVersion)
+        {
+            var step = new SeqAggregateStep();
+            DeserializeBase(stream, step);
+            step.FuncCode = DeserializeQueryFuncCode(stream, step);
+            step.InputStep = DeserializeStep(stream, queryVersion);
+            ValidateSeqAggregateStep(step);
+            return step;
+        }
+
+        private static PlanStep[] DeserializeMultipleSteps(MemoryStream stream,
+            short queryVersion)
+        {
+            return ReadArray(stream, s => DeserializeStep(s, queryVersion));
+        }
+
+        internal static PlanStep DeserializeStep(MemoryStream stream,
+            short queryVersion = QueryRequestBase.QueryV3)
         {
             var stepType = (StepType)ReadByte(stream);
             switch (stepType)
@@ -289,9 +410,9 @@ namespace Oracle.NoSQL.SDK.Query.BinaryProtocol
                 case StepType.None:
                     return null;
                 case StepType.Sort: case StepType.Sort2:
-                    return DeserializeSortStep(stream, stepType);
+                    return DeserializeSortStep(stream, stepType, queryVersion);
                 case StepType.SFW:
-                    return DeserializeSFWStep(stream);
+                    return DeserializeSFWStep(stream, queryVersion);
                 case StepType.Recv:
                     return DeserializeReceiveStep(stream);
                 case StepType.Const:
@@ -300,20 +421,34 @@ namespace Oracle.NoSQL.SDK.Query.BinaryProtocol
                     return DeserializeVarRefStep(stream);
                 case StepType.ExternalVarRef:
                     return DeserializeExtVarRefStep(stream);
+                case StepType.ArrayConstructor:
+                    return DeserializeArrayConstructorStep(stream, queryVersion);
+                case StepType.ValueCompare:
+                    return DeserializeValueCompareStep(stream, queryVersion);
+                case StepType.AndOr:
+                    return DeserializeAndOrStep(stream, queryVersion);
                 case StepType.FieldStep:
-                    return DeserializeFieldStep(stream);
+                    return DeserializeFieldStep(stream, queryVersion);
                 case StepType.ArithOp:
-                    return DeserializeArithmeticStep(stream);
+                    return DeserializeArithmeticStep(stream, queryVersion);
                 case StepType.FnSum:
-                    return DeserializeFuncSumStep(stream);
+                    return DeserializeFuncSumStep(stream, queryVersion);
                 case StepType.FnMinMax:
-                    return DeserializeFuncMinMaxStep(stream);
+                    return DeserializeFuncMinMaxStep(stream, queryVersion);
                 case StepType.FnSize:
-                    return DeserializeFuncSizeStep(stream);
+                    return DeserializeFuncSizeStep(stream, queryVersion);
+                case StepType.Case:
+                    return DeserializeCaseStep(stream, queryVersion);
+                case StepType.IsNull:
+                    return DeserializeIsNullStep(stream, queryVersion);
                 case StepType.FnCollect:
-                    return DeserializeFuncCollectStep(stream);
+                    return DeserializeFuncCollectStep(stream, queryVersion);
                 case StepType.Group:
-                    return DeserializeGroupStep(stream);
+                    return DeserializeGroupStep(stream, queryVersion);
+                case StepType.Union:
+                    return DeserializeUnionStep(stream, queryVersion);
+                case StepType.SeqAggr:
+                    return DeserializeSeqAggregateStep(stream, queryVersion);
                 default:
                     throw new BadProtocolException(
                         "Query plan: received invalid or unsupported step " +

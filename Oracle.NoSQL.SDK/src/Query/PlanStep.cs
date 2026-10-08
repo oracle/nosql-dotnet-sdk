@@ -34,6 +34,31 @@ namespace Oracle.NoSQL.SDK.Query
         ArrayCollectDistinct = 92
     }
 
+    // Function codes used by driver-side expression iterators in V6 plans.
+    // Keep these numeric values aligned with Java's FuncCode enum.
+    internal enum QueryFuncCode
+    {
+        And = 0,
+        Or = 1,
+        Equal = 2,
+        NotEqual = 3,
+        GreaterThan = 4,
+        GreaterOrEqual = 5,
+        LessThan = 6,
+        LessOrEqual = 7,
+        IsNull = 22,
+        IsNotNull = 23,
+        SeqCount = 49,
+        SeqSum = 50,
+        SeqAverage = 51,
+        SeqMin = 52,
+        SeqMax = 53,
+        SeqCountIgnoreNulls = 76,
+        SeqCountNumbersIgnoreNulls = 77,
+        SeqMinIgnoreNulls = 78,
+        SeqMaxIgnoreNulls = 79
+    }
+
     internal struct ExpressionLocation
     {
         internal int StartLine { get; set; }
@@ -294,6 +319,62 @@ namespace Oracle.NoSQL.SDK.Query
             return new FuncSizeIterator(runtime, this);
         }
     }
+
+    internal class ArrayConstructorStep : PlanSyncStep
+    {
+        internal override string Name => "ARRAY_CONSTRUCTOR";
+        internal bool IsConditional { get; set; }
+        internal PlanStep[] ArgSteps { get; set; }
+        internal override PlanSyncIterator CreateSyncIterator(
+            QueryRuntime runtime) => new ArrayConstructorIterator(runtime, this);
+    }
+
+    internal class ValueCompareStep : PlanSyncStep
+    {
+        internal override string Name => FuncCode.ToString();
+        internal QueryFuncCode FuncCode { get; set; }
+        internal PlanStep LeftStep { get; set; }
+        internal PlanStep RightStep { get; set; }
+        internal override PlanSyncIterator CreateSyncIterator(
+            QueryRuntime runtime) => new ValueCompareIterator(runtime, this);
+    }
+
+    internal class AndOrStep : PlanSyncStep
+    {
+        internal override string Name => FuncCode == QueryFuncCode.And ? "AND" : "OR";
+        internal QueryFuncCode FuncCode { get; set; }
+        internal PlanStep[] ArgSteps { get; set; }
+        internal override PlanSyncIterator CreateSyncIterator(
+            QueryRuntime runtime) => new AndOrIterator(runtime, this);
+    }
+
+    internal class CaseStep : PlanSyncStep
+    {
+        internal override string Name => "CASE";
+        internal PlanStep[] ConditionSteps { get; set; }
+        internal PlanStep[] ThenSteps { get; set; }
+        internal PlanStep ElseStep { get; set; }
+        internal override PlanSyncIterator CreateSyncIterator(
+            QueryRuntime runtime) => new CaseIterator(runtime, this);
+    }
+
+    internal class IsNullStep : PlanSyncStep
+    {
+        internal override string Name => FuncCode == QueryFuncCode.IsNull ? "IS_NULL" : "IS_NOT_NULL";
+        internal QueryFuncCode FuncCode { get; set; }
+        internal PlanStep InputStep { get; set; }
+        internal override PlanSyncIterator CreateSyncIterator(
+            QueryRuntime runtime) => new IsNullIterator(runtime, this);
+    }
+
+    internal class SeqAggregateStep : PlanSyncStep
+    {
+        internal override string Name => FuncCode.ToString();
+        internal QueryFuncCode FuncCode { get; set; }
+        internal PlanStep InputStep { get; set; }
+        internal override PlanSyncIterator CreateSyncIterator(
+            QueryRuntime runtime) => new SeqAggregateIterator(runtime, this);
+    }
     internal class GroupStep : PlanAsyncStep
     {
         internal override string Name => "GROUP";
@@ -312,10 +393,27 @@ namespace Oracle.NoSQL.SDK.Query
 
         internal bool CountMemory { get; set; }
 
+        internal bool IsRegrouping { get; set; }
+
         internal override PlanAsyncIterator CreateAsyncIterator(
             QueryRuntime runtime)
         {
             return new GroupIterator(runtime, this);
+        }
+    }
+
+    internal class UnionStep : PlanAsyncStep
+    {
+        internal override string Name => "UNION";
+
+        internal PlanStep[] BranchSteps { get; set; }
+
+        internal SortSpec[] SortSpecs { get; set; }
+
+        internal override PlanAsyncIterator CreateAsyncIterator(
+            QueryRuntime runtime)
+        {
+            return new UnionIterator(runtime, this);
         }
     }
 

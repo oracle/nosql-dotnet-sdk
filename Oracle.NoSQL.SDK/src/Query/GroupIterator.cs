@@ -123,11 +123,13 @@ namespace Oracle.NoSQL.SDK.Query {
                         break;
                     case SQLFuncCode.ArrayCollect:
                         aggregateTuple[i] =
-                            new CollectAggregator(runtime.IsForTest);
+                            new CollectAggregator(runtime.IsForTest,
+                                step.IsRegrouping);
                         break;
                     case SQLFuncCode.ArrayCollectDistinct:
                         aggregateTuple[i] =
-                            new CollectDistinctAggregator(runtime.IsForTest);
+                            new CollectDistinctAggregator(runtime.IsForTest,
+                                step.IsRegrouping);
                         break;
                     default:
                         // this is already checked in DeserializeSQLFuncCode

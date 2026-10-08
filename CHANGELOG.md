@@ -8,8 +8,12 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 **Added**
 * Latest OCI region codes
+* Added on-premises query protocol V6 support, including UNION ALL query
+  plans and V6 iterators.
 * Added server-generated creation-time metadata to Get, Put, Delete, and
   WriteMany results when returned by the service.
+  On-premises generation requires KV 26.1 and SCV 26.1 or later; unavailable
+  values remain null rather than being inferred from modification time.
 
 ## [5.2.3]
 

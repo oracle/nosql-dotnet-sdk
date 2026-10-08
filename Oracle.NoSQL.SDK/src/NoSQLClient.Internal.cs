@@ -22,6 +22,8 @@ namespace Oracle.NoSQL.SDK
         private Http.Client client;
         private readonly object lockObj = new object();
         private volatile TopologyInfo queryTopology;
+        private readonly Dictionary<string, TopologyInfo> storeTopologies =
+            new Dictionary<string, TopologyInfo>();
         private readonly object disposeLock = new object();
         private bool disposed;
 
@@ -34,6 +36,29 @@ namespace Oracle.NoSQL.SDK
         internal StatsControlImpl StatsControl { get; private set; }
 
         internal TopologyInfo QueryTopology => queryTopology;
+
+        // Capture the default and named-store topologies under the same lock
+        // used by updates. Query runtimes must not re-read the live cache.
+        internal (TopologyInfo BaseTopology,
+            IReadOnlyList<TopologyInfo> StoreTopologies) GetQueryTopologySnapshot()
+        {
+            lock (lockObj)
+            {
+                return (queryTopology,
+                    new List<TopologyInfo>(storeTopologies.Values));
+            }
+        }
+
+        internal IReadOnlyList<TopologyInfo> StoreTopologies
+        {
+            get
+            {
+                lock (lockObj)
+                {
+                    return new List<TopologyInfo>(storeTopologies.Values);
+                }
+            }
+        }
 
         internal int ServerSerialVersion => client.ServerSerialVersion;
 
@@ -55,6 +80,16 @@ namespace Oracle.NoSQL.SDK
         {
             lock (lockObj)
             {
+                if (topologyInfo.StoreName != null)
+                {
+                    if (!storeTopologies.TryGetValue(topologyInfo.StoreName,
+                            out var current) ||
+                        current.SequenceNumber < topologyInfo.SequenceNumber)
+                    {
+                        storeTopologies[topologyInfo.StoreName] = topologyInfo;
+                    }
+                    return;
+                }
                 if (queryTopology == null || queryTopology.SequenceNumber <
                     topologyInfo.SequenceNumber)
                 {

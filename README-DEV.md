@@ -202,6 +202,23 @@ thus some tests will fail when running against past KV version. To run against
 past CloudSim version, find the corresponding KV version for given CloudSim
 installation (look at the manifest inside *kvstore.jar*).
 
+UNION integration tests require on-premises KV 26.1 or later and an HTTP
+proxy supporting query protocol V6. The shared test guard checks *kvVersion*,
+then prepares an ordinary query to negotiate the proxy's query protocol before
+preparing UNION. An older KV version or a proxy negotiating V3–V5 causes these
+tests to be skipped. Supported environments must also have the required store
+compatibility version (SCV) enabled; preparation errors are not converted into
+skips. If *kvVersion* is omitted, the KV version is assumed to be current.
+
+Creation-time generation tests require KV 26.1 or later with SCV 26.1 enabled.
+KV 25.3 includes creation-time wire fields but does not generate creation times.
+For a configured older version, the feature tests skip while the live
+creation-time compatibility test (protocol V4+) still verifies the row,
+version, modification time and unavailable creation time, including failed
+conditional writes and aborted batches. On a configured 26.1+ service, missing
+creation times fail the feature tests; they are not silently skipped.
+See the [26.1 creation-time API contract](https://docs.oracle.com/en/database/other-databases/nosql-database/26.1/java-api/oracle/kv/table/Row.html#getCreationTime()).
+
 You can specify *kvVersion* parameter in either *.runsettings* file or on the
 command line as described above. E.g. in *.runsettings* file:
 

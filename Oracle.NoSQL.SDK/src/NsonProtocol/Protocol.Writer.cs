@@ -44,6 +44,20 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                 request.RequestTimeoutMillis);
             writer.WriteInt32(FieldNames.TopoSeqNum,
                 request.QueryTopologySequenceNumber);
+            var storeTopologies = request.StoreTopologies;
+            if (storeTopologies.Count != 0)
+            {
+                writer.StartArray(FieldNames.StoreTopologySequenceNumbers);
+                foreach (var topology in storeTopologies)
+                {
+                    writer.StartMap();
+                    writer.WriteString(FieldNames.StoreId, topology.StoreName);
+                    writer.WriteInt32(FieldNames.TopoSeqNum,
+                        topology.SequenceNumber);
+                    writer.EndMap();
+                }
+                writer.EndArray();
+            }
             writer.EndMap();
         }
 

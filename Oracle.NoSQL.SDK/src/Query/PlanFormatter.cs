@@ -69,6 +69,26 @@ namespace Oracle.NoSQL.SDK.Query
                     "OP_ADD_SUB" : "OP_MULT_DIV";
             }
 
+            if (step is ValueCompareStep compare)
+            {
+                return GetQueryFunctionName(compare.FuncCode);
+            }
+
+            if (step is AndOrStep logical)
+            {
+                return GetQueryFunctionName(logical.FuncCode);
+            }
+
+            if (step is IsNullStep isNull)
+            {
+                return GetQueryFunctionName(isNull.FuncCode);
+            }
+
+            if (step is SeqAggregateStep sequenceAggregate)
+            {
+                return GetQueryFunctionName(sequenceAggregate.FuncCode);
+            }
+
             // Java names this iterator FN_COLLECT and emits distinctness in
             // its content instead of encoding it in the iterator name.
             return step is FuncCollectStep ? "FN_COLLECT" : step.Name;
@@ -122,7 +142,134 @@ namespace Oracle.NoSQL.SDK.Query
                 case GroupStep group:
                     AppendGroupStep(builder, group, indent);
                     break;
+                case UnionStep union:
+                    Indent(builder, indent);
+                    builder.Append("\"branches\" : [\n");
+                    for (var i = 0; i < union.BranchSteps.Length; i++)
+                    {
+                        AppendStep(builder, union.BranchSteps[i], indent + 2);
+                        if (i < union.BranchSteps.Length - 1)
+                        {
+                            builder.Append(",\n");
+                        }
+                    }
+                    builder.Append('\n');
+                    Indent(builder, indent);
+                    builder.Append(']');
+                    if (union.SortSpecs != null)
+                    {
+                        builder.Append(",\n");
+                        AppendUnionSortSpecs(builder, union.SortSpecs, indent);
+                    }
+                    break;
+                case ArrayConstructorStep array:
+                    Indent(builder, indent);
+                    builder.Append("\"conditional\" : ")
+                        .Append(array.IsConditional ? "true" : "false")
+                        .Append(",\n");
+                    AppendInputSteps(builder, array.ArgSteps, indent);
+                    break;
+                case ValueCompareStep compare:
+                    AppendInputStep(builder, compare.LeftStep, indent);
+                    AppendInputStep(builder, compare.RightStep, indent);
+                    break;
+                case AndOrStep logical:
+                    AppendInputSteps(builder, logical.ArgSteps, indent);
+                    break;
+                case CaseStep @case:
+                    AppendCase(builder, @case, indent);
+                    break;
+                case IsNullStep isNull:
+                    AppendInputStep(builder, isNull.InputStep, indent);
+                    break;
+                case SeqAggregateStep sequenceAggregate:
+                    AppendInputStep(builder, sequenceAggregate.InputStep,
+                        indent);
+                    break;
             }
+        }
+
+        private static void AppendInputStep(StringBuilder builder,
+            PlanStep step, int indent)
+        {
+            Indent(builder, indent);
+            builder.Append("\"input iterator\" :\n");
+            AppendStep(builder, step, indent);
+        }
+
+        private static void AppendInputSteps(StringBuilder builder,
+            PlanStep[] steps, int indent)
+        {
+            Indent(builder, indent);
+            builder.Append("\"input iterators\" : [\n");
+            for (var i = 0; i < steps.Length; i++)
+            {
+                AppendStep(builder, steps[i], indent + 2);
+                if (i < steps.Length - 1)
+                {
+                    builder.Append(",\n");
+                }
+            }
+            builder.Append('\n');
+            Indent(builder, indent);
+            builder.Append(']');
+        }
+
+        private static void AppendSteps(StringBuilder builder,
+            PlanStep[] steps, int indent)
+        {
+            for (var i = 0; i < steps.Length; i++)
+            {
+                AppendStep(builder, steps[i], indent);
+                if (i < steps.Length - 1)
+                {
+                    builder.Append(",\n");
+                }
+            }
+        }
+
+        private static void AppendCase(StringBuilder builder, CaseStep step,
+            int indent)
+        {
+            Indent(builder, indent);
+            builder.Append("\"clauses\" : [\n");
+            for (var i = 0; i < step.ConditionSteps.Length; i++)
+            {
+                Indent(builder, indent + 2);
+                builder.Append("{\n");
+                Indent(builder, indent + 4);
+                builder.Append("\"when iterator\" :\n");
+                AppendStep(builder, step.ConditionSteps[i], indent + 4);
+                builder.Append(",\n");
+                Indent(builder, indent + 4);
+                builder.Append("\"then iterator\" :\n");
+                AppendStep(builder, step.ThenSteps[i], indent + 4);
+                builder.Append('\n');
+                Indent(builder, indent + 2);
+                builder.Append('}');
+                if (i < step.ConditionSteps.Length - 1 ||
+                    step.ElseStep != null)
+                {
+                    builder.Append(",\n");
+                }
+            }
+            if (step.ElseStep != null)
+            {
+                Indent(builder, indent + 2);
+                builder.Append("{\n");
+                Indent(builder, indent + 4);
+                builder.Append("\"else iterator\" :\n");
+                AppendStep(builder, step.ElseStep, indent + 4);
+                builder.Append('\n');
+                Indent(builder, indent + 2);
+                builder.Append('}').Append('\n');
+            }
+            else
+            {
+                builder.Append('\n');
+            }
+            Indent(builder, indent);
+            builder.Append(']');
         }
 
         private static void AppendSFW(StringBuilder builder, SFWStep sfw,
@@ -297,6 +444,32 @@ namespace Oracle.NoSQL.SDK.Query
             }
         }
 
+        private static string GetQueryFunctionName(QueryFuncCode code) =>
+            code switch
+            {
+                QueryFuncCode.And => "AND",
+                QueryFuncCode.Or => "OR",
+                QueryFuncCode.Equal => "EQUAL",
+                QueryFuncCode.NotEqual => "NOT_EQUAL",
+                QueryFuncCode.GreaterThan => "GREATER_THAN",
+                QueryFuncCode.GreaterOrEqual => "GREATER_OR_EQUAL",
+                QueryFuncCode.LessThan => "LESS_THAN",
+                QueryFuncCode.LessOrEqual => "LESS_OR_EQUAL",
+                QueryFuncCode.IsNull => "IS_NULL",
+                QueryFuncCode.IsNotNull => "IS_NOT_NULL",
+                QueryFuncCode.SeqCount => "FN_SEQ_COUNT",
+                QueryFuncCode.SeqSum => "FN_SEQ_SUM",
+                QueryFuncCode.SeqAverage => "FN_SEQ_AVG",
+                QueryFuncCode.SeqMin => "FN_SEQ_MIN",
+                QueryFuncCode.SeqMax => "FN_SEQ_MAX",
+                QueryFuncCode.SeqCountIgnoreNulls => "FN_SEQ_COUNT_I",
+                QueryFuncCode.SeqCountNumbersIgnoreNulls =>
+                    "FN_SEQ_COUNT_NUMBERS_I",
+                QueryFuncCode.SeqMinIgnoreNulls => "FN_SEQ_MIN_I",
+                QueryFuncCode.SeqMaxIgnoreNulls => "FN_SEQ_MAX_I",
+                _ => code.ToString()
+            };
+
         private static void AppendOptionalStep(StringBuilder builder,
             string label, PlanStep step, int indent)
         {
@@ -330,6 +503,30 @@ namespace Oracle.NoSQL.SDK.Query
                 }
             }
             builder.Append(",\n");
+        }
+
+        private static void AppendUnionSortSpecs(StringBuilder builder,
+            SortSpec[] specs, int indent)
+        {
+            Indent(builder, indent);
+            builder.Append("\"order by fields\" : [ ")
+                .AppendJoin(", ", System.Array.ConvertAll(specs,
+                    spec => spec.FieldName)).Append(" ],\n");
+            Indent(builder, indent);
+            builder.Append("\"sort specs\" : [ ");
+            for (var i = 0; i < specs.Length; i++)
+            {
+                if (i > 0)
+                {
+                    builder.Append(", ");
+                }
+                builder.Append("{ \"desc\" : ")
+                    .Append(specs[i].IsDescending ? "true" : "false")
+                    .Append(", \"nulls_first\" : ")
+                    .Append(specs[i].NullsFirst ? "true" : "false")
+                    .Append(" }");
+            }
+            builder.Append(" ]");
         }
 
         private static void AppendStringValues(StringBuilder builder,

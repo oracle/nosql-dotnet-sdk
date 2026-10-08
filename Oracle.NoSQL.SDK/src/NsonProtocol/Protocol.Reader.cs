@@ -209,6 +209,47 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             return result;
         }
 
+        internal static TopologyInfo ReadStoreTopologyInfo(NsonReader reader)
+        {
+            string storeName = null;
+            var sequenceNumber = -1;
+            int[] shardIds = null;
+            ReadMap(reader, fieldName =>
+            {
+                switch (fieldName)
+                {
+                    case FieldNames.StoreId:
+                        storeName = reader.ReadString();
+                        return true;
+                    case FieldNames.ProxyTopoSeqNum:
+                        sequenceNumber = reader.ReadInt32();
+                        return true;
+                    case FieldNames.ShardIds:
+                        shardIds = ReadArray(reader, reader.ReadInt32);
+                        return true;
+                    default:
+                        return false;
+                }
+            });
+            if (string.IsNullOrWhiteSpace(storeName))
+            {
+                throw new BadProtocolException(
+                    "Missing or empty store id for store topology information");
+            }
+            if (sequenceNumber < 0)
+            {
+                throw new BadProtocolException(
+                    "Received invalid topology sequence number: " +
+                    sequenceNumber);
+            }
+            if (shardIds == null || shardIds.Length == 0)
+            {
+                throw new BadProtocolException(
+                    "Missing shard ids for store topology information");
+            }
+            return new TopologyInfo(sequenceNumber, shardIds, storeName);
+        }
+
         internal static ConsumedCapacity DeserializeConsumedCapacity(
             NsonReader reader)
         {
@@ -266,6 +307,17 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                         // request.
                         request.Client.SetQueryTopology(
                             ReadTopologyInfo(reader));
+                        return true;
+                    case FieldNames.StoreTopologyInfo:
+                        var storeTopologies = ReadArray(reader,
+                            () => ReadStoreTopologyInfo(reader));
+                        if (storeTopologies != null)
+                        {
+                            foreach (var topology in storeTopologies)
+                            {
+                                request.Client.SetQueryTopology(topology);
+                            }
+                        }
                         return true;
                     default:
                         return processField(fieldName);

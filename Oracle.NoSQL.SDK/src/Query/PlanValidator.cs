@@ -244,5 +244,109 @@ namespace Oracle.NoSQL.SDK.Query
             CheckStepExists(step.InputStep, "input", step);
         }
 
+        internal static void ValidateUnionStep(UnionStep step)
+        {
+            ValidateBase(step);
+            CheckNotEmpty(step.BranchSteps, "branch steps", step);
+            for (var i = 0; i < step.BranchSteps.Length; i++)
+            {
+                CheckStepExists(step.BranchSteps[i], "branch", step, i);
+                if (!step.BranchSteps[i].IsAsync)
+                {
+                    throw new BadProtocolException(
+                        "Query plan: unexpected sync step " +
+                        step.BranchSteps[i].Name +
+                        " for UNION branch " + i);
+                }
+            }
+        }
+
+        internal static void ValidateArrayConstructorStep(
+            ArrayConstructorStep step)
+        {
+            ValidateBase(step);
+            // Java permits ARRAY_CONSTRUCTOR with no arguments, which is the
+            // driver representation of an empty array literal.
+            CheckNotNull(step.ArgSteps, "argument steps", step);
+            for (var i = 0; i < step.ArgSteps.Length; i++)
+            {
+                CheckStepIsSync(step.ArgSteps[i], "argument", step, i);
+            }
+        }
+
+        internal static void ValidateValueCompareStep(ValueCompareStep step)
+        {
+            ValidateBase(step);
+            if (step.FuncCode < QueryFuncCode.Equal ||
+                step.FuncCode > QueryFuncCode.LessOrEqual)
+            {
+                throw new BadProtocolException(
+                    $"Query plan: invalid comparison function {step.FuncCode}");
+            }
+            CheckStepIsSync(step.LeftStep, "left operand", step);
+            CheckStepIsSync(step.RightStep, "right operand", step);
+        }
+
+        internal static void ValidateAndOrStep(AndOrStep step)
+        {
+            ValidateBase(step);
+            if (step.FuncCode != QueryFuncCode.And &&
+                step.FuncCode != QueryFuncCode.Or)
+            {
+                throw new BadProtocolException(
+                    $"Query plan: invalid logical function {step.FuncCode}");
+            }
+            CheckNotEmpty(step.ArgSteps, "argument steps", step);
+            for (var i = 0; i < step.ArgSteps.Length; i++)
+            {
+                CheckStepIsSync(step.ArgSteps[i], "argument", step, i);
+            }
+        }
+
+        internal static void ValidateCaseStep(CaseStep step)
+        {
+            ValidateBase(step);
+            CheckNotEmpty(step.ConditionSteps, "condition steps", step);
+            CheckNotEmpty(step.ThenSteps, "then steps", step);
+            if (step.ConditionSteps.Length != step.ThenSteps.Length)
+            {
+                throw new BadProtocolException(
+                    "Query plan: CASE has different numbers of conditions and then steps");
+            }
+            for (var i = 0; i < step.ConditionSteps.Length; i++)
+            {
+                CheckStepIsSync(step.ConditionSteps[i], "condition", step, i);
+                CheckStepIsSync(step.ThenSteps[i], "then", step, i);
+            }
+            if (step.ElseStep != null)
+            {
+                CheckStepIsSync(step.ElseStep, "else", step);
+            }
+        }
+
+        internal static void ValidateIsNullStep(IsNullStep step)
+        {
+            ValidateBase(step);
+            if (step.FuncCode != QueryFuncCode.IsNull &&
+                step.FuncCode != QueryFuncCode.IsNotNull)
+            {
+                throw new BadProtocolException(
+                    $"Query plan: invalid null-check function {step.FuncCode}");
+            }
+            CheckStepIsSync(step.InputStep, "input", step);
+        }
+
+        internal static void ValidateSeqAggregateStep(SeqAggregateStep step)
+        {
+            ValidateBase(step);
+            if (step.FuncCode < QueryFuncCode.SeqCount ||
+                step.FuncCode > QueryFuncCode.SeqMaxIgnoreNulls)
+            {
+                throw new BadProtocolException(
+                    $"Query plan: invalid sequence aggregate function {step.FuncCode}");
+            }
+            CheckStepIsSync(step.InputStep, "input", step);
+        }
+
     }
 }

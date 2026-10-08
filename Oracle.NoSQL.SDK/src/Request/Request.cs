@@ -112,8 +112,11 @@ namespace Oracle.NoSQL.SDK
         internal string Compartment =>
             BaseOptions?.Compartment ?? Config.Compartment;
 
-        internal string Namespace =>
+        internal virtual string Namespace =>
             BaseOptions?.Namespace ?? Config.Namespace;
+
+        internal virtual IReadOnlyList<TopologyInfo> StoreTopologies =>
+            Client.StoreTopologies;
 
         internal int RequestTimeoutMillis { get; set; }
 

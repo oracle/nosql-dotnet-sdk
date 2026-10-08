@@ -17,6 +17,7 @@ namespace Oracle.NoSQL.SDK.Query {
     {
         private readonly ReceiveStep step;
         private readonly QueryRequest<RecordValue> queryRequest;
+        private readonly TopologyInfo branchTopology;
         private readonly Duplicates duplicates;
         private readonly SimpleResult simpleResult;
         private readonly SortedSet<PartialResult> partialResults;
@@ -30,11 +31,13 @@ namespace Oracle.NoSQL.SDK.Query {
             base(runtime)
         {
             this.step = step;
+            branchTopology = runtime.GetConstructionTopology();
             queryRequest = new QueryRequest<RecordValue>(runtime.Client,
                 runtime.PreparedStatement,
                 new QueryOptions
                 {
                     Compartment = runtime.Request.Options?.Compartment,
+                    Namespace = runtime.Request.Options?.Namespace,
                     Timeout = runtime.Request.Options?.Timeout,
                     Consistency = runtime.Request.Options?.Consistency,
                     LastWriteMetadata =
@@ -46,6 +49,7 @@ namespace Oracle.NoSQL.SDK.Query {
                 })
             {
                 BaseTopology = runtime.BaseTopology,
+                StoreTopologySnapshot = runtime.StoreTopologies,
                 IsInternal = true
             };
 
@@ -58,7 +62,7 @@ namespace Oracle.NoSQL.SDK.Query {
             {
                 if (step.DistributionKind == DistributionKind.AllShards)
                 {
-                    var topologyInfo = runtime.BaseTopology;
+                    var topologyInfo = branchTopology;
                     
                     if (topologyInfo == null)
                     {
@@ -112,7 +116,21 @@ namespace Oracle.NoSQL.SDK.Query {
 
             queryRequest.ShardId = shardId;
             queryRequest.VirtualScan = virtualScan;
+            queryRequest.UnionBranch = runtime.UnionBranch;
             queryRequest.StatsLogicalQueryRequest = runtime.Request;
+
+            if (queryRequest.Options.TraceLevel.HasValue)
+            {
+                // Internal requests belong to one logical query, so the trace
+                // counter must advance globally, including across continuation
+                // calls that use fresh QueryOptions.
+                // NSON converts this zero-based value to Java's one-based
+                // batch counter when it writes the request.
+                queryRequest.Options.BatchNumber =
+                    runtime.BatchNumber++;
+                // Retain the next batch number for driver trace records too.
+                runtime.Request.Options.BatchNumber = runtime.BatchNumber;
+            }
 
             var result = (QueryResult<RecordValue>)
                 await runtime.Client.ExecuteValidatedRequestAsync(
@@ -144,7 +162,6 @@ namespace Oracle.NoSQL.SDK.Query {
             if (result.QueryTraces != null)
             {
                 runtime.AddServerQueryTraces(result.QueryTraces);
-                queryRequest.Options.BatchNumber++;
             }
 
             return result;
@@ -336,7 +353,7 @@ namespace Oracle.NoSQL.SDK.Query {
         {
             if (currVScanId == -1)
             {
-                var topologyInfo = runtime.BaseTopology;
+                var topologyInfo = branchTopology;
                 Debug.Assert(topologyInfo?.ShardIds?.Count != 0);
                 // ShardIds are sorted.
                 currVScanId = topologyInfo!.ShardIds![^1] + 1;

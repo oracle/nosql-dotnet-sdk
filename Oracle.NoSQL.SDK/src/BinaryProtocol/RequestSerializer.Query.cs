@@ -143,7 +143,8 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
             if (request.PreparedStatement != null)
             {
                 WriteByteArrayWithUnpackedLength(stream,
-                    request.PreparedStatement.ProxyStatement);
+                    request.PreparedStatement.GetProxyStatement(
+                        request.UnionBranch));
                 var variables = request.PreparedStatement.variables;
                 if (variables != null)
                 {

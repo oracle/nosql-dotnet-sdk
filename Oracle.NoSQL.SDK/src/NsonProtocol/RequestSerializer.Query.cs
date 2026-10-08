@@ -39,10 +39,10 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
         }
 
         private static void DeserializeDriverPlanInfo(MemoryStream stream,
-            PreparedStatement statement)
+            PreparedStatement statement, short queryVersion)
         {
             statement.DriverQueryPlan = PlanSerializer.DeserializeStep(
-                stream);
+                stream, queryVersion);
             
             if (statement.DriverQueryPlan == null)
             {
@@ -79,9 +79,34 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
         }
 
         // topology info is not always sent
+        private static PreparedStatement.QueryBranch DeserializeQueryBranch(
+            NsonReader reader)
+        {
+            var branch = new PreparedStatement.QueryBranch();
+            ReadMap(reader, field =>
+            {
+                switch (field)
+                {
+                    case FieldNames.PreparedQuery:
+                        branch.ProxyStatement = reader.ReadByteArray();
+                        return true;
+                    case FieldNames.Namespace:
+                        branch.Namespace = reader.ReadString();
+                        return true;
+                    case FieldNames.TableName:
+                        branch.TableName = reader.ReadString();
+                        return true;
+                    default:
+                        return false;
+                }
+            });
+            return branch;
+        }
+
         private static bool ProcessPreparedStatementField(NsonReader reader,
             string field, ref PreparedStatement statement,
-            ref MutableTopologyInfo topologyInfo)
+            ref MutableTopologyInfo topologyInfo,
+            ref string[] branchStoreNames, short queryVersion)
         {
             switch (field)
             {
@@ -93,7 +118,34 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                     statement ??= new PreparedStatement();
                     var stream = GetMemoryStreamWithVisibleBuffer(
                         reader.ReadByteArray());
-                    DeserializeDriverPlanInfo(stream, statement);
+                    DeserializeDriverPlanInfo(stream, statement, queryVersion);
+                    return true;
+                case FieldNames.QueryBranches:
+                    statement ??= new PreparedStatement();
+                    var branches = ReadArray(reader, DeserializeQueryBranch);
+                    if (branches == null || branches.Length == 0)
+                    {
+                        throw new BadProtocolException(
+                            "Query: received empty query branches");
+                    }
+                    foreach (var branch in branches)
+                    {
+                        statement.AddQueryBranch(branch);
+                    }
+                    return true;
+                case FieldNames.QueryBranchStores:
+                    branchStoreNames = ReadArray(reader, reader.ReadString);
+                    if (branchStoreNames != null)
+                    {
+                        foreach (var storeName in branchStoreNames)
+                        {
+                            if (string.IsNullOrWhiteSpace(storeName))
+                            {
+                                throw new BadProtocolException(
+                                    "Query: received empty branch store id");
+                            }
+                        }
+                    }
                     return true;
                 case FieldNames.TableName:
                     statement ??= new PreparedStatement();
@@ -128,6 +180,12 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                 default:
                     return false;
             }
+        }
+
+        private static void SetQueryBranchStores(PreparedStatement statement,
+            string[] branchStoreNames)
+        {
+            statement?.SetQueryBranchStores(branchStoreNames);
         }
 
         // Validates the server portion of the prepared statement from the
@@ -190,7 +248,7 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
         }
 
         private static void SerializeVirtualScan(NsonWriter writer,
-            VirtualScan vs)
+            VirtualScan vs, short queryVersion)
         {
             writer.StartMap(FieldNames.VirtualScan);
             writer.WriteInt32(FieldNames.VirtualScanSID, vs.ShardId);
@@ -198,30 +256,48 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
 
             if (!vs.IsInfoSent)
             {
-                writer.WriteByteArray(FieldNames.VirtualScanPrimKey,
-                    vs.PrimaryKey);
-                writer.WriteByteArray(FieldNames.VirtualScanSecKey,
-                    vs.SecondaryKey);
-                writer.WriteBoolean(FieldNames.VirtualScanMoveAfter,
-                    vs.MoveAfterResumeKey);
-
-                writer.WriteByteArray(FieldNames.VirtualScanJoinDescResumeKey,
-                    vs.JoinDescendantResumeKey);
-
-                if (vs.JoinPathTableIds != null)
+                var tableInfos = vs.TableResumeInfos;
+                if (tableInfos == null || tableInfos.Length == 0)
                 {
-                    writer.WriteFieldName(
-                        FieldNames.VirtualScanJoinPathTables);
-                    WriteArray(writer, vs.JoinPathTableIds,
-                        writer.WriteInt32);
+                    throw new BadProtocolException(
+                        "Query: virtual scan has no table resume information");
                 }
-                
-                writer.WriteByteArray(FieldNames.VirtualScanJoinPathKey,
-                    vs.JoinPathPrimaryKey);
-                writer.WriteByteArray(FieldNames.VirtualScanJoinPathSecKey,
-                    vs.JoinPathSecondaryKey);
-                writer.WriteBoolean(FieldNames.VirtualScanJoinPathMatched,
-                    vs.JoinPathMatched);
+
+                var count = queryVersion >= QueryRequestBase.QueryV5 ?
+                    tableInfos.Length : 1;
+                if (queryVersion >= QueryRequestBase.QueryV5)
+                {
+                    writer.WriteInt32(FieldNames.VirtualScanNumTables, count);
+                }
+
+                for (var i = 0; i < count; i++)
+                {
+                    var info = tableInfos[i];
+                    writer.WriteInt32(FieldNames.VirtualScanCurrentIndexRange,
+                        info.CurrentIndexRange);
+                    writer.WriteByteArray(FieldNames.VirtualScanPrimKey,
+                        info.PrimaryKey);
+                    writer.WriteByteArray(FieldNames.VirtualScanSecKey,
+                        info.SecondaryKey);
+                    writer.WriteBoolean(FieldNames.VirtualScanMoveAfter,
+                        info.MoveAfterResumeKey);
+                    writer.WriteByteArray(
+                        FieldNames.VirtualScanJoinDescResumeKey,
+                        info.JoinDescendantResumeKey);
+                    if (info.JoinPathTableIds != null)
+                    {
+                        writer.WriteFieldName(
+                            FieldNames.VirtualScanJoinPathTables);
+                        WriteArray(writer, info.JoinPathTableIds,
+                            writer.WriteInt32);
+                    }
+                    writer.WriteByteArray(FieldNames.VirtualScanJoinPathKey,
+                        info.JoinPathPrimaryKey);
+                    writer.WriteByteArray(FieldNames.VirtualScanJoinPathSecKey,
+                        info.JoinPathSecondaryKey);
+                    writer.WriteBoolean(FieldNames.VirtualScanJoinPathMatched,
+                        info.JoinPathMatched);
+                }
             }
 
             writer.EndMap();
@@ -230,6 +306,10 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
         private static VirtualScan DeserializeVirtualScan(NsonReader reader)
         {
             var result = new VirtualScan();
+            var tableInfos = new List<VirtualScan.TableResumeInfo>();
+            var tableInfo = new VirtualScan.TableResumeInfo();
+            var tableCount = 1;
+            var hasTableCount = false;
 
             ReadMap(reader, field =>
             {
@@ -241,36 +321,64 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                     case FieldNames.VirtualScanPID:
                         result.PartitionId = reader.ReadInt32();
                         return true;
+                    case FieldNames.VirtualScanNumTables:
+                        tableCount = reader.ReadInt32();
+                        hasTableCount = true;
+                        if (tableCount <= 0)
+                        {
+                            throw new BadProtocolException(
+                                "Query: invalid virtual scan table count " +
+                                tableCount);
+                        }
+                        return true;
+                    case FieldNames.VirtualScanCurrentIndexRange:
+                        tableInfo.CurrentIndexRange = reader.ReadInt32();
+                        return true;
                     case FieldNames.VirtualScanPrimKey:
-                        result.PrimaryKey = reader.ReadByteArray();
+                        tableInfo.PrimaryKey = reader.ReadByteArray();
                         return true;
                     case FieldNames.VirtualScanSecKey:
-                        result.SecondaryKey = reader.ReadByteArray();
+                        tableInfo.SecondaryKey = reader.ReadByteArray();
                         return true;
                     case FieldNames.VirtualScanMoveAfter:
-                        result.MoveAfterResumeKey = reader.ReadBoolean();
+                        tableInfo.MoveAfterResumeKey = reader.ReadBoolean();
                         return true;
                     case FieldNames.VirtualScanJoinDescResumeKey:
-                        result.JoinDescendantResumeKey =
+                        tableInfo.JoinDescendantResumeKey =
                             reader.ReadByteArray();
                         return true;
                     case FieldNames.VirtualScanJoinPathTables:
-                        result.JoinPathTableIds =
+                        tableInfo.JoinPathTableIds =
                             ReadArray(reader, reader.ReadInt32);
                         return true;
                     case FieldNames.VirtualScanJoinPathKey:
-                        result.JoinPathPrimaryKey = reader.ReadByteArray();
+                        tableInfo.JoinPathPrimaryKey = reader.ReadByteArray();
                         return true;
                     case FieldNames.VirtualScanJoinPathSecKey:
-                        result.JoinPathSecondaryKey = reader.ReadByteArray();
+                        tableInfo.JoinPathSecondaryKey = reader.ReadByteArray();
                         return true;
                     case FieldNames.VirtualScanJoinPathMatched:
-                        result.JoinPathMatched = reader.ReadBoolean();
+                        tableInfo.JoinPathMatched = reader.ReadBoolean();
+                        tableInfos.Add(tableInfo);
+                        tableInfo = new VirtualScan.TableResumeInfo();
                         return true;
                     default:
                         return false;
                 }
             });
+
+            if ((hasTableCount || tableInfos.Count != 0) &&
+                tableInfos.Count != tableCount)
+            {
+                throw new BadProtocolException(
+                    "Query: received mismatched virtual scan table resume " +
+                    $"information, expected {tableCount}, got {tableInfos.Count}");
+            }
+
+            if (tableInfos.Count != 0)
+            {
+                result.TableResumeInfos = tableInfos.ToArray();
+            }
 
             return result;
         }
@@ -328,10 +436,14 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                 SQLText = request.Statement
             };
             MutableTopologyInfo mti = null;
+            string[] branchStoreNames = null;
 
             DeserializeResponse(reader,
                 field => ProcessPreparedStatementField(reader, field,
-                    ref statement, ref mti), request, statement);
+                    ref statement, ref mti, ref branchStoreNames,
+                    request.QueryVersion), request,
+                statement);
+            SetQueryBranchStores(statement, branchStoreNames);
             ValidatePreparedStatement(statement);
             
             // Only for query <= V3.
@@ -393,7 +505,10 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                 writer.WriteBoolean(FieldNames.IsSimpleQuery,
                     request.PreparedStatement.IsSimpleQuery);
                 writer.WriteByteArray(FieldNames.PreparedQuery,
-                    request.PreparedStatement.ProxyStatement);
+                    request.PreparedStatement.GetProxyStatement(
+                        request.UnionBranch));
+                OptionallyWriteString(writer, FieldNames.StoreId,
+                    request.PreparedStatement.GetStoreName(request.UnionBranch));
 
                 var variables = request.PreparedStatement.variables;
                 if (variables != null)
@@ -443,7 +558,8 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                     request.Options?.QueryLabel);
                 if (request.VirtualScan != null)
                 {
-                    SerializeVirtualScan(writer, request.VirtualScan);
+                    SerializeVirtualScan(writer, request.VirtualScan,
+                        request.QueryVersion);
                 }
             }
 
@@ -458,6 +574,7 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             var result = new QueryResult<TRow>();
             PreparedStatement preparedStatement = null;
             MutableTopologyInfo mti = null;
+            string[] branchStoreNames = null;
 
             DeserializeResponse(reader, field =>
             {
@@ -492,9 +609,17 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                         return true;
                     default:
                         return ProcessPreparedStatementField(reader, field,
-                            ref preparedStatement, ref mti);
+                            ref preparedStatement, ref mti,
+                            ref branchStoreNames,
+                            request.QueryVersion);
                 }
             }, request, result);
+
+            if (branchStoreNames != null)
+            {
+                SetQueryBranchStores(preparedStatement ??
+                    request.PreparedStatement, branchStoreNames);
+            }
 
             /*
              * If the QueryRequest was not initially prepared, the prepared

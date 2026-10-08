@@ -990,6 +990,57 @@ namespace Oracle.NoSQL.SDK.Tests
         }
 
         [TestMethod]
+        public void TestPlanFormatterUsesJavaUnionBranchesAndSortSpecs()
+        {
+            var plan = Query.PlanFormatter.Format(new Query.UnionStep
+            {
+                ResultPosition = 4,
+                BranchSteps = new Query.PlanStep[]
+                {
+                    new Query.ReceiveStep { ResultPosition = 1 },
+                    new Query.ReceiveStep { ResultPosition = 2 }
+                },
+                SortSpecs = new[]
+                {
+                    new Query.SortSpec("id", true, false)
+                }
+            });
+
+            StringAssert.Contains(plan, "\"branches\" : [");
+            StringAssert.Contains(plan, "\"order by fields\" : [ id ]");
+            StringAssert.Contains(plan,
+                "\"sort specs\" : [ { \"desc\" : true, \"nulls_first\" : false } ]");
+        }
+
+        [TestMethod]
+        public void TestPlanFormatterPreservesEmptyUnionSortMetadata()
+        {
+            var branches = new Query.PlanStep[]
+            {
+                new Query.ReceiveStep { ResultPosition = 1 },
+                new Query.ReceiveStep { ResultPosition = 2 }
+            };
+            var sortedPlan = Query.PlanFormatter.Format(new Query.UnionStep
+            {
+                ResultPosition = 4,
+                BranchSteps = branches,
+                SortSpecs = Array.Empty<Query.SortSpec>()
+            });
+            var sequentialPlan = Query.PlanFormatter.Format(new Query.UnionStep
+            {
+                ResultPosition = 4,
+                BranchSteps = branches,
+                SortSpecs = null
+            });
+
+            StringAssert.Contains(sortedPlan,
+                "\"order by fields\" : [  ]");
+            StringAssert.Contains(sortedPlan, "\"sort specs\" : [  ]");
+            Assert.IsFalse(sequentialPlan.Contains("\"order by fields\""));
+            Assert.IsFalse(sequentialPlan.Contains("\"sort specs\""));
+        }
+
+        [TestMethod]
         public void TestDeferredLogicalQueryIsObservedOnceAfterPreflight()
         {
             using var client = new NoSQLClient(new NoSQLConfig

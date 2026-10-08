@@ -148,6 +148,10 @@ namespace Oracle.NoSQL.SDK.Tests
         {
             using var client = MakeClient();
             Assert.IsTrue(client.ProtocolHandler.DecrementQueryVersion(
+                QueryRequestBase.QueryV6));
+            Assert.IsTrue(client.ProtocolHandler.DecrementQueryVersion(
+                QueryRequestBase.QueryV5));
+            Assert.IsTrue(client.ProtocolHandler.DecrementQueryVersion(
                 QueryRequestBase.QueryV4));
             var request = new QueryRequest<RecordValue>(client,
                 "UPDATE users SET name = 'alice'",

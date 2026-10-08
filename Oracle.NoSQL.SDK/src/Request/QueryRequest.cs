@@ -8,6 +8,7 @@
 namespace Oracle.NoSQL.SDK
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
     using System.Threading;
@@ -66,7 +67,17 @@ namespace Oracle.NoSQL.SDK
 
         internal int ShardId { get; set; } = -1;
 
+        // Captured default topology for the legacy sequence in the request
+        // header. ReceiveIterator keeps its selected store topology separately
+        // for shard enumeration and virtual scans.
         internal TopologyInfo BaseTopology { get; set; }
+
+        // Advanced query execution captures topology snapshots when its
+        // runtime is created. Internal fetches must advertise that same view.
+        internal IReadOnlyList<TopologyInfo> StoreTopologySnapshot { get; set; }
+
+        internal override IReadOnlyList<TopologyInfo> StoreTopologies =>
+            StoreTopologySnapshot ?? base.StoreTopologies;
 
         internal VirtualScan VirtualScan { get; set; }
 
@@ -76,6 +87,10 @@ namespace Oracle.NoSQL.SDK
         // fetches. This reference carries the user-visible request through the
         // feature preflight without counting each internal fetch as a new query.
         internal QueryRequest StatsLogicalQueryRequest { get; set; }
+
+        // The proxy prepared statement to use for the current UNION branch.
+        // It is set by the driver plan only for internal fetch requests.
+        internal int UnionBranch { get; set; }
 
         internal void DeferStatsLogicalQuery()
         {
@@ -114,13 +129,22 @@ namespace Oracle.NoSQL.SDK
             PreparedStatement.OperationCode == OperationCodeSelect;
 
         internal override string InternalTableName =>
-            PreparedStatement?.TableName;
+            PreparedStatement?.GetTableName(UnionBranch);
+
+        // Match Java: explicit request, selected prepared branch, then the
+        // client default. base.Namespace already includes the client default.
+        internal override string Namespace => Options?.Namespace ??
+            PreparedStatement?.GetNamespace(UnionBranch) ?? Config.Namespace;
 
         internal QueryContinuationKey ContinuationKey =>
             Options?.ContinuationKey;
 
         internal override int QueryTopologySequenceNumber =>
-            BaseTopology?.SequenceNumber ?? base.QueryTopologySequenceNumber;
+            // A captured but unknown topology must remain -1 even if another
+            // request subsequently populates the client's live cache.
+            StoreTopologySnapshot != null
+                ? BaseTopology?.SequenceNumber ?? -1
+                : BaseTopology?.SequenceNumber ?? base.QueryTopologySequenceNumber;
 
         internal string LastWriteMetadata => Options?.LastWriteMetadata;
 
