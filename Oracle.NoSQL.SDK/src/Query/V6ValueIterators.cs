@@ -633,54 +633,42 @@ namespace Oracle.NoSQL.SDK.Query
         private static void AddToSum(FieldValue value, ref DbType sumType,
             ref long longSum, ref double doubleSum, ref decimal numberSum)
         {
-            switch (value.DbType)
+            if (sumType == DbType.Number || value.DbType == DbType.Number)
             {
-                case DbType.Integer:
-                case DbType.Long:
-                    if (sumType == DbType.Long)
+                try
+                {
+                    var sum = sumType switch
                     {
-                        longSum = unchecked(longSum + value.ToInt64());
-                    }
-                    else if (sumType == DbType.Double)
-                    {
-                        doubleSum += value.ToDouble();
-                    }
-                    else
-                    {
-                        numberSum += value.ToDecimal();
-                    }
-                    break;
-                case DbType.Double:
-                    if (sumType == DbType.Long)
-                    {
-                        doubleSum = longSum + value.AsDouble;
-                        sumType = DbType.Double;
-                    }
-                    else if (sumType == DbType.Double)
-                    {
-                        doubleSum += value.AsDouble;
-                    }
-                    else
-                    {
-                        numberSum += (decimal)value.AsDouble;
-                    }
-                    break;
-                case DbType.Number:
-                    if (sumType == DbType.Long)
-                    {
-                        numberSum = longSum + value.AsDecimal;
-                    }
-                    else if (sumType == DbType.Double)
-                    {
-                        numberSum = (decimal)doubleSum + value.AsDecimal;
-                    }
-                    else
-                    {
-                        numberSum += value.AsDecimal;
-                    }
+                        DbType.Long => longSum,
+                        DbType.Double => (decimal)doubleSum,
+                        _ => numberSum
+                    };
+                    numberSum = sum + value.ToDecimal();
                     sumType = DbType.Number;
-                    break;
+                    return;
+                }
+                catch (OverflowException)
+                {
+                    // Like QueryAdd, fall back to double if either the
+                    // conversion or the addition exceeds decimal's range.
+                    // Neither accumulator has changed when this happens.
+                }
             }
+            else if (sumType == DbType.Long &&
+                     (value.DbType == DbType.Integer ||
+                      value.DbType == DbType.Long))
+            {
+                longSum = unchecked(longSum + value.ToInt64());
+                return;
+            }
+
+            doubleSum = (sumType switch
+            {
+                DbType.Long => longSum,
+                DbType.Number => (double)numberSum,
+                _ => doubleSum
+            }) + value.ToDouble();
+            sumType = DbType.Double;
         }
 
         private static FieldValue GetSum(DbType sumType, long longSum,
