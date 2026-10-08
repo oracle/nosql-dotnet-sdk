@@ -67,6 +67,9 @@ namespace Oracle.NoSQL.SDK
 
         internal int ShardId { get; set; } = -1;
 
+        // Captured default topology for the legacy sequence in the request
+        // header. ReceiveIterator keeps its selected store topology separately
+        // for shard enumeration and virtual scans.
         internal TopologyInfo BaseTopology { get; set; }
 
         // Advanced query execution captures topology snapshots when its

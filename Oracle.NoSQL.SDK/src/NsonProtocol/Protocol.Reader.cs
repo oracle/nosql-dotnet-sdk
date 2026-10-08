@@ -231,10 +231,10 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                         return false;
                 }
             });
-            if (storeName == null)
+            if (string.IsNullOrWhiteSpace(storeName))
             {
                 throw new BadProtocolException(
-                    "Missing store id for store topology information");
+                    "Missing or empty store id for store topology information");
             }
             if (sequenceNumber < 0)
             {
@@ -242,7 +242,7 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                     "Received invalid topology sequence number: " +
                     sequenceNumber);
             }
-            if (shardIds == null)
+            if (shardIds == null || shardIds.Length == 0)
             {
                 throw new BadProtocolException(
                     "Missing shard ids for store topology information");

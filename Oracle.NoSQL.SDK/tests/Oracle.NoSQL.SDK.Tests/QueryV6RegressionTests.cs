@@ -283,11 +283,11 @@ namespace Oracle.NoSQL.SDK.Tests
             {
                 for (var sequence = 1; !stop.IsCancellationRequested; sequence++)
                 {
-                    client.SetQueryTopology(new TopologyInfo(sequence,
+                    client.SetQueryTopology(new TopologyInfo(3 * sequence,
                         new[] { sequence }));
-                    client.SetQueryTopology(new TopologyInfo(sequence,
+                    client.SetQueryTopology(new TopologyInfo(3 * sequence + 1,
                         new[] { sequence }, "storeOne"));
-                    client.SetQueryTopology(new TopologyInfo(sequence,
+                    client.SetQueryTopology(new TopologyInfo(3 * sequence + 2,
                         new[] { sequence }, "storeTwo"));
                     started.Set();
                     Thread.Yield();
@@ -309,7 +309,7 @@ namespace Oracle.NoSQL.SDK.Tests
                         Assert.AreSame(captured, runtime.GetConstructionTopology(),
                             "Branch must use the captured topology, not the live cache");
                         var header = ReadHeader(client, statement, runtime);
-                        Assert.AreEqual(captured?.SequenceNumber ?? -1,
+                        Assert.AreEqual(runtime.BaseTopology?.SequenceNumber ?? -1,
                             header[NsonProtocol.FieldNames.TopoSeqNum].AsInt32);
                         var named = header[NsonProtocol.FieldNames
                             .StoreTopologySequenceNumbers].AsArrayValue;
@@ -335,7 +335,7 @@ namespace Oracle.NoSQL.SDK.Tests
         {
             var request = new QueryRequest<RecordValue>(client, statement, null)
             {
-                BaseTopology = runtime.GetConstructionTopology(),
+                BaseTopology = runtime.BaseTopology,
                 StoreTopologySnapshot = runtime.StoreTopologies
             };
             using var stream = new MemoryStream();

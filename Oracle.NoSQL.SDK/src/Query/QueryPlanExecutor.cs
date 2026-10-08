@@ -117,7 +117,7 @@ namespace Oracle.NoSQL.SDK.Query {
             var topologySnapshot = client.GetQueryTopologySnapshot();
             BaseTopology = topologySnapshot.BaseTopology;
             StoreTopologies = topologySnapshot.StoreTopologies;
-            if (preparedStatement.QueryBranches.Count > 1)
+            if (preparedStatement.QueryBranches.Count > 0)
             {
                 branchTopologies = new TopologyInfo[
                     preparedStatement.QueryBranches.Count];
@@ -145,10 +145,12 @@ namespace Oracle.NoSQL.SDK.Query {
             return null;
         }
 
+        // A receive outside UNION still executes prepared branch 0, which may
+        // belong to a named store. An unknown named store stays unknown.
         internal TopologyInfo GetConstructionTopology() =>
-            ConstructionUnionBranch >= 0 && branchTopologies != null
-                ? branchTopologies[ConstructionUnionBranch]
-                : BaseTopology;
+            branchTopologies == null ? BaseTopology :
+                branchTopologies[ConstructionUnionBranch >= 0 ?
+                    ConstructionUnionBranch : 0];
 
         private void InitExternalVariables()
         {
