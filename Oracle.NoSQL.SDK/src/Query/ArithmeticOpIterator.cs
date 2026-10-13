@@ -170,9 +170,15 @@ namespace Oracle.NoSQL.SDK.Query {
                 DbType.Number => new NumberValue(initialValue),
                 _ => throw new InvalidOperationException()
             };
+            var checkUnderflow = resultType == DbType.Number &&
+                step.Opcode == ArithmeticOpcode.MultiplyDivide;
             for (var i = 0; i < operands.Length; i++)
             {
                 var operand = operands[i];
+                // Save the original values before operand conversion and
+                // before the numeric helpers mutate the accumulator.
+                var left = checkUnderflow ? result.ToDouble() : 0;
+                var right = checkUnderflow ? operand.ToDouble() : 0;
                 if (resultType == DbType.Number)
                 {
                     // NumberValue's mixed DOUBLE operations otherwise
@@ -195,6 +201,14 @@ namespace Oracle.NoSQL.SDK.Query {
                     }
                 }
                 result = DoOp(step.OpSequence[i], result, operand);
+                if (checkUnderflow && result.DbType == DbType.Number &&
+                    result.AsDecimal == 0 && left != 0 && right != 0)
+                {
+                    // Decimal multiplication and division can silently round
+                    // a nonzero result to zero without throwing overflow.
+                    result = new DoubleValue(step.OpSequence[i] == '*'
+                        ? left * right : left / right);
+                }
             }
 
             Result = result;

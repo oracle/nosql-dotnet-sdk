@@ -201,6 +201,86 @@ namespace Oracle.NoSQL.SDK.Tests
             }
         }
 
+        [DataTestMethod]
+        [DataRow("**", 1e-20)]
+        [DataRow("**", -1e-20)]
+        [DataRow("**", 1.2345678901234567e-20)]
+        [DataRow("*/", 1e20)]
+        [DataRow("*/", -1e20)]
+        [DataRow("*/", 1.2345678901234567e20)]
+        [DataRow("*d", 1e20)]
+        [DataRow("*d", -1e20)]
+        public void TestDecimalOperationUnderflowFallsBackToDouble(
+            string operations, double operand)
+        {
+            const decimal value = 1e-20m;
+            var expected = operations[1] == '*'
+                ? (double)value * operand : (double)value / operand;
+            Verify(ArithmeticOpcode.MultiplyDivide, operations,
+                new DoubleValue(expected), new NumberValue(value),
+                new DoubleValue(operand));
+        }
+
+        [DataTestMethod]
+        [DataRow(false, 1)]
+        [DataRow(true, 1)]
+        [DataRow(false, -1)]
+        [DataRow(true, -1)]
+        public void TestIntermediateUnderflowPreservesFinalNonzeroResult(
+            bool reverse, int sign)
+        {
+            var number = new NumberValue(sign * 1e-20m);
+            var smallDouble = new DoubleValue(1e-20);
+            var expected = (sign * 1e-20 * 1e-20) / 1e-20;
+            Verify(ArithmeticOpcode.MultiplyDivide, "**/",
+                new DoubleValue(expected),
+                reverse ? (FieldValue)smallDouble : number,
+                reverse ? (FieldValue)number : smallDouble,
+                new DoubleValue(1e-20));
+        }
+
+        [DataTestMethod]
+        [DataRow("*/")]
+        [DataRow("*d")]
+        public void TestNumberOnlyDivisionUnderflowPreservesNonzeroResult(
+            string operations)
+        {
+            var value = new NumberValue(1e-28m);
+            Verify(ArithmeticOpcode.MultiplyDivide, operations,
+                new DoubleValue(value.ToDouble() / 2), value,
+                new NumberValue(2m));
+        }
+
+        [TestMethod]
+        public void TestUnderflowAfterDoubleAccumulatorPromotesToNumber()
+        {
+            Verify(ArithmeticOpcode.MultiplyDivide, "**/*",
+                new DoubleValue((1e100 / 1e120) * 1e-20),
+                new NumberValue(1m), new DoubleValue(1e100),
+                new DoubleValue(1e120), new NumberValue(1e-20m));
+        }
+
+        [TestMethod]
+        public void TestUnderflowFallbackPreservesRealZerosAndZeroDivisor()
+        {
+            Verify(ArithmeticOpcode.MultiplyDivide, "**",
+                new NumberValue(0m), new NumberValue(1e-20m),
+                new DoubleValue(0));
+            foreach (var operations in new[] { "**", "*/", "*d" })
+            {
+                Verify(ArithmeticOpcode.MultiplyDivide, operations,
+                    new NumberValue(0m), new NumberValue(0m),
+                    new DoubleValue(1e-20));
+            }
+            foreach (var operations in new[] { "*/", "*d" })
+            {
+                Assert.ThrowsException<DivideByZeroException>(() =>
+                    Verify(ArithmeticOpcode.MultiplyDivide, operations,
+                        FieldValue.Null, new NumberValue(1e-20m),
+                        new DoubleValue(0)));
+            }
+        }
+
         private static void Verify(ArithmeticOpcode opcode, string operations,
             FieldValue expected, params FieldValue[] operands)
         {

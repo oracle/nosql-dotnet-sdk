@@ -24,7 +24,10 @@ namespace Oracle.NoSQL.SDK.Tests
                 .Substring(0, 8), DefaultTableLimits,
             new[] { new TableField("id", DataType.Integer),
                 new TableField("doc", DataType.Json),
-                new TableField("missing", DataType.Integer) },
+                new TableField("missing", DataType.Integer),
+                new TableField("smallNumber", DataType.Number),
+                new TableField("smallDouble", DataType.Double),
+                new TableField("largeDouble", DataType.Double) },
             new[] { "id" }, 1);
 
         [ClassInitialize]
@@ -33,8 +36,13 @@ namespace Oracle.NoSQL.SDK.Tests
             ClassInitialize(context);
             await CreateTableAsync(Table);
             await client.PutAsync(Table.Name, new MapValue
-                { ["id"] = 1, ["doc"] = new MapValue
-                    { ["v"] = FieldValue.JsonNull } });
+                {
+                    ["id"] = 1,
+                    ["doc"] = new MapValue { ["v"] = FieldValue.JsonNull },
+                    ["smallNumber"] = new NumberValue(1e-20m),
+                    ["smallDouble"] = new DoubleValue(1e-20),
+                    ["largeDouble"] = new DoubleValue(1e20)
+                });
             await client.PutAsync(Table.Name, new MapValue
                 { ["id"] = 2, ["doc"] = new MapValue { ["v"] = 1 } });
             await client.PutAsync(Table.Name, new MapValue
@@ -97,6 +105,23 @@ namespace Oracle.NoSQL.SDK.Tests
                 statement.DriverQueryPlan), "MULT_DIV");
             Assert.AreEqual(2.5,
                 (await ReadSingleRowAsync(statement))["mean"].ToDouble());
+        }
+
+        [DataTestMethod]
+        [DataRow("*", "/", "smallDouble")]
+        [DataRow("/", "*", "largeDouble")]
+        public async Task TestDriverArithmeticRecoversAfterIntermediateUnderflowAsync(
+            string firstOperation, string secondOperation, string doubleColumn)
+        {
+            var statement = await client.PrepareAsync(
+                $"SELECT min(t.smallNumber) {firstOperation} " +
+                $"min(t.{doubleColumn}) {secondOperation} " +
+                $"min(t.{doubleColumn}) AS result FROM {Table.Name} t");
+            StringAssert.Contains(PlanFormatter.Format(
+                statement.DriverQueryPlan), "MULT_DIV");
+            Assert.AreEqual(1e-20,
+                (await ReadSingleRowAsync(statement))["result"].ToDouble(),
+                1e-32);
         }
 
         private static async Task<RecordValue> ReadSingleRowAsync(
