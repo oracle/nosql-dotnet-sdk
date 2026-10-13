@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2020, 2025 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026 Oracle and/or its affiliates. All rights reserved.
  *
  * Licensed under the Universal Permissive License v 1.0 as shown at
  *  https://oss.oracle.com/licenses/upl/
@@ -147,7 +147,7 @@ namespace Oracle.NoSQL.SDK.Query
     internal class CountAggregator : CountAggregatorBase
     {
         private protected override bool ToCount(FieldValue value) =>
-            !value.IsSpecial;
+            value != FieldValue.Null && value != FieldValue.Empty;
     }
 
     internal class CountNumbersAggregator : CountAggregatorBase

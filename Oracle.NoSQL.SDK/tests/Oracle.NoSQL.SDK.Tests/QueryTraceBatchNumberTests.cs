@@ -21,8 +21,11 @@ namespace Oracle.NoSQL.SDK.Tests
     [TestClass]
     public class QueryTraceBatchNumberTests
     {
-        [TestMethod]
-        public async Task TestBatchCounterContinuesWithFreshOptions()
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task TestBatchCounterContinuesWithFreshOptions(
+            bool hasVariableNames)
         {
             var handler = new QueryResponseHandler();
             using var client = new NoSQLClient(new NoSQLConfig
@@ -33,7 +36,9 @@ namespace Oracle.NoSQL.SDK.Tests
             var statement = new PreparedStatement
             {
                 RegisterCount = 1,
-                VariableNames = Array.Empty<string>(),
+                // Real plans with no bind variables leave this null; also
+                // cover the equivalent explicitly empty variable list.
+                VariableNames = hasVariableNames ? Array.Empty<string>() : null,
                 DriverQueryPlan = new ReceiveStep { ResultPosition = 0 }
             };
             statement.AddQueryBranch(new PreparedStatement.QueryBranch

@@ -643,9 +643,19 @@ namespace Oracle.NoSQL.SDK.Query
                         DbType.Double => (decimal)doubleSum,
                         _ => numberSum
                     };
-                    numberSum = sum + value.ToDecimal();
-                    sumType = DbType.Number;
-                    return;
+                    var operand = value.ToDecimal();
+                    var sumUnderflows = sumType == DbType.Double &&
+                        doubleSum != 0 && sum == 0;
+                    var operandUnderflows = value.DbType == DbType.Double &&
+                        value.AsDouble != 0 && operand == 0;
+                    if (!sumUnderflows && !operandUnderflows)
+                    {
+                        numberSum = sum + operand;
+                        sumType = DbType.Number;
+                        return;
+                    }
+                    // Conversion can silently round tiny nonzero doubles to
+                    // zero. Preserve them through the DOUBLE fallback below.
                 }
                 catch (OverflowException)
                 {

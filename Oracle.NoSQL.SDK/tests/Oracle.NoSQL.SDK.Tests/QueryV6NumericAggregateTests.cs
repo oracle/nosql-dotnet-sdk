@@ -45,6 +45,25 @@ namespace Oracle.NoSQL.SDK.Tests
         }
 
         [DataTestMethod]
+        [DataRow(false, false, 1e-30)]
+        [DataRow(false, true, 1e-30)]
+        [DataRow(true, false, 1e-30)]
+        [DataRow(true, true, 1e-30)]
+        [DataRow(false, false, -1e-30)]
+        [DataRow(false, true, -1e-30)]
+        [DataRow(true, false, -1e-30)]
+        [DataRow(true, true, -1e-30)]
+        public void TestMixedNumberAndTinyDoublePreservesNonzeroValue(
+            bool average, bool reverse, double value)
+        {
+            var result = Aggregate(average, Ordered(reverse,
+                new NumberValue(0m), new DoubleValue(value)));
+
+            Assert.AreEqual(DbType.Double, result.DbType);
+            Assert.AreEqual(average ? value / 2 : value, result.AsDouble);
+        }
+
+        [DataTestMethod]
         [DataRow(false)]
         [DataRow(true)]
         public void TestDecimalSumBeyondRange(bool average)

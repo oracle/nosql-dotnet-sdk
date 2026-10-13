@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2020, 2025 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026 Oracle and/or its affiliates. All rights reserved.
  *
  * Licensed under the Universal Permissive License v 1.0 as shown at
  *  https://oss.oracle.com/licenses/upl/
@@ -271,7 +271,8 @@ namespace Oracle.NoSQL.SDK.Query {
         [Conditional("DEBUG")]
         internal void TraceExternalVariables()
         {
-            if (!(Request.Options?.TraceLevel.HasValue ?? false))
+            if (!(Request.Options?.TraceLevel.HasValue ?? false) ||
+                extVariables == null)
             {
                 return;
             }
@@ -348,6 +349,13 @@ namespace Oracle.NoSQL.SDK.Query {
                         break;
                     }
                 }
+            }
+            else
+            {
+                // The previous call failed before the iterator finished.
+                // Return its buffered rows with a continuation so the caller
+                // can resume execution, even when that buffer is empty.
+                NeedContinuation = true;
             }
 
             var result = new QueryResult<TRow>
