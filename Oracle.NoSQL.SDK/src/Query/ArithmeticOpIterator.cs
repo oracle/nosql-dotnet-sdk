@@ -93,8 +93,9 @@ namespace Oracle.NoSQL.SDK.Query {
             try
             {
                 number = (decimal)value;
-                // Decimal conversion can silently erase tiny nonzero values.
-                return number != 0 || value == 0;
+                // The cast rounds to 15 significant digits. Only promote
+                // when converting back preserves the original DOUBLE value.
+                return (double)number == value;
             }
             catch (OverflowException)
             {
@@ -191,8 +192,8 @@ namespace Oracle.NoSQL.SDK.Query {
                     }
 
                     // After falling back to DOUBLE, do not let a later
-                    // NUMBER operand convert an unrepresentable accumulator
-                    // to decimal. Promotion may resume after cancellation.
+                    // NUMBER operand lose the accumulator's precision during
+                    // conversion. Promotion may resume after cancellation.
                     if (result.DbType == DbType.Double &&
                         operand.DbType == DbType.Number &&
                         !TryConvertDoubleToNumber(result.AsDouble, out _))

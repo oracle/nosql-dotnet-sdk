@@ -27,7 +27,10 @@ namespace Oracle.NoSQL.SDK.Tests
                 new TableField("missing", DataType.Integer),
                 new TableField("smallNumber", DataType.Number),
                 new TableField("smallDouble", DataType.Double),
-                new TableField("largeDouble", DataType.Double) },
+                new TableField("largeDouble", DataType.Double),
+                new TableField("numberZero", DataType.Number),
+                new TableField("preciseDouble", DataType.Double),
+                new TableField("roundedDouble", DataType.Double) },
             new[] { "id" }, 1);
 
         [ClassInitialize]
@@ -41,7 +44,10 @@ namespace Oracle.NoSQL.SDK.Tests
                     ["doc"] = new MapValue { ["v"] = FieldValue.JsonNull },
                     ["smallNumber"] = new NumberValue(1e-20m),
                     ["smallDouble"] = new DoubleValue(1e-20),
-                    ["largeDouble"] = new DoubleValue(1e20)
+                    ["largeDouble"] = new DoubleValue(1e20),
+                    ["numberZero"] = new NumberValue(0m),
+                    ["preciseDouble"] = new DoubleValue(10000000000000002d),
+                    ["roundedDouble"] = new DoubleValue(10000000000000000d)
                 });
             await client.PutAsync(Table.Name, new MapValue
                 { ["id"] = 2, ["doc"] = new MapValue { ["v"] = 1 } });
@@ -122,6 +128,18 @@ namespace Oracle.NoSQL.SDK.Tests
             Assert.AreEqual(1e-20,
                 (await ReadSingleRowAsync(statement))["result"].ToDouble(),
                 1e-32);
+        }
+
+        [TestMethod]
+        public async Task TestDriverArithmeticPreservesDoublePrecisionAsync()
+        {
+            var statement = await client.PrepareAsync(
+                "SELECT min(t.numberZero) + min(t.preciseDouble) - " +
+                $"min(t.roundedDouble) AS result FROM {Table.Name} t");
+            StringAssert.Contains(PlanFormatter.Format(
+                statement.DriverQueryPlan), "OP_ADD_SUB");
+            Assert.AreEqual(2.0,
+                (await ReadSingleRowAsync(statement))["result"].ToDouble());
         }
 
         private static async Task<RecordValue> ReadSingleRowAsync(

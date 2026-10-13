@@ -202,6 +202,59 @@ namespace Oracle.NoSQL.SDK.Tests
         }
 
         [DataTestMethod]
+        [DataRow(10000000000000002d, 10000000000000000d)]
+        [DataRow(-10000000000000002d, -10000000000000000d)]
+        [DataRow(1000000.000000002d, 1000000d)]
+        [DataRow(-1000000.000000002d, -1000000d)]
+        [DataRow(1.0000000000000002d, 1d)]
+        [DataRow(-1.0000000000000002d, -1d)]
+        public void TestNumberPromotionPreservesDoubleCancellation(
+            double value, double subtrahend)
+        {
+            // Decimal's default DOUBLE conversion rounds to 15 significant
+            // digits, making these distinct operands equal. Check both a
+            // DOUBLE operand and a DOUBLE accumulator followed by NUMBER.
+            var expected = new DoubleValue(value - subtrahend);
+            Verify(ArithmeticOpcode.AddSubtract, "++-", expected,
+                new NumberValue(0m), new DoubleValue(value),
+                new DoubleValue(subtrahend));
+            Verify(ArithmeticOpcode.AddSubtract, "++-", expected,
+                new DoubleValue(value), new NumberValue(0m),
+                new DoubleValue(subtrahend));
+        }
+
+        [DataTestMethod]
+        [DataRow("++", 0)]
+        [DataRow("+-", 0)]
+        [DataRow("**", 1)]
+        [DataRow("*/", 1)]
+        [DataRow("*d", 1)]
+        public void TestLossyNumberPromotionUsesDoubleArithmetic(
+            string operations, int number)
+        {
+            const double value = 10000000000000002d;
+            var expected = operations[1] switch
+            {
+                '+' => number + value,
+                '-' => number - value,
+                '*' => number * value,
+                _ => number / value
+            };
+            Verify(operations[0] == '+' ? ArithmeticOpcode.AddSubtract :
+                    ArithmeticOpcode.MultiplyDivide,
+                operations, new DoubleValue(expected),
+                new NumberValue(number), new DoubleValue(value));
+        }
+
+        [TestMethod]
+        public void TestNumberPromotionResumesAfterPrecisionFallback()
+        {
+            Verify(ArithmeticOpcode.AddSubtract, "+-+", new NumberValue(2m),
+                new DoubleValue(10000000000000002d),
+                new DoubleValue(10000000000000000d), new NumberValue(0m));
+        }
+
+        [DataTestMethod]
         [DataRow("**", 1e-20)]
         [DataRow("**", -1e-20)]
         [DataRow("**", 1.2345678901234567e-20)]
