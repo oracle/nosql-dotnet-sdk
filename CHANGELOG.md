@@ -16,6 +16,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
   values remain null rather than being inferred from modification time.
 
 **Fixed**
+* Traverse nested arrays in query field navigation and preserve SQL NULL,
+  missing-field, and scalar-input behavior in driver expressions.
 * Preserve missing JSON sort keys through UNION merging so ORDER BY and
   LIMIT return the correct rows.
 * Compare TIMESTAMP values with timestamp strings chronologically in V6
