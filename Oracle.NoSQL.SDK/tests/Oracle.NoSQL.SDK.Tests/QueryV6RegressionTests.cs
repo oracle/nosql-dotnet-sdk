@@ -66,20 +66,13 @@ namespace Oracle.NoSQL.SDK.Tests
             VerifyComparisons(Timestamp(left), Timestamp(right), order);
         }
 
-        [DataTestMethod]
-        [DataRow(false, false)]
-        [DataRow(false, true)]
-        [DataRow(true, false)]
-        public void TestStringComparisonsRemainLexical(bool leftTimestamp,
-            bool rightTimestamp)
+        [TestMethod]
+        public void TestStringComparisonsRemainLexical()
         {
             const string left = "2026-01-01T00:00:00Z";
             const string right = "2026-01-01T00:00:00.1Z";
-            // Strings (including a string compared to a timestamp) are not
-            // implicitly parsed as dates, matching Java's comparison rules.
-            VerifyComparisons(leftTimestamp ? Timestamp(left) :
-                    new StringValue(left),
-                rightTimestamp ? Timestamp(right) : new StringValue(right), 1);
+            // Two STRING operands remain lexical even if both contain dates.
+            VerifyComparisons(new StringValue(left), new StringValue(right), 1);
         }
 
         [DataTestMethod]

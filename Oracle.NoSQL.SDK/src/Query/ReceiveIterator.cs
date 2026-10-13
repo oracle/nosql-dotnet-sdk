@@ -18,6 +18,7 @@ namespace Oracle.NoSQL.SDK.Query {
         private readonly ReceiveStep step;
         private readonly QueryRequest<RecordValue> queryRequest;
         private readonly TopologyInfo branchTopology;
+        private readonly bool preserveEmptySortKeys;
         private readonly Duplicates duplicates;
         private readonly SimpleResult simpleResult;
         private readonly SortedSet<PartialResult> partialResults;
@@ -32,6 +33,7 @@ namespace Oracle.NoSQL.SDK.Query {
         {
             this.step = step;
             branchTopology = runtime.GetConstructionTopology();
+            preserveEmptySortKeys = runtime.ConstructionUnionBranch >= 0;
             queryRequest = new QueryRequest<RecordValue>(runtime.Client,
                 runtime.PreparedStatement,
                 new QueryOptions
@@ -453,7 +455,12 @@ namespace Oracle.NoSQL.SDK.Query {
                         continue;
                     }
 
-                    ConvertEmptyToNull(row);
+                    // A UNION above this receive must compare the original
+                    // EMPTY key, not the SQL NULL exposed in public results.
+                    if (!preserveEmptySortKeys)
+                    {
+                        ConvertEmptyToNull(row);
+                    }
                     Result = row;
                     return true;
                 }

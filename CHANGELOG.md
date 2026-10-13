@@ -16,6 +16,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
   values remain null rather than being inferred from modification time.
 
 **Fixed**
+* Preserve missing JSON sort keys through UNION merging so ORDER BY and
+  LIMIT return the correct rows.
+* Compare TIMESTAMP values with timestamp strings chronologically in V6
+  driver expressions, including fractional seconds and UTC offsets.
 * Preserve SQL NULL in query `size()` and include JSON null in `count()`.
 * Apply numeric promotion across arithmetic expressions and preserve small
   DOUBLE values when NUMBER conversion or intermediate multiplication and

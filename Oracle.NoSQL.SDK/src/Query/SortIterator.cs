@@ -18,6 +18,7 @@ namespace Oracle.NoSQL.SDK.Query {
     {
         private readonly SortStep step;
         private readonly PlanAsyncIterator inputIterator;
+        private readonly bool preserveEmptySortKeys;
         private List<RecordValue> rows;
         private int rowIndex = -1;
 
@@ -25,6 +26,7 @@ namespace Oracle.NoSQL.SDK.Query {
             base(runtime)
         {
             this.step = step;
+            preserveEmptySortKeys = runtime.ConstructionUnionBranch >= 0;
             inputIterator = step.InputStep.CreateAsyncIterator(runtime);
             rows = new List<RecordValue>();
         }
@@ -71,7 +73,12 @@ namespace Oracle.NoSQL.SDK.Query {
             if (rowIndex < rows.Count)
             {
                 var result = rows[rowIndex];
-                ConvertEmptyToNull(result);
+                // UNION still needs the original sort keys to merge its
+                // branches. EMPTY and SQL NULL sort differently.
+                if (!preserveEmptySortKeys)
+                {
+                    ConvertEmptyToNull(result);
+                }
                 rows[rowIndex++] = null; // Release memory for the row
                 Result = result;
                 return true;
