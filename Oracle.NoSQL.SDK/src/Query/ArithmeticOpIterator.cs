@@ -29,14 +29,12 @@ namespace Oracle.NoSQL.SDK.Query {
     {
         private readonly ArithmeticOpStep step;
         private readonly PlanSyncIterator[] argIterators;
-        private readonly FieldValue[] operands;
 
         internal ArithmeticOpIterator(QueryRuntime runtime,
             ArithmeticOpStep step) : base(runtime)
         {
             this.step = step;
             argIterators = new PlanSyncIterator[step.ArgSteps.Length];
-            operands = new FieldValue[argIterators.Length];
             for (var i = 0; i < argIterators.Length; i++)
             {
                 argIterators[i] = step.ArgSteps[i].CreateSyncIterator(
@@ -87,23 +85,6 @@ namespace Oracle.NoSQL.SDK.Query {
             }
         }
 
-        private static bool TryConvertDoubleToNumber(double value,
-            out decimal number)
-        {
-            try
-            {
-                number = (decimal)value;
-                // The cast rounds to 15 significant digits. Only promote
-                // when converting back preserves the original DOUBLE value.
-                return (double)number == value;
-            }
-            catch (OverflowException)
-            {
-                number = 0;
-                return false;
-            }
-        }
-
         internal override bool Next()
         {
             if (done)
@@ -111,11 +92,8 @@ namespace Oracle.NoSQL.SDK.Query {
                 return false;
             }
 
-            // Promotion applies to the whole expression, including operands
-            // after a division. Evaluate inputs before doing any arithmetic
-            // so a later NULL can also propagate without arithmetic errors.
-            var resultType = step.OpSequence.IndexOf('d') >= 0
-                ? DbType.Double : DbType.Integer;
+            FieldValue result = step.Opcode == ArithmeticOpcode.AddSubtract ?
+                0 : 1;
             for (var i = 0; i < argIterators.Length; i++)
             {
                 var iterator = argIterators[i];
@@ -133,83 +111,7 @@ namespace Oracle.NoSQL.SDK.Query {
                     return true;
                 }
 
-                operands[i] = operand;
-                switch (operand.DbType)
-                {
-                    case DbType.Integer:
-                        break;
-                    case DbType.Long:
-                        if (resultType == DbType.Integer)
-                        {
-                            resultType = DbType.Long;
-                        }
-                        break;
-                    case DbType.Double:
-                        if (resultType != DbType.Number)
-                        {
-                            resultType = DbType.Double;
-                        }
-                        break;
-                    case DbType.Number:
-                        resultType = DbType.Number;
-                        break;
-                    default:
-                        throw new InvalidOperationException(
-                            GetMessageWithLocation(
-                                "Query: arithmetic operand has non-numeric type " +
-                                operand.DbType));
-                }
-            }
-
-            var initialValue = step.Opcode == ArithmeticOpcode.AddSubtract
-                ? 0 : 1;
-            FieldValue result = resultType switch
-            {
-                DbType.Integer => new IntegerValue(initialValue),
-                DbType.Long => new LongValue(initialValue),
-                DbType.Double => new DoubleValue(initialValue),
-                DbType.Number => new NumberValue(initialValue),
-                _ => throw new InvalidOperationException()
-            };
-            var checkUnderflow = resultType == DbType.Number &&
-                step.Opcode == ArithmeticOpcode.MultiplyDivide;
-            for (var i = 0; i < operands.Length; i++)
-            {
-                var operand = operands[i];
-                // Save the original values before operand conversion and
-                // before the numeric helpers mutate the accumulator.
-                var left = checkUnderflow ? result.ToDouble() : 0;
-                var right = checkUnderflow ? operand.ToDouble() : 0;
-                if (resultType == DbType.Number)
-                {
-                    // NumberValue's mixed DOUBLE operations otherwise
-                    // demote the accumulator and lose decimal precision.
-                    if (operand.DbType == DbType.Double &&
-                        TryConvertDoubleToNumber(operand.AsDouble,
-                            out var decimalOperand))
-                    {
-                        operand = new NumberValue(decimalOperand);
-                    }
-
-                    // After falling back to DOUBLE, do not let a later
-                    // NUMBER operand lose the accumulator's precision during
-                    // conversion. Promotion may resume after cancellation.
-                    if (result.DbType == DbType.Double &&
-                        operand.DbType == DbType.Number &&
-                        !TryConvertDoubleToNumber(result.AsDouble, out _))
-                    {
-                        operand = new DoubleValue(operand.ToDouble());
-                    }
-                }
                 result = DoOp(step.OpSequence[i], result, operand);
-                if (checkUnderflow && result.DbType == DbType.Number &&
-                    result.AsDecimal == 0 && left != 0 && right != 0)
-                {
-                    // Decimal multiplication and division can silently round
-                    // a nonzero result to zero without throwing overflow.
-                    result = new DoubleValue(step.OpSequence[i] == '*'
-                        ? left * right : left / right);
-                }
             }
 
             Result = result;

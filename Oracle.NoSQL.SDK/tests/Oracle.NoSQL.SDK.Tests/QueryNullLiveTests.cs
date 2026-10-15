@@ -87,20 +87,6 @@ namespace Oracle.NoSQL.SDK.Tests
                 (await ReadSingleRowAsync(statement))["result"]);
         }
 
-        [TestMethod]
-        public async Task TestDriverArithmeticPromotionAfterUnionAsync()
-        {
-            await CheckUnionSupportedAsync(Table.Name);
-            var source = $"SELECT id FROM {Table.Name}";
-            var statement = await client.PrepareAsync(
-                "SELECT sum($u.id) / count(*) * 1.0 AS mean FROM (" +
-                source + " UNION ALL " + source + ") $u");
-            StringAssert.Contains(PlanFormatter.Format(
-                statement.DriverQueryPlan), "MULT_DIV");
-            Assert.AreEqual(2.5,
-                (await ReadSingleRowAsync(statement))["mean"].ToDouble());
-        }
-
         private static async Task<RecordValue> ReadSingleRowAsync(
             PreparedStatement statement)
         {
