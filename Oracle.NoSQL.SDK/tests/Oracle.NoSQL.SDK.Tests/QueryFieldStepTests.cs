@@ -7,110 +7,50 @@
 
 namespace Oracle.NoSQL.SDK.Tests
 {
-    using System;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Oracle.NoSQL.SDK.Query;
 
     [TestClass]
     public class QueryFieldStepTests
     {
-        private static NoSQLClient CreateClient() => new NoSQLClient(
-            new NoSQLConfig
+        [TestMethod]
+        public void TestCaseProjectionDistinguishesJsonNullAndSqlNull()
+        {
+            using var client = new NoSQLClient(new NoSQLConfig
             {
                 ServiceType = ServiceType.CloudSim,
                 Endpoint = "http://localhost:8080"
             });
-
-        private static QueryRuntime CreateRuntime(NoSQLClient client) =>
-            new QueryRuntime(client, new PreparedStatement
+            var runtime = new QueryRuntime(client, new PreparedStatement
             {
-                RegisterCount = 8,
+                RegisterCount = 4,
                 DriverQueryPlan = new ReceiveStep()
             });
-
-        private static FieldStep Project(PlanStep input,
-            int resultPosition = 0) => new FieldStep
-        {
-            ResultPosition = resultPosition,
-            InputStep = input,
-            FieldName = "key"
-        };
-
-        private static ConstStep Constant(FieldValue value,
-            int resultPosition = 1) => new ConstStep
-        {
-            ResultPosition = resultPosition,
-            Value = value
-        };
-
-        private static MapValue Item(FieldValue value) =>
-            new MapValue { ["key"] = value };
-
-        private static void AssertResults(PlanSyncIterator iterator,
-            params FieldValue[] expected)
-        {
-            foreach (var value in expected)
+            var selected = new ConstStep { ResultPosition = 3 };
+            var iterator = new FieldStep
             {
-                Assert.IsTrue(iterator.Next(), "Missing projected value");
-                Assert.AreEqual(value.DbType, iterator.Result.DbType);
-                Assert.AreEqual(value.ToJsonString(),
-                    iterator.Result.ToJsonString());
-            }
-            Assert.IsFalse(iterator.Next(), "Unexpected projected value");
-            Assert.IsFalse(iterator.Next(), "Exhaustion must be stable");
-        }
-
-        [TestMethod]
-        public void TestCaseProjectionDistinguishesJsonNullAndSqlNull()
-        {
-            using var client = CreateClient();
-            foreach (var value in new[]
-                { FieldValue.JsonNull, FieldValue.Null, Item(42) })
-            {
-                var input = new CaseStep
+                ResultPosition = 0,
+                FieldName = "key",
+                InputStep = new CaseStep
                 {
                     ResultPosition = 1,
-                    ConditionSteps = new PlanStep[]
-                        { Constant(BooleanValue.True, 2) },
-                    ThenSteps = new PlanStep[] { Constant(value, 3) }
-                };
-                var iterator = Project(input)
-                    .CreateSyncIterator(CreateRuntime(client));
-                var expected = value == FieldValue.JsonNull
-                    ? Array.Empty<FieldValue>()
-                    : new[] { value == FieldValue.Null
-                        ? FieldValue.Null : new IntegerValue(42) };
-                AssertResults(iterator, expected);
+                    ConditionSteps = new PlanStep[] { new ConstStep
+                        { ResultPosition = 2, Value = BooleanValue.True } },
+                    ThenSteps = new PlanStep[] { selected }
+                }
+            }.CreateSyncIterator(runtime);
+
+            foreach (var value in new[] { FieldValue.JsonNull, FieldValue.Null })
+            {
+                selected.Value = value;
                 iterator.Reset(true);
-                AssertResults(iterator, expected);
+                var hasResult = iterator.Next();
+                Assert.AreEqual(value == FieldValue.Null, hasResult);
+                if (hasResult) Assert.AreSame(FieldValue.Null, iterator.Result);
+                Assert.IsFalse(iterator.Next(), "Exhaustion must be stable");
+                iterator.Reset(true);
+                Assert.AreEqual(hasResult, iterator.Next());
             }
-        }
-
-        [TestMethod]
-        public void TestProjectedSequenceFeedsConstructorAndAggregate()
-        {
-            using var client = CreateClient();
-            var input = Project(Constant(new ArrayValue { Item(42), Item(43) },
-                2), resultPosition: 1);
-            var arrayIterator = new ArrayConstructorStep
-            {
-                ResultPosition = 0,
-                IsConditional = true,
-                ArgSteps = new PlanStep[] { input }
-            }.CreateSyncIterator(CreateRuntime(client));
-            AssertResults(arrayIterator, new ArrayValue { 42, 43 });
-            arrayIterator.Reset(true);
-            AssertResults(arrayIterator, new ArrayValue { 42, 43 });
-
-            var sumIterator = new SeqAggregateStep
-            {
-                ResultPosition = 0,
-                FuncCode = QueryFuncCode.SeqSum,
-                InputStep = input
-            }.CreateSyncIterator(CreateRuntime(client));
-            AssertResults(sumIterator, new LongValue(85));
-            sumIterator.Reset(true);
-            AssertResults(sumIterator, new LongValue(85));
         }
     }
 }

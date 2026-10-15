@@ -476,18 +476,6 @@ namespace Oracle.NoSQL.SDK.Tests
         }
 
         [TestMethod]
-        public async Task TestUnionAllSequentialContinuationAsync()
-        {
-            await VerifyUnionAllContinuationAsync(false);
-        }
-
-        [TestMethod]
-        public async Task TestUnionAllSortedContinuationAsync()
-        {
-            await VerifyUnionAllContinuationAsync(true);
-        }
-
-        [TestMethod]
         public async Task TestUnionAllTimestampCaseExpressionAsync()
         {
             await CheckUnionSupportedAsync(Fixture.Table.Name);
@@ -567,7 +555,7 @@ namespace Oracle.NoSQL.SDK.Tests
         }
 
         private static async Task<List<RecordValue>> ReadUnionRowsAsync(
-            PreparedStatement statement)
+            PreparedStatement statement, int minimumCalls = 1)
         {
             var rows = new List<RecordValue>();
             var options = new QueryOptions { Limit = 1 };
@@ -580,11 +568,14 @@ namespace Oracle.NoSQL.SDK.Tests
                 rows.AddRange(result.Rows);
                 options.ContinuationKey = result.ContinuationKey;
             } while (options.ContinuationKey != null);
+            Assert.IsTrue(calls >= minimumCalls);
             return rows;
         }
 
-        private static async Task VerifyUnionAllContinuationAsync(
-            bool sorted)
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task TestUnionAllContinuationAsync(bool sorted)
         {
             await CheckUnionSupportedAsync(Fixture.Table.Name);
 
@@ -607,27 +598,10 @@ namespace Oracle.NoSQL.SDK.Tests
             }
 
             var statement = await client.PrepareAsync(sql);
-            var options = new QueryOptions
-            {
-                // Each call can issue only one proxy fetch. A one-row limit
-                // exercises UNION branch switching and continuation state.
-                Limit = 1
-            };
-            var rows = new List<RecordValue>();
-            var queryCallCount = 0;
-
-            do
-            {
-                Assert.IsTrue(queryCallCount < 4 * Fixture.Rows.Count() + 50,
-                    "UNION continuation did not terminate");
-                var result = await client.QueryAsync(statement, options);
-                rows.AddRange(result.Rows);
-                queryCallCount++;
-                options.ContinuationKey = result.ContinuationKey;
-            } while (options.ContinuationKey != null);
+            // Limit=1 must exercise branch switching across multiple calls.
+            var rows = await ReadUnionRowsAsync(statement, 2);
 
             Assert.AreEqual(Fixture.Rows.Count() * 2, rows.Count);
-            Assert.IsTrue(queryCallCount > 1);
             var expectedKeys = Fixture.Rows.Select(row =>
                 row["shardId"].AsInt32 + ":" + row["pkString"].AsString).ToArray();
             CollectionAssert.AreEquivalent(
@@ -640,28 +614,18 @@ namespace Oracle.NoSQL.SDK.Tests
                 // UNION ALL without ORDER BY must drain branch 1 before
                 // advancing to branch 2, even when every row has a separate
                 // continuation key.
-                var branchBoundary = Fixture.Rows.Count();
-                for (var i = 0; i < rows.Count; i++)
-                {
-                    Assert.AreEqual(i < branchBoundary ? 1 : 2,
-                        rows[i]["branch"].AsInt32);
-                }
+                CollectionAssert.AreEqual(
+                    Enumerable.Repeat(1, Fixture.Rows.Count()).Concat(
+                        Enumerable.Repeat(2, Fixture.Rows.Count())).ToArray(),
+                    rows.Select(row => row["branch"].AsInt32).ToArray());
                 return;
             }
 
             // A sorted UNION must maintain its order across continuation
             // keys, including equal rows supplied by the two branches.
-            for (var i = 1; i < rows.Count; i++)
-            {
-                var previous = rows[i - 1];
-                var current = rows[i];
-                var shardComparison = previous["shardId"].AsInt32.CompareTo(
-                    current["shardId"].AsInt32);
-                Assert.IsTrue(shardComparison < 0 ||
-                    shardComparison == 0 && string.CompareOrdinal(
-                        previous["pkString"].AsString,
-                        current["pkString"].AsString) <= 0);
-            }
+            CollectionAssert.AreEqual(rows.OrderBy(row => row["shardId"].AsInt32)
+                .ThenBy(row => row["pkString"].AsString, StringComparer.Ordinal)
+                .ToArray(), rows.ToArray());
         }
 
         [DataTestMethod]

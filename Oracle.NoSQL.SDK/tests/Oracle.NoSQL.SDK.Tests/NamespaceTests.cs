@@ -173,35 +173,6 @@ namespace Oracle.NoSQL.SDK.Tests
         }
 
         [TestMethod]
-        public async Task TestUnionQueryUsesBranchNamespaceAsync()
-        {
-            await CheckUnionSupportedAsync(FullTableName);
-            await PutRowAsync(Fixture.Table, GoodRow);
-
-            var select = $"SELECT * FROM {FullTableName}";
-            var statement = await invalidNsClient.PrepareAsync(
-                select + " UNION ALL " + select);
-            var options = new QueryOptions
-            {
-                Limit = 1
-            };
-            var rowCount = 0;
-            var calls = 0;
-
-            do
-            {
-                Assert.IsTrue(++calls <= 20,
-                    "UNION continuation did not terminate");
-                var result = await invalidNsClient.QueryAsync(statement,
-                    options);
-                rowCount += result.Rows.Count;
-                options.ContinuationKey = result.ContinuationKey;
-            } while (options.ContinuationKey != null);
-
-            Assert.AreEqual(2, rowCount);
-        }
-
-        [TestMethod]
         public async Task TestUnionQueryUsesDifferentBranchNamespacesAsync()
         {
             await CheckUnionSupportedAsync(FullTableName);

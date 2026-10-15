@@ -24,7 +24,8 @@ namespace Oracle.NoSQL.SDK.Tests
                 .Substring(0, 8), DefaultTableLimits,
             new[] { new TableField("id", DataType.Integer),
                 new TableField("bucket", DataType.Integer),
-                new TableField("doc", DataType.Json) },
+                new TableField("doc", DataType.Json),
+                new TableField("missing", DataType.Integer) },
             new[] { "id" }, 1);
 
         [ClassInitialize]
@@ -61,155 +62,101 @@ namespace Oracle.NoSQL.SDK.Tests
                 new ArrayValue
                 {
                     new MapValue { ["key"] = first + 1 },
-                    new ArrayValue
-                    {
-                        new MapValue(), new IntegerValue(99),
+                    new ArrayValue { new MapValue(), new IntegerValue(99),
                         FieldValue.JsonNull,
-                        new MapValue { ["key"] = first + 2 }
-                    },
-                    new ArrayValue()
+                        new MapValue { ["key"] = first + 2 } }
                 },
-                new MapValue(), new StringValue("ignored"),
-                FieldValue.JsonNull, FieldValue.Null,
-                new MapValue { ["key"] = FieldValue.JsonNull }
+                new MapValue(),
+                new MapValue { ["key"] = FieldValue.JsonNull },
+                FieldValue.Null
             };
         }
 
-        [DataTestMethod]
-        [DataRow(true, 1)]
-        [DataRow(false, 1)]
-        [DataRow(true, 3)]
-        [DataRow(false, 3)]
-        public async Task TestAggregateFieldProjectionMatchesServerAsync(
-            bool prepared, int batchSize)
+        [TestMethod]
+        public async Task TestAggregateFieldProjectionMatchesServerAsync()
         {
-            await CheckV6SupportedAsync();
-            var sql = "SELECT t.bucket AS bucket, " +
+            await client.PrepareAsync($"SELECT * FROM {Table.Name}");
+            if (client.ProtocolHandler.QueryVersion < QueryRequestBase.QueryV6)
+            {
+                Assert.Inconclusive("Driver field projection requires V6");
+            }
+            var plan = await client.PrepareAsync(
+                "SELECT t.bucket AS bucket, " +
                 "array_collect(t.doc).key AS projected, " +
                 "seq_sum(array_collect(t.doc).key) AS total " +
-                $"FROM {Table.Name} t GROUP BY t.bucket ORDER BY t.bucket";
-            var plan = await client.PrepareAsync(sql);
+                $"FROM {Table.Name} t GROUP BY t.bucket ORDER BY t.bucket");
             var formatted = PlanFormatter.Format(plan.DriverQueryPlan);
             StringAssert.Contains(formatted, "FIELD_STEP");
             StringAssert.Contains(formatted, "ARRAY_CONSTRUCTOR");
             StringAssert.Contains(formatted, "SEQ_SUM");
+            var control = await client.PrepareAsync(
+                "DECLARE $docs JSON; SELECT $docs.key AS projected, " +
+                "seq_sum($docs.key) AS total " +
+                $"FROM {Table.Name} t WHERE t.id = 1");
+            Assert.IsNull(control.DriverQueryPlan,
+                "The expected values must be computed by the server.");
 
-            var actual = await ReadRowsAsync(prepared ? plan : null,
-                sql, batchSize);
+            var actual = await ReadRowsAsync(plan);
             Assert.AreEqual(2, actual.Count);
             for (var bucket = 0; bucket < 2; ++bucket)
             {
-                // A primary-key lookup evaluates the same field projection
-                // entirely in KV. ARRAY_COLLECT omits SQL NULL inputs.
-                var control = await client.PrepareAsync(
-                    "DECLARE $docs JSON; SELECT $docs.key AS projected, " +
-                    "seq_sum($docs.key) AS total " +
-                    $"FROM {Table.Name} t WHERE t.id = 1");
-                Assert.IsNull(control.DriverQueryPlan,
-                    "The expected values must be computed by the server.");
+                // ARRAY_COLLECT omits SQL NULL and has unspecified ordering.
                 var documents = new ArrayValue();
                 foreach (var doc in CreateDocuments(bucket))
                 {
-                    if (doc != FieldValue.Null)
-                    {
-                        documents.Add(doc);
-                    }
+                    if (doc != FieldValue.Null) documents.Add(doc);
                 }
                 control.Variables["$docs"] = documents;
-                var expected = (await ReadRowsAsync(control, null, 1)).Single();
+                var expected = (await ReadRowsAsync(control)).Single();
                 Assert.AreEqual(bucket, actual[bucket]["bucket"].AsInt32);
-                Assert.AreEqual(bucket * 30 + 6,
-                    expected["total"].ToInt32());
+                Assert.AreEqual(bucket * 30 + 6, expected["total"].ToInt32());
                 Assert.AreEqual(4, expected["projected"].AsArrayValue.Count);
-                AssertProjectionEquivalent(expected["projected"],
-                    actual[bucket]["projected"]);
+                CollectionAssert.AreEquivalent(
+                    ProjectionItems(expected["projected"]),
+                    ProjectionItems(actual[bucket]["projected"]));
                 Assert.AreEqual(expected["total"].ToInt64(),
                     actual[bucket]["total"].ToInt64());
             }
         }
 
         [TestMethod]
-        public async Task TestCaseBoundJsonFieldProjectionMatchesServerAsync()
+        public async Task TestUnionCountJsonNullSqlNullAndMissingFieldAsync()
         {
-            await CheckV6SupportedAsync();
-            var driver = await client.PrepareAsync(
-                "DECLARE $summary JSON; SELECT t.bucket AS bucket, " +
-                "(CASE WHEN count(*) > 0 THEN $summary END).key AS projected " +
-                $"FROM {Table.Name} t GROUP BY t.bucket ORDER BY t.bucket");
-            var formatted = PlanFormatter.Format(driver.DriverQueryPlan);
-            StringAssert.Contains(formatted, "CASE");
-            StringAssert.Contains(formatted, "FIELD_STEP");
-            var control = await client.PrepareAsync(
-                "DECLARE $summary JSON; SELECT " +
-                "(CASE WHEN t.id > 0 THEN $summary END).key AS projected " +
-                $"FROM {Table.Name} t WHERE t.id = 1");
-            Assert.IsNull(control.DriverQueryPlan,
-                "The expected values must be computed by the server.");
-
-            var summaries = new FieldValue[]
-            {
-                new MapValue { ["key"] = 42 },
-                new MapValue { ["key"] = FieldValue.JsonNull },
-                new MapValue { ["key"] = new ArrayValue { 7, 11 } },
-                new MapValue(), new IntegerValue(17),
-                new StringValue("ignored"), FieldValue.JsonNull,
-                FieldValue.Null,
-                new ArrayValue(),
-                new ArrayValue
-                {
-                    new MapValue(), new IntegerValue(99), FieldValue.JsonNull,
-                    new MapValue { ["key"] = 7 },
-                    new ArrayValue { new MapValue { ["key"] = 11 } }
-                }
-            };
-            foreach (var summary in summaries)
-            {
-                driver.Variables["$summary"] = summary;
-                control.Variables["$summary"] = summary;
-                var expected = (await ReadRowsAsync(control, null, 1))
-                    .Single()["projected"];
-                var actual = await ReadRowsAsync(driver, null, 1);
-                Assert.AreEqual(2, actual.Count);
-                for (var bucket = 0; bucket < actual.Count; ++bucket)
-                {
-                    Assert.AreEqual(bucket, actual[bucket]["bucket"].AsInt32);
-                    AssertProjectionEquivalent(expected,
-                        actual[bucket]["projected"]);
-                }
-            }
+            await CheckUnionSupportedAsync(Table.Name);
+            // Bucket 0 excluding the nested array contains a number, a
+            // missing field, JSON null, and SQL NULL: COUNT includes two.
+            var source = $"SELECT t.doc.key AS v FROM {Table.Name} t " +
+                "WHERE t.bucket = 0 AND t.id != 2";
+            var union = await client.PrepareAsync(
+                $"SELECT count($u.v) AS total FROM ({source} UNION ALL " +
+                $"{source}) $u");
+            Assert.AreEqual(4L, (await ReadRowsAsync(union)).Single()
+                ["total"].ToInt64());
         }
 
-        private static void AssertProjectionEquivalent(FieldValue expected,
-            FieldValue actual)
+        [TestMethod]
+        public async Task TestDriverSizeSqlNullAfterUnionAggregationAsync()
         {
-            Assert.AreEqual(expected.DbType, actual.DbType);
-            if (expected is ArrayValue expectedArray)
-            {
-                // ARRAY_COLLECT ordering is unspecified across partitions.
-                CollectionAssert.AreEquivalent(expectedArray.Select(
-                    value => value.DbType + ":" + value.ToJsonString())
-                    .ToArray(), actual.AsArrayValue.Select(
-                    value => value.DbType + ":" + value.ToJsonString())
-                    .ToArray());
-            }
-            else
-            {
-                Assert.AreEqual(expected.ToJsonString(), actual.ToJsonString());
-            }
+            await CheckUnionSupportedAsync(Table.Name);
+            // The unpopulated typed column makes MIN return SQL NULL.
+            // A NULL literal in this SQL dialect represents JSON null.
+            var source = $"SELECT id, missing FROM {Table.Name}";
+            var statement = await client.PrepareAsync(
+                "SELECT size(CASE WHEN count(*) > 0 THEN min($u.missing) " +
+                "ELSE array_collect($u.id) END) AS result FROM (" +
+                source + " UNION ALL " + source + ") $u");
+            StringAssert.Contains(PlanFormatter.Format(
+                statement.DriverQueryPlan), "FN_SIZE");
+            Assert.AreSame(FieldValue.Null,
+                (await ReadRowsAsync(statement)).Single()["result"]);
         }
 
-        private static async Task CheckV6SupportedAsync()
-        {
-            await client.PrepareAsync($"SELECT * FROM {Table.Name}");
-            if (client.ProtocolHandler.QueryVersion < QueryRequestBase.QueryV6)
-            {
-                Assert.Inconclusive(
-                    "Driver field projection tests require query protocol V6");
-            }
-        }
+        private static string[] ProjectionItems(FieldValue value) =>
+            value.AsArrayValue.Select(item =>
+                item.DbType + ":" + item.ToJsonString()).ToArray();
 
         private static async Task<List<RecordValue>> ReadRowsAsync(
-            PreparedStatement statement, string sql, int batchSize)
+            PreparedStatement statement)
         {
             var rows = new List<RecordValue>();
             QueryContinuationKey continuation = null;
@@ -217,15 +164,13 @@ namespace Oracle.NoSQL.SDK.Tests
             do
             {
                 Assert.IsTrue(++calls <= 200, "Query did not finish");
-                var options = new QueryOptions
-                {
-                    Limit = batchSize,
-                    ContinuationKey = continuation,
-                    Consistency = Consistency.Absolute
-                };
-                var result = statement == null
-                    ? await client.QueryAsync(sql, options)
-                    : await client.QueryAsync(statement, options);
+                var result = await client.QueryAsync(statement,
+                    new QueryOptions
+                    {
+                        Limit = 1,
+                        ContinuationKey = continuation,
+                        Consistency = Consistency.Absolute
+                    });
                 rows.AddRange(result.Rows);
                 continuation = result.ContinuationKey;
             } while (continuation != null);

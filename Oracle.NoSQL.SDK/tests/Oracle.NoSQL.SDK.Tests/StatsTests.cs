@@ -992,7 +992,7 @@ namespace Oracle.NoSQL.SDK.Tests
         [TestMethod]
         public void TestPlanFormatterUsesJavaUnionBranchesAndSortSpecs()
         {
-            var plan = Query.PlanFormatter.Format(new Query.UnionStep
+            var step = new Query.UnionStep
             {
                 ResultPosition = 4,
                 BranchSteps = new Query.PlanStep[]
@@ -1004,38 +1004,20 @@ namespace Oracle.NoSQL.SDK.Tests
                 {
                     new Query.SortSpec("id", true, false)
                 }
-            });
+            };
+            var plan = Query.PlanFormatter.Format(step);
 
             StringAssert.Contains(plan, "\"branches\" : [");
             StringAssert.Contains(plan, "\"order by fields\" : [ id ]");
             StringAssert.Contains(plan,
                 "\"sort specs\" : [ { \"desc\" : true, \"nulls_first\" : false } ]");
-        }
-
-        [TestMethod]
-        public void TestPlanFormatterPreservesEmptyUnionSortMetadata()
-        {
-            var branches = new Query.PlanStep[]
-            {
-                new Query.ReceiveStep { ResultPosition = 1 },
-                new Query.ReceiveStep { ResultPosition = 2 }
-            };
-            var sortedPlan = Query.PlanFormatter.Format(new Query.UnionStep
-            {
-                ResultPosition = 4,
-                BranchSteps = branches,
-                SortSpecs = Array.Empty<Query.SortSpec>()
-            });
-            var sequentialPlan = Query.PlanFormatter.Format(new Query.UnionStep
-            {
-                ResultPosition = 4,
-                BranchSteps = branches,
-                SortSpecs = null
-            });
-
+            step.SortSpecs = Array.Empty<Query.SortSpec>();
+            var sortedPlan = Query.PlanFormatter.Format(step);
             StringAssert.Contains(sortedPlan,
                 "\"order by fields\" : [  ]");
             StringAssert.Contains(sortedPlan, "\"sort specs\" : [  ]");
+            step.SortSpecs = null;
+            var sequentialPlan = Query.PlanFormatter.Format(step);
             Assert.IsFalse(sequentialPlan.Contains("\"order by fields\""));
             Assert.IsFalse(sequentialPlan.Contains("\"sort specs\""));
         }

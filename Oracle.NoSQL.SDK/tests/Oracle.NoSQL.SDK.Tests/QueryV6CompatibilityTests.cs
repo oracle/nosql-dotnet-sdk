@@ -10,6 +10,7 @@ namespace Oracle.NoSQL.SDK.Tests
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Oracle.NoSQL.SDK.Query;
     using BinaryProtocol = Oracle.NoSQL.SDK.BinaryProtocol.Protocol;
@@ -23,84 +24,39 @@ namespace Oracle.NoSQL.SDK.Tests
         [TestMethod]
         public void TestPreparedStatementUsesEachUnionBranch()
         {
+            using var client = CreateClient("configNamespace");
             var statement = new PreparedStatement();
-            var firstProxy = new byte[] { 1 };
-            var secondProxy = new byte[] { 2 };
-
-            statement.AddQueryBranch(new PreparedStatement.QueryBranch
+            for (var branch = 0; branch < 2; branch++)
             {
-                ProxyStatement = firstProxy,
-                Namespace = "firstNamespace",
-                TableName = "firstTable"
-            });
-            statement.AddQueryBranch(new PreparedStatement.QueryBranch
-            {
-                ProxyStatement = secondProxy,
-                Namespace = "secondNamespace",
-                TableName = "secondTable"
-            });
-
-            CollectionAssert.AreEqual(firstProxy,
-                statement.GetProxyStatement(0));
-            CollectionAssert.AreEqual(secondProxy,
-                statement.GetProxyStatement(1));
-            Assert.AreEqual("firstNamespace", statement.GetNamespace(0));
-            Assert.AreEqual("secondTable", statement.GetTableName(1));
+                statement.AddQueryBranch(new PreparedStatement.QueryBranch
+                {
+                    ProxyStatement = new[] { (byte)branch },
+                    Namespace = "namespace" + branch,
+                    TableName = "table" + branch
+                });
+            }
             statement.SetQueryBranchStores(new[] { "storeOne", "storeTwo" });
+            var request = new QueryRequest<RecordValue>(client, statement,
+                new QueryOptions { Namespace = "requestNamespace" });
+            for (var branch = 0; branch < 2; branch++)
+            {
+                request.UnionBranch = branch;
+                Assert.AreEqual((byte)branch, statement.GetProxyStatement(branch)[0]);
+                Assert.AreEqual("table" + branch, request.InternalTableName);
+                Assert.AreEqual("requestNamespace", request.Namespace);
+            }
+            request.Options = null;
+            Assert.AreEqual("namespace1", request.Namespace);
+            request.UnionBranch = 0;
+            Assert.AreEqual("namespace0", request.Namespace);
+            statement.Namespace = null;
+            Assert.AreEqual("configNamespace", request.Namespace);
             Assert.AreEqual("storeOne", statement.GetStoreName(0));
             Assert.AreEqual("storeTwo", statement.GetStoreName(1));
             Assert.ThrowsException<BadProtocolException>(() =>
                 statement.SetQueryBranchStores(new[] { "onlyOne" }));
             Assert.ThrowsException<BadProtocolException>(() =>
                 statement.GetProxyStatement(2));
-        }
-
-        [TestMethod]
-        public void TestPreparedQueryNamespacePrecedence()
-        {
-            var statement = new PreparedStatement();
-            statement.AddQueryBranch(new PreparedStatement.QueryBranch
-            {
-                ProxyStatement = new byte[] { 1 },
-                Namespace = "firstNamespace"
-            });
-            statement.AddQueryBranch(new PreparedStatement.QueryBranch
-            {
-                ProxyStatement = new byte[] { 2 },
-                Namespace = "secondNamespace"
-            });
-
-            using var client = new NoSQLClient(new NoSQLConfig
-            {
-                ServiceType = ServiceType.CloudSim,
-                Endpoint = "http://localhost:8080",
-                Namespace = "configNamespace"
-            });
-            var request = new QueryRequest<RecordValue>(client, statement,
-                new QueryOptions
-                {
-                    Namespace = "optionsNamespace"
-                });
-
-            request.UnionBranch = 0;
-            Assert.AreEqual("optionsNamespace", request.Namespace);
-            request.UnionBranch = 1;
-            Assert.AreEqual("optionsNamespace", request.Namespace);
-
-            request.Options = null;
-            Assert.AreEqual("secondNamespace", request.Namespace);
-            request.UnionBranch = 0;
-            Assert.AreEqual("firstNamespace", request.Namespace);
-
-            using var noDefaultClient = new NoSQLClient(new NoSQLConfig
-            {
-                ServiceType = ServiceType.CloudSim,
-                Endpoint = "http://localhost:8080"
-            });
-            var branchRequest = new QueryRequest<RecordValue>(
-                noDefaultClient, statement, null);
-            branchRequest.UnionBranch = 1;
-            Assert.AreEqual("secondNamespace", branchRequest.Namespace);
         }
 
         [TestMethod]
@@ -129,11 +85,7 @@ namespace Oracle.NoSQL.SDK.Tests
         public void TestVirtualScanWireFormat(short queryVersion,
             int expectedTables)
         {
-            using var client = new NoSQLClient(new NoSQLConfig
-            {
-                ServiceType = ServiceType.CloudSim,
-                Endpoint = "http://localhost:8080"
-            });
+            using var client = CreateClient();
             Assert.AreEqual(1, new VirtualScan().TableResumeInfos.Length);
             var scan = new VirtualScan
             {
@@ -250,16 +202,17 @@ namespace Oracle.NoSQL.SDK.Tests
             normal.Aggregate(new StringValue("one"));
             Assert.AreEqual(1, normal.Result.AsArrayValue.Count);
             Assert.AreEqual("one", normal.Result.AsArrayValue[0].AsString);
+            var rawArray = new ArrayValue { 1, 2 };
+            normal.Aggregate(rawArray);
+            Assert.AreEqual(2, normal.Result.AsArrayValue.Count);
+            Assert.AreSame(rawArray, normal.Result.AsArrayValue[1]);
 
             var regrouped = new CollectAggregator(false, true);
             var partial = new ArrayValue
             {
                 new StringValue("one"), new StringValue("two")
             };
-            var memory = regrouped.Aggregate(partial, true);
-            Assert.AreEqual(
-                SizeOf.GetListEntrySize(partial[0].GetMemorySize()) +
-                SizeOf.GetListEntrySize(partial[1].GetMemorySize()), memory);
+            regrouped.Aggregate(partial);
             Assert.AreEqual(2, regrouped.Result.AsArrayValue.Count);
             Assert.AreEqual("one", regrouped.Result.AsArrayValue[0].AsString);
             Assert.AreEqual("two", regrouped.Result.AsArrayValue[1].AsString);
@@ -275,8 +228,11 @@ namespace Oracle.NoSQL.SDK.Tests
             Assert.AreEqual(2, distinct.Result.AsArrayValue[1].AsInt32);
         }
 
-        [TestMethod]
-        public void TestPreV6GroupPlanDefaultsToRegrouping()
+        [DataTestMethod]
+        [DataRow((short)5, true)]
+        [DataRow((short)6, false)]
+        [DataRow((short)6, true)]
+        public void TestGroupRegroupingWireFlag(short version, bool regrouping)
         {
             using var stream = new MemoryStream();
             BinaryProtocol.WriteByte(stream, 65); // GROUP
@@ -289,11 +245,13 @@ namespace Oracle.NoSQL.SDK.Tests
             BinaryProtocol.WriteBoolean(stream, false);
             BinaryProtocol.WriteBoolean(stream, false);
             BinaryProtocol.WriteBoolean(stream, false);
+            if (version >= QueryRequestBase.QueryV6)
+            {
+                BinaryProtocol.WriteBoolean(stream, regrouping);
+            }
             stream.Position = 0;
-
-            var step = (GroupStep)PlanSerializer.DeserializeStep(stream,
-                QueryRequestBase.QueryV5);
-            Assert.IsTrue(step.IsRegrouping);
+            var step = (GroupStep)PlanSerializer.DeserializeStep(stream, version);
+            Assert.AreEqual(regrouping, step.IsRegrouping);
         }
 
         [TestMethod]
@@ -348,198 +306,209 @@ namespace Oracle.NoSQL.SDK.Tests
             }), typeof(SeqAggregateStep));
         }
 
-        [TestMethod]
-        public void TestV6DriverOperatorsExecute()
+        [DataTestMethod]
+        [DataRow(0)]
+        [DataRow(1)]
+        public void TestArrayConstructorExecutesAndResets(int count)
         {
-            using var client = new NoSQLClient(new NoSQLConfig
-            {
-                ServiceType = ServiceType.CloudSim,
-                Endpoint = "http://localhost:8080"
-            });
-            var runtime = new QueryRuntime(client, new PreparedStatement
-            {
-                RegisterCount = 16,
-                DriverQueryPlan = new ReceiveStep()
-            });
-            var comparison = new ValueCompareStep
+            using var client = CreateClient();
+            var values = Enumerable.Repeat<FieldValue>(new IntegerValue(1), count)
+                .ToArray();
+            var step = new ArrayConstructorStep
             {
                 ResultPosition = 0,
-                FuncCode = QueryFuncCode.GreaterThan,
-                LeftStep = IntegerConstant(1, 11),
-                RightStep = IntegerConstant(2, 10)
+                ArgSteps = values.Select(value => (PlanStep)Constant(1, value))
+                    .ToArray()
             };
-            var @case = new CaseStep
+            StringAssert.Contains(PlanFormatter.Format(step), "\"input iterators\" : [");
+            AssertResult(CreateRuntime(client), step, new ArrayValue(values));
+        }
+
+        public static IEnumerable<object[]> ComparisonCases
+        {
+            get
             {
-                ResultPosition = 3,
-                ConditionSteps = new PlanStep[] { comparison },
-                ThenSteps = new PlanStep[] { IntegerConstant(4, 11) },
-                ElseStep = IntegerConstant(5, 0)
+                var time = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+                yield return new object[] { new IntegerValue(11), new IntegerValue(10), 1 };
+                // Native timestamps must compare chronologically despite JSON's trailing Z.
+                yield return new object[] { new TimestampValue(time),
+                    new TimestampValue(time.AddMilliseconds(100)), -1 };
+                yield return new object[] { new TimestampValue(time), new TimestampValue(time), 0 };
+                yield return new object[] { new StringValue("2026-01-01T00:00:00Z"),
+                    new StringValue("2026-01-01T00:00:00.1Z"), 1 };
+                yield return new object[] { FieldValue.Null, new IntegerValue(1), null };
+                yield return new object[] { new IntegerValue(1), FieldValue.Null, null };
+                yield return new object[] { new ArrayValue { FieldValue.Null },
+                    new ArrayValue { FieldValue.Null }, null };
+            }
+        }
+
+        [DataTestMethod]
+        [DynamicData(nameof(ComparisonCases))]
+        public void TestV6ComparisonAndCase(FieldValue left, FieldValue right,
+            int? order)
+        {
+            using var client = CreateClient();
+            var runtime = CreateRuntime(client);
+            var operations = new[]
+            {
+                QueryFuncCode.Equal, QueryFuncCode.NotEqual,
+                QueryFuncCode.LessThan, QueryFuncCode.LessOrEqual,
+                QueryFuncCode.GreaterThan, QueryFuncCode.GreaterOrEqual
             };
-            var caseIterator = @case.CreateSyncIterator(runtime);
-            Assert.IsTrue(caseIterator.Next());
-            Assert.AreEqual(11, caseIterator.Result.AsInt32);
-
-            var arrayIterator = new ArrayConstructorStep
+            var expected = new[]
             {
-                ResultPosition = 6,
-                ArgSteps = new PlanStep[] { IntegerConstant(7, 1) }
-            }.CreateSyncIterator(runtime);
-            Assert.IsTrue(arrayIterator.Next());
-            Assert.AreEqual(1, arrayIterator.Result.AsArrayValue.Count);
-
-            var emptyArrayIterator = new ArrayConstructorStep
+                order == 0, order.HasValue && order != 0,
+                order < 0, order <= 0, order > 0, order >= 0
+            };
+            for (var i = 0; i < operations.Length; i++)
             {
-                ResultPosition = 8,
-                ArgSteps = Array.Empty<PlanStep>()
-            }.CreateSyncIterator(runtime);
-            Assert.IsTrue(emptyArrayIterator.Next());
-            Assert.AreEqual(0, emptyArrayIterator.Result.AsArrayValue.Count);
-
-            var aggregateIterator = new SeqAggregateStep
-            {
-                ResultPosition = 9,
-                FuncCode = QueryFuncCode.SeqSum,
-                InputStep = IntegerConstant(10, 3)
-            }.CreateSyncIterator(runtime);
-            Assert.IsTrue(aggregateIterator.Next());
-            Assert.AreEqual(DbType.Long, aggregateIterator.Result.DbType);
-            Assert.AreEqual(3L, aggregateIterator.Result.AsInt64);
-
-            var noInputIterator = new SeqAggregateStep
-            {
-                ResultPosition = 11,
-                FuncCode = QueryFuncCode.SeqSum,
-                InputStep = new FieldStep
+                var comparison = new ValueCompareStep
                 {
-                    ResultPosition = 12,
-                    FieldName = "missing",
-                    InputStep = new ConstStep
+                    ResultPosition = 0,
+                    FuncCode = operations[i],
+                    LeftStep = Constant(1, left),
+                    RightStep = Constant(2, right)
+                };
+                StringAssert.Contains(PlanFormatter.Format(comparison), "\"input iterator\" :");
+                AssertResult(runtime, comparison, !order.HasValue
+                    ? FieldValue.Null
+                    : expected[i] ? BooleanValue.True : BooleanValue.False);
+                AssertResult(runtime, new CaseStep
+                {
+                    ResultPosition = 3,
+                    ConditionSteps = new PlanStep[] { comparison },
+                    ThenSteps = new PlanStep[] { Constant(4, new IntegerValue(1)) },
+                    ElseStep = Constant(5, new IntegerValue(0))
+                }, new IntegerValue(expected[i] ? 1 : 0));
+            }
+        }
+
+        [TestMethod]
+        public void TestV6BooleanAndNullOperators()
+        {
+            using var client = CreateClient();
+            var runtime = CreateRuntime(client);
+            foreach (var function in new[] { QueryFuncCode.And, QueryFuncCode.Or })
+            {
+                var decisive = function == QueryFuncCode.And
+                    ? BooleanValue.False : BooleanValue.True;
+                AssertResult(runtime, new AndOrStep
+                {
+                    ResultPosition = 0,
+                    FuncCode = function,
+                    ArgSteps = new PlanStep[]
                     {
-                        ResultPosition = 13,
-                        Value = new MapValue()
+                        Constant(1, FieldValue.Null), Constant(2, decisive)
                     }
-                }
-            }.CreateSyncIterator(runtime);
-            Assert.IsFalse(noInputIterator.Next());
+                }, decisive);
+            }
+            foreach (var function in new[] { QueryFuncCode.IsNull, QueryFuncCode.IsNotNull })
+            {
+                AssertResult(runtime, new IsNullStep
+                {
+                    ResultPosition = 0,
+                    FuncCode = function,
+                    InputStep = Constant(1, FieldValue.Null)
+                }, function == QueryFuncCode.IsNull ? BooleanValue.True : BooleanValue.False);
+            }
+        }
+
+        public static IEnumerable<object[]> NumericAggregateCases
+        {
+            get
+            {
+                yield return new object[] { "integer promotion and ignored inputs",
+                    new FieldValue[] { new IntegerValue(int.MaxValue), FieldValue.Null,
+                        new StringValue("ignored"), new IntegerValue(1) },
+                    new LongValue(2147483648L), new DoubleValue(1073741824) };
+                yield return new object[] { "NUMBER with representable DOUBLE",
+                    new FieldValue[] { new NumberValue(1m), new DoubleValue(0.5) },
+                    new NumberValue(1.5m), new NumberValue(0.75m) };
+                yield return new object[] { "NUMBER with large DOUBLE",
+                    new FieldValue[] { new NumberValue(1m), new DoubleValue(1e100) },
+                    new DoubleValue(1e100), new DoubleValue(5e99) };
+                yield return new object[] { "NUMBER with tiny nonzero DOUBLE",
+                    new FieldValue[] { new NumberValue(0m), new DoubleValue(1e-30) },
+                    new DoubleValue(1e-30), new DoubleValue(5e-31) };
+                yield return new object[] { "decimal overflow",
+                    new FieldValue[] { new NumberValue(decimal.MaxValue),
+                        new NumberValue(decimal.MaxValue) },
+                    new DoubleValue((double)decimal.MaxValue * 2),
+                    new DoubleValue((double)decimal.MaxValue) };
+                yield return new object[] { "long overflow follows Java",
+                    new FieldValue[] { new LongValue(long.MaxValue), new LongValue(1) },
+                    new LongValue(long.MinValue), new DoubleValue((double)long.MinValue / 2) };
+            }
+        }
+
+        [DataTestMethod]
+        [DynamicData(nameof(NumericAggregateCases))]
+        public void TestSequenceNumericPromotion(string scenario,
+            FieldValue[] values, FieldValue sum, FieldValue average)
+        {
+            using var client = CreateClient();
+            var runtime = CreateRuntime(client);
+            var original = values.Select(value => value.ToJsonString()).ToArray();
+            foreach (var input in new[] { values, values.Reverse().ToArray() })
+            {
+                AssertResult(runtime, Aggregate(QueryFuncCode.SeqSum, input), sum);
+                AssertResult(runtime, Aggregate(QueryFuncCode.SeqAverage, input), average);
+            }
+            CollectionAssert.AreEqual(original,
+                values.Select(value => value.ToJsonString()).ToArray(), scenario);
         }
 
         [TestMethod]
-        public void TestV6ComparisonAndAggregateMatchJavaSemantics()
+        public void TestSequenceAggregatesHandleEmptyAndNull()
         {
-            using var client = new NoSQLClient(new NoSQLConfig
+            using var client = CreateClient();
+            var runtime = CreateRuntime(client);
+            AssertResult(runtime, Aggregate(QueryFuncCode.SeqSum), null);
+            AssertResult(runtime, Aggregate(QueryFuncCode.SeqSum,
+                FieldValue.Null, new StringValue("ignored")), FieldValue.Null);
+            foreach (var function in new[]
+                { QueryFuncCode.SeqCount, QueryFuncCode.SeqMin, QueryFuncCode.SeqMax })
             {
-                ServiceType = ServiceType.CloudSim,
-                Endpoint = "http://localhost:8080"
-            });
-            var runtime = new QueryRuntime(client, new PreparedStatement
-            {
-                RegisterCount = 8,
-                DriverQueryPlan = new ReceiveStep()
-            });
-
-            var nestedNullComparison = new ValueCompareStep
-            {
-                ResultPosition = 0,
-                FuncCode = QueryFuncCode.Equal,
-                LeftStep = new ConstStep
+                AssertResult(runtime, Aggregate(function,
+                    new IntegerValue(3), FieldValue.Null), FieldValue.Null);
+            }
+            foreach (var (function, expected) in new[]
                 {
-                    ResultPosition = 1,
-                    Value = new ArrayValue { FieldValue.Null }
-                },
-                RightStep = new ConstStep
-                {
-                    ResultPosition = 2,
-                    Value = new ArrayValue { FieldValue.Null }
-                }
-            }.CreateSyncIterator(runtime);
-            Assert.IsTrue(nestedNullComparison.Next());
-            Assert.AreSame(FieldValue.Null, nestedNullComparison.Result);
-
-            var inputValue = new IntegerValue(3);
-            var sum = new SeqAggregateStep
+                    (QueryFuncCode.SeqCountIgnoreNulls, (FieldValue)new LongValue(2)),
+                    (QueryFuncCode.SeqCountNumbersIgnoreNulls, new LongValue(2)),
+                    (QueryFuncCode.SeqMinIgnoreNulls, new IntegerValue(2)),
+                    (QueryFuncCode.SeqMaxIgnoreNulls, new IntegerValue(3))
+                })
             {
-                ResultPosition = 3,
-                FuncCode = QueryFuncCode.SeqSum,
-                InputStep = new ConstStep
-                {
-                    ResultPosition = 4,
-                    Value = inputValue
-                }
-            }.CreateSyncIterator(runtime);
-            Assert.IsTrue(sum.Next());
-            Assert.AreEqual(DbType.Long, sum.Result.DbType);
-            Assert.AreEqual(3L, sum.Result.AsInt64);
-            Assert.AreEqual(3, inputValue.AsInt32);
+                AssertResult(runtime, Aggregate(function,
+                    new IntegerValue(3), FieldValue.Null, new IntegerValue(2)), expected);
+            }
         }
 
         [TestMethod]
-        public void TestV6PlanFormatterUsesJavaInputContainers()
+        public void TestMissingTopologyRemainsMissingInSnapshot()
         {
-            var arrayPlan = PlanFormatter.Format(new ArrayConstructorStep
+            using var client = CreateClient();
+            var statement = new PreparedStatement { DriverQueryPlan = new ReceiveStep() };
+            foreach (var store in new[] { null, "newStore" })
             {
-                ResultPosition = 0,
-                ArgSteps = new PlanStep[] { IntegerConstant(1, 1) }
-            });
-            StringAssert.Contains(arrayPlan, "\"input iterators\" : [");
-
-            var comparisonPlan = PlanFormatter.Format(new ValueCompareStep
-            {
-                ResultPosition = 0,
-                FuncCode = QueryFuncCode.Equal,
-                LeftStep = IntegerConstant(1, 1),
-                RightStep = IntegerConstant(2, 1)
-            });
-            StringAssert.Contains(comparisonPlan, "\"input iterator\" :");
-        }
-
-        [TestMethod]
-        public void TestUnionRuntimeFreezesPerStoreTopology()
-        {
-            using var client = new NoSQLClient(new NoSQLConfig
-            {
-                ServiceType = ServiceType.CloudSim,
-                Endpoint = "http://localhost:8080"
-            });
-            client.SetQueryTopology(new TopologyInfo(4, new[] { 1 },
-                "storeOne"));
-            client.SetQueryTopology(new TopologyInfo(7, new[] { 2, 3 },
-                "storeTwo"));
-
-            var statement = new PreparedStatement
-            {
-                RegisterCount = 1,
-                DriverQueryPlan = new ReceiveStep()
-            };
-            statement.AddQueryBranch(new PreparedStatement.QueryBranch
-            {
-                ProxyStatement = new byte[] { 1 }, StoreName = "storeOne"
-            });
-            statement.AddQueryBranch(new PreparedStatement.QueryBranch
-            {
-                ProxyStatement = new byte[] { 2 }, StoreName = "storeTwo"
-            });
+                statement.AddQueryBranch(new PreparedStatement.QueryBranch
+                {
+                    ProxyStatement = new byte[] { 1 }, StoreName = store
+                });
+            }
             var runtime = new QueryRuntime(client, statement);
-
-            runtime.ConstructionUnionBranch = 0;
-            Assert.AreEqual(4, runtime.GetConstructionTopology().SequenceNumber);
-            runtime.ConstructionUnionBranch = 1;
-            Assert.AreEqual(7, runtime.GetConstructionTopology().SequenceNumber);
-
-            client.SetQueryTopology(new TopologyInfo(8, new[] { 4 },
-                "storeOne"));
-            client.SetQueryTopology(new TopologyInfo(10, new[] { 5, 6 },
-                "storeTwo"));
-
-            runtime.ConstructionUnionBranch = 0;
-            Assert.AreEqual(4, runtime.GetConstructionTopology().SequenceNumber);
-            runtime.ConstructionUnionBranch = 1;
-            Assert.AreEqual(7, runtime.GetConstructionTopology().SequenceNumber);
-            Assert.AreEqual(4, runtime.StoreTopologies[0].SequenceNumber);
-            Assert.AreEqual(7, runtime.StoreTopologies[1].SequenceNumber);
-
-            var request = new QueryRequest<RecordValue>(client, statement,
-                null)
+            client.SetQueryTopology(new TopologyInfo(42, new[] { 1 }));
+            client.SetQueryTopology(new TopologyInfo(43, new[] { 2 }, "newStore"));
+            for (var branch = 0; branch < 2; branch++)
             {
+                runtime.ConstructionUnionBranch = branch;
+                Assert.IsNull(runtime.GetConstructionTopology());
+            }
+            var request = new QueryRequest<RecordValue>(client, statement, null)
+            {
+                BaseTopology = runtime.BaseTopology,
                 StoreTopologySnapshot = runtime.StoreTopologies
             };
             using var stream = new MemoryStream();
@@ -550,32 +519,13 @@ namespace Oracle.NoSQL.SDK.Tests
             stream.Position = 0;
             var reader = NsonProtocol.GetNsonReader(stream);
             reader.Next();
-            var root = NsonProtocol.ReadFieldValue(reader).AsMapValue;
-            var header = root[NsonProtocol.FieldNames.Header].AsMapValue;
-            var storeTopologies = header[NsonProtocol.FieldNames
-                .StoreTopologySequenceNumbers].AsArrayValue;
-            Assert.AreEqual(4, GetTopologySequence(storeTopologies,
-                "storeOne"));
-            Assert.AreEqual(7, GetTopologySequence(storeTopologies,
-                "storeTwo"));
-        }
-
-        private static int GetTopologySequence(ArrayValue storeTopologies,
-            string storeName)
-        {
-            foreach (var fieldValue in storeTopologies)
-            {
-                var topology = fieldValue.AsMapValue;
-                if (topology[NsonProtocol.FieldNames.StoreId].AsString ==
-                    storeName)
-                {
-                    return topology[NsonProtocol.FieldNames.TopoSeqNum]
-                        .AsInt32;
-                }
-            }
-
-            throw new AssertFailedException(
-                "Missing topology for store " + storeName);
+            var header = NsonProtocol.ReadFieldValue(reader).AsMapValue[
+                NsonProtocol.FieldNames.Header].AsMapValue;
+            Assert.AreEqual(-1, header[NsonProtocol.FieldNames.TopoSeqNum].AsInt32);
+            Assert.AreEqual(0, header[NsonProtocol.FieldNames
+                .StoreTopologySequenceNumbers].AsArrayValue.Count);
+            Assert.AreEqual(42, new QueryRequest<RecordValue>(client,
+                statement, null).QueryTopologySequenceNumber);
         }
 
         [DataTestMethod]
@@ -662,12 +612,56 @@ namespace Oracle.NoSQL.SDK.Tests
             BinaryProtocol.WritePackedInt32(stream, -1);
         }
 
-        private static ConstStep IntegerConstant(int position, int value) =>
-            new ConstStep
+        private static NoSQLClient CreateClient(string ns = null) =>
+            new NoSQLClient(new NoSQLConfig
             {
-                ResultPosition = position,
-                Value = new IntegerValue(value)
+                ServiceType = ServiceType.CloudSim,
+                Endpoint = "http://localhost:8080",
+                Namespace = ns
+            });
+
+        private static QueryRuntime CreateRuntime(NoSQLClient client) =>
+            new QueryRuntime(client, new PreparedStatement
+            {
+                RegisterCount = 6,
+                DriverQueryPlan = new ReceiveStep()
+            });
+
+        private static ConstStep Constant(int position, FieldValue value) =>
+            new ConstStep { ResultPosition = position, Value = value };
+
+        private static SeqAggregateStep Aggregate(QueryFuncCode function,
+            params FieldValue[] values) => new SeqAggregateStep
+            {
+                ResultPosition = 0,
+                FuncCode = function,
+                // A real field projection supplies the sequence, including SQL NULL.
+                InputStep = new FieldStep
+                {
+                    ResultPosition = 1,
+                    FieldName = "value",
+                    InputStep = Constant(2, new ArrayValue(values.Select(value =>
+                        new MapValue { ["value"] = value })))
+                }
             };
+
+        private static void AssertResult(QueryRuntime runtime, PlanSyncStep step,
+            FieldValue expected)
+        {
+            var iterator = step.CreateSyncIterator(runtime);
+            for (var repeat = 0; repeat < 2; repeat++)
+            {
+                Assert.AreEqual(expected != null, iterator.Next(), step.Name);
+                if (expected != null)
+                {
+                    Assert.AreEqual(expected.DbType, iterator.Result.DbType, step.Name);
+                    Assert.AreEqual(expected.ToJsonString(),
+                        iterator.Result.ToJsonString(), step.Name);
+                }
+                Assert.IsFalse(iterator.Next(), step.Name);
+                iterator.Reset();
+            }
+        }
 
         private static PlanStep DeserializeV6Step(byte type,
             Action<MemoryStream> writeContent)
