@@ -9,8 +9,6 @@ namespace Oracle.NoSQL.SDK.Query
 {
     using System;
     using System.Collections.Generic;
-    using System.Globalization;
-    using System.Text.RegularExpressions;
     using static V6IteratorUtils;
 
     internal class ArrayConstructorIterator : OneResultIterator
@@ -253,12 +251,6 @@ namespace Oracle.NoSQL.SDK.Query
 
     internal class ValueCompareIterator : OneResultIterator
     {
-        private static readonly Regex TimestampPattern = new Regex(
-            @"\A([0-9]{1,4})-([0-9]{1,2})-([0-9]{1,2})" +
-            @"(?:T([0-9]{1,2})(?::([0-9]{1,2})(?::([0-9]{1,2})" +
-            @"(?:\.([0-9]{1,9}))?)?)?)?(Z|[+-][0-9]{2}:[0-9]{2})?\z",
-            RegexOptions.CultureInvariant);
-
         private readonly ValueCompareStep step;
         private readonly PlanSyncIterator left;
         private readonly PlanSyncIterator right;
@@ -397,22 +389,11 @@ namespace Oracle.NoSQL.SDK.Query
                 result.Value = leftValue.QueryCompare(rightValue);
                 return;
             }
-            if (leftType == DbType.Timestamp && rightType == DbType.String)
+            if ((leftType == DbType.String || leftType == DbType.Timestamp) &&
+                (rightType == DbType.String || rightType == DbType.Timestamp))
             {
-                result.Value = leftValue.AsDateTime.CompareTo(
-                    ParseTimestamp(rightValue.AsString));
-                return;
-            }
-            if (leftType == DbType.String && rightType == DbType.Timestamp)
-            {
-                result.Value = ParseTimestamp(leftValue.AsString).CompareTo(
-                    rightValue.AsDateTime);
-                return;
-            }
-            if (leftType == DbType.String && rightType == DbType.String)
-            {
-                result.Value = string.CompareOrdinal(leftValue.AsString,
-                    rightValue.AsString);
+                result.Value = string.CompareOrdinal(
+                    GetStringValue(leftValue), GetStringValue(rightValue));
                 return;
             }
             if (leftType == DbType.Boolean && rightType == DbType.Boolean)
@@ -456,72 +437,9 @@ namespace Oracle.NoSQL.SDK.Query
             result.Incompatible = true;
         }
 
-        private DateTime ParseTimestamp(string value)
-        {
-            // KV compares TIMESTAMP with STRING by parsing the string in
-            // its default ISO format, with UTC as the default time zone.
-            // Do not accept culture-specific dates through DateTime.Parse.
-            var match = TimestampPattern.Match(value);
-            if (!match.Success)
-            {
-                throw new InvalidOperationException(GetMessageWithLocation(
-                    $"invalid timestamp string: {value}"));
-            }
-
-            try
-            {
-                int Component(int index) => match.Groups[index].Success
-                    ? int.Parse(match.Groups[index].Value,
-                        CultureInfo.InvariantCulture) : 0;
-                var timestamp = new DateTime(Component(1), Component(2),
-                    Component(3), Component(4), Component(5), Component(6),
-                    DateTimeKind.Utc);
-                if (match.Groups[7].Success)
-                {
-                    var nanos = int.Parse(match.Groups[7].Value.PadRight(9, '0'),
-                        CultureInfo.InvariantCulture);
-                    // Match the SDK's existing DateTime wire representation:
-                    // timestamps are rounded to 100 ns (seven digits).
-                    timestamp = timestamp.AddTicks((nanos + 50L) / 100);
-                }
-
-                var zone = match.Groups[8].Value;
-                if (zone.Length > 1)
-                {
-                    // KV's non-UTC offset parser requires the complete ISO
-                    // date and, when present, the complete time component.
-                    if (zone != "+00:00" &&
-                        (match.Groups[1].Length != 4 ||
-                         match.Groups[2].Length != 2 ||
-                         match.Groups[3].Length != 2 ||
-                         (match.Groups[4].Success &&
-                          (match.Groups[4].Length != 2 ||
-                           match.Groups[5].Length != 2 ||
-                           match.Groups[6].Length != 2))))
-                    {
-                        throw new ArgumentException(nameof(value));
-                    }
-                    var hours = int.Parse(zone.Substring(1, 2),
-                        CultureInfo.InvariantCulture);
-                    var minutes = int.Parse(zone.Substring(4, 2),
-                        CultureInfo.InvariantCulture);
-                    if (hours > 18 || minutes > 59 ||
-                        (hours == 18 && minutes != 0))
-                    {
-                        throw new ArgumentOutOfRangeException(nameof(value));
-                    }
-                    var offset = hours * 60 + minutes;
-                    timestamp = timestamp.AddMinutes(zone[0] == '+'
-                        ? -offset : offset);
-                }
-                return timestamp;
-            }
-            catch (ArgumentException exception)
-            {
-                throw new InvalidOperationException(GetMessageWithLocation(
-                    $"invalid timestamp string: {value}"), exception);
-            }
-        }
+        private static string GetStringValue(FieldValue value) =>
+            value.DbType == DbType.String ? value.AsString :
+            value.ToJsonString().Trim('"');
 
         private void CompareMaps(MapValue leftValue, MapValue rightValue,
             ComparisonResult result)
