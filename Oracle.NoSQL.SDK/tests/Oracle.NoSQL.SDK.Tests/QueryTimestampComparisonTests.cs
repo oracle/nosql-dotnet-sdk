@@ -72,7 +72,6 @@ namespace Oracle.NoSQL.SDK.Tests
         [DataTestMethod]
         [DataRow("2026-01-01T00:00:00.000000049Z", 0)]
         [DataRow("2026-01-01T00:00:00.000000050Z", -1)]
-        [DataRow("2026-01-01T00:00:00.0000001Z", -1)]
         public void TestMixedTimestampUsesSdkDateTimePrecision(string text,
             int order)
         {

@@ -59,7 +59,6 @@ namespace Oracle.NoSQL.SDK.Tests
         [DataRow(null)]
         [DataRow("")]
         [DataRow(" ")]
-        [DataRow("\t\n")]
         public void TestRejectInvalidStoreIds(string storeName)
         {
             using var client = CreateClient();

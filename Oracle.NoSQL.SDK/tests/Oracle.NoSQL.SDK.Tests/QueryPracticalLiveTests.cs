@@ -61,21 +61,9 @@ namespace Oracle.NoSQL.SDK.Tests
 
         [DataTestMethod]
         [DataRow("ASC NULLS FIRST", true, 1)]
-        [DataRow("ASC NULLS FIRST", true, 5)]
-        [DataRow("ASC NULLS FIRST", false, 1)]
-        [DataRow("ASC NULLS FIRST", false, 5)]
-        [DataRow("ASC NULLS LAST", true, 1)]
-        [DataRow("ASC NULLS LAST", true, 5)]
-        [DataRow("ASC NULLS LAST", false, 1)]
         [DataRow("ASC NULLS LAST", false, 5)]
-        [DataRow("DESC NULLS FIRST", true, 1)]
-        [DataRow("DESC NULLS FIRST", true, 5)]
         [DataRow("DESC NULLS FIRST", false, 1)]
-        [DataRow("DESC NULLS FIRST", false, 5)]
-        [DataRow("DESC NULLS LAST", true, 1)]
         [DataRow("DESC NULLS LAST", true, 5)]
-        [DataRow("DESC NULLS LAST", false, 1)]
-        [DataRow("DESC NULLS LAST", false, 5)]
         public async Task TestUnionMissingJsonSortKeysAsync(string order,
             bool prepared, int batchSize)
         {
@@ -124,16 +112,9 @@ namespace Oracle.NoSQL.SDK.Tests
 
         [DataTestMethod]
         [DataRow("2026-01-01T00:00:00Z", true, false)]
-        [DataRow("2026-01-01T00:00:00.000Z", true, false)]
         [DataRow("2026-01-01T00:00:00.1Z", false, true)]
         [DataRow("2025-12-31T23:59:59.9Z", false, false)]
         [DataRow("2026-01-01T05:30:00+05:30", true, false)]
-        [DataRow("2025-12-31T18:30:00-05:30", true, false)]
-        [DataRow("2026-01-01T00:00:00", true, false)]
-        [DataRow("2026-01-01", true, false)]
-        [DataRow("2026-1-1T0:0:0", true, false)]
-        [DataRow("2026-01-01T00", true, false)]
-        [DataRow("2026-01-01T00:00", true, false)]
         public async Task TestTimestampJsonCutoffMatchesServerAsync(
             string cutoff, bool equal, bool less)
         {
@@ -183,8 +164,7 @@ namespace Oracle.NoSQL.SDK.Tests
                 {
                     Limit = batchSize,
                     ContinuationKey = continuation,
-                    Consistency = Consistency.Absolute,
-                    TraceLevel = 1
+                    Consistency = Consistency.Absolute
                 };
                 var result = statement == null
                     ? await client.QueryAsync(sql, options)

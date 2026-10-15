@@ -24,13 +24,7 @@ namespace Oracle.NoSQL.SDK.Tests
                 .Substring(0, 8), DefaultTableLimits,
             new[] { new TableField("id", DataType.Integer),
                 new TableField("doc", DataType.Json),
-                new TableField("missing", DataType.Integer),
-                new TableField("smallNumber", DataType.Number),
-                new TableField("smallDouble", DataType.Double),
-                new TableField("largeDouble", DataType.Double),
-                new TableField("numberZero", DataType.Number),
-                new TableField("preciseDouble", DataType.Double),
-                new TableField("roundedDouble", DataType.Double) },
+                new TableField("missing", DataType.Integer) },
             new[] { "id" }, 1);
 
         [ClassInitialize]
@@ -41,13 +35,7 @@ namespace Oracle.NoSQL.SDK.Tests
             await client.PutAsync(Table.Name, new MapValue
                 {
                     ["id"] = 1,
-                    ["doc"] = new MapValue { ["v"] = FieldValue.JsonNull },
-                    ["smallNumber"] = new NumberValue(1e-20m),
-                    ["smallDouble"] = new DoubleValue(1e-20),
-                    ["largeDouble"] = new DoubleValue(1e20),
-                    ["numberZero"] = new NumberValue(0m),
-                    ["preciseDouble"] = new DoubleValue(10000000000000002d),
-                    ["roundedDouble"] = new DoubleValue(10000000000000000d)
+                    ["doc"] = new MapValue { ["v"] = FieldValue.JsonNull }
                 });
             await client.PutAsync(Table.Name, new MapValue
                 { ["id"] = 2, ["doc"] = new MapValue { ["v"] = 1 } });
@@ -113,35 +101,6 @@ namespace Oracle.NoSQL.SDK.Tests
                 (await ReadSingleRowAsync(statement))["mean"].ToDouble());
         }
 
-        [DataTestMethod]
-        [DataRow("*", "/", "smallDouble")]
-        [DataRow("/", "*", "largeDouble")]
-        public async Task TestDriverArithmeticRecoversAfterIntermediateUnderflowAsync(
-            string firstOperation, string secondOperation, string doubleColumn)
-        {
-            var statement = await client.PrepareAsync(
-                $"SELECT min(t.smallNumber) {firstOperation} " +
-                $"min(t.{doubleColumn}) {secondOperation} " +
-                $"min(t.{doubleColumn}) AS result FROM {Table.Name} t");
-            StringAssert.Contains(PlanFormatter.Format(
-                statement.DriverQueryPlan), "MULT_DIV");
-            Assert.AreEqual(1e-20,
-                (await ReadSingleRowAsync(statement))["result"].ToDouble(),
-                1e-32);
-        }
-
-        [TestMethod]
-        public async Task TestDriverArithmeticPreservesDoublePrecisionAsync()
-        {
-            var statement = await client.PrepareAsync(
-                "SELECT min(t.numberZero) + min(t.preciseDouble) - " +
-                $"min(t.roundedDouble) AS result FROM {Table.Name} t");
-            StringAssert.Contains(PlanFormatter.Format(
-                statement.DriverQueryPlan), "OP_ADD_SUB");
-            Assert.AreEqual(2.0,
-                (await ReadSingleRowAsync(statement))["result"].ToDouble());
-        }
-
         private static async Task<RecordValue> ReadSingleRowAsync(
             PreparedStatement statement)
         {
@@ -156,8 +115,7 @@ namespace Oracle.NoSQL.SDK.Tests
                     {
                         Limit = 1,
                         ContinuationKey = continuation,
-                        Consistency = Consistency.Absolute,
-                        TraceLevel = 1
+                        Consistency = Consistency.Absolute
                     });
                 rows.AddRange(result.Rows);
                 continuation = result.ContinuationKey;

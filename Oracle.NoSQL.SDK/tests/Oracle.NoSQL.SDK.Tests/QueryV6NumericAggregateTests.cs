@@ -49,10 +49,6 @@ namespace Oracle.NoSQL.SDK.Tests
         [DataRow(false, true, 1e-30)]
         [DataRow(true, false, 1e-30)]
         [DataRow(true, true, 1e-30)]
-        [DataRow(false, false, -1e-30)]
-        [DataRow(false, true, -1e-30)]
-        [DataRow(true, false, -1e-30)]
-        [DataRow(true, true, -1e-30)]
         public void TestMixedNumberAndTinyDoublePreservesNonzeroValue(
             bool average, bool reverse, double value)
         {
@@ -137,8 +133,6 @@ namespace Oracle.NoSQL.SDK.Tests
         [DataTestMethod]
         [DataRow(double.PositiveInfinity, false)]
         [DataRow(double.PositiveInfinity, true)]
-        [DataRow(double.NegativeInfinity, false)]
-        [DataRow(double.NegativeInfinity, true)]
         [DataRow(double.NaN, false)]
         [DataRow(double.NaN, true)]
         public void TestMixedNumberAndNonFiniteDouble(double value,

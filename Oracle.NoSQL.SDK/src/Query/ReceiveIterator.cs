@@ -121,19 +121,6 @@ namespace Oracle.NoSQL.SDK.Query {
             queryRequest.UnionBranch = runtime.UnionBranch;
             queryRequest.StatsLogicalQueryRequest = runtime.Request;
 
-            if (queryRequest.Options.TraceLevel.HasValue)
-            {
-                // Internal requests belong to one logical query, so the trace
-                // counter must advance globally, including across continuation
-                // calls that use fresh QueryOptions.
-                // NSON converts this zero-based value to Java's one-based
-                // batch counter when it writes the request.
-                queryRequest.Options.BatchNumber =
-                    runtime.BatchNumber++;
-                // Retain the next batch number for driver trace records too.
-                runtime.Request.Options.BatchNumber = runtime.BatchNumber;
-            }
-
             var result = (QueryResult<RecordValue>)
                 await runtime.Client.ExecuteValidatedRequestAsync(
                     queryRequest, cancellationToken);
@@ -164,6 +151,7 @@ namespace Oracle.NoSQL.SDK.Query {
             if (result.QueryTraces != null)
             {
                 runtime.AddServerQueryTraces(result.QueryTraces);
+                queryRequest.Options.BatchNumber++;
             }
 
             return result;

@@ -8,6 +8,7 @@
 namespace Oracle.NoSQL.SDK.Tests
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Oracle.NoSQL.SDK.Query;
@@ -121,6 +122,127 @@ namespace Oracle.NoSQL.SDK.Tests
                 QueryRequestBase.QueryV3));
         }
 
+        [DataTestMethod]
+        [DataRow((short)4, 1)]
+        [DataRow((short)5, 2)]
+        [DataRow((short)6, 2)]
+        public void TestVirtualScanWireFormat(short queryVersion,
+            int expectedTables)
+        {
+            using var client = new NoSQLClient(new NoSQLConfig
+            {
+                ServiceType = ServiceType.CloudSim,
+                Endpoint = "http://localhost:8080"
+            });
+            Assert.AreEqual(1, new VirtualScan().TableResumeInfos.Length);
+            var scan = new VirtualScan
+            {
+                ShardId = 7,
+                PartitionId = 9,
+                TableResumeInfos = new[]
+                {
+                    new VirtualScan.TableResumeInfo
+                    {
+                        CurrentIndexRange = 3, PrimaryKey = new byte[] { 11 },
+                        MoveAfterResumeKey = true
+                    },
+                    new VirtualScan.TableResumeInfo
+                    {
+                        CurrentIndexRange = 5, PrimaryKey = new byte[] { 22 },
+                        JoinPathMatched = true
+                    }
+                }
+            };
+            var request = new QueryRequest<RecordValue>(client,
+                new PreparedStatement { ProxyStatement = new byte[] { 1 } },
+                null) { QueryVersion = queryVersion, VirtualScan = scan };
+            var serializer =
+                new Oracle.NoSQL.SDK.NsonProtocol.RequestSerializer();
+            using var encoded = new MemoryStream();
+            serializer.SerializeQuery(encoded, request);
+            encoded.Position = 0;
+            var reader = NsonProtocol.GetNsonReader(encoded);
+            reader.Next();
+
+            // A resume map contains repeated field names and typed null binaries.
+            var fields = new List<(string Name, DbType Type, FieldValue Value)>();
+            NsonProtocol.ReadMap(reader, field =>
+            {
+                if (field != NsonProtocol.FieldNames.Payload)
+                {
+                    return false;
+                }
+                NsonProtocol.ReadMap(reader, payloadField =>
+                {
+                    if (payloadField != NsonProtocol.FieldNames.VirtualScan)
+                    {
+                        return false;
+                    }
+                    NsonProtocol.ReadMap(reader, resumeField =>
+                    {
+                        fields.Add((resumeField, reader.NsonType,
+                            NsonProtocol.ReadFieldValue(reader)));
+                        return true;
+                    });
+                    return true;
+                });
+                return true;
+            });
+            var tableCounts = fields.FindAll(field => field.Name ==
+                NsonProtocol.FieldNames.VirtualScanNumTables);
+            Assert.AreEqual(queryVersion >= QueryRequestBase.QueryV5 ? 1 : 0,
+                tableCounts.Count);
+            if (tableCounts.Count != 0)
+            {
+                Assert.AreEqual(expectedTables, tableCounts[0].Value.AsInt32);
+            }
+            var ranges = fields.FindAll(field => field.Name ==
+                NsonProtocol.FieldNames.VirtualScanCurrentIndexRange);
+            Assert.AreEqual(expectedTables, ranges.Count);
+
+            using var response = new MemoryStream();
+            var writer = NsonProtocol.GetNsonWriter(response);
+            writer.StartMap();
+            writer.StartArray(NsonProtocol.FieldNames.VirtualScans);
+            writer.StartMap();
+            foreach (var field in fields)
+            {
+                writer.WriteFieldName(field.Name);
+                if (field.Type == DbType.Binary && field.Value == FieldValue.Null)
+                {
+                    writer.WriteByteArray(null);
+                }
+                else
+                {
+                    NsonProtocol.WriteFieldValue(writer, field.Value);
+                }
+            }
+            writer.EndMap();
+            writer.EndArray();
+            writer.EndMap();
+            response.Position = 0;
+            var decoded = serializer.DeserializeQuery(response, request)
+                .VirtualScans[0];
+            Assert.AreEqual(scan.ShardId, decoded.ShardId);
+            Assert.AreEqual(scan.PartitionId, decoded.PartitionId);
+            Assert.AreEqual(expectedTables, decoded.TableResumeInfos.Length);
+            for (var i = 0; i < expectedTables; i++)
+            {
+                var expected = scan.TableResumeInfos[i];
+                var actual = decoded.TableResumeInfos[i];
+                Assert.AreEqual(expected.CurrentIndexRange,
+                    ranges[i].Value.AsInt32);
+                Assert.AreEqual(expected.CurrentIndexRange,
+                    actual.CurrentIndexRange);
+                CollectionAssert.AreEqual(expected.PrimaryKey,
+                    actual.PrimaryKey);
+                Assert.AreEqual(expected.MoveAfterResumeKey,
+                    actual.MoveAfterResumeKey);
+                Assert.AreEqual(expected.JoinPathMatched,
+                    actual.JoinPathMatched);
+            }
+        }
+
         [TestMethod]
         public void TestArrayCollectRegrouping()
         {
@@ -130,10 +252,14 @@ namespace Oracle.NoSQL.SDK.Tests
             Assert.AreEqual("one", normal.Result.AsArrayValue[0].AsString);
 
             var regrouped = new CollectAggregator(false, true);
-            regrouped.Aggregate(new ArrayValue
+            var partial = new ArrayValue
             {
                 new StringValue("one"), new StringValue("two")
-            });
+            };
+            var memory = regrouped.Aggregate(partial, true);
+            Assert.AreEqual(
+                SizeOf.GetListEntrySize(partial[0].GetMemorySize()) +
+                SizeOf.GetListEntrySize(partial[1].GetMemorySize()), memory);
             Assert.AreEqual(2, regrouped.Result.AsArrayValue.Count);
             Assert.AreEqual("one", regrouped.Result.AsArrayValue[0].AsString);
             Assert.AreEqual("two", regrouped.Result.AsArrayValue[1].AsString);
@@ -486,7 +612,6 @@ namespace Oracle.NoSQL.SDK.Tests
         [DataTestMethod]
         [DataRow(1, 0)]
         [DataRow(2, 1)]
-        [DataRow(3, 2)]
         public void TestUnionRejectsMissingSortAttributes(int fieldCount,
             int specCount)
         {

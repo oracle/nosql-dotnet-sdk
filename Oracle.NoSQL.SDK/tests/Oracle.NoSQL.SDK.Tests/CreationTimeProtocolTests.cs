@@ -22,8 +22,8 @@ namespace Oracle.NoSQL.SDK.Tests
         {
             // A native creation time differs from the modification time.
             new object[] { (long?)CreationTimeMillis, CreationTimeMillis + 1000 },
-            // Creation and modification times can be equal for an unchanged
-            // row. Either timestamp can also be unavailable.
+            // A supporting server supplies the modification time for a
+            // pre-25.3 row, and zero for a pre-19.5 row.
             new object[] { (long?)CreationTimeMillis, CreationTimeMillis },
             new object[] { (long?)0, 0L },
             // Missing/zero ct must not be synthesized from a nonzero md/em.

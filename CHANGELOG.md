@@ -12,24 +12,6 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
   plans and V6 iterators.
 * Added server-generated creation-time metadata to Get, Put, Delete, and
   WriteMany results when returned by the service.
-  On-premises generation requires KV 26.1 and SCV 26.1 or later; unavailable
-  values remain null rather than being inferred from modification time.
-
-**Fixed**
-* Traverse nested arrays in query field navigation and preserve SQL NULL,
-  missing-field, and scalar-input behavior in driver expressions.
-* Preserve missing JSON sort keys through UNION merging so ORDER BY and
-  LIMIT return the correct rows.
-* Compare TIMESTAMP values with timestamp strings chronologically in V6
-  driver expressions, including fractional seconds and UTC offsets.
-* Preserve SQL NULL in query `size()` and include JSON null in `count()`.
-* Apply numeric promotion across arithmetic expressions and preserve small
-  DOUBLE values when NUMBER conversion or intermediate multiplication and
-  division would round them to zero.
-* Preserve DOUBLE precision when arithmetic promotion to NUMBER would round
-  distinct operands to the same value.
-* Preserve query continuation after a failed fetch, including buffered rows.
-* Allow query tracing when a prepared statement has no bind variables.
 
 ## [5.2.3]
 

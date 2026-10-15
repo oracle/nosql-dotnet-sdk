@@ -488,32 +488,6 @@ namespace Oracle.NoSQL.SDK.Tests
         }
 
         [TestMethod]
-        public async Task TestUnionAllCaseExpressionAsync()
-        {
-            await CheckUnionSupportedAsync(Fixture.Table.Name);
-            var source = $"SELECT colInteger FROM {Fixture.Table.Name}";
-            var sql = "SELECT CASE WHEN $u.colInteger > 10 THEN " +
-                "$u.colInteger ELSE 0 END AS value FROM (" + source +
-                " UNION ALL " + source + ") $u";
-            var statement = await client.PrepareAsync(sql);
-            var rows = new List<RecordValue>();
-
-            await foreach (var result in client.GetQueryAsyncEnumerable(
-                statement))
-            {
-                rows.AddRange(result.Rows);
-            }
-
-            Assert.AreEqual(Fixture.Rows.Count() * 2, rows.Count);
-            var expected = Fixture.Rows.Select(row =>
-                row["colInteger"].IsNumeric && row["colInteger"].AsInt32 > 10
-                    ? row["colInteger"].AsInt32 : 0)
-                .ToArray();
-            CollectionAssert.AreEquivalent(expected.Concat(expected).ToArray(),
-                rows.Select(row => row["value"].AsInt32).ToArray());
-        }
-
-        [TestMethod]
         public async Task TestUnionAllTimestampCaseExpressionAsync()
         {
             await CheckUnionSupportedAsync(Fixture.Table.Name);

@@ -30,74 +30,14 @@ namespace Oracle.NoSQL.SDK.Query
             internal bool JoinPathMatched { get; set; }
         }
 
-        private TableResumeInfo[] tableResumeInfos =
-            { new TableResumeInfo() };
-
         internal int ShardId { get; set; }
 
         internal int PartitionId { get; set; }
 
-        internal TableResumeInfo[] TableResumeInfos
-        {
-            get => tableResumeInfos;
-            set => tableResumeInfos = value;
-        }
-
-        private TableResumeInfo FirstTableResumeInfo =>
-            tableResumeInfos != null && tableResumeInfos.Length != 0
-                ? tableResumeInfos[0] : null;
-
-        // V4 compatibility accessors for the single-table virtual-scan form.
-        internal byte[] PrimaryKey
-        {
-            get => FirstTableResumeInfo?.PrimaryKey;
-            set => FirstTableResumeInfo.PrimaryKey = value;
-        }
-
-        internal byte[] SecondaryKey
-        {
-            get => FirstTableResumeInfo?.SecondaryKey;
-            set => FirstTableResumeInfo.SecondaryKey = value;
-        }
-
-        internal byte[] JoinDescendantResumeKey
-        {
-            get => FirstTableResumeInfo?.JoinDescendantResumeKey;
-            set => FirstTableResumeInfo.JoinDescendantResumeKey = value;
-        }
-
-        internal int[] JoinPathTableIds
-        {
-            get => FirstTableResumeInfo?.JoinPathTableIds;
-            set => FirstTableResumeInfo.JoinPathTableIds = value;
-        }
-
-        internal byte[] JoinPathPrimaryKey
-        {
-            get => FirstTableResumeInfo?.JoinPathPrimaryKey;
-            set => FirstTableResumeInfo.JoinPathPrimaryKey = value;
-        }
-
-        internal byte[] JoinPathSecondaryKey
-        {
-            get => FirstTableResumeInfo?.JoinPathSecondaryKey;
-            set => FirstTableResumeInfo.JoinPathSecondaryKey = value;
-        }
+        internal TableResumeInfo[] TableResumeInfos { get; set; } =
+            new[] { new TableResumeInfo() };
 
         internal bool IsInfoSent { get; set; }
-        
-        internal bool MoveAfterResumeKey
-        {
-            get => FirstTableResumeInfo?.MoveAfterResumeKey ?? false;
-            set => FirstTableResumeInfo.MoveAfterResumeKey = value;
-        }
-
-        internal bool JoinPathMatched
-        {
-            get => FirstTableResumeInfo?.JoinPathMatched ?? false;
-            set => FirstTableResumeInfo.JoinPathMatched = value;
-        }
-
     }
 
 }

@@ -215,19 +215,6 @@ namespace Oracle.NoSQL.SDK.Query
             builder.Append(']');
         }
 
-        private static void AppendSteps(StringBuilder builder,
-            PlanStep[] steps, int indent)
-        {
-            for (var i = 0; i < steps.Length; i++)
-            {
-                AppendStep(builder, steps[i], indent);
-                if (i < steps.Length - 1)
-                {
-                    builder.Append(",\n");
-                }
-            }
-        }
-
         private static void AppendCase(StringBuilder builder, CaseStep step,
             int indent)
         {

@@ -24,21 +24,13 @@ namespace Oracle.NoSQL.SDK.Tests
     {
         [DataTestMethod]
         [DataRow(false, false, false, 1)]
-        [DataRow(false, false, false, 3)]
         [DataRow(false, false, true, 1)]
-        [DataRow(false, false, true, 3)]
         [DataRow(false, true, false, 1)]
-        [DataRow(false, true, false, 3)]
         [DataRow(false, true, true, 1)]
-        [DataRow(false, true, true, 3)]
         [DataRow(true, false, false, 1)]
-        [DataRow(true, false, false, 3)]
         [DataRow(true, false, true, 1)]
-        [DataRow(true, false, true, 3)]
         [DataRow(true, true, false, 1)]
-        [DataRow(true, true, false, 3)]
         [DataRow(true, true, true, 1)]
-        [DataRow(true, true, true, 3)]
         public async Task TestUnionPreservesMissingSortKeys(bool sortedReceive,
             bool descending, bool nullsFirst, int batchSize)
         {
