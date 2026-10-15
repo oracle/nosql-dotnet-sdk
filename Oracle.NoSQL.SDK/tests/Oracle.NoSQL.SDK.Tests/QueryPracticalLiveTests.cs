@@ -24,7 +24,6 @@ namespace Oracle.NoSQL.SDK.Tests
             TableNamePrefix + "QueryPractical" + Guid.NewGuid().ToString("N")
                 .Substring(0, 8), DefaultTableLimits,
             new[] { new TableField("id", DataType.Integer),
-                new TableField("doc", DataType.Json),
                 new TableField("ts", new TimestampFieldType(7)) },
             new[] { "id" }, 1);
 
@@ -35,17 +34,9 @@ namespace Oracle.NoSQL.SDK.Tests
             await CreateTableAsync(Table);
             for (var id = 1; id <= 16; ++id)
             {
-                FieldValue doc = (id % 4) switch
-                {
-                    0 => new MapValue(),
-                    1 => new MapValue { ["key"] = FieldValue.JsonNull },
-                    2 => new MapValue { ["key"] = id % 3 },
-                    _ => FieldValue.Null
-                };
                 await client.PutAsync(Table.Name, new MapValue
                 {
                     ["id"] = id,
-                    ["doc"] = doc,
                     ["ts"] = new TimestampValue(new DateTime(2026, 1, 1,
                         0, 0, 0, DateTimeKind.Utc))
                 });
@@ -57,57 +48,6 @@ namespace Oracle.NoSQL.SDK.Tests
         {
             await DropTableAsync(Table);
             ClassCleanup();
-        }
-
-        [DataTestMethod]
-        [DataRow("ASC NULLS FIRST", true, 1)]
-        [DataRow("ASC NULLS LAST", false, 5)]
-        [DataRow("DESC NULLS FIRST", false, 1)]
-        [DataRow("DESC NULLS LAST", true, 5)]
-        public async Task TestUnionMissingJsonSortKeysAsync(string order,
-            bool prepared, int batchSize)
-        {
-            await CheckUnionSupportedAsync(Table.Name);
-            var control = await ReadRowsAsync(
-                $"SELECT t.id,t.doc.key AS sortKey FROM {Table.Name} t " +
-                $"ORDER BY t.doc.key {order},t.id", true, batchSize);
-            var expected = control.SelectMany(row =>
-                Enumerable.Repeat(row["id"].AsInt32, 3)).ToArray();
-            var branch = $"SELECT id,doc FROM {Table.Name}";
-            var sql = "SELECT $u.id,$u.doc.key AS sortKey FROM (" + branch +
-                " UNION ALL " + branch + " UNION ALL " + branch +
-                $") $u ORDER BY $u.doc.key {order},$u.id";
-            var plan = await client.PrepareAsync(sql);
-            StringAssert.Contains(PlanFormatter.Format(plan.DriverQueryPlan),
-                "UNION");
-            StringAssert.Contains(PlanFormatter.Format(plan.DriverQueryPlan),
-                "SORT");
-
-            var all = await ReadRowsAsync(sql, prepared, batchSize);
-            CollectionAssert.AreEqual(expected,
-                all.Select(row => row["id"].AsInt32).ToArray());
-            // EMPTY is internal; public rows retain the existing SQL NULL
-            // representation of missing JSON properties.
-            foreach (var row in all)
-            {
-                var kind = row["id"].AsInt32 % 4;
-                if (kind == 0 || kind == 3)
-                {
-                    Assert.AreSame(FieldValue.Null, row["sortKey"]);
-                }
-                else if (kind == 1)
-                {
-                    Assert.AreSame(FieldValue.JsonNull, row["sortKey"]);
-                }
-            }
-            foreach (var offset in new[] { 0, 1, 23 })
-            {
-                var page = await ReadRowsAsync(sql +
-                    $" LIMIT 5 OFFSET {offset}", prepared, batchSize);
-                CollectionAssert.AreEqual(expected.Skip(offset).Take(5)
-                    .ToArray(), page.Select(row => row["id"].AsInt32)
-                    .ToArray());
-            }
         }
 
         [DataTestMethod]
@@ -146,10 +86,6 @@ namespace Oracle.NoSQL.SDK.Tests
                     actual[field].AsBoolean, field + " cutoff=" + cutoff);
             }
         }
-
-        private static async Task<List<RecordValue>> ReadRowsAsync(string sql,
-            bool prepared, int batchSize) => await ReadRowsAsync(
-            prepared ? await client.PrepareAsync(sql) : null, sql, batchSize);
 
         private static async Task<List<RecordValue>> ReadRowsAsync(
             PreparedStatement statement, string sql, int batchSize)

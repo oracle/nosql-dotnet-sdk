@@ -338,10 +338,6 @@ namespace Oracle.NoSQL.SDK.Query {
                             $"Query result is not a record value: {row}");
                     }
 
-                    // Internal UNION branches retain EMPTY sort keys until
-                    // all driver operators have consumed them. Normalize only
-                    // the final row before exposing it to the application.
-                    Utils.ConvertEmptyToNull((RecordValue)row);
                     rows.Add(((RecordValue)row).ToObject<TRow>());
                     if (limit.HasValue && rows.Count == limit)
                     {
