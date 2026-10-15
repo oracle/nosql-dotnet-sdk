@@ -213,8 +213,8 @@ namespace Oracle.NoSQL.SDK.Tests
                 Assert.IsNull(runtime.GetConstructionTopology());
                 var header = ReadHeader(client, statement, runtime);
                 Assert.AreEqual(-1, header[NsonProtocol.FieldNames.TopoSeqNum].AsInt32);
-                Assert.IsFalse(header.ContainsKey(
-                    NsonProtocol.FieldNames.StoreTopologySequenceNumbers));
+                Assert.AreEqual(0, header[NsonProtocol.FieldNames
+                    .StoreTopologySequenceNumbers].AsArrayValue.Count);
             }
             // Requests with no captured runtime still use the current cache.
             Assert.AreEqual(42, new QueryRequest<RecordValue>(client,
