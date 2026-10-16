@@ -202,7 +202,8 @@ thus some tests will fail when running against past KV version. To run against
 past CloudSim version, find the corresponding KV version for given CloudSim
 installation (look at the manifest inside *kvstore.jar*).
 
-UNION integration tests require on-premises KV 26.1 or later and an HTTP
+UNION integration tests cover branches within the same store, including
+different namespaces. They require on-premises KV 26.1 or later and an HTTP
 proxy supporting query protocol V6. The shared test guard checks *kvVersion*,
 then prepares an ordinary query to negotiate the proxy's query protocol before
 preparing UNION. An older KV version or a proxy negotiating V3–V5 causes these

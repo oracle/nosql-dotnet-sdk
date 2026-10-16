@@ -26,14 +26,12 @@ namespace Oracle.NoSQL.SDK.Tests
         [DataTestMethod]
         [DataRow(false)]
         [DataRow(true)]
-        public async Task TestUnionKeepsStoreSnapshotsAndVirtualScanRouting(
+        public async Task TestUnionKeepsTopologyAndVirtualScanRouting(
             bool sortedUnion)
         {
             var handler = new QueryResponseHandler();
             using var client = CreateClient(handler);
-            client.SetQueryTopology(new TopologyInfo(4, new[] { 100 }));
-            client.SetQueryTopology(new TopologyInfo(7, new[] { 11, 13 }, "storeOne"));
-            client.SetQueryTopology(new TopologyInfo(9, new[] { 2, 12 }, "storeTwo"));
+            client.SetQueryTopology(new TopologyInfo(4, new[] { 11, 13 }));
             handler.Respond = (payload, requestNumber) =>
             {
                 var response = RowResponse(payload[Fields.ShardId].AsInt32);
@@ -42,10 +40,6 @@ namespace Oracle.NoSQL.SDK.Tests
                     // Later cache updates must not change this UNION's routes
                     // or topology headers, including its new virtual scanner.
                     client.SetQueryTopology(new TopologyInfo(40, new[] { 99 }));
-                    client.SetQueryTopology(new TopologyInfo(70,
-                        new[] { 101 }, "storeOne"));
-                    client.SetQueryTopology(new TopologyInfo(90,
-                        new[] { 102 }, "storeTwo"));
                     response[Fields.VirtualScans] = new ArrayValue
                     {
                         new MapValue
@@ -61,15 +55,15 @@ namespace Oracle.NoSQL.SDK.Tests
             };
 
             var rows = await ReadAll(client, CreateStatement(true, sortedUnion));
-            CollectionAssert.AreEqual(sortedUnion ? new[] { 2, 11, 12, 13, 14 } :
-                new[] { 11, 13, 14, 2, 12 }, rows);
+            CollectionAssert.AreEqual(sortedUnion ? new[] { 11, 11, 13, 13, 14 } :
+                new[] { 11, 13, 14, 11, 13 }, rows);
             var payloads = handler.Requests.Select(request =>
                 request[Fields.Payload].AsMapValue).ToArray();
             CollectionAssert.AreEquivalent(new[]
             {
-                "storeOne:11", "storeOne:13", "storeOne:14", "storeTwo:2", "storeTwo:12"
-            }, payloads.Select(payload => payload[Fields.StoreId].AsString + ":" +
-                payload[Fields.ShardId].AsInt32).ToArray());
+                "1:11", "1:13", "1:14", "2:11", "2:13"
+            }, payloads.Select(payload => payload[Fields.PreparedQuery].AsByteArray[0] +
+                ":" + payload[Fields.ShardId].AsInt32).ToArray());
             var virtualRequest = payloads.Single(payload =>
                 payload.ContainsKey(Fields.VirtualScan));
             Assert.AreEqual(14, virtualRequest[Fields.ShardId].AsInt32);
@@ -79,13 +73,9 @@ namespace Oracle.NoSQL.SDK.Tests
             {
                 var header = request[Fields.Header].AsMapValue;
                 Assert.AreEqual(4, header[Fields.TopoSeqNum].AsInt32);
-                var stores = header[Fields.StoreTopologySequenceNumbers].AsArrayValue
-                    .Select(value => value.AsMapValue).ToDictionary(
-                        value => value[Fields.StoreId].AsString,
-                        value => value[Fields.TopoSeqNum].AsInt32);
-                Assert.AreEqual(2, stores.Count);
-                Assert.AreEqual(7, stores["storeOne"]);
-                Assert.AreEqual(9, stores["storeTwo"]);
+                // Same-store UNION must not advertise per-store support.
+                Assert.IsFalse(header.ContainsKey("sts"));
+                Assert.IsFalse(request[Fields.Payload].AsMapValue.ContainsKey("sid"));
             }
         }
 
@@ -138,37 +128,47 @@ namespace Oracle.NoSQL.SDK.Tests
                     Fields.PreparedQuery].AsByteArray[0]).ToArray());
         }
 
-        [TestMethod]
-        public void TestQueryStoreTopologyPreservesDefaultAndRejectsEmptyShards()
+        [DataTestMethod]
+        [DataRow((short)4)]
+        [DataRow((short)5)]
+        [DataRow((short)6)]
+        public void TestPreparedBranchesUseDefaultTopology(short queryVersion)
         {
             using var client = CreateClient(new QueryResponseHandler());
-            var legacy = new TopologyInfo(4, new[] { 1 });
-            client.SetQueryTopology(legacy);
-            var topology = new MapValue
+            var branchCount = queryVersion >= QueryRequestBase.QueryV6 ? 2 : 1;
+            var branches = new ArrayValue();
+            for (var i = 0; i < branchCount; i++)
             {
-                [Fields.StoreId] = "storeOne",
-                [Fields.ProxyTopoSeqNum] = 7,
-                [Fields.ShardIds] = new ArrayValue { 12, 34 }
-            };
-            void ReadTopology()
-            {
-                using var response = Protocol.GetMemoryStreamWithVisibleBuffer(Encode(new MapValue
+                branches.Add(new MapValue
                 {
-                    [Fields.StoreTopologyInfo] = new ArrayValue { topology }
-                }));
-                new NsonProtocol.RequestSerializer().DeserializeQuery(response,
-                    new QueryRequest<RecordValue>(client, CreateStatement(), null));
+                    // Legacy fields may arrive before the prepared bytes.
+                    [Fields.Namespace] = "namespace" + i,
+                    [Fields.TableName] = "table" + i,
+                    [Fields.PreparedQuery] = new BinaryValue(new[] { (byte)i })
+                });
             }
-            ReadTopology();
-            var cached = client.StoreTopologies.Single();
-            Assert.AreEqual("storeOne", cached.StoreName);
-            Assert.AreEqual(7, cached.SequenceNumber);
-            CollectionAssert.AreEqual(new[] { 12, 34 }, cached.ShardIds.ToArray());
-            Assert.AreSame(legacy, client.QueryTopology);
-            topology[Fields.ShardIds] = new ArrayValue();
-            Assert.ThrowsException<BadProtocolException>(ReadTopology);
-            Assert.AreSame(cached, client.StoreTopologies.Single(),
-                "Invalid topology must not replace the cached shard list");
+            var response = branchCount == 1 ? branches[0].AsMapValue :
+                new MapValue { [Fields.QueryBranches] = branches };
+            response[Fields.TopologyInfo] = new MapValue
+            {
+                [Fields.ProxyTopoSeqNum] = 4,
+                [Fields.ShardIds] = new ArrayValue { 11, 13 }
+            };
+            using var stream = Protocol.GetMemoryStreamWithVisibleBuffer(Encode(response));
+            var statement = new NsonProtocol.RequestSerializer().DeserializePrepare(
+                stream, new PrepareRequest(client, "SELECT * FROM table0", null)
+                {
+                    QueryVersion = queryVersion
+                });
+            Assert.AreEqual(branchCount, statement.QueryBranches.Count);
+            for (var i = 0; i < branchCount; i++)
+            {
+                Assert.AreEqual((byte)i, statement.GetProxyStatement(i)[0]);
+                Assert.AreEqual("namespace" + i, statement.GetNamespace(i));
+                Assert.AreEqual("table" + i, statement.GetTableName(i));
+            }
+            Assert.AreEqual(4, client.QueryTopology.SequenceNumber);
+            CollectionAssert.AreEqual(new[] { 11, 13 }, client.QueryTopology.ShardIds.ToArray());
         }
 
         private static NoSQLClient CreateClient(HttpMessageHandler handler) =>
@@ -204,9 +204,7 @@ namespace Oracle.NoSQL.SDK.Tests
             {
                 statement.AddQueryBranch(new PreparedStatement.QueryBranch
                 {
-                    ProxyStatement = new[] { (byte)(i + 1) },
-                    StoreName = shardReceives ?
-                        (i == 0 ? "storeOne" : "storeTwo") : null
+                    ProxyStatement = new[] { (byte)(i + 1) }
                 });
             }
             return statement;

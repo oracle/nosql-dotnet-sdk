@@ -17,7 +17,6 @@ namespace Oracle.NoSQL.SDK.Query {
     {
         private readonly ReceiveStep step;
         private readonly QueryRequest<RecordValue> queryRequest;
-        private readonly TopologyInfo branchTopology;
         private readonly Duplicates duplicates;
         private readonly SimpleResult simpleResult;
         private readonly SortedSet<PartialResult> partialResults;
@@ -31,7 +30,6 @@ namespace Oracle.NoSQL.SDK.Query {
             base(runtime)
         {
             this.step = step;
-            branchTopology = runtime.GetConstructionTopology();
             queryRequest = new QueryRequest<RecordValue>(runtime.Client,
                 runtime.PreparedStatement,
                 new QueryOptions
@@ -49,7 +47,6 @@ namespace Oracle.NoSQL.SDK.Query {
                 })
             {
                 BaseTopology = runtime.BaseTopology,
-                StoreTopologySnapshot = runtime.StoreTopologies,
                 IsInternal = true
             };
 
@@ -62,7 +59,7 @@ namespace Oracle.NoSQL.SDK.Query {
             {
                 if (step.DistributionKind == DistributionKind.AllShards)
                 {
-                    var topologyInfo = branchTopology;
+                    var topologyInfo = runtime.BaseTopology;
                     
                     if (topologyInfo == null)
                     {
@@ -341,7 +338,7 @@ namespace Oracle.NoSQL.SDK.Query {
         {
             if (currVScanId == -1)
             {
-                var topologyInfo = branchTopology;
+                var topologyInfo = runtime.BaseTopology;
                 Debug.Assert(topologyInfo?.ShardIds?.Count != 0);
                 // ShardIds are sorted.
                 currVScanId = topologyInfo!.ShardIds![^1] + 1;

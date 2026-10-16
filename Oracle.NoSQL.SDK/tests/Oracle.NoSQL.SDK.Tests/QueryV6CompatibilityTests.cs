@@ -15,7 +15,6 @@ namespace Oracle.NoSQL.SDK.Tests
     using Oracle.NoSQL.SDK.Query;
     using BinaryProtocol = Oracle.NoSQL.SDK.BinaryProtocol.Protocol;
     using NsonProtocol = Oracle.NoSQL.SDK.NsonProtocol.Protocol;
-    using Opcode = Oracle.NoSQL.SDK.BinaryProtocol.Opcode;
     using PlanSerializer = Oracle.NoSQL.SDK.Query.BinaryProtocol.PlanSerializer;
 
     [TestClass]
@@ -35,7 +34,6 @@ namespace Oracle.NoSQL.SDK.Tests
                     TableName = "table" + branch
                 });
             }
-            statement.SetQueryBranchStores(new[] { "storeOne", "storeTwo" });
             var request = new QueryRequest<RecordValue>(client, statement,
                 new QueryOptions { Namespace = "requestNamespace" });
             for (var branch = 0; branch < 2; branch++)
@@ -51,12 +49,13 @@ namespace Oracle.NoSQL.SDK.Tests
             Assert.AreEqual("namespace0", request.Namespace);
             statement.Namespace = null;
             Assert.AreEqual("configNamespace", request.Namespace);
-            Assert.AreEqual("storeOne", statement.GetStoreName(0));
-            Assert.AreEqual("storeTwo", statement.GetStoreName(1));
-            Assert.ThrowsException<BadProtocolException>(() =>
-                statement.SetQueryBranchStores(new[] { "onlyOne" }));
             Assert.ThrowsException<BadProtocolException>(() =>
                 statement.GetProxyStatement(2));
+            Assert.ThrowsException<BadProtocolException>(() =>
+                statement.GetProxyStatement(-1));
+            var incomplete = new PreparedStatement { Namespace = "namespace" };
+            Assert.ThrowsException<BadProtocolException>(() =>
+                incomplete.GetProxyStatement(0));
         }
 
         [TestMethod]
@@ -484,48 +483,6 @@ namespace Oracle.NoSQL.SDK.Tests
                 AssertResult(runtime, Aggregate(function,
                     new IntegerValue(3), FieldValue.Null, new IntegerValue(2)), expected);
             }
-        }
-
-        [TestMethod]
-        public void TestMissingTopologyRemainsMissingInSnapshot()
-        {
-            using var client = CreateClient();
-            var statement = new PreparedStatement { DriverQueryPlan = new ReceiveStep() };
-            foreach (var store in new[] { null, "newStore" })
-            {
-                statement.AddQueryBranch(new PreparedStatement.QueryBranch
-                {
-                    ProxyStatement = new byte[] { 1 }, StoreName = store
-                });
-            }
-            var runtime = new QueryRuntime(client, statement);
-            client.SetQueryTopology(new TopologyInfo(42, new[] { 1 }));
-            client.SetQueryTopology(new TopologyInfo(43, new[] { 2 }, "newStore"));
-            for (var branch = 0; branch < 2; branch++)
-            {
-                runtime.ConstructionUnionBranch = branch;
-                Assert.IsNull(runtime.GetConstructionTopology());
-            }
-            var request = new QueryRequest<RecordValue>(client, statement, null)
-            {
-                BaseTopology = runtime.BaseTopology,
-                StoreTopologySnapshot = runtime.StoreTopologies
-            };
-            using var stream = new MemoryStream();
-            var writer = NsonProtocol.GetNsonWriter(stream);
-            writer.StartMap();
-            NsonProtocol.WriteHeader(writer, Opcode.Query, request);
-            writer.EndMap();
-            stream.Position = 0;
-            var reader = NsonProtocol.GetNsonReader(stream);
-            reader.Next();
-            var header = NsonProtocol.ReadFieldValue(reader).AsMapValue[
-                NsonProtocol.FieldNames.Header].AsMapValue;
-            Assert.AreEqual(-1, header[NsonProtocol.FieldNames.TopoSeqNum].AsInt32);
-            Assert.AreEqual(0, header[NsonProtocol.FieldNames
-                .StoreTopologySequenceNumbers].AsArrayValue.Count);
-            Assert.AreEqual(42, new QueryRequest<RecordValue>(client,
-                statement, null).QueryTopologySequenceNumber);
         }
 
         [DataTestMethod]

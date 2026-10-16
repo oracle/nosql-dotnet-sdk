@@ -115,9 +115,6 @@ namespace Oracle.NoSQL.SDK
         internal virtual string Namespace =>
             BaseOptions?.Namespace ?? Config.Namespace;
 
-        internal virtual IReadOnlyList<TopologyInfo> StoreTopologies =>
-            Client.StoreTopologies;
-
         internal int RequestTimeoutMillis { get; set; }
 
         internal TimeSpan Timeout

@@ -105,8 +105,7 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
 
         private static bool ProcessPreparedStatementField(NsonReader reader,
             string field, ref PreparedStatement statement,
-            ref MutableTopologyInfo topologyInfo,
-            ref string[] branchStoreNames, short queryVersion)
+            ref MutableTopologyInfo topologyInfo, short queryVersion)
         {
             switch (field)
             {
@@ -131,20 +130,6 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                     foreach (var branch in branches)
                     {
                         statement.AddQueryBranch(branch);
-                    }
-                    return true;
-                case FieldNames.QueryBranchStores:
-                    branchStoreNames = ReadArray(reader, reader.ReadString);
-                    if (branchStoreNames != null)
-                    {
-                        foreach (var storeName in branchStoreNames)
-                        {
-                            if (string.IsNullOrWhiteSpace(storeName))
-                            {
-                                throw new BadProtocolException(
-                                    "Query: received empty branch store id");
-                            }
-                        }
                     }
                     return true;
                 case FieldNames.TableName:
@@ -180,12 +165,6 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                 default:
                     return false;
             }
-        }
-
-        private static void SetQueryBranchStores(PreparedStatement statement,
-            string[] branchStoreNames)
-        {
-            statement?.SetQueryBranchStores(branchStoreNames);
         }
 
         // Validates the server portion of the prepared statement from the
@@ -436,14 +415,12 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                 SQLText = request.Statement
             };
             MutableTopologyInfo mti = null;
-            string[] branchStoreNames = null;
 
             DeserializeResponse(reader,
                 field => ProcessPreparedStatementField(reader, field,
-                    ref statement, ref mti, ref branchStoreNames,
+                    ref statement, ref mti,
                     request.QueryVersion), request,
                 statement);
-            SetQueryBranchStores(statement, branchStoreNames);
             ValidatePreparedStatement(statement);
             
             // Only for query <= V3.
@@ -507,8 +484,6 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                 writer.WriteByteArray(FieldNames.PreparedQuery,
                     request.PreparedStatement.GetProxyStatement(
                         request.UnionBranch));
-                OptionallyWriteString(writer, FieldNames.StoreId,
-                    request.PreparedStatement.GetStoreName(request.UnionBranch));
 
                 var variables = request.PreparedStatement.variables;
                 if (variables != null)
@@ -574,7 +549,6 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             var result = new QueryResult<TRow>();
             PreparedStatement preparedStatement = null;
             MutableTopologyInfo mti = null;
-            string[] branchStoreNames = null;
 
             DeserializeResponse(reader, field =>
             {
@@ -610,16 +584,9 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                     default:
                         return ProcessPreparedStatementField(reader, field,
                             ref preparedStatement, ref mti,
-                            ref branchStoreNames,
                             request.QueryVersion);
                 }
             }, request, result);
-
-            if (branchStoreNames != null)
-            {
-                SetQueryBranchStores(preparedStatement ??
-                    request.PreparedStatement, branchStoreNames);
-            }
 
             /*
              * If the QueryRequest was not initially prepared, the prepared

@@ -46,17 +46,8 @@ namespace Oracle.NoSQL.SDK.Query
             branches = new Branch[step.BranchSteps.Length];
             for (var i = 0; i < branches.Length; i++)
             {
-                var savedBranch = runtime.ConstructionUnionBranch;
-                runtime.ConstructionUnionBranch = i;
-                try
-                {
-                    branches[i] = new Branch(step.BranchSteps[i]
-                        .CreateAsyncIterator(runtime));
-                }
-                finally
-                {
-                    runtime.ConstructionUnionBranch = savedBranch;
-                }
+                branches[i] = new Branch(step.BranchSteps[i]
+                    .CreateAsyncIterator(runtime));
             }
         }
 

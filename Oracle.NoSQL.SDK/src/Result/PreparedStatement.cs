@@ -14,16 +14,12 @@ namespace Oracle.NoSQL.SDK
 
     internal class TopologyInfo
     {
-        internal string StoreName { get; }
-
         internal int SequenceNumber { get; }
 
         internal IReadOnlyList<int> ShardIds { get; }
 
-        internal TopologyInfo(int sequenceNumber, IReadOnlyList<int> shardIds,
-            string storeName = null)
+        internal TopologyInfo(int sequenceNumber, IReadOnlyList<int> shardIds)
         {
-            StoreName = storeName;
             SequenceNumber = sequenceNumber;
             ShardIds = shardIds;
         }
@@ -318,8 +314,6 @@ namespace Oracle.NoSQL.SDK
             internal string Namespace { get; set; }
 
             internal string TableName { get; set; }
-
-            internal string StoreName { get; set; }
         }
 
         private readonly List<QueryBranch> queryBranches =
@@ -331,7 +325,7 @@ namespace Oracle.NoSQL.SDK
         {
             get => queryBranches.Count == 0 ? null :
                 queryBranches[0].ProxyStatement;
-            set => GetOrCreateQueryBranch(0).ProxyStatement = value;
+            set => GetQueryBranch(0, create: true).ProxyStatement = value;
         }
 
         internal byte[] GetProxyStatement(int branch) =>
@@ -345,27 +339,6 @@ namespace Oracle.NoSQL.SDK
             branch >= 0 && branch < queryBranches.Count ?
                 queryBranches[branch].TableName : null;
 
-        internal string GetStoreName(int branch) =>
-            branch >= 0 && branch < queryBranches.Count ?
-                queryBranches[branch].StoreName : null;
-
-        internal void SetQueryBranchStores(IReadOnlyList<string> storeNames)
-        {
-            if (storeNames == null)
-            {
-                return;
-            }
-            if (storeNames.Count != queryBranches.Count)
-            {
-                throw new BadProtocolException(
-                    "Query: number of branch store names does not match the number of query branches");
-            }
-            for (var i = 0; i < storeNames.Count; i++)
-            {
-                queryBranches[i].StoreName = storeNames[i];
-            }
-        }
-
         internal void AddQueryBranch(QueryBranch branch)
         {
             if (branch == null || branch.ProxyStatement == null)
@@ -377,20 +350,17 @@ namespace Oracle.NoSQL.SDK
             queryBranches.Add(branch);
         }
 
-        private QueryBranch GetOrCreateQueryBranch(int branch)
+        private QueryBranch GetQueryBranch(int branch, bool create = false)
         {
-            while (queryBranches.Count <= branch)
+            // Legacy response fields construct branch zero incrementally.
+            // Execution lookups must never create an incomplete branch.
+            if (create && branch == queryBranches.Count)
             {
                 queryBranches.Add(new QueryBranch());
             }
 
-            return queryBranches[branch];
-        }
-
-        private QueryBranch GetQueryBranch(int branch)
-        {
             if (branch < 0 || branch >= queryBranches.Count ||
-                queryBranches[branch].ProxyStatement == null)
+                !create && queryBranches[branch].ProxyStatement == null)
             {
                 throw new BadProtocolException(
                     $"Query: invalid UNION branch {branch}");
@@ -414,13 +384,13 @@ namespace Oracle.NoSQL.SDK
         internal string Namespace
         {
             get => queryBranches.Count == 0 ? null : queryBranches[0].Namespace;
-            set => GetOrCreateQueryBranch(0).Namespace = value;
+            set => GetQueryBranch(0, create: true).Namespace = value;
         }
 
         internal string TableName
         {
             get => queryBranches.Count == 0 ? null : queryBranches[0].TableName;
-            set => GetOrCreateQueryBranch(0).TableName = value;
+            set => GetQueryBranch(0, create: true).TableName = value;
         }
 
         internal sbyte OperationCode { get; set; }

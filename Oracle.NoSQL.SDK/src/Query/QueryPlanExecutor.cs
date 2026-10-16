@@ -36,14 +36,6 @@ namespace Oracle.NoSQL.SDK.Query {
 
         internal TopologyInfo BaseTopology { get; }
 
-        internal IReadOnlyList<TopologyInfo> StoreTopologies { get; }
-
-        private readonly TopologyInfo[] branchTopologies;
-
-        // Set while UnionIterator constructs a branch. ReceiveIterator uses
-        // this frozen snapshot rather than looking up a mutable client cache.
-        internal int ConstructionUnionBranch { get; set; } = -1;
-
         internal long MaxMemory { get; set; }
 
         // Used only for error reporting
@@ -110,43 +102,8 @@ namespace Oracle.NoSQL.SDK.Query {
                 InitExternalVariables();
             }
 
-            var topologySnapshot = client.GetQueryTopologySnapshot();
-            BaseTopology = topologySnapshot.BaseTopology;
-            StoreTopologies = topologySnapshot.StoreTopologies;
-            if (preparedStatement.QueryBranches.Count > 0)
-            {
-                branchTopologies = new TopologyInfo[
-                    preparedStatement.QueryBranches.Count];
-                for (var i = 0; i < branchTopologies.Length; i++)
-                {
-                    branchTopologies[i] = GetSnapshotTopology(
-                        preparedStatement.GetStoreName(i));
-                }
-            }
+            BaseTopology = client.QueryTopology;
         }
-
-        private TopologyInfo GetSnapshotTopology(string storeName)
-        {
-            if (storeName == null)
-            {
-                return BaseTopology;
-            }
-            foreach (var topology in StoreTopologies)
-            {
-                if (topology.StoreName == storeName)
-                {
-                    return topology;
-                }
-            }
-            return null;
-        }
-
-        // A receive outside UNION still executes prepared branch 0, which may
-        // belong to a named store. An unknown named store stays unknown.
-        internal TopologyInfo GetConstructionTopology() =>
-            branchTopologies == null ? BaseTopology :
-                branchTopologies[ConstructionUnionBranch >= 0 ?
-                    ConstructionUnionBranch : 0];
 
         private void InitExternalVariables()
         {

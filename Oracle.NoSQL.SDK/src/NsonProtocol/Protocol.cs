@@ -61,7 +61,6 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             internal const string QueryName = "qn";
             internal const string QueryVersion = "qv";
             internal const string QueryBranches = "qb";
-            internal const string QueryBranchStores = "qbs";
             internal const string Range = "rg";
             internal const string RangePath = "rp";
             internal const string ReadThrottleCount = "rt";
@@ -80,8 +79,6 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             internal const string TableUsagePeriod = "pd";
             internal const string Timeout = "t";
             internal const string TopoSeqNum = "ts";
-            internal const string StoreId = "sid";
-            internal const string StoreTopologySequenceNumbers = "sts";
             internal const string TraceLevel = "tl";
             internal const string TraceToLogFiles = "tf";
             internal const string TTL = "tt";
@@ -157,7 +154,6 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             internal const string SortPhase1Results = "p1";
             internal const string TableAccessInfo = "ai";
             internal const string TopologyInfo = "tp";
-            internal const string StoreTopologyInfo = "stp";
 
             // replica stats response fields
             internal const string NextStartTime = "ni";

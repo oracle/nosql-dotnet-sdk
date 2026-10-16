@@ -8,7 +8,6 @@
 namespace Oracle.NoSQL.SDK
 {
     using System;
-    using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
     using System.Threading;
@@ -67,17 +66,7 @@ namespace Oracle.NoSQL.SDK
 
         internal int ShardId { get; set; } = -1;
 
-        // Captured default topology for the legacy sequence in the request
-        // header. ReceiveIterator keeps its selected store topology separately
-        // for shard enumeration and virtual scans.
         internal TopologyInfo BaseTopology { get; set; }
-
-        // Advanced query execution captures topology snapshots when its
-        // runtime is created. Internal fetches must advertise that same view.
-        internal IReadOnlyList<TopologyInfo> StoreTopologySnapshot { get; set; }
-
-        internal override IReadOnlyList<TopologyInfo> StoreTopologies =>
-            StoreTopologySnapshot ?? base.StoreTopologies;
 
         internal VirtualScan VirtualScan { get; set; }
 
@@ -140,11 +129,7 @@ namespace Oracle.NoSQL.SDK
             Options?.ContinuationKey;
 
         internal override int QueryTopologySequenceNumber =>
-            // A captured but unknown topology must remain -1 even if another
-            // request subsequently populates the client's live cache.
-            StoreTopologySnapshot != null
-                ? BaseTopology?.SequenceNumber ?? -1
-                : BaseTopology?.SequenceNumber ?? base.QueryTopologySequenceNumber;
+            BaseTopology?.SequenceNumber ?? base.QueryTopologySequenceNumber;
 
         internal string LastWriteMetadata => Options?.LastWriteMetadata;
 
