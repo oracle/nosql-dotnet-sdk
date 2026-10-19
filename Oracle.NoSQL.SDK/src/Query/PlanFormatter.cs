@@ -9,7 +9,7 @@ namespace Oracle.NoSQL.SDK.Query
 {
     using System.Text;
 
-    // Produces the Java-compatible driver-plan text used by ALL-profile query
+    // Produces the driver-plan text used by ALL-profile query
     // statistics. The plan is already present in PreparedStatement, so
     // formatting it does not add a service request or alter query execution.
     internal static class PlanFormatter
@@ -29,7 +29,7 @@ namespace Oracle.NoSQL.SDK.Query
         private static void AppendStep(StringBuilder builder, PlanStep step,
             int indent)
         {
-            // Java renders variable references as single-line iterators rather
+            // Render variable references as single-line iterators rather
             // than using the standard name/[content] block.
             if (step is VarRefStep variable)
             {
@@ -42,8 +42,8 @@ namespace Oracle.NoSQL.SDK.Query
             if (step is ExtVarRefStep external)
             {
                 Indent(builder, indent);
-                // EXTENAL is intentionally spelled as in Java's driver-plan
-                // format, which is the compatibility contract for this text.
+                // Preserve the established EXTENAL spelling in the driver-plan
+                // format for compatibility.
                 builder.Append("EXTENAL_VAR_REF(").Append(external.VarName)
                     .Append(", ").Append(external.VarPosition).Append(")([")
                     .Append(step.ResultPosition).Append("])");
@@ -89,8 +89,8 @@ namespace Oracle.NoSQL.SDK.Query
                 return GetQueryFunctionName(sequenceAggregate.FuncCode);
             }
 
-            // Java names this iterator FN_COLLECT and emits distinctness in
-            // its content instead of encoding it in the iterator name.
+            // FN_COLLECT includes distinctness in its content instead of
+            // encoding it in the iterator name.
             return step is FuncCollectStep ? "FN_COLLECT" : step.Name;
         }
 

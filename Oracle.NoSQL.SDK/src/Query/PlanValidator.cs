@@ -265,8 +265,8 @@ namespace Oracle.NoSQL.SDK.Query
             ArrayConstructorStep step)
         {
             ValidateBase(step);
-            // Java permits ARRAY_CONSTRUCTOR with no arguments, which is the
-            // driver representation of an empty array literal.
+            // ARRAY_CONSTRUCTOR with no arguments represents an empty array
+            // literal.
             CheckNotNull(step.ArgSteps, "argument steps", step);
             for (var i = 0; i < step.ArgSteps.Length; i++)
             {

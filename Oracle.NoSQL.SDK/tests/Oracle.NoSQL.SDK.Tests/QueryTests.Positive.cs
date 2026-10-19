@@ -552,6 +552,34 @@ namespace Oracle.NoSQL.SDK.Tests
                 : Fixture.Rows.Select(row => row["pkString"].AsString).ToArray();
             CollectionAssert.AreEquivalent(expected,
                 rows.Select(row => row["pkString"].AsString).ToArray());
+            if (sorted)
+            {
+                CollectionAssert.AreEqual(rows.OrderBy(row => row["shardId"].AsInt32)
+                    .ThenBy(row => row["pkString"].AsString, StringComparer.Ordinal)
+                    .ToArray(), rows.ToArray());
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task TestUnionAllSqlLimitOffsetAsync(bool sorted)
+        {
+            await CheckUnionSupportedAsync(Fixture.Table.Name);
+            // A single primary-key row per branch makes the sequential slice
+            // deterministic without relying on an unordered table scan.
+            var row = Fixture.Rows.First();
+            var predicate = "shardId = " + row["shardId"].ToJsonString() +
+                " AND pkString = " + row["pkString"].ToJsonString();
+            var union = string.Join(" UNION ALL ", new[] { 30, 10, 20, 40 }
+                .Select(id => $"SELECT {id} AS id FROM {Fixture.Table.Name} WHERE {predicate}"));
+            var sql = "SELECT $u.id FROM (" + union + ") $u" +
+                (sorted ? " ORDER BY $u.id" : "") + " LIMIT 2 OFFSET 1";
+            var statement = await client.PrepareAsync(sql);
+            Assert.AreEqual(4, statement.QueryBranches.Count);
+            var rows = await ReadUnionRowsAsync(statement, 2);
+            CollectionAssert.AreEqual(sorted ? new[] { 20, 30 } : new[] { 10, 20 },
+                rows.Select(value => value["id"].AsInt32).ToArray());
         }
 
         private static async Task<List<RecordValue>> ReadUnionRowsAsync(

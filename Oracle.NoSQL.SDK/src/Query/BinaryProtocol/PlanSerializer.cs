@@ -68,7 +68,7 @@ namespace Oracle.NoSQL.SDK.Query.BinaryProtocol
 
             var specCount = specs?.Length ?? 0;
             var isUnion = parent is UnionStep;
-            // Java UNION uses the sort-key array to select its execution
+            // UNION uses the sort-key array to select its execution
             // mode. Grouped UNION plans can carry extra attributes (one per
             // branch), including when there are zero grouping keys. Consume
             // all attributes but use only those corresponding to actual keys.
@@ -309,7 +309,7 @@ namespace Oracle.NoSQL.SDK.Query.BinaryProtocol
             step.RemoveResult = ReadBoolean(stream);
             step.CountMemory = ReadBoolean(stream);
             // Before V6 the regrouping flag was not sent. Preserve the
-            // existing C# behavior for those proxy partial array results.
+            // existing behavior for those proxy partial array results.
             step.IsRegrouping = queryVersion < QueryRequestBase.QueryV6 ||
                 ReadBoolean(stream);
             ValidateGroupStep(step);

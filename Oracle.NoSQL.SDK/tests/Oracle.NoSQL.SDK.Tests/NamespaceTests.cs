@@ -2,6 +2,7 @@ namespace Oracle.NoSQL.SDK.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using static TestTables;
@@ -184,10 +185,14 @@ namespace Oracle.NoSQL.SDK.Tests
             try
             {
                 await CreateTableAsync(secondTable);
-                await PutRowAsync(Fixture.Table, GoodRow);
+                // Exercise the shared-table state left by TestQueryAsync.
+                await PutRowsAsync(Fixture.Table, Fixture.Rows);
                 await PutRowAsync(secondTable, GoodRow);
+                // Other namespace tests may have populated this shared table.
+                var predicate = string.Join(" AND ", Fixture.Table.PrimaryKey
+                    .Select(key => key + " = " + GoodRow[key].ToJsonString()));
                 var statement = await invalidNsClient.PrepareAsync(
-                    $"SELECT 1 AS branch FROM {FullTableName} UNION ALL " +
+                    $"SELECT 1 AS branch FROM {FullTableName} WHERE {predicate} UNION ALL " +
                     $"SELECT 2 AS branch FROM {secondTable.Name}");
                 Assert.AreEqual(NamespaceName, statement.GetNamespace(0));
                 Assert.AreEqual(secondNamespace, statement.GetNamespace(1));

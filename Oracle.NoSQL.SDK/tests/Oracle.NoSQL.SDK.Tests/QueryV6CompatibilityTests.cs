@@ -95,12 +95,22 @@ namespace Oracle.NoSQL.SDK.Tests
                     new VirtualScan.TableResumeInfo
                     {
                         CurrentIndexRange = 3, PrimaryKey = new byte[] { 11 },
-                        MoveAfterResumeKey = true
+                        MoveAfterResumeKey = true,
+                        SecondaryKey = new byte[] { 12 },
+                        JoinDescendantResumeKey = new byte[] { 13 },
+                        JoinPathTableIds = new[] { 14, 15 },
+                        JoinPathPrimaryKey = new byte[] { 16 },
+                        JoinPathSecondaryKey = new byte[] { 17 }
                     },
                     new VirtualScan.TableResumeInfo
                     {
                         CurrentIndexRange = 5, PrimaryKey = new byte[] { 22 },
-                        JoinPathMatched = true
+                        JoinPathMatched = true,
+                        SecondaryKey = new byte[] { 23 },
+                        JoinDescendantResumeKey = new byte[] { 24 },
+                        JoinPathTableIds = new[] { 25, 26 },
+                        JoinPathPrimaryKey = new byte[] { 27 },
+                        JoinPathSecondaryKey = new byte[] { 28 }
                     }
                 }
             };
@@ -115,8 +125,8 @@ namespace Oracle.NoSQL.SDK.Tests
             var reader = NsonProtocol.GetNsonReader(encoded);
             reader.Next();
 
-            // A resume map contains repeated field names and typed null binaries.
-            var fields = new List<(string Name, DbType Type, FieldValue Value)>();
+            // Preserve repeated resume field names for the separate table entries.
+            var fields = new List<(string Name, FieldValue Value)>();
             NsonProtocol.ReadMap(reader, field =>
             {
                 if (field != NsonProtocol.FieldNames.Payload)
@@ -131,8 +141,7 @@ namespace Oracle.NoSQL.SDK.Tests
                     }
                     NsonProtocol.ReadMap(reader, resumeField =>
                     {
-                        fields.Add((resumeField, reader.NsonType,
-                            NsonProtocol.ReadFieldValue(reader)));
+                        fields.Add((resumeField, NsonProtocol.ReadFieldValue(reader)));
                         return true;
                     });
                     return true;
@@ -154,20 +163,40 @@ namespace Oracle.NoSQL.SDK.Tests
             using var response = new MemoryStream();
             var writer = NsonProtocol.GetNsonWriter(response);
             writer.StartMap();
-            writer.StartArray(NsonProtocol.FieldNames.VirtualScans);
+            writer.StartArray("vssa");
             writer.StartMap();
-            foreach (var field in fields)
+            // Specify the response independently of the request serializer.
+            writer.WriteInt32("vssid", 7);
+            writer.WriteInt32("vspid", 9);
+            if (queryVersion >= 5) writer.WriteInt32("vsnt", expectedTables);
+            var names = new[] { "vscir", "vspk", "vssk", "vsma", "vsjdrk",
+                "vsjpt", "vsjpk", "vsjpsk", "vsjpm" };
+            var expectedNames = new List<string> { "vssid", "vspid" };
+            if (queryVersion >= 5) expectedNames.Add("vsnt");
+            for (var i = 0; i < expectedTables; i++)
             {
-                writer.WriteFieldName(field.Name);
-                if (field.Type == DbType.Binary && field.Value == FieldValue.Null)
+                var key = (byte)(11 * (i + 1));
+                FieldValue[] values =
                 {
-                    writer.WriteByteArray(null);
-                }
-                else
+                    new IntegerValue(3 + 2 * i), new BinaryValue(new[] { key }),
+                    new BinaryValue(new[] { (byte)(key + 1) }),
+                    i == 0 ? BooleanValue.True : BooleanValue.False,
+                    new BinaryValue(new[] { (byte)(key + 2) }),
+                    new ArrayValue { key + 3, key + 4 },
+                    new BinaryValue(new[] { (byte)(key + 5) }),
+                    new BinaryValue(new[] { (byte)(key + 6) }),
+                    i == 1 ? BooleanValue.True : BooleanValue.False
+                };
+                for (var j = 0; j < names.Length; j++)
                 {
-                    NsonProtocol.WriteFieldValue(writer, field.Value);
+                    writer.WriteFieldName(names[j]);
+                    NsonProtocol.WriteFieldValue(writer, values[j]);
+                    var emitted = fields.Where(field => field.Name == names[j]).ElementAt(i);
+                    Assert.AreEqual(values[j], emitted.Value, names[j]);
+                    expectedNames.Add(names[j]);
                 }
             }
+            CollectionAssert.AreEqual(expectedNames, fields.Select(field => field.Name).ToArray());
             writer.EndMap();
             writer.EndArray();
             writer.EndMap();
@@ -189,9 +218,24 @@ namespace Oracle.NoSQL.SDK.Tests
                     actual.PrimaryKey);
                 Assert.AreEqual(expected.MoveAfterResumeKey,
                     actual.MoveAfterResumeKey);
-                Assert.AreEqual(expected.JoinPathMatched,
-                    actual.JoinPathMatched);
+                Assert.AreEqual(expected.JoinPathMatched, actual.JoinPathMatched);
+                CollectionAssert.AreEqual(expected.SecondaryKey, actual.SecondaryKey);
+                CollectionAssert.AreEqual(expected.JoinDescendantResumeKey, actual.JoinDescendantResumeKey);
+                CollectionAssert.AreEqual(expected.JoinPathTableIds, actual.JoinPathTableIds);
+                CollectionAssert.AreEqual(expected.JoinPathPrimaryKey, actual.JoinPathPrimaryKey);
+                CollectionAssert.AreEqual(expected.JoinPathSecondaryKey, actual.JoinPathSecondaryKey);
             }
+            scan.IsInfoSent = true;
+            using var continuation = new MemoryStream();
+            serializer.SerializeQuery(continuation, request);
+            continuation.Position = 0;
+            reader = NsonProtocol.GetNsonReader(continuation);
+            reader.Next();
+            var resumed = NsonProtocol.ReadFieldValue(reader).AsMapValue["p"]
+                .AsMapValue["vs"].AsMapValue;
+            CollectionAssert.AreEquivalent(new[] { "vssid", "vspid" }, resumed.Keys.ToArray());
+            Assert.AreEqual(7, resumed["vssid"].AsInt32);
+            Assert.AreEqual(9, resumed["vspid"].AsInt32);
         }
 
         [TestMethod]
@@ -209,12 +253,13 @@ namespace Oracle.NoSQL.SDK.Tests
             var regrouped = new CollectAggregator(false, true);
             var partial = new ArrayValue
             {
-                new StringValue("one"), new StringValue("two")
+                new StringValue("one"), new StringValue("longer value")
             };
-            regrouped.Aggregate(partial);
+            Assert.AreEqual(partial.Sum(value => SizeOf.GetListEntrySize(value.GetMemorySize())),
+                regrouped.Aggregate(partial, true));
             Assert.AreEqual(2, regrouped.Result.AsArrayValue.Count);
             Assert.AreEqual("one", regrouped.Result.AsArrayValue[0].AsString);
-            Assert.AreEqual("two", regrouped.Result.AsArrayValue[1].AsString);
+            Assert.AreEqual("longer value", regrouped.Result.AsArrayValue[1].AsString);
 
             var distinct = new CollectDistinctAggregator(false, false);
             distinct.Aggregate(new ArrayValue
@@ -222,18 +267,32 @@ namespace Oracle.NoSQL.SDK.Tests
                 new IntegerValue(1), new IntegerValue(2),
                 new IntegerValue(1)
             });
+            var countedDistinct = new CollectDistinctAggregator(false, true);
+            Assert.AreEqual(partial.Sum(value => SizeOf.GetHashSetEntrySize(value.GetMemorySize())),
+                countedDistinct.Aggregate(partial, true));
             Assert.AreEqual(2, distinct.Result.AsArrayValue.Count);
             Assert.AreEqual(1, distinct.Result.AsArrayValue[0].AsInt32);
             Assert.AreEqual(2, distinct.Result.AsArrayValue[1].AsInt32);
         }
 
         [DataTestMethod]
-        [DataRow((short)5, true)]
-        [DataRow((short)6, false)]
-        [DataRow((short)6, true)]
-        public void TestGroupRegroupingWireFlag(short version, bool regrouping)
+        [DataRow((short)3, true, false)]
+        [DataRow((short)4, true, false)]
+        [DataRow((short)5, true, false)]
+        [DataRow((short)6, false, false)]
+        [DataRow((short)6, true, false)]
+        [DataRow((short)6, false, true)]
+        [DataRow((short)6, true, true)]
+        public void TestGroupRegroupingWireFlag(short version, bool regrouping,
+            bool nested)
         {
             using var stream = new MemoryStream();
+            if (nested)
+            {
+                BinaryProtocol.WriteByte(stream, 90); // UNION
+                WriteBase(stream);
+                BinaryProtocol.WritePackedInt32(stream, 2);
+            }
             BinaryProtocol.WriteByte(stream, 65); // GROUP
             WriteBase(stream);
             WriteIntegerConstStep(stream);
@@ -248,61 +307,134 @@ namespace Oracle.NoSQL.SDK.Tests
             {
                 BinaryProtocol.WriteBoolean(stream, regrouping);
             }
+            if (nested)
+            {
+                WriteReceiveStep(stream);
+                WriteSortInfo(stream, -1, -1);
+            }
+            stream.SetLength(stream.Position);
             stream.Position = 0;
-            var step = (GroupStep)PlanSerializer.DeserializeStep(stream, version);
+            var decoded = PlanSerializer.DeserializeStep(stream, version);
+            var step = (GroupStep)(nested ? ((UnionStep)decoded).BranchSteps[0] : decoded);
             Assert.AreEqual(regrouping, step.IsRegrouping);
+            Assert.AreEqual(SQLFuncCode.ArrayCollect, step.AggregateFuncCodes[0]);
+            Assert.AreEqual(stream.Length, stream.Position);
         }
 
-        [TestMethod]
-        public void TestV6DriverOperatorDeserialization()
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public void TestV6DriverOperatorDeserialization(bool alternate)
         {
-            Assert.IsInstanceOfType(DeserializeV6Step(3, stream =>
+            using var client = CreateClient();
+            var runtime = CreateRuntime(client);
+            var array = (ArrayConstructorStep)DeserializeV6Step(3, stream =>
             {
-                BinaryProtocol.WriteBoolean(stream, false);
-                WriteStepArray(stream, 1, WriteIntegerConstStep);
-            }), typeof(ArrayConstructorStep));
-
-            Assert.IsInstanceOfType(DeserializeV6Step(3, stream =>
+                BinaryProtocol.WriteBoolean(stream, alternate);
+                BinaryProtocol.WritePackedInt32(stream, alternate ? 1 : 2);
+                WriteConstantStep(stream, 7, 1);
+                if (!alternate) WriteConstantStep(stream, 11, 2);
+            });
+            Assert.AreEqual(alternate, array.IsConditional);
+            Assert.AreEqual(0, array.ResultPosition);
+            AssertConstant(array.ArgSteps[0], 7, 1);
+            Assert.AreEqual(alternate ? 1 : 2, array.ArgSteps.Length);
+            if (!alternate) AssertConstant(array.ArgSteps[1], 11, 2);
+            AssertResult(runtime, array, alternate ? (FieldValue)new IntegerValue(7) : new ArrayValue { 7, 11 });
+            var empty = (ArrayConstructorStep)DeserializeV6Step(3, stream =>
             {
                 BinaryProtocol.WriteBoolean(stream, false);
                 WriteStepArray(stream, 0, WriteIntegerConstStep);
-            }), typeof(ArrayConstructorStep));
+            });
+            Assert.IsFalse(empty.IsConditional);
+            Assert.AreEqual(0, empty.ArgSteps.Length);
 
-            Assert.IsInstanceOfType(DeserializeV6Step(5, stream =>
+            var compare = (ValueCompareStep)DeserializeV6Step(5, stream =>
             {
-                BinaryProtocol.WriteUnpackedInt16(stream,
-                    (short)QueryFuncCode.Equal);
-                WriteIntegerConstStep(stream);
-                WriteIntegerConstStep(stream);
-            }), typeof(ValueCompareStep));
+                BinaryProtocol.WriteUnpackedInt16(stream, (short)QueryFuncCode.LessThan);
+                WriteConstantStep(stream, 7, 1);
+                WriteConstantStep(stream, 11, 2);
+            });
+            Assert.AreEqual(QueryFuncCode.LessThan, compare.FuncCode);
+            AssertConstant(compare.LeftStep, 7, 1);
+            AssertConstant(compare.RightStep, 11, 2);
+            AssertResult(runtime, compare, BooleanValue.True);
 
-            Assert.IsInstanceOfType(DeserializeV6Step(7, stream =>
+            var logicalCode = alternate ? QueryFuncCode.Or : QueryFuncCode.And;
+            var logical = (AndOrStep)DeserializeV6Step(7, stream =>
             {
-                BinaryProtocol.WriteUnpackedInt16(stream,
-                    (short)QueryFuncCode.And);
-                WriteStepArray(stream, 1, WriteBooleanConstStep);
-            }), typeof(AndOrStep));
+                BinaryProtocol.WriteUnpackedInt16(stream, (short)logicalCode);
+                BinaryProtocol.WritePackedInt32(stream, 2);
+                WriteConstantStep(stream, BooleanValue.False, 1);
+                WriteConstantStep(stream, BooleanValue.True, 2);
+            });
+            Assert.AreEqual(logicalCode, logical.FuncCode);
+            AssertConstant(logical.ArgSteps[0], BooleanValue.False, 1);
+            AssertConstant(logical.ArgSteps[1], BooleanValue.True, 2);
+            AssertResult(runtime, logical, alternate ? BooleanValue.True : BooleanValue.False);
 
-            Assert.IsInstanceOfType(DeserializeV6Step(19, stream =>
+            var conditional = (CaseStep)DeserializeV6Step(19, stream =>
             {
-                WriteStepArray(stream, 1, WriteBooleanConstStep);
-                WriteStepArray(stream, 1, WriteIntegerConstStep);
-                WriteIntegerConstStep(stream);
-            }), typeof(CaseStep));
+                BinaryProtocol.WritePackedInt32(stream, 1);
+                WriteConstantStep(stream, BooleanValue.False, 1);
+                BinaryProtocol.WritePackedInt32(stream, 1);
+                WriteConstantStep(stream, 7, 2);
+                if (alternate) BinaryProtocol.WriteByte(stream, 255); // No ELSE
+                else WriteConstantStep(stream, 11, 3);
+            });
+            AssertConstant(conditional.ConditionSteps.Single(), BooleanValue.False, 1);
+            AssertConstant(conditional.ThenSteps.Single(), 7, 2);
+            if (alternate) Assert.IsNull(conditional.ElseStep);
+            else AssertConstant(conditional.ElseStep, 11, 3);
+            AssertResult(runtime, conditional, alternate ? null : new IntegerValue(11));
 
-            Assert.IsInstanceOfType(DeserializeV6Step(26, stream =>
+            var nullCode = alternate ? QueryFuncCode.IsNotNull : QueryFuncCode.IsNull;
+            var nullCheck = (IsNullStep)DeserializeV6Step(26, stream =>
             {
-                BinaryProtocol.WriteUnpackedInt16(stream,
-                    (short)QueryFuncCode.IsNull);
-                WriteIntegerConstStep(stream);
-            }), typeof(IsNullStep));
+                BinaryProtocol.WriteUnpackedInt16(stream, (short)nullCode);
+                WriteConstantStep(stream, FieldValue.Null, 1);
+            });
+            Assert.AreEqual(nullCode, nullCheck.FuncCode);
+            AssertConstant(nullCheck.InputStep, FieldValue.Null, 1);
+            AssertResult(runtime, nullCheck, alternate ? BooleanValue.False : BooleanValue.True);
 
-            Assert.IsInstanceOfType(DeserializeV6Step(48, stream =>
+            var sum = (SeqAggregateStep)DeserializeV6Step(48, stream =>
             {
-                BinaryProtocol.WriteUnpackedInt16(stream,
-                    (short)QueryFuncCode.SeqSum);
-                WriteIntegerConstStep(stream);
-            }), typeof(SeqAggregateStep));
+                BinaryProtocol.WriteUnpackedInt16(stream, (short)QueryFuncCode.SeqSum);
+                WriteConstantStep(stream, 7, 1);
+            });
+            Assert.AreEqual(QueryFuncCode.SeqSum, sum.FuncCode);
+            AssertConstant(sum.InputStep, 7, 1);
+            AssertResult(runtime, sum, new LongValue(7));
+        }
+
+        [DataTestMethod]
+        [DataRow("aggregate")]
+        [DataRow("null")]
+        [DataRow("empty")]
+        public void TestArithmeticExhaustionAndReset(string operand)
+        {
+            using var client = CreateClient();
+            PlanStep input = operand == "aggregate"
+                ? new FuncSumStep { InputStep = Constant(1, new IntegerValue(7)) }
+                : operand == "null" ? Constant(1, FieldValue.Null)
+                : new FieldStep { ResultPosition = 1, FieldName = "missing",
+                    InputStep = Constant(2, new MapValue()) };
+            var iterator = new ArithmeticOpStep
+            {
+                ResultPosition = 0, Opcode = ArithmeticOpcode.AddSubtract,
+                OpSequence = "++", ArgSteps = new[] { input, Constant(3, new IntegerValue(11)) }
+            }.CreateSyncIterator(CreateRuntime(client));
+            for (var repeat = 0; repeat < 2; repeat++)
+            {
+                Assert.AreEqual(operand != "empty", iterator.Next());
+                if (operand != "empty")
+                    Assert.AreEqual(operand == "null" ? FieldValue.Null : new IntegerValue(18),
+                        iterator.Result);
+                Assert.IsFalse(iterator.Next());
+                Assert.IsFalse(iterator.Next());
+                iterator.Reset(true);
+            }
         }
 
         [DataTestMethod]
@@ -657,6 +789,21 @@ namespace Oracle.NoSQL.SDK.Tests
             }
         }
 
+        private static void AssertConstant(PlanStep step, FieldValue value, int register)
+        {
+            Assert.IsInstanceOfType(step, typeof(ConstStep));
+            Assert.AreEqual(register, step.ResultPosition);
+            Assert.AreEqual(value, ((ConstStep)step).Value);
+        }
+
+        private static void WriteConstantStep(MemoryStream stream, FieldValue value,
+            int register)
+        {
+            BinaryProtocol.WriteByte(stream, 0);
+            WriteBase(stream, register);
+            BinaryProtocol.WriteFieldValue(stream, value);
+        }
+
         private static void WriteIntegerConstStep(MemoryStream stream)
         {
             BinaryProtocol.WriteByte(stream, 0);
@@ -664,16 +811,9 @@ namespace Oracle.NoSQL.SDK.Tests
             BinaryProtocol.WriteFieldValue(stream, new IntegerValue(1));
         }
 
-        private static void WriteBooleanConstStep(MemoryStream stream)
+        private static void WriteBase(MemoryStream stream, int register = 0)
         {
-            BinaryProtocol.WriteByte(stream, 0);
-            WriteBase(stream);
-            BinaryProtocol.WriteFieldValue(stream, BooleanValue.True);
-        }
-
-        private static void WriteBase(MemoryStream stream)
-        {
-            BinaryProtocol.WriteUnpackedInt32(stream, 0);
+            BinaryProtocol.WriteUnpackedInt32(stream, register);
             BinaryProtocol.WriteUnpackedInt32(stream, 0);
             for (var i = 0; i < 4; i++)
             {

@@ -129,6 +129,101 @@ namespace Oracle.NoSQL.SDK.Tests
         }
 
         [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task TestRetryUnionAfterBufferedRows(bool sorted)
+        {
+            var firstBranchFetches = 0;
+            var handler = new QueryResponseHandler
+            {
+                Respond = (payload, _) =>
+                {
+                    var branch = payload[Fields.PreparedQuery].AsByteArray[0];
+                    var shard = payload[Fields.ShardId].AsInt32;
+                    if (branch == 1 && shard == 11 && ++firstBranchFetches == 2)
+                        throw new HttpRequestException("Failure after buffered row 2");
+                    var ids = branch == 2 ? new[] { shard == 11 ? 3 : 4 } :
+                        shard == 13 ? new[] { 9 } :
+                        firstBranchFetches == 1 ? new[] { 1, 2 } : new[] { 5 };
+                    if (payload.TryGetValue(Fields.NumberLimit, out var limit))
+                        Assert.IsTrue(limit.AsInt32 == 0 || ids.Length <= limit.AsInt32);
+                    var response = new MapValue
+                    {
+                        [Fields.QueryResults] = new ArrayValue(ids.Select(id =>
+                            (FieldValue)new MapValue { ["id"] = id }))
+                    };
+                    if (branch == 1 && shard == 11 && firstBranchFetches == 1)
+                    {
+                        response[Fields.ContinuationKey] = new BinaryValue(new byte[] { 1 });
+                        response[Fields.ReachedLimit] = true;
+                    }
+                    return response;
+                }
+            };
+            using var client = CreateClient(handler);
+            client.SetQueryTopology(new TopologyInfo(4, new[] { 11, 13 }));
+            var statement = CreateStatement(shardReceives: true, sortedUnion: sorted);
+            QueryResult<RecordValue> first;
+            // The first fetch buffers two rows while other shards are pending.
+            // Later calls use Limit=1 to leave a row buffered before the failure.
+            var options = new QueryOptions { Limit = 2 };
+            var calls = 0;
+            do
+            {
+                Assert.IsTrue(++calls <= 5);
+                first = await client.QueryAsync(statement, options);
+                options.ContinuationKey = first.ContinuationKey;
+                options.Limit = 1;
+            } while (first.Rows.Count == 0 && first.ContinuationKey != null);
+            CollectionAssert.AreEqual(new[] { 1 }, first.Rows.Select(row => row["id"].AsInt32).ToArray());
+            Assert.IsNotNull(first.ContinuationKey);
+            var resume = new QueryOptions { ContinuationKey = first.ContinuationKey };
+            await Assert.ThrowsExceptionAsync<HttpRequestException>(() => client.QueryAsync(statement, resume));
+            Assert.AreEqual(2, firstBranchFetches);
+            var requestsAtFailure = handler.Requests.Count;
+            var retry = await client.QueryAsync(statement, resume);
+            CollectionAssert.AreEqual(new[] { 2 }, retry.Rows.Select(row => row["id"].AsInt32).ToArray());
+            Assert.IsNotNull(retry.ContinuationKey);
+            Assert.AreEqual(requestsAtFailure, handler.Requests.Count,
+                "Returning buffered rows must not fetch or replay them.");
+            var rest = await ReadAll(client, statement, retry.ContinuationKey, null, 8);
+            CollectionAssert.AreEqual(sorted ? new[] { 3, 4, 5, 9 } : new[] { 5, 9, 3, 4 }, rest);
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task TestQueryVersionFallbackThroughRequests(bool rejectAll)
+        {
+            var handler = new QueryResponseHandler
+            {
+                Respond = (payload, number) =>
+                {
+                    Assert.IsTrue(number <= 4, "Protocol fallback did not terminate");
+                    return rejectAll || payload[Fields.QueryVersion].AsInt32 > 4
+                        ? new MapValue { ["e"] = 27, ["x"] = "Unsupported query version" }
+                        : new MapValue { [Fields.PreparedQuery] = new BinaryValue(new byte[] { 1 }),
+                            [Fields.TableName] = "T" };
+                }
+            };
+            using var client = CreateClient(handler);
+            if (rejectAll)
+            {
+                var error = await Assert.ThrowsExceptionAsync<UnsupportedQueryVersionException>(
+                    () => client.PrepareAsync("SELECT * FROM T"));
+                StringAssert.Contains(error.Message, "version 3");
+            }
+            else
+            {
+                var statement = await client.PrepareAsync("SELECT * FROM T");
+                CollectionAssert.AreEqual(new byte[] { 1 }, statement.ProxyStatement);
+            }
+            CollectionAssert.AreEqual(rejectAll ? new[] { 6, 5, 4, 3 } : new[] { 6, 5, 4 },
+                handler.Requests.Select(request => request[Fields.Payload].AsMapValue[
+                    Fields.QueryVersion].AsInt32).ToArray());
+        }
+
+        [DataTestMethod]
         [DataRow((short)4)]
         [DataRow((short)5)]
         [DataRow((short)6)]

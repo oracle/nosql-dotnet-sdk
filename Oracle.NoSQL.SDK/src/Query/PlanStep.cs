@@ -35,7 +35,7 @@ namespace Oracle.NoSQL.SDK.Query
     }
 
     // Function codes used by driver-side expression iterators in V6 plans.
-    // Keep these numeric values aligned with Java's FuncCode enum.
+    // These numeric function codes must match the server query plan.
     internal enum QueryFuncCode
     {
         And = 0,

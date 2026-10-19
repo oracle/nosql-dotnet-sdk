@@ -259,7 +259,7 @@ namespace Oracle.NoSQL.SDK.Query
 
         // The proxy always sends array_collect_distinct partial results as
         // arrays. Unlike ordinary array_collect, this is independent of the
-        // regrouping flag (matching GroupIter in the Java driver).
+        // regrouping flag.
         internal override long Aggregate(FieldValue value, bool countMemory)
         {
             if (value == FieldValue.Null || value == FieldValue.Empty)
