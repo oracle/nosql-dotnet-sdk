@@ -475,6 +475,187 @@ namespace Oracle.NoSQL.SDK.Tests
             } while (options.ContinuationKey != null);
         }
 
+        [TestMethod]
+        public async Task TestUnionAllTimestampCaseExpressionAsync()
+        {
+            await CheckUnionSupportedAsync(Fixture.Table.Name);
+            const string earlier = "CAST('2026-01-01T00:00:00Z' AS TIMESTAMP(7))";
+            const string later = "CAST('2026-01-01T00:00:00.1Z' AS TIMESTAMP(7))";
+            var first = $"SELECT {earlier} AS ts FROM {Fixture.Table.Name}";
+            var second = $"SELECT {later} AS ts FROM {Fixture.Table.Name}";
+            // Global aggregates keep CASE above UNION in the driver plan;
+            // a per-row CASE can be pushed down and hide a driver regression.
+            var statement = await client.PrepareAsync(
+                $"SELECT CASE WHEN min($u.ts) < {later} THEN 1 ELSE 0 END AS earlier, " +
+                $"CASE WHEN max($u.ts) < {later} THEN 1 ELSE 0 END AS later " +
+                $"FROM ({first} UNION ALL {second}) $u");
+            StringAssert.Contains(Query.PlanFormatter.Format(
+                statement.DriverQueryPlan), "CASE");
+            var rows = await ReadUnionRowsAsync(statement);
+            Assert.AreEqual(1, rows.Count);
+            Assert.AreEqual(1, rows[0]["earlier"].AsInt32);
+            Assert.AreEqual(0, rows[0]["later"].AsInt32);
+        }
+
+        [TestMethod]
+        public async Task TestUnionAllGroupedCountAsync()
+        {
+            await CheckUnionSupportedAsync(Fixture.Table.Name);
+            var select = $"SELECT shardId FROM {Fixture.Table.Name}";
+            var statement = await client.PrepareAsync(
+                "SELECT $u.shardId, count(*) AS total FROM (" + select +
+                " UNION ALL " + select + ") $u GROUP BY $u.shardId " +
+                "ORDER BY $u.shardId");
+            var rows = await ReadUnionRowsAsync(statement);
+            var expected = Fixture.Rows.GroupBy(row => row["shardId"].AsInt32)
+                .OrderBy(group => group.Key).ToArray();
+            Assert.AreEqual(expected.Length, rows.Count);
+            for (var i = 0; i < rows.Count; i++)
+            {
+                Assert.AreEqual(expected[i].Key, rows[i]["shardId"].AsInt32);
+                Assert.AreEqual(2L * expected[i].Count(), rows[i]["total"].ToInt64());
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow(true, false, false)]
+        [DataRow(false, true, false)]
+        [DataRow(true, true, false)]
+        [DataRow(true, false, true)]
+        [DataRow(false, true, true)]
+        [DataRow(true, true, true)]
+        public async Task TestUnionAllEmptyBranchContinuationAsync(
+            bool firstEmpty, bool secondEmpty, bool sorted)
+        {
+            await CheckUnionSupportedAsync(Fixture.Table.Name);
+            var select = $"SELECT shardId, pkString FROM {Fixture.Table.Name}";
+            // Bind predicates so an empty result is discovered at execution
+            // time, not folded into a different plan during preparation.
+            var first = select + " WHERE shardId < $firstLimit";
+            var second = select + " WHERE shardId < $secondLimit";
+            var sql = first + " UNION ALL " + second;
+            if (sorted)
+            {
+                sql = "SELECT $u.shardId, $u.pkString FROM (" + sql +
+                    ") $u ORDER BY $u.shardId, $u.pkString";
+            }
+            var statement = await client.PrepareAsync(
+                "DECLARE $firstLimit INTEGER; $secondLimit INTEGER; " + sql);
+            Assert.AreEqual(2, statement.QueryBranches.Count);
+            var minShard = Fixture.Rows.Min(row => row["shardId"].AsInt32);
+            var maxShard = Fixture.Rows.Max(row => row["shardId"].AsInt32) + 1;
+            statement.SetVariable("$firstLimit", firstEmpty ? minShard : maxShard);
+            statement.SetVariable("$secondLimit", secondEmpty ? minShard : maxShard);
+            var rows = await ReadUnionRowsAsync(statement);
+            var expected = firstEmpty && secondEmpty
+                ? Array.Empty<string>()
+                : Fixture.Rows.Select(row => row["pkString"].AsString).ToArray();
+            CollectionAssert.AreEquivalent(expected,
+                rows.Select(row => row["pkString"].AsString).ToArray());
+            if (sorted)
+            {
+                CollectionAssert.AreEqual(rows.OrderBy(row => row["shardId"].AsInt32)
+                    .ThenBy(row => row["pkString"].AsString, StringComparer.Ordinal)
+                    .ToArray(), rows.ToArray());
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task TestUnionAllSqlLimitOffsetAsync(bool sorted)
+        {
+            await CheckUnionSupportedAsync(Fixture.Table.Name);
+            // A single primary-key row per branch makes the sequential slice
+            // deterministic without relying on an unordered table scan.
+            var row = Fixture.Rows.First();
+            var predicate = "shardId = " + row["shardId"].ToJsonString() +
+                " AND pkString = " + row["pkString"].ToJsonString();
+            var union = string.Join(" UNION ALL ", new[] { 30, 10, 20, 40 }
+                .Select(id => $"SELECT {id} AS id FROM {Fixture.Table.Name} WHERE {predicate}"));
+            var sql = "SELECT $u.id FROM (" + union + ") $u" +
+                (sorted ? " ORDER BY $u.id" : "") + " LIMIT 2 OFFSET 1";
+            var statement = await client.PrepareAsync(sql);
+            Assert.AreEqual(4, statement.QueryBranches.Count);
+            var rows = await ReadUnionRowsAsync(statement, 2);
+            CollectionAssert.AreEqual(sorted ? new[] { 20, 30 } : new[] { 10, 20 },
+                rows.Select(value => value["id"].AsInt32).ToArray());
+        }
+
+        private static async Task<List<RecordValue>> ReadUnionRowsAsync(
+            PreparedStatement statement, int minimumCalls = 1)
+        {
+            var rows = new List<RecordValue>();
+            var options = new QueryOptions { Limit = 1 };
+            var calls = 0;
+            do
+            {
+                Assert.IsTrue(++calls <= 4 * Fixture.Rows.Count() + 50,
+                    "UNION continuation did not terminate");
+                var result = await client.QueryAsync(statement, options);
+                rows.AddRange(result.Rows);
+                options.ContinuationKey = result.ContinuationKey;
+            } while (options.ContinuationKey != null);
+            Assert.IsTrue(calls >= minimumCalls);
+            return rows;
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task TestUnionAllContinuationAsync(bool sorted)
+        {
+            await CheckUnionSupportedAsync(Fixture.Table.Name);
+
+            var select = sorted
+                ? $"SELECT shardId, pkString FROM {Fixture.Table.Name}"
+                : $"SELECT 1 AS branch, shardId, pkString FROM " +
+                  Fixture.Table.Name;
+            var secondSelect = sorted
+                ? select
+                : $"SELECT 2 AS branch, shardId, pkString FROM " +
+                  Fixture.Table.Name;
+            var union = select + " UNION ALL " + secondSelect;
+            var sql = union;
+            if (sorted)
+            {
+                // ORDER BY belongs to a UNION branch. Wrap the UNION in an
+                // outer query to order the combined result.
+                sql = "SELECT $u.shardId, $u.pkString FROM (" + union +
+                    ") AS $u ORDER BY $u.shardId, $u.pkString";
+            }
+
+            var statement = await client.PrepareAsync(sql);
+            // Limit=1 must exercise branch switching across multiple calls.
+            var rows = await ReadUnionRowsAsync(statement, 2);
+
+            Assert.AreEqual(Fixture.Rows.Count() * 2, rows.Count);
+            var expectedKeys = Fixture.Rows.Select(row =>
+                row["shardId"].AsInt32 + ":" + row["pkString"].AsString).ToArray();
+            CollectionAssert.AreEquivalent(
+                expectedKeys.Concat(expectedKeys).ToArray(),
+                rows.Select(row => row["shardId"].AsInt32 + ":" +
+                    row["pkString"].AsString).ToArray());
+
+            if (!sorted)
+            {
+                // UNION ALL without ORDER BY must drain branch 1 before
+                // advancing to branch 2, even when every row has a separate
+                // continuation key.
+                CollectionAssert.AreEqual(
+                    Enumerable.Repeat(1, Fixture.Rows.Count()).Concat(
+                        Enumerable.Repeat(2, Fixture.Rows.Count())).ToArray(),
+                    rows.Select(row => row["branch"].AsInt32).ToArray());
+                return;
+            }
+
+            // A sorted UNION must maintain its order across continuation
+            // keys, including equal rows supplied by the two branches.
+            CollectionAssert.AreEqual(rows.OrderBy(row => row["shardId"].AsInt32)
+                .ThenBy(row => row["pkString"].AsString, StringComparer.Ordinal)
+                .ToArray(), rows.ToArray());
+        }
+
         [DataTestMethod]
         [DynamicData(nameof(PreparedQueryDataSource))]
         public async Task TestPreparedQueryAsyncEnumerableAsync(QTest test,

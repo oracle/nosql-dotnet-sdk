@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 **Added**
 * Latest OCI region codes
+* Added on-premises query protocol V6 support, including same-store UNION ALL query
+  plans and V6 iterators.
 * Added server-generated creation-time metadata to Get, Put, Delete, and
   WriteMany results when returned by the service.
 

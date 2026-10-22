@@ -9,28 +9,35 @@ namespace Oracle.NoSQL.SDK.Query
 {
     internal class VirtualScan
     {
+        internal sealed class TableResumeInfo
+        {
+            internal int CurrentIndexRange { get; set; }
+
+            internal byte[] PrimaryKey { get; set; }
+
+            internal byte[] SecondaryKey { get; set; }
+
+            internal bool MoveAfterResumeKey { get; set; }
+
+            internal byte[] JoinDescendantResumeKey { get; set; }
+
+            internal int[] JoinPathTableIds { get; set; }
+
+            internal byte[] JoinPathPrimaryKey { get; set; }
+
+            internal byte[] JoinPathSecondaryKey { get; set; }
+
+            internal bool JoinPathMatched { get; set; }
+        }
+
         internal int ShardId { get; set; }
 
         internal int PartitionId { get; set; }
 
-        internal byte[] PrimaryKey { get; set; }
-
-        internal byte[] SecondaryKey { get; set; }
-
-        internal byte[] JoinDescendantResumeKey { get; set; }
-
-        internal int[] JoinPathTableIds { get; set; }
-
-        internal byte[] JoinPathPrimaryKey { get; set; }
-
-        internal byte[] JoinPathSecondaryKey { get; set; }
+        internal TableResumeInfo[] TableResumeInfos { get; set; } =
+            new[] { new TableResumeInfo() };
 
         internal bool IsInfoSent { get; set; }
-        
-        internal bool MoveAfterResumeKey { get; set; }
-
-        internal bool JoinPathMatched { get; set; }
-
     }
 
 }

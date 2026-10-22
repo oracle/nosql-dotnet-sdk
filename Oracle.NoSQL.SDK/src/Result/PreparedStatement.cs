@@ -307,7 +307,67 @@ namespace Oracle.NoSQL.SDK
         /// </remarks>
         public void ClearVariables() => Variables.Clear();
 
-        internal byte[] ProxyStatement { get; set; }
+        internal sealed class QueryBranch
+        {
+            internal byte[] ProxyStatement { get; set; }
+
+            internal string Namespace { get; set; }
+
+            internal string TableName { get; set; }
+        }
+
+        private readonly List<QueryBranch> queryBranches =
+            new List<QueryBranch>();
+
+        internal IReadOnlyList<QueryBranch> QueryBranches => queryBranches;
+
+        internal byte[] ProxyStatement
+        {
+            get => queryBranches.Count == 0 ? null :
+                queryBranches[0].ProxyStatement;
+            set => GetQueryBranch(0, create: true).ProxyStatement = value;
+        }
+
+        internal byte[] GetProxyStatement(int branch) =>
+            GetQueryBranch(branch).ProxyStatement;
+
+        internal string GetNamespace(int branch) =>
+            branch >= 0 && branch < queryBranches.Count ?
+                queryBranches[branch].Namespace : null;
+
+        internal string GetTableName(int branch) =>
+            branch >= 0 && branch < queryBranches.Count ?
+                queryBranches[branch].TableName : null;
+
+        internal void AddQueryBranch(QueryBranch branch)
+        {
+            if (branch == null || branch.ProxyStatement == null)
+            {
+                throw new BadProtocolException(
+                    "Query: missing proxy prepared statement in query branch");
+            }
+
+            queryBranches.Add(branch);
+        }
+
+        private QueryBranch GetQueryBranch(int branch, bool create = false)
+        {
+            // Legacy response fields construct branch zero incrementally.
+            // Execution lookups must never create an incomplete branch.
+            if (create && branch == queryBranches.Count)
+            {
+                queryBranches.Add(new QueryBranch());
+            }
+
+            if (branch < 0 || branch >= queryBranches.Count ||
+                !create && queryBranches[branch].ProxyStatement == null)
+            {
+                throw new BadProtocolException(
+                    $"Query: invalid UNION branch {branch}");
+            }
+
+            return queryBranches[branch];
+        }
 
         internal PlanStep DriverQueryPlan { get; set; }
 
@@ -321,9 +381,17 @@ namespace Oracle.NoSQL.SDK
         // prepared statement (ProxyStatement) that is normally opaque.  They
         // are currently used for rate limiting.
 
-        internal string Namespace { get; set; }
+        internal string Namespace
+        {
+            get => queryBranches.Count == 0 ? null : queryBranches[0].Namespace;
+            set => GetQueryBranch(0, create: true).Namespace = value;
+        }
 
-        internal string TableName { get; set; }
+        internal string TableName
+        {
+            get => queryBranches.Count == 0 ? null : queryBranches[0].TableName;
+            set => GetQueryBranch(0, create: true).TableName = value;
+        }
 
         internal sbyte OperationCode { get; set; }
 

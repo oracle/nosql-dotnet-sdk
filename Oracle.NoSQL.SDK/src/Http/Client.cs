@@ -277,13 +277,15 @@ namespace Oracle.NoSQL.SDK.Http
             return true;
         }
 
-        internal Client(NoSQLConfig config, ProtocolHandler protocolHandler)
+        internal Client(NoSQLConfig config, ProtocolHandler protocolHandler,
+            HttpMessageHandler messageHandler = null)
         {
             this.config = config;
             this.protocolHandler = protocolHandler;
 
-            client = new HttpClient(CreateHandler(config.ConnectionOptions,
-                connectionMetrics), true)
+            client = new HttpClient(messageHandler ??
+                CreateHandler(config.ConnectionOptions, connectionMetrics),
+                true)
             {
                 BaseAddress = config.Uri
             };

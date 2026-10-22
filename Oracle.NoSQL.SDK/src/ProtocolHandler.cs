@@ -91,10 +91,9 @@ namespace Oracle.NoSQL.SDK
                     return true;
                 }
 
-                // Allow fallback from V4 to V3.
-                if (queryVersion == QueryRequestBase.QueryV4)
+                if (queryVersion > QueryRequestBase.QueryV3)
                 {
-                    queryVersion = QueryRequestBase.QueryV3;
+                    --queryVersion;
                     return true;
                 }
 
