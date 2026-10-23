@@ -44,10 +44,21 @@ namespace Oracle.NoSQL.SDK.Query
             }
 
             branches = new Branch[step.BranchSteps.Length];
-            for (var i = 0; i < branches.Length; i++)
+            var previousBranch = runtime.UnionBranch;
+            try
             {
-                branches[i] = new Branch(step.BranchSteps[i]
-                    .CreateAsyncIterator(runtime));
+                for (var i = 0; i < branches.Length; i++)
+                {
+                    // Receive iterators seed shard scanners at construction.
+                    // Select this branch's frozen store topology first.
+                    runtime.UnionBranch = i;
+                    branches[i] = new Branch(step.BranchSteps[i]
+                        .CreateAsyncIterator(runtime));
+                }
+            }
+            finally
+            {
+                runtime.UnionBranch = previousBranch;
             }
         }
 

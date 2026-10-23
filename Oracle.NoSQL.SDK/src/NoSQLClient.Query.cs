@@ -211,6 +211,11 @@ namespace Oracle.NoSQL.SDK {
         /// one of its subclasses is thrown if operation cannot be performed
         /// for any other reason.  See documentation for corresponding
         /// subclass of <see cref="NoSQLException"/>.</exception>
+        /// <exception cref="PrepareQueryException">The required topology is
+        /// unavailable or the negotiated protocol cannot represent this
+        /// statement's store identity. Prepare the query again using this
+        /// client and start a new execution without a continuation key.
+        /// </exception>
         /// <seealso cref="QueryAsync(string, QueryOptions, CancellationToken)"/>
         public Task<QueryResult<RecordValue>> QueryAsync(
             PreparedStatement preparedStatement,
@@ -334,6 +339,11 @@ namespace Oracle.NoSQL.SDK {
         /// one of its subclasses is thrown if operation cannot be performed
         /// for any other reason.  See documentation for corresponding
         /// subclass of <see cref="NoSQLException"/>.</exception>
+        /// <exception cref="PrepareQueryException">During iteration, the
+        /// required topology is unavailable or the negotiated protocol cannot
+        /// represent this statement's store identity. Prepare the query again
+        /// using this client and start a new execution without a continuation
+        /// key.</exception>
         /// <seealso cref="M:Oracle.NoSQL.SDK.NoSQLClient.QueryAsync*"/>
         public IAsyncEnumerable<QueryResult<RecordValue>>
             GetQueryAsyncEnumerable(

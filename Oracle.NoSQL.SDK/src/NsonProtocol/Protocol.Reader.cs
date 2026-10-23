@@ -209,6 +209,54 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             return result;
         }
 
+        private static TopologyInfo ReadStoreTopologyInfo(NsonReader reader)
+        {
+            var seqNo = -1;
+            int[] shardIds = null;
+            string storeName = null;
+
+            ReadMap(reader, fieldName =>
+            {
+                switch (fieldName)
+                {
+                    case FieldNames.StoreId:
+                        storeName = reader.ReadString();
+                        return true;
+                    case FieldNames.ProxyTopoSeqNum:
+                        seqNo = reader.ReadInt32();
+                        return true;
+                    case FieldNames.ShardIds:
+                        shardIds = ReadArray(reader, reader.ReadInt32);
+                        return true;
+                    default:
+                        return false;
+                }
+            });
+
+            if (string.IsNullOrWhiteSpace(storeName))
+            {
+                throw new BadProtocolException(
+                    "Per-store topology is missing a nonempty store id");
+            }
+
+            var result = new TopologyInfo(seqNo, shardIds, storeName);
+            ValidateTopologyInfo(result);
+            return result;
+        }
+
+        private static TopologyInfo[] ReadStoreTopologies(NsonReader reader)
+        {
+            reader.ExpectType(NsonType.Array);
+            // Same bound as the Java SDK; validate before allocating.
+            if (reader.Count > 10_000)
+            {
+                throw new BadProtocolException(
+                    "Too many store topology entries: " + reader.Count);
+            }
+
+            return ReadArray(reader, () => ReadStoreTopologyInfo(reader));
+        }
+
         internal static ConsumedCapacity DeserializeConsumedCapacity(
             NsonReader reader)
         {
@@ -235,11 +283,17 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             return result;
         }
 
+        // Validate the complete result before publishing any topology updates.
+        // The callback receives whether per-store topology was supplied,
+        // including an empty array, for handling legacy query V3 fields.
         internal static void DeserializeResponse(NsonReader reader,
-            Func<string, bool> processField, Request request, object result)
+            Func<string, bool> processField, Request request, object result,
+            Action<bool> validateResult = null)
         {
             var statusCode = 0;
             string message = null;
+            TopologyInfo legacyTopology = null;
+            TopologyInfo[] storeTopologies = null;
 
             reader.Next();
             ReadMap(reader, fieldName =>
@@ -264,8 +318,10 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                     case FieldNames.TopologyInfo:
                         // Query topology may be received by any dml or query
                         // request.
-                        request.Client.SetQueryTopology(
-                            ReadTopologyInfo(reader));
+                        legacyTopology = ReadTopologyInfo(reader);
+                        return true;
+                    case FieldNames.StoreTopologyInfo:
+                        storeTopologies = ReadStoreTopologies(reader);
                         return true;
                     default:
                         return processField(fieldName);
@@ -276,6 +332,19 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             {
                 throw BinaryProtocol.MapException((ErrorCode)statusCode,
                     message, request);
+            }
+
+            validateResult?.Invoke(storeTopologies != null);
+
+            // Prefer per-store information regardless of response field order.
+            // An empty per-store array is distinct from a legacy response.
+            if (storeTopologies != null)
+            {
+                request.Client.SetStoreTopologies(storeTopologies);
+            }
+            else if (legacyTopology != null)
+            {
+                request.Client.SetQueryTopology(legacyTopology);
             }
         }
 

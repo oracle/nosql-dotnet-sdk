@@ -113,6 +113,10 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                     statement ??= new PreparedStatement();
                     statement.ProxyStatement = reader.ReadByteArray();
                     return true;
+                case FieldNames.QueryBranchStores:
+                    statement ??= new PreparedStatement();
+                    statement.QueryBranchStores = ReadQueryStoreNames(reader);
+                    return true;
                 case FieldNames.DriverQueryPlan:
                     statement ??= new PreparedStatement();
                     var stream = GetMemoryStreamWithVisibleBuffer(
@@ -167,6 +171,20 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             }
         }
 
+        private static string[] ReadQueryStoreNames(NsonReader reader)
+        {
+            return ReadArray(reader, () =>
+            {
+                var storeName = reader.ReadString();
+                if (string.IsNullOrWhiteSpace(storeName))
+                {
+                    throw new BadProtocolException(
+                        "Prepared query branch is missing a nonempty store id");
+                }
+                return storeName;
+            });
+        }
+
         // Validates the server portion of the prepared statement from the
         // protocol perspective. The client portion is validated by
         // PreparedStatement.Validate().
@@ -182,6 +200,14 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             if (preparedStatement.ProxyStatement == null)
             {
                 throw new BadProtocolException("Missing prepared statement");
+            }
+
+            if (preparedStatement.QueryBranchStores != null &&
+                preparedStatement.QueryBranchStores.Length !=
+                    preparedStatement.QueryBranches.Count)
+            {
+                throw new BadProtocolException(
+                    "Query: store count does not match prepared query branches");
             }
 
             // Anything else we need to check? Table name, namespace,
@@ -415,19 +441,24 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                 SQLText = request.Statement
             };
             MutableTopologyInfo mti = null;
+            TopologyInfo topologyInfo = null;
 
             DeserializeResponse(reader,
                 field => ProcessPreparedStatementField(reader, field,
-                    ref statement, ref mti,
-                    request.QueryVersion), request,
-                statement);
-            ValidatePreparedStatement(statement);
+                    ref statement, ref mti, request.QueryVersion),
+                request, statement, hasStoreTopologies =>
+                {
+                    ValidatePreparedStatement(statement);
+                    if (mti != null && !hasStoreTopologies)
+                    {
+                        topologyInfo = mti.ToTopologyInfo();
+                        ValidateTopologyInfo(topologyInfo);
+                    }
+                });
             
             // Only for query <= V3.
-            if (mti != null)
+            if (topologyInfo != null)
             {
-                var topologyInfo = mti.ToTopologyInfo();
-                ValidateTopologyInfo(topologyInfo);
                 request.Client.SetQueryTopology(topologyInfo);
             }
 
@@ -484,6 +515,8 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                 writer.WriteByteArray(FieldNames.PreparedQuery,
                     request.PreparedStatement.GetProxyStatement(
                         request.UnionBranch));
+                OptionallyWriteString(writer, FieldNames.StoreId,
+                    request.PreparedStatement.GetStoreName(request.UnionBranch));
 
                 var variables = request.PreparedStatement.variables;
                 if (variables != null)
@@ -549,6 +582,7 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             var result = new QueryResult<TRow>();
             PreparedStatement preparedStatement = null;
             MutableTopologyInfo mti = null;
+            TopologyInfo topologyInfo = null;
 
             DeserializeResponse(reader, field =>
             {
@@ -586,7 +620,18 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                             ref preparedStatement, ref mti,
                             request.QueryVersion);
                 }
-            }, request, result);
+            }, request, result, hasStoreTopologies =>
+            {
+                if (request.PreparedStatement == null)
+                {
+                    ValidatePreparedStatement(preparedStatement);
+                }
+                if (mti != null && !hasStoreTopologies)
+                {
+                    topologyInfo = mti.ToTopologyInfo();
+                    ValidateTopologyInfo(topologyInfo);
+                }
+            });
 
             /*
              * If the QueryRequest was not initially prepared, the prepared
@@ -596,18 +641,15 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
              */
             if (request.PreparedStatement == null)
             {
-                ValidatePreparedStatement(preparedStatement);
                 preparedStatement.SQLText = request.Statement;
                 preparedStatement.ConsumedCapacity = result.ConsumedCapacity;
                 result.PreparedStatement = preparedStatement;
             }
 
-            if (mti != null)
+            if (topologyInfo != null)
             {
                 // We received updated topology info. This can happen here
                 // only for query V3 and below.
-                var topologyInfo = mti.ToTopologyInfo();
-                ValidateTopologyInfo(topologyInfo);
                 request.Client.SetQueryTopology(topologyInfo);
             }
 

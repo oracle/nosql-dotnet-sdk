@@ -12,6 +12,11 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
   plans and V6 iterators.
 * Added server-generated creation-time metadata to Get, Put, Delete, and
   WriteMany results when returned by the service.
+* Added per-store topology caching for queries through proxies serving
+  multiple stores, while preserving legacy topology support. Advanced queries
+  retain their store's topology across batches. PrepareQueryException instructs
+  the caller to prepare again if the required topology is unavailable or a
+  protocol downgrade cannot preserve the prepared statement's store identity.
 
 ## [5.2.3]
 
