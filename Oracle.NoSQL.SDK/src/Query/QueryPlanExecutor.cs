@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2020, 2025 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026 Oracle and/or its affiliates. All rights reserved.
  *
  * Licensed under the Universal Permissive License v 1.0 as shown at
  *  https://oss.oracle.com/licenses/upl/
@@ -34,7 +34,9 @@ namespace Oracle.NoSQL.SDK.Query {
 
         internal QueryRequest Request { get; set; }
 
-        internal TopologyInfo BaseTopology { get; }
+        private readonly TopologyInfo[] branchTopologies;
+
+        internal TopologyInfo BaseTopology => branchTopologies[UnionBranch];
 
         internal QueryTopologySnapshot TopologySnapshot { get; }
 
@@ -61,6 +63,8 @@ namespace Oracle.NoSQL.SDK.Query {
         }
 
         internal bool FetchDone { get; set; }
+
+        internal int UnionBranch { get; set; }
 
         internal bool NeedContinuation
         {
@@ -103,24 +107,27 @@ namespace Oracle.NoSQL.SDK.Query {
             }
 
             TopologySnapshot = client.GetQueryTopologySnapshot();
-            if (preparedStatement.StoreName == null)
+            branchTopologies = new TopologyInfo[
+                Math.Max(1, preparedStatement.QueryBranches.Count)];
+            for (var i = 0; i < branchTopologies.Length; i++)
             {
-                BaseTopology = TopologySnapshot.LegacyTopology;
-            }
-            else if (TopologySnapshot.StoreTopologies.TryGetValue(
-                preparedStatement.StoreName, out var topology))
-            {
-                BaseTopology = topology;
-            }
+                var storeName = preparedStatement.GetStoreName(i);
+                if (storeName == null)
+                {
+                    branchTopologies[i] = TopologySnapshot.LegacyTopology;
+                }
+                else if (TopologySnapshot.StoreTopologies.TryGetValue(
+                    storeName, out var topology))
+                {
+                    branchTopologies[i] = topology;
+                }
 
-            if (BaseTopology == null)
-            {
-                var identity = preparedStatement.StoreName == null
-                    ? "legacy topology"
-                    : "topology for store " + preparedStatement.StoreName;
-                throw new PrepareQueryException(
-                    $"Missing {identity} for prepared query. " +
-                    "Prepare the query again using this client.");
+                if (storeName != null && branchTopologies[i] == null)
+                {
+                    throw new PrepareQueryException(
+                        $"Missing topology for store {storeName} for prepared query. " +
+                        "Prepare the query again using this client.");
+                }
             }
         }
 
@@ -243,7 +250,8 @@ namespace Oracle.NoSQL.SDK.Query {
         [Conditional("DEBUG")]
         internal void TraceExternalVariables()
         {
-            if (!(Request.Options?.TraceLevel.HasValue ?? false))
+            if (!(Request.Options?.TraceLevel.HasValue ?? false) ||
+                extVariables == null)
             {
                 return;
             }
@@ -321,6 +329,13 @@ namespace Oracle.NoSQL.SDK.Query {
                         break;
                     }
                 }
+            }
+            else
+            {
+                // The previous call failed before the iterator finished.
+                // Return its buffered rows with a continuation so the caller
+                // can resume execution, even when that buffer is empty.
+                NeedContinuation = true;
             }
 
             var result = new QueryResult<TRow>

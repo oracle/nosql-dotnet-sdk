@@ -35,6 +35,7 @@ namespace Oracle.NoSQL.SDK.Query {
                 new QueryOptions
                 {
                     Compartment = runtime.Request.Options?.Compartment,
+                    Namespace = runtime.Request.Options?.Namespace,
                     Timeout = runtime.Request.Options?.Timeout,
                     Consistency = runtime.Request.Options?.Consistency,
                     LastWriteMetadata =
@@ -62,8 +63,9 @@ namespace Oracle.NoSQL.SDK.Query {
                     
                     if (topologyInfo == null)
                     {
-                        throw new InvalidOperationException(
-                            "Missing topology information for all-shard query");
+                        throw new PrepareQueryException(
+                            "Missing topology information for all-shard query. " +
+                            "Prepare the query again using this client.");
                     }
 
                     Debug.Assert(topologyInfo.ShardIds?.Count != 0);
@@ -112,6 +114,7 @@ namespace Oracle.NoSQL.SDK.Query {
 
             queryRequest.ShardId = shardId;
             queryRequest.VirtualScan = virtualScan;
+            queryRequest.UnionBranch = runtime.UnionBranch;
             queryRequest.StatsLogicalQueryRequest = runtime.Request;
 
             var result = (QueryResult<RecordValue>)
@@ -337,7 +340,13 @@ namespace Oracle.NoSQL.SDK.Query {
             if (currVScanId == -1)
             {
                 var topologyInfo = runtime.BaseTopology;
-                Debug.Assert(topologyInfo?.ShardIds?.Count != 0);
+                if (topologyInfo == null)
+                {
+                    throw new PrepareQueryException(
+                        "Missing topology information for virtual scans. " +
+                        "Prepare the query again using this client.");
+                }
+                Debug.Assert(topologyInfo.ShardIds?.Count != 0);
                 // ShardIds are sorted.
                 currVScanId = topologyInfo!.ShardIds![^1] + 1;
             }

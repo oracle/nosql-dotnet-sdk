@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2020, 2025 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026 Oracle and/or its affiliates. All rights reserved.
  *
  * Licensed under the Universal Permissive License v 1.0 as shown at
  *  https://oss.oracle.com/licenses/upl/
@@ -7,6 +7,7 @@
 
 namespace Oracle.NoSQL.SDK.Query {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
 
     internal abstract class OneResultIterator : PlanSyncIterator
@@ -125,14 +126,16 @@ namespace Oracle.NoSQL.SDK.Query {
 
 
     /**
-     * FieldStepIterator returns the value of a field in an input MapValue.
-     * It is used by the driver to implement column references in the SELECT
-     * list (see SFWIterator).
+     * FieldStepIterator projects a field from maps and records, traversing
+     * input arrays recursively. It also implements scalar column references
+     * in the SELECT list (see SFWIterator).
      */
     internal class FieldStepIterator : PlanSyncIterator
     {
         private readonly FieldStep step;
         private readonly PlanSyncIterator inputIterator;
+        private Stack<(ArrayValue Array, int Position)> arrays;
+        private bool done;
 
         internal FieldStepIterator(QueryRuntime runtime, FieldStep step) :
             base(runtime)
@@ -143,32 +146,74 @@ namespace Oracle.NoSQL.SDK.Query {
 
         internal override bool Next()
         {
-            if (!inputIterator.Next())
+            if (done)
             {
                 return false;
             }
 
-            var result = inputIterator.Result;
-            if (!(result is MapValue mapValue))
+            while (true)
             {
-                throw new InvalidOperationException(
-                    "Query: input value in field step is not " +
-                    "RecordValue or MapValue");
-            }
+                FieldValue value;
+                if (arrays != null && arrays.Count != 0)
+                {
+                    var (array, position) = arrays.Pop();
+                    value = array[position++];
+                    if (position < array.Count)
+                    {
+                        arrays.Push((array, position));
+                    }
+                }
+                else
+                {
+                    if (!inputIterator.Next() ||
+                        inputIterator.Result == FieldValue.Empty)
+                    {
+                        done = true;
+                        return false;
+                    }
+                    value = inputIterator.Result;
+                }
 
-            if (!mapValue.TryGetValue(step.FieldName, out result) ||
-                result == FieldValue.Empty)
-            {
-                return false;
-            }
+                // SQL NULL propagates through field navigation. JSON null
+                // and other atomic context values produce no items.
+                if (value == FieldValue.Null)
+                {
+                    Result = value;
+                    return true;
+                }
+                if (value.IsAtomic)
+                {
+                    continue;
+                }
+                if (value is ArrayValue arrayValue)
+                {
+                    if (arrayValue.Count != 0)
+                    {
+                        arrays ??= new Stack<(ArrayValue, int)>();
+                        arrays.Push((arrayValue, 0));
+                    }
+                    continue;
+                }
 
-            Result = result;
-            return true;
+                var mapValue = (MapValue)value;
+                if (!mapValue.TryGetValue(step.FieldName, out var result) ||
+                    result == FieldValue.Empty)
+                {
+                    continue;
+                }
+
+                // Only input arrays are traversed. An array-valued field
+                // is one result item until another field step consumes it.
+                Result = result;
+                return true;
+            }
         }
 
         internal override void Reset(bool resetResult = false)
         {
-            inputIterator.Reset();
+            done = false;
+            arrays?.Clear();
+            inputIterator.Reset(resetResult);
         }
 
         internal override PlanStep Step => step;
@@ -198,6 +243,7 @@ namespace Oracle.NoSQL.SDK.Query {
             if (result == FieldValue.Null)
             {
                 Result = FieldValue.Null;
+                return true;
             }
             else if (!(result is ArrayValue) && !(result is MapValue))
             {

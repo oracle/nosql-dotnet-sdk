@@ -8,6 +8,7 @@
 namespace Oracle.NoSQL.SDK {
 
     using System;
+    using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -223,12 +224,13 @@ namespace Oracle.NoSQL.SDK {
     /// <seealso cref="NoSQLRetryHandler"/>
     public partial class NoSQLClient: IDisposable
     {
-        private void Init(NoSQLConfig config)
+        private void Init(NoSQLConfig config,
+            HttpMessageHandler messageHandler = null)
         {
             Config = config;
             Config.Init();
             ProtocolHandler = new ProtocolHandler();
-            client = new Http.Client(Config, ProtocolHandler);
+            client = new Http.Client(Config, ProtocolHandler, messageHandler);
             if (RateLimitingHandler.IsRateLimitingEnabled(config))
             {
                 RateLimitingHandler = new RateLimitingHandler(this);
@@ -274,6 +276,15 @@ namespace Oracle.NoSQL.SDK {
                 // Case of default OCI config file with default profile.
                 ServiceType = ServiceType.Cloud
             });
+        }
+
+        // Allows protocol-level tests to capture requests without opening a
+        // network connection. This constructor is internal and not part of the
+        // public client API.
+        internal NoSQLClient(NoSQLConfig config,
+            HttpMessageHandler messageHandler)
+        {
+            Init(config.Clone(), messageHandler);
         }
 
         /// <summary>

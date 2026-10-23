@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2020, 2025 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026 Oracle and/or its affiliates. All rights reserved.
  *
  * Licensed under the Universal Permissive License v 1.0 as shown at
  *  https://oss.oracle.com/licenses/upl/
@@ -25,7 +25,7 @@ namespace Oracle.NoSQL.SDK.Query {
      * arithmetic among aggregate functions (for example: select a, sum(x) +
      * sum(y) from foo group by a).
      */
-    class ArithmeticOpIterator : PlanSyncIterator
+    class ArithmeticOpIterator : OneResultIterator
     {
         private readonly ArithmeticOpStep step;
         private readonly PlanSyncIterator[] argIterators;
@@ -87,6 +87,11 @@ namespace Oracle.NoSQL.SDK.Query {
 
         internal override bool Next()
         {
+            if (done)
+            {
+                return false;
+            }
+
             FieldValue result = step.Opcode == ArithmeticOpcode.AddSubtract ?
                 0 : 1;
             for (var i = 0; i < argIterators.Length; i++)
@@ -94,6 +99,7 @@ namespace Oracle.NoSQL.SDK.Query {
                 var iterator = argIterators[i];
                 if (!iterator.Next())
                 {
+                    done = true;
                     return false;
                 }
 
@@ -101,6 +107,7 @@ namespace Oracle.NoSQL.SDK.Query {
                 if (operand == FieldValue.Null)
                 {
                     Result = operand;
+                    done = true;
                     return true;
                 }
 
@@ -108,11 +115,13 @@ namespace Oracle.NoSQL.SDK.Query {
             }
 
             Result = result;
+            done = true;
             return true;
         }
 
         internal override void Reset(bool resetResult = false)
         {
+            base.Reset(resetResult);
             foreach (var iterator in argIterators)
             {
                 iterator.Reset(resetResult);

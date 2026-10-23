@@ -43,7 +43,7 @@ namespace Oracle.NoSQL.SDK.Tests
                 SQLText = "select * from table",
                 ProxyStatement = new byte[] { 1, 2, 3 },
                 TableName = "table",
-                StoreName = store,
+                QueryBranchStores = store == null ? null : new[] { store },
                 OperationCode = QueryRequest.OperationCodeSelect,
                 DriverQueryPlan = new ReceiveStep(),
                 RegisterCount = 1
@@ -506,15 +506,96 @@ namespace Oracle.NoSQL.SDK.Tests
             });
             var prepared = new RequestSerializer().DeserializePrepare(response,
                 new PrepareRequest(client, "select * from table", null));
-            Assert.AreEqual("A", prepared.StoreName);
+            Assert.AreEqual("A", prepared.GetStoreName(0));
             Assert.AreEqual("table", prepared.TableName);
             Assert.AreEqual("namespace", prepared.Namespace);
-            Assert.AreEqual("A", prepared.CopyStatement().StoreName);
+            Assert.AreEqual("A", prepared.CopyStatement().GetStoreName(0));
             Assert.AreEqual(2, client.GetQueryTopologySnapshot()
                 .StoreTopologies["A"].SequenceNumber);
 
             var request = new QueryRequest<RecordValue>(client, prepared, null);
             Assert.AreEqual("A", Serialize(request)["p"]["sid"].AsString);
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public void PrepareMapsEachUnionBranchToItsStore(bool storeFirst)
+        {
+            using var client = MakeClient();
+            using var response = Response(writer =>
+            {
+                if (storeFirst) WriteQueryStore(writer, "A", "B");
+                writer.StartArray("qb");
+                for (var i = 0; i < 2; i++)
+                {
+                    writer.StartMap();
+                    writer.WriteByteArray("pq", new[] { (byte)(i + 1) });
+                    writer.WriteString("n", "table" + i);
+                    writer.WriteString("ns", "namespace" + i);
+                    writer.EndMap();
+                }
+                writer.EndArray();
+                if (!storeFirst) WriteQueryStore(writer, "A", "B");
+                WriteStores(writer, Topology("A", 4, 11), Topology("B", 400, 21));
+            });
+            var prepared = new RequestSerializer().DeserializePrepare(response,
+                new PrepareRequest(client, "select * from table0 union all select * from table1", null));
+            var copy = prepared.CopyStatement();
+            for (var branch = 0; branch < 2; branch++)
+            {
+                var wire = Serialize(new QueryRequest<RecordValue>(client, copy, null)
+                {
+                    UnionBranch = branch
+                });
+                Assert.AreEqual(branch == 0 ? "A" : "B", wire["p"]["sid"].AsString);
+                CollectionAssert.AreEqual(new[] { (byte)(branch + 1) },
+                    wire["p"]["pq"].AsByteArray);
+                Assert.AreEqual("table" + branch, copy.GetTableName(branch));
+                Assert.AreEqual("namespace" + branch, copy.GetNamespace(branch));
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow(0)]
+        [DataRow(1)]
+        [DataRow(3)]
+        public void MismatchedUnionStoreMappingDoesNotPublishTopology(int storeCount)
+        {
+            using var client = MakeClient();
+            using var response = Response(writer =>
+            {
+                WriteStores(writer, Topology("A", 1, 1));
+                WriteQueryStore(writer, Enumerable.Repeat("A", storeCount).ToArray());
+                writer.StartArray("qb");
+                for (var i = 0; i < 2; i++)
+                {
+                    writer.StartMap();
+                    writer.WriteByteArray("pq", new byte[] { 1 });
+                    writer.EndMap();
+                }
+                writer.EndArray();
+            });
+            Assert.ThrowsException<BadProtocolException>(() =>
+                new RequestSerializer().DeserializePrepare(response,
+                    new PrepareRequest(client, "select * from table", null)));
+            Assert.AreEqual(0, client.GetQueryTopologySnapshot().StoreTopologies.Count);
+        }
+
+        [TestMethod]
+        public void MissingSecondBranchStoreRequiresReprepare()
+        {
+            using var client = MakeClient();
+            client.SetStoreTopologies(new[] { Topology("A", 1, 1) });
+            var prepared = Prepared("A");
+            prepared.AddQueryBranch(new PreparedStatement.QueryBranch
+            {
+                ProxyStatement = new byte[] { 2 }
+            });
+            prepared.QueryBranchStores = new[] { "A", "B" };
+            var exception = Assert.ThrowsException<PrepareQueryException>(() =>
+                new QueryRuntime(client, prepared));
+            StringAssert.Contains(exception.Message, "store B");
         }
 
         private static void WriteQueryStore(NsonWriter writer,
@@ -547,7 +628,7 @@ namespace Oracle.NoSQL.SDK.Tests
             var result = new RequestSerializer().DeserializeQuery(response,
                 request);
             request.ApplyResult(result);
-            Assert.AreEqual("A", request.PreparedStatement.StoreName);
+            Assert.AreEqual("A", request.PreparedStatement.GetStoreName(0));
             Assert.AreSame(request.PreparedStatement,
                 result.ContinuationKey.PreparedStatement);
             Assert.AreEqual("A", Serialize(request)["p"]["sid"].AsString);
@@ -556,10 +637,10 @@ namespace Oracle.NoSQL.SDK.Tests
         [DataTestMethod]
         [DataRow(0)]
         [DataRow(2)]
-        public void RejectsUnsupportedStoreAndBranchCounts(int count)
+        public void RejectsMismatchedStoreCountAndEmptyBranches(int count)
         {
             using var client = MakeClient();
-            foreach (var field in new[] { "qbs", "qb" })
+            foreach (var field in count == 0 ? new[] { "qbs", "qb" } : new[] { "qbs" })
             {
                 using var response = Response(writer =>
                 {
@@ -655,8 +736,17 @@ namespace Oracle.NoSQL.SDK.Tests
         {
             using var client = MakeClient();
             client.SetStoreTopologies(new[] { Topology("A", 100, 5) });
+            var missingTopology = new QueryRuntime(client, Prepared())
+            {
+                Request = new QueryRequest<RecordValue>(client, Prepared(), null)
+            };
+            Assert.IsNull(missingTopology.BaseTopology);
             Assert.ThrowsException<PrepareQueryException>(() =>
-                new QueryRuntime(client, Prepared()));
+                new ReceiveIterator(missingTopology, new ReceiveStep
+                {
+                    DistributionKind = DistributionKind.AllShards,
+                    SortSpecs = Array.Empty<SortSpec>()
+                }));
             client.SetQueryTopology(Topology(null, 7, 1));
             var runtime = new QueryRuntime(client, Prepared());
             Assert.AreEqual(7, runtime.BaseTopology.SequenceNumber);
@@ -708,7 +798,7 @@ namespace Oracle.NoSQL.SDK.Tests
                 prepared = new RequestSerializer().DeserializePrepare(response,
                     request);
             }
-            Assert.IsNull(prepared.StoreName);
+            Assert.IsNull(prepared.GetStoreName(0));
             Assert.AreEqual(perStore ? -1 : 5,
                 client.QueryTopologySequenceNumber);
             Assert.AreEqual(perStore ? 1 : 0,

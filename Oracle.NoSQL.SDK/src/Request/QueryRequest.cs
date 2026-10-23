@@ -77,6 +77,10 @@ namespace Oracle.NoSQL.SDK
         // feature preflight without counting each internal fetch as a new query.
         internal QueryRequest StatsLogicalQueryRequest { get; set; }
 
+        // The proxy prepared statement to use for the current UNION branch.
+        // It is set by the driver plan only for internal fetch requests.
+        internal int UnionBranch { get; set; }
+
         internal void DeferStatsLogicalQuery()
         {
             Interlocked.Exchange(ref statsLogicalQueryPending, 1);
@@ -114,7 +118,12 @@ namespace Oracle.NoSQL.SDK
             PreparedStatement.OperationCode == OperationCodeSelect;
 
         internal override string InternalTableName =>
-            PreparedStatement?.TableName;
+            PreparedStatement?.GetTableName(UnionBranch);
+
+        // Match Java: explicit request, selected prepared branch, then the
+        // client default. base.Namespace already includes the client default.
+        internal override string Namespace => Options?.Namespace ??
+            PreparedStatement?.GetNamespace(UnionBranch) ?? Config.Namespace;
 
         internal QueryContinuationKey ContinuationKey =>
             Options?.ContinuationKey;

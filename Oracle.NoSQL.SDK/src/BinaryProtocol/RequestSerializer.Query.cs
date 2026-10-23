@@ -121,7 +121,7 @@ namespace Oracle.NoSQL.SDK.BinaryProtocol
         public void SerializeQuery<TRow>(MemoryStream stream,
             QueryRequest<TRow> request)
         {
-            if (request.PreparedStatement?.StoreName != null)
+            if (request.PreparedStatement?.QueryBranchStores != null)
             {
                 throw new PrepareQueryException(
                     "The negotiated protocol cannot execute a store-aware " +
