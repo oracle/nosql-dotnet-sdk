@@ -184,8 +184,32 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             }
         }
 
-        internal static TopologyInfo ReadTopologyInfo(NsonReader reader,
-            bool perStore = false)
+        internal static TopologyInfo ReadTopologyInfo(NsonReader reader)
+        {
+            var seqNo = -1;
+            int[] shardIds = null;
+
+            ReadMap(reader, fieldName =>
+            {
+                switch (fieldName)
+                {
+                    case FieldNames.ProxyTopoSeqNum:
+                        seqNo = reader.ReadInt32();
+                        return true;
+                    case FieldNames.ShardIds:
+                        shardIds = ReadArray(reader, reader.ReadInt32);
+                        return true;
+                    default:
+                        return false;
+                }
+            });
+
+            var result = new TopologyInfo(seqNo, shardIds);
+            ValidateTopologyInfo(result);
+            return result;
+        }
+
+        private static TopologyInfo ReadStoreTopologyInfo(NsonReader reader)
         {
             var seqNo = -1;
             int[] shardIds = null;
@@ -195,7 +219,7 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             {
                 switch (fieldName)
                 {
-                    case FieldNames.StoreId when perStore:
+                    case FieldNames.StoreId:
                         storeName = reader.ReadString();
                         return true;
                     case FieldNames.ProxyTopoSeqNum:
@@ -209,7 +233,7 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                 }
             });
 
-            if (perStore && string.IsNullOrWhiteSpace(storeName))
+            if (string.IsNullOrWhiteSpace(storeName))
             {
                 throw new BadProtocolException(
                     "Per-store topology is missing a nonempty store id");
@@ -230,7 +254,7 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                     "Too many store topology entries: " + reader.Count);
             }
 
-            return ReadArray(reader, () => ReadTopologyInfo(reader, true));
+            return ReadArray(reader, () => ReadStoreTopologyInfo(reader));
         }
 
         internal static ConsumedCapacity DeserializeConsumedCapacity(
