@@ -582,6 +582,86 @@ namespace Oracle.NoSQL.SDK.Tests
             Assert.AreEqual(0, client.GetQueryTopologySnapshot().StoreTopologies.Count);
         }
 
+        [DataTestMethod]
+        [DataRow("qbs", false)]
+        [DataRow("qbs", true)]
+        [DataRow("qb", false)]
+        [DataRow("qb", true)]
+        public void OversizedQueryBranchArraysFailBeforeReadingEntries(
+            string field, bool query)
+        {
+            using var client = MakeClient();
+            var legacy = Topology(null, 1, 1);
+            var store = Topology("A", 1, 1);
+            client.SetQueryTopology(legacy);
+            client.SetStoreTopologies(new[] { store });
+            using var response = Response(writer =>
+            {
+                WriteTopology(writer, Topology(null, 2, 2), "tp");
+                WriteStores(writer, Topology("A", 2, 2));
+                writer.StartArray(field);
+                for (var i = 0; i < 10_001; i++)
+                {
+                    // Invalid entries distinguish the count check from parsing.
+                    writer.WriteInt32(0);
+                }
+                writer.EndArray();
+            });
+            var serializer = new RequestSerializer();
+            var exception = Assert.ThrowsException<BadProtocolException>(() =>
+            {
+                if (query)
+                {
+                    serializer.DeserializeQuery(response,
+                        new QueryRequest<RecordValue>(client,
+                            "select * from table", null));
+                }
+                else
+                {
+                    serializer.DeserializePrepare(response,
+                        new PrepareRequest(client, "select * from table", null));
+                }
+            });
+            StringAssert.Contains(exception.Message,
+                $"Too many query branches in {field}: 10001");
+            var snapshot = client.GetQueryTopologySnapshot();
+            Assert.AreSame(legacy, snapshot.LegacyTopology);
+            Assert.AreSame(store, snapshot.StoreTopologies["A"]);
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public void QueryBranchArraysAcceptTenThousandEntries(bool query)
+        {
+            using var client = MakeClient();
+            using var response = Response(writer =>
+            {
+                WriteQueryStore(writer, Enumerable.Repeat("A", 10_000).ToArray());
+                writer.StartArray("qb");
+                for (var i = 0; i < 10_000; i++)
+                {
+                    writer.StartMap();
+                    writer.WriteByteArray("pq", new byte[] { 1 });
+                    writer.EndMap();
+                }
+                writer.EndArray();
+                WriteStores(writer, Topology("A", 1, 1));
+            });
+            var serializer = new RequestSerializer();
+            var prepared = query
+                ? serializer.DeserializeQuery(response,
+                    new QueryRequest<RecordValue>(client,
+                        "select * from table", null)).PreparedStatement
+                : serializer.DeserializePrepare(response,
+                    new PrepareRequest(client, "select * from table", null));
+            Assert.AreEqual(10_000, prepared.QueryBranches.Count);
+            Assert.AreEqual(10_000, prepared.QueryBranchStores.Length);
+            Assert.IsTrue(prepared.QueryBranchStores.All(store => store == "A"));
+            Assert.AreEqual(1, client.GetQueryTopologySnapshot()
+                .StoreTopologies["A"].SequenceNumber);
+        }
+
         [TestMethod]
         public void MissingSecondBranchStoreRequiresReprepare()
         {
@@ -729,6 +809,48 @@ namespace Oracle.NoSQL.SDK.Tests
                 new QueryRuntime(client, Prepared("A")));
             StringAssert.Contains(exception.Message, "Prepare the query again");
             Assert.IsFalse(exception.IsRetryable);
+        }
+
+        [DataTestMethod]
+        [DataRow(true)]
+        [DataRow(false)]
+        [Timeout(10000)]
+        public async Task QueryAsyncAttachesLogicalRequestWhenTopologyIsMissing(
+            bool missingStore)
+        {
+            using var client = MakeClient();
+            using var handler = new StubResponseHandler(_ =>
+                throw new AssertFailedException("Query must fail before HTTP"));
+            InstallTransport(client, handler);
+            client.SetStoreTopologies(new[] { Topology("B", 100, 5) });
+            var prepared = Prepared(missingStore ? "A" : null);
+            if (missingStore)
+            {
+                // A legacy topology cannot replace the missing store topology.
+                client.SetQueryTopology(Topology(null, 7, 1));
+            }
+            else
+            {
+                // Runtime construction succeeds; scanner initialization fails.
+                prepared.DriverQueryPlan = new ReceiveStep
+                {
+                    DistributionKind = DistributionKind.AllShards,
+                    SortSpecs = Array.Empty<SortSpec>()
+                };
+            }
+            var options = new QueryOptions { QueryLabel = "missing-topology" };
+            var exception = await Assert.ThrowsExceptionAsync<PrepareQueryException>(
+                () => client.QueryAsync(prepared, options));
+            Assert.IsInstanceOfType(exception.Request, typeof(QueryRequest));
+            var request = (QueryRequest)exception.Request;
+            Assert.AreSame(prepared, request.PreparedStatement);
+            Assert.AreSame(options, request.Options);
+            Assert.IsFalse(request.IsInternal);
+            Assert.AreEqual(0, request.RetryCount);
+            Assert.IsFalse(exception.IsRetryable);
+            StringAssert.Contains(exception.Message,
+                missingStore ? "Missing topology for store A" : "all-shard query");
+            Assert.AreEqual(0, handler.Requests.Count);
         }
 
         [TestMethod]

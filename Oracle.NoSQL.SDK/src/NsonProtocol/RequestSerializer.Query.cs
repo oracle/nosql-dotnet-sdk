@@ -26,6 +26,8 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
         internal const int DecimalRounding =
             SDK.BinaryProtocol.RequestSerializer.DecimalRounding;
 
+        private const int MaxQueryBranches = 10_000;
+
         // To keep TopologyInfo immutable and accomodate existing logic in
         // ProcessPreparedStatementField. This is only used by query V3 and
         // below.
@@ -125,6 +127,7 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                     return true;
                 case FieldNames.QueryBranches:
                     statement ??= new PreparedStatement();
+                    ValidateQueryBranchCount(reader, FieldNames.QueryBranches);
                     var branches = ReadArray(reader, DeserializeQueryBranch);
                     if (branches == null || branches.Length == 0)
                     {
@@ -171,8 +174,20 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             }
         }
 
+        private static void ValidateQueryBranchCount(NsonReader reader,
+            string field)
+        {
+            reader.ExpectType(NsonType.Array);
+            if (reader.Count > MaxQueryBranches)
+            {
+                throw new BadProtocolException(
+                    $"Too many query branches in {field}: {reader.Count}");
+            }
+        }
+
         private static string[] ReadQueryStoreNames(NsonReader reader)
         {
+            ValidateQueryBranchCount(reader, FieldNames.QueryBranchStores);
             return ReadArray(reader, () =>
             {
                 var storeName = reader.ReadString();

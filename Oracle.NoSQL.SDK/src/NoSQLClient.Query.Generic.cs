@@ -49,21 +49,30 @@ namespace Oracle.NoSQL.SDK {
                     request, cancellationToken);
             }
 
-            // Advanced query
-            var continuationKey = request.ContinuationKey;
-            QueryPlanExecutor<TRow> executor;
-
-            if (continuationKey?.Runtime != null)
+            try
             {
-                executor = (QueryPlanExecutor<TRow>)continuationKey.Runtime;
-            }
-            else
-            {
-                executor = new QueryPlanExecutor<TRow>(this,
-                    request.PreparedStatement);
-            }
+                // Advanced query
+                var continuationKey = request.ContinuationKey;
+                QueryPlanExecutor<TRow> executor;
 
-            return await executor.ExecuteAsync(request, cancellationToken);
+                if (continuationKey?.Runtime != null)
+                {
+                    executor = (QueryPlanExecutor<TRow>)continuationKey.Runtime;
+                }
+                else
+                {
+                    executor = new QueryPlanExecutor<TRow>(this,
+                        request.PreparedStatement);
+                }
+
+                return await executor.ExecuteAsync(request, cancellationToken);
+            }
+            catch (PrepareQueryException ex) when (ex.Request == null)
+            {
+                // Local topology failures can precede HTTP request execution.
+                NoSQLException.SetRequest(ex, request);
+                throw;
+            }
         }
 
         private async Task<QueryResult<TRow>> ExecuteQueryRequestAsync<TRow>(
