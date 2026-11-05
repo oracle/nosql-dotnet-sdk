@@ -106,14 +106,7 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
         // the caller to keep track of this if needed.
         internal string FieldName { get; private set; }
 
-        // Start reading the next element.  For atomic values, the stream
-        // will be positioned to call one of
-        // Read...() methods to get the value.  For array or map, the caller
-        // will need to call Next() again to read the elements or entries.
-        // Note that if currently inside the map, this function will also
-        // consume the field name, which will be available as FieldName
-        // property.
-        internal void Next()
+        private void FinishCompletedContainers()
         {
             var top = ComplexStackTop;
 
@@ -133,6 +126,30 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                 complexValueStack.Pop();
                 top = ComplexStackTop;
             }
+        }
+
+        // Validate final containers without attempting to read another value.
+        internal void ValidateCompleteResponse()
+        {
+            FinishCompletedContainers();
+            if (complexValueStack.Count != 0)
+            {
+                throw new BadProtocolException(
+                    "Incomplete NSON response");
+            }
+        }
+
+        // Start reading the next element.  For atomic values, the stream
+        // will be positioned to call one of
+        // Read...() methods to get the value.  For array or map, the caller
+        // will need to call Next() again to read the elements or entries.
+        // Note that if currently inside the map, this function will also
+        // consume the field name, which will be available as FieldName
+        // property.
+        internal void Next()
+        {
+            FinishCompletedContainers();
+            var top = ComplexStackTop;
 
             if (top != null)
             {

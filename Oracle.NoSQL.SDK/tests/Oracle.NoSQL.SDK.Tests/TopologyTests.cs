@@ -354,6 +354,88 @@ namespace Oracle.NoSQL.SDK.Tests
                 client.GetQueryTopologySnapshot().StoreTopologies.Count);
         }
 
+        [DataTestMethod]
+        [DataRow("sa", false)]
+        [DataRow("sa", true)]
+        [DataRow("store", false)]
+        [DataRow("store", true)]
+        [DataRow("stp", false)]
+        [DataRow("stp", true)]
+        [DataRow("response", false)]
+        [DataRow("response", true)]
+        [DataRow(null, false)]
+        [DataRow(null, true)]
+        [Timeout(10000)]
+        public async Task GetValidatesResponseCompletionBeforeCachingTopology(
+            string invalidContainer, bool trailingField)
+        {
+            using var client = MakeClient();
+            var legacy = Topology(null, 7, 99);
+            var store = Topology("A", 1, 1);
+            client.SetQueryTopology(legacy);
+            client.SetStoreTopologies(new[] { store });
+
+            using var response = new MemoryStream();
+            var writer = Protocol.GetNsonWriter(response);
+            writer.StartMap();
+            // Container headers end with the byte length and element count.
+            var lengthOffsets = new Dictionary<string, long>
+            {
+                ["response"] = response.Position - 8
+            };
+            WriteTopology(writer, Topology(null, 8, 100), "tp");
+            writer.StartArray("stp");
+            lengthOffsets["stp"] = response.Position - 8;
+            WriteTopology(writer, Topology("A", 2, 2));
+            writer.StartMap();
+            lengthOffsets["store"] = response.Position - 8;
+            writer.WriteString("sid", "B");
+            writer.WriteInt32("pn", 2);
+            writer.StartArray("sa");
+            lengthOffsets["sa"] = response.Position - 8;
+            writer.WriteInt32(5);
+            writer.EndArray();
+            writer.EndMap();
+            writer.EndArray();
+            if (trailingField)
+            {
+                writer.WriteInt32("e", 0);
+            }
+            writer.EndMap();
+            response.SetLength(response.Position);
+            if (invalidContainer != null)
+            {
+                var offset = lengthOffsets[invalidContainer];
+                response.Position = offset;
+                var length = BinaryProtocol.Protocol.ReadUnpackedInt32(response);
+                response.Position = offset;
+                BinaryProtocol.Protocol.WriteUnpackedInt32(response,
+                    length + 1000);
+            }
+
+            using var handler = new StubResponseHandler(_ => response.ToArray());
+            InstallTransport(client, handler);
+            var key = new MapValue { ["id"] = 1 };
+            if (invalidContainer == null)
+            {
+                await client.GetAsync("table", key);
+                var snapshot = client.GetQueryTopologySnapshot();
+                Assert.AreEqual(2, snapshot.StoreTopologies["A"].SequenceNumber);
+                Assert.AreEqual(2, snapshot.StoreTopologies["B"].SequenceNumber);
+            }
+            else
+            {
+                var exception = await Assert.ThrowsExceptionAsync<BadProtocolException>(
+                    () => client.GetAsync("table", key));
+                StringAssert.Contains(exception.Message, "length: expected");
+                var snapshot = client.GetQueryTopologySnapshot();
+                Assert.AreEqual(1, snapshot.StoreTopologies.Count);
+                Assert.AreSame(store, snapshot.StoreTopologies["A"]);
+            }
+            Assert.AreSame(legacy, client.QueryTopology);
+            Assert.AreEqual(1, handler.Requests.Count);
+        }
+
         [TestMethod]
         public void RejectsTooManyStoreTopologiesBeforeReadingEntries()
         {

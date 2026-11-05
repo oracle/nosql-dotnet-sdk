@@ -334,6 +334,7 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                     message, request);
             }
 
+            reader.ValidateCompleteResponse();
             validateResult?.Invoke(storeTopologies != null);
 
             // Prefer per-store information regardless of response field order.
