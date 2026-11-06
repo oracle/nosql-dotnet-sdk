@@ -95,6 +95,21 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
         // may change when reading nested maps or arrays.
         internal int Count => ComplexStackTop?.Count ?? 0;
 
+        // Bytes available within both the actual input and all open containers.
+        internal long RemainingContainerBytes
+        {
+            get
+            {
+                var end = stream.Length;
+                foreach (var container in complexValueStack)
+                {
+                    end = Math.Min(end,
+                        (long)container.StartPosition + container.Length);
+                }
+                return Math.Max(0, end - stream.Position);
+            }
+        }
+
         // Field name last read. If map entry is just read, the stream
         // is positioned to get the field value.  For atomic values, the
         // caller should call one of the Read...() methods to read the value.
@@ -106,14 +121,7 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
         // the caller to keep track of this if needed.
         internal string FieldName { get; private set; }
 
-        // Start reading the next element.  For atomic values, the stream
-        // will be positioned to call one of
-        // Read...() methods to get the value.  For array or map, the caller
-        // will need to call Next() again to read the elements or entries.
-        // Note that if currently inside the map, this function will also
-        // consume the field name, which will be available as FieldName
-        // property.
-        internal void Next()
+        private void FinishCompletedContainers()
         {
             var top = ComplexStackTop;
 
@@ -133,6 +141,30 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                 complexValueStack.Pop();
                 top = ComplexStackTop;
             }
+        }
+
+        // Validate final containers without attempting to read another value.
+        internal void ValidateCompleteResponse()
+        {
+            FinishCompletedContainers();
+            if (complexValueStack.Count != 0)
+            {
+                throw new BadProtocolException(
+                    "Incomplete NSON response");
+            }
+        }
+
+        // Start reading the next element.  For atomic values, the stream
+        // will be positioned to call one of
+        // Read...() methods to get the value.  For array or map, the caller
+        // will need to call Next() again to read the elements or entries.
+        // Note that if currently inside the map, this function will also
+        // consume the field name, which will be available as FieldName
+        // property.
+        internal void Next()
+        {
+            FinishCompletedContainers();
+            var top = ComplexStackTop;
 
             if (top != null)
             {

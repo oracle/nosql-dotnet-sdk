@@ -349,6 +349,7 @@ namespace Oracle.NoSQL.SDK {
             client.Dispose();
             Config.ReleaseResources();
             RateLimitingHandler?.Dispose();
+            storeTopologies.Clear();
         }
 
         /// <summary>

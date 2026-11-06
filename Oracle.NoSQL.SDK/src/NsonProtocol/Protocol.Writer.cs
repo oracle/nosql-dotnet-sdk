@@ -42,8 +42,21 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             writer.WriteInt32(FieldNames.Opcode, (int)opcode);
             writer.WriteInt32(FieldNames.Timeout,
                 request.RequestTimeoutMillis);
+            var topology = request.TopologySnapshot;
             writer.WriteInt32(FieldNames.TopoSeqNum,
-                request.QueryTopologySequenceNumber);
+                topology.LegacySequenceNumber);
+            // Even an empty array advertises per-store topology support.
+            // Keep the legacy sequence for proxies that do not support it.
+            writer.StartArray(FieldNames.StoreTopoSeqNums);
+            foreach (var entry in topology.StoreTopologies)
+            {
+                writer.StartMap();
+                writer.WriteString(FieldNames.StoreId, entry.Key);
+                writer.WriteInt32(FieldNames.TopoSeqNum,
+                    entry.Value.SequenceNumber);
+                writer.EndMap();
+            }
+            writer.EndArray();
             writer.EndMap();
         }
 

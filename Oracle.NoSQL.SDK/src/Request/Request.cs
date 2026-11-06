@@ -234,6 +234,9 @@ namespace Oracle.NoSQL.SDK
         internal virtual int QueryTopologySequenceNumber =>
             Client.QueryTopologySequenceNumber;
 
+        internal virtual Query.QueryTopologySnapshot TopologySnapshot =>
+            Client.GetQueryTopologySnapshot();
+
         // Used by rate limiting.
         internal string TopTableName
         {

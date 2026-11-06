@@ -24,22 +24,55 @@ namespace Oracle.NoSQL.SDK.Tests
     public class QueryTopologyExecutionTests
     {
         [DataTestMethod]
-        [DataRow(false)]
-        [DataRow(true)]
+        [DataRow(false, 0)]
+        [DataRow(true, 0)]
+        [DataRow(false, 1)]
+        [DataRow(true, 1)]
+        [DataRow(false, 2)]
+        [DataRow(true, 2)]
         public async Task TestUnionKeepsTopologyAndVirtualScanRouting(
-            bool sortedUnion)
+            bool sortedUnion, int storeCount)
         {
             var handler = new QueryResponseHandler();
             using var client = CreateClient(handler);
-            client.SetQueryTopology(new TopologyInfo(4, new[] { 11, 13 }));
+            client.SetQueryTopology(new TopologyInfo(7, new[] { 41, 43 }));
+            var firstShard = storeCount == 0 ? 41 : 11;
+            var lastShard = storeCount == 0 ? 43 : 13;
+            var virtualShard = lastShard + 1;
+            var statement = CreateStatement(true, sortedUnion);
+            if (storeCount > 0)
+            {
+                statement.QueryBranchStores = new[] { "A", storeCount == 2 ? "B" : "A" };
+                client.SetStoreTopologies(new[]
+                {
+                    new TopologyInfo(4, new[] { 11, 13 }, "A"),
+                    new TopologyInfo(400, new[] { 21, 23 }, "B")
+                });
+            }
             handler.Respond = (payload, requestNumber) =>
             {
-                var response = RowResponse(payload[Fields.ShardId].AsInt32);
+                var shard = payload[Fields.ShardId].AsInt32;
+                // Keep routing IDs separate from row values so merging the
+                // two stores produces a different order from concatenation.
+                var id = storeCount == 2 ? shard switch
+                {
+                    11 => 1, 13 => 4, 14 => 5, 21 => 2, 23 => 3,
+                    _ => throw new AssertFailedException($"Unexpected shard {shard}")
+                } : shard;
+                var response = RowResponse(id);
                 if (requestNumber == 1)
                 {
                     // Later cache updates must not change this UNION's routes
                     // or topology headers, including its new virtual scanner.
                     client.SetQueryTopology(new TopologyInfo(40, new[] { 99 }));
+                    if (storeCount > 0)
+                    {
+                        client.SetStoreTopologies(new[]
+                        {
+                            new TopologyInfo(40, new[] { 99 }, "A"),
+                            new TopologyInfo(500, new[] { 100 }, "B")
+                        });
+                    }
                     response[Fields.VirtualScans] = new ArrayValue
                     {
                         new MapValue
@@ -54,28 +87,48 @@ namespace Oracle.NoSQL.SDK.Tests
                 return response;
             };
 
-            var rows = await ReadAll(client, CreateStatement(true, sortedUnion));
-            CollectionAssert.AreEqual(sortedUnion ? new[] { 11, 11, 13, 13, 14 } :
-                new[] { 11, 13, 14, 11, 13 }, rows);
+            var rows = await ReadAll(client, statement);
+            var expectedRows = storeCount == 2
+                ? sortedUnion ? new[] { 1, 2, 3, 4, 5 } : new[] { 1, 4, 5, 2, 3 }
+                : sortedUnion
+                    ? new[] { firstShard, firstShard, lastShard, lastShard, virtualShard }
+                    : new[] { firstShard, lastShard, virtualShard, firstShard, lastShard };
+            CollectionAssert.AreEqual(expectedRows, rows);
             var payloads = handler.Requests.Select(request =>
                 request[Fields.Payload].AsMapValue).ToArray();
             CollectionAssert.AreEquivalent(new[]
             {
-                "1:11", "1:13", "1:14", "2:11", "2:13"
+                $"1:{firstShard}", $"1:{lastShard}", $"1:{virtualShard}",
+                storeCount == 2 ? "2:21" : $"2:{firstShard}",
+                storeCount == 2 ? "2:23" : $"2:{lastShard}"
             }, payloads.Select(payload => payload[Fields.PreparedQuery].AsByteArray[0] +
                 ":" + payload[Fields.ShardId].AsInt32).ToArray());
             var virtualRequest = payloads.Single(payload =>
                 payload.ContainsKey(Fields.VirtualScan));
-            Assert.AreEqual(14, virtualRequest[Fields.ShardId].AsInt32);
+            Assert.AreEqual(virtualShard, virtualRequest[Fields.ShardId].AsInt32);
             Assert.AreEqual(31, virtualRequest[Fields.VirtualScan].AsMapValue[
                 Fields.VirtualScanSID].AsInt32);
             foreach (var request in handler.Requests)
             {
                 var header = request[Fields.Header].AsMapValue;
-                Assert.AreEqual(4, header[Fields.TopoSeqNum].AsInt32);
-                // Same-store UNION must not advertise per-store support.
-                Assert.IsFalse(header.ContainsKey("sts"));
-                Assert.IsFalse(request[Fields.Payload].AsMapValue.ContainsKey("sid"));
+                Assert.AreEqual(7, header[Fields.TopoSeqNum].AsInt32);
+                var stores = header[Fields.StoreTopoSeqNums].AsArrayValue;
+                var payload = request[Fields.Payload].AsMapValue;
+                if (storeCount == 0)
+                {
+                    Assert.AreEqual(0, stores.Count);
+                    Assert.IsFalse(payload.ContainsKey(Fields.StoreId));
+                }
+                else
+                {
+                    var sequences = stores.ToDictionary(entry => entry[Fields.StoreId].AsString,
+                        entry => entry[Fields.TopoSeqNum].AsInt32);
+                    Assert.AreEqual(4, sequences["A"]);
+                    Assert.AreEqual(400, sequences["B"]);
+                    var branch = payload[Fields.PreparedQuery].AsByteArray[0];
+                    Assert.AreEqual(branch == 2 && storeCount == 2 ? "B" : "A",
+                        payload[Fields.StoreId].AsString);
+                }
             }
         }
 

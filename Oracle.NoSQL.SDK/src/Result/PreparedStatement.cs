@@ -14,14 +14,20 @@ namespace Oracle.NoSQL.SDK
 
     internal class TopologyInfo
     {
+        internal string StoreName { get; }
+
         internal int SequenceNumber { get; }
 
         internal IReadOnlyList<int> ShardIds { get; }
 
-        internal TopologyInfo(int sequenceNumber, IReadOnlyList<int> shardIds)
+        internal TopologyInfo(int sequenceNumber, IReadOnlyList<int> shardIds,
+            string storeName = null)
         {
+            StoreName = storeName;
             SequenceNumber = sequenceNumber;
-            ShardIds = shardIds;
+            // Query executions retain these objects after the cache changes.
+            ShardIds = shardIds == null ? null :
+                new List<int>(shardIds).AsReadOnly();
         }
     }
 
@@ -46,6 +52,13 @@ namespace Oracle.NoSQL.SDK
     /// not thread-safe.  In this case, you can construct additional instances
     /// of <see cref="PreparedStatement"/> using <see cref="CopyStatement"/>
     /// in order to share the prepared statement among threads.
+    /// </para>
+    /// <para>
+    /// Query execution can throw <see cref="PrepareQueryException"/> if the
+    /// executing client lacks the required store topology or its negotiated
+    /// protocol cannot represent the prepared statement's store identity.
+    /// Prepare the query again using that client before starting a new
+    /// execution. Do not reuse a continuation key from the failed execution.
     /// </para>
     /// </remarks>
     /// <example>
@@ -394,6 +407,13 @@ namespace Oracle.NoSQL.SDK
         }
 
         internal sbyte OperationCode { get; set; }
+
+        // Server-provided store IDs aligned with QueryBranches. Kept separate
+        // while parsing because qbs can arrive before qb. Null means legacy.
+        internal string[] QueryBranchStores { get; set; }
+
+        internal string GetStoreName(int branch) =>
+            QueryBranchStores == null ? null : QueryBranchStores[branch];
 
         internal void Validate()
         {

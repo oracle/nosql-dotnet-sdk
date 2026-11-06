@@ -46,7 +46,7 @@ namespace Oracle.NoSQL.SDK.Query {
                     QueryLabel = runtime.Request.Options?.QueryLabel
                 })
             {
-                BaseTopology = runtime.BaseTopology,
+                ExecutionTopology = runtime.TopologySnapshot,
                 IsInternal = true
             };
 
@@ -63,8 +63,9 @@ namespace Oracle.NoSQL.SDK.Query {
                     
                     if (topologyInfo == null)
                     {
-                        throw new InvalidOperationException(
-                            "Missing topology information for all-shard query");
+                        throw new PrepareQueryException(
+                            "Missing topology information for all-shard query. " +
+                            "Prepare the query again using this client.");
                     }
 
                     Debug.Assert(topologyInfo.ShardIds?.Count != 0);
@@ -339,7 +340,13 @@ namespace Oracle.NoSQL.SDK.Query {
             if (currVScanId == -1)
             {
                 var topologyInfo = runtime.BaseTopology;
-                Debug.Assert(topologyInfo?.ShardIds?.Count != 0);
+                if (topologyInfo == null)
+                {
+                    throw new PrepareQueryException(
+                        "Missing topology information for virtual scans. " +
+                        "Prepare the query again using this client.");
+                }
+                Debug.Assert(topologyInfo.ShardIds?.Count != 0);
                 // ShardIds are sorted.
                 currVScanId = topologyInfo!.ShardIds![^1] + 1;
             }
