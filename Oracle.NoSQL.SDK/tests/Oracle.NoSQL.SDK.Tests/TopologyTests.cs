@@ -355,6 +355,82 @@ namespace Oracle.NoSQL.SDK.Tests
         }
 
         [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public void ImpossibleStoreShardCountIsRejectedBeforeAllocation(
+            bool inflateLengths)
+        {
+            using var client = MakeClient();
+            var legacy = Topology(null, 7, 99);
+            var store = Topology("A", 1, 1);
+            client.SetQueryTopology(legacy);
+            client.SetStoreTopologies(new[] { store });
+            using var response = new MemoryStream();
+            var writer = Protocol.GetNsonWriter(response);
+            var lengthOffsets = new List<long>();
+            writer.StartMap();
+            lengthOffsets.Add(response.Position - 8);
+            writer.StartArray("stp");
+            lengthOffsets.Add(response.Position - 8);
+            writer.StartMap();
+            lengthOffsets.Add(response.Position - 8);
+            writer.WriteString("sid", "A");
+            writer.WriteInt32("pn", 2);
+            writer.StartArray("sa");
+            lengthOffsets.Add(response.Position - 8);
+            writer.WriteInt32(5);
+            writer.EndArray();
+            writer.EndMap();
+            writer.EndArray();
+            writer.EndMap();
+            response.SetLength(response.Position);
+            if (inflateLengths)
+            {
+                // Even forged container lengths cannot exceed the actual input.
+                foreach (var offset in lengthOffsets)
+                {
+                    response.Position = offset;
+                    BinaryProtocol.Protocol.WriteUnpackedInt32(response, int.MaxValue);
+                }
+            }
+            response.Position = lengthOffsets[^1] + sizeof(int);
+            BinaryProtocol.Protocol.WriteUnpackedInt32(response, 1_000_000);
+            Assert.IsTrue(response.Length < 128);
+            var serializer = new RequestSerializer();
+            var request = GetRequest(client);
+            Action read = () =>
+            {
+                response.Position = 0;
+                serializer.DeserializeGet(response, request);
+            };
+            // Warm the synchronous error path before measuring this thread.
+            Assert.ThrowsException<BadProtocolException>(read);
+            var before = GC.GetAllocatedBytesForCurrentThread();
+            var exception = Assert.ThrowsException<BadProtocolException>(read);
+            var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+            Assert.IsTrue(allocated < 64 * 1024,
+                $"Malformed shard count allocated {allocated} bytes");
+            StringAssert.Contains(exception.Message,
+                "Shard count exceeds available topology payload");
+            var snapshot = client.GetQueryTopologySnapshot();
+            Assert.AreSame(legacy, snapshot.LegacyTopology);
+            Assert.AreEqual(1, snapshot.StoreTopologies.Count);
+            Assert.AreSame(store, snapshot.StoreTopologies["A"]);
+        }
+
+        [DataTestMethod]
+        [DataRow(1)]
+        [DataRow(10_001)]
+        public void StoreShardArrayAcceptsPayloadBackedCounts(int count)
+        {
+            using var client = MakeClient();
+            var shards = Enumerable.Range(1, count).ToArray();
+            ReadGet(client, writer => WriteStores(writer, Topology("A", 1, shards)));
+            CollectionAssert.AreEqual(shards, client.GetQueryTopologySnapshot()
+                .StoreTopologies["A"].ShardIds.ToArray());
+        }
+
+        [DataTestMethod]
         [DataRow("sa", false)]
         [DataRow("sa", true)]
         [DataRow("store", false)]
@@ -1064,8 +1140,13 @@ namespace Oracle.NoSQL.SDK.Tests
             {
                 Assert.IsTrue(client.ProtocolHandler.DecrementSerialVersion(4));
             }
-            await Assert.ThrowsExceptionAsync<PrepareQueryException>(() =>
+            var exception = await Assert.ThrowsExceptionAsync<PrepareQueryException>(() =>
                 client.QueryAsync(prepared));
+            Assert.IsInstanceOfType(exception.Request, typeof(QueryRequest));
+            var failedRequest = (QueryRequest)exception.Request;
+            Assert.AreEqual(!simple, failedRequest.IsInternal);
+            Assert.AreSame(prepared, failedRequest.PreparedStatement);
+            Assert.AreSame(exception, failedRequest.LastException);
             Assert.AreEqual(alreadyDowngraded ? 0 : 1, handler.Requests.Count);
             Assert.AreEqual(3, client.ProtocolHandler.SerialVersion);
         }
@@ -1234,7 +1315,21 @@ namespace Oracle.NoSQL.SDK.Tests
                     BinaryProtocol.Protocol.ReadUnpackedInt16(stream));
                 var reader = Protocol.GetNsonReader(stream);
                 reader.Next();
-                Requests.Add(Protocol.ReadMapValue(reader));
+                var wire = Protocol.ReadMapValue(reader);
+                var payload = wire["p"].AsMapValue;
+                if (Requests.Count == 2)
+                {
+                    Assert.IsTrue(payload.ContainsKey("ck"),
+                        "The continuation fetch must send its continuation key");
+                    CollectionAssert.AreEqual(new byte[] { 1 },
+                        payload["ck"].AsByteArray);
+                }
+                else
+                {
+                    Assert.IsFalse(payload.ContainsKey("ck"),
+                        "Initial fetches and fresh executions must omit ck");
+                }
+                Requests.Add(wire);
                 if (Requests.Count == unsupportedAt)
                 {
                     return new HttpResponseMessage(HttpStatusCode.OK)

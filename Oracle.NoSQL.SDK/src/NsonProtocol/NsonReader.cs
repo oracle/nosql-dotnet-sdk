@@ -95,6 +95,21 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
         // may change when reading nested maps or arrays.
         internal int Count => ComplexStackTop?.Count ?? 0;
 
+        // Bytes available within both the actual input and all open containers.
+        internal long RemainingContainerBytes
+        {
+            get
+            {
+                var end = stream.Length;
+                foreach (var container in complexValueStack)
+                {
+                    end = Math.Min(end,
+                        (long)container.StartPosition + container.Length);
+                }
+                return Math.Max(0, end - stream.Position);
+            }
+        }
+
         // Field name last read. If map entry is just read, the stream
         // is positioned to get the field value.  For atomic values, the
         // caller should call one of the Read...() methods to read the value.

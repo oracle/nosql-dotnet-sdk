@@ -226,6 +226,15 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
                         seqNo = reader.ReadInt32();
                         return true;
                     case FieldNames.ShardIds:
+                        reader.ExpectType(NsonType.Array);
+                        // Each shard needs a type byte and at least one packed
+                        // integer byte. Bound allocation by the available payload.
+                        if (reader.Count > reader.RemainingContainerBytes / 2)
+                        {
+                            throw new BadProtocolException(
+                                "Shard count exceeds available topology payload: " +
+                                reader.Count);
+                        }
                         shardIds = ReadArray(reader, reader.ReadInt32);
                         return true;
                     default:
