@@ -1,270 +1,189 @@
-# .NET SDK for Oracle NoSQL Database
+# Developing the .NET SDK for Oracle NoSQL Database
 
-## Overview
+This guide covers building the SDK and running its tests. For SDK usage and
+sample configuration, see the [README](./README.md).
 
-This document is for developers of the .NET SDK for the Oracle NoSQL
-Database. The target audience are those who want to modify
-source code and run and modify tests and examples.
+## Prerequisites
 
-## Getting Started
+- Windows, Linux, or macOS with the [.NET 10 SDK](https://dotnet.microsoft.com/en-us/download/dotnet) or a later supported SDK.
+- The SDK targets .NET 8.0, 9.0, and 10.0. Install the corresponding runtimes
+  to run tests on each runtime. The test project permits major-version roll
+  forward, so tests may otherwise run on a later installed runtime.
+- C# 8.0 or later. Running a local KVLite store also requires Java and an Oracle
+  NoSQL Database distribution.
 
-Read [README](./README.md) on how to use the SDK.
-
-1.  You may develop on Windows, Linux or Mac.  The SDK supports .NET 8.0,
-.NET 9.0, .NET 10.0, or later supported versions. Download your chosen .NET
-version [here](https://dotnet.microsoft.com/en-us/download/dotnet) and follow
-installation instructions for your operating system.
-
-After installation, set *DOTNET_ROOT* environment variable to point to the .NET
-installation location. 
-
-Currently, the SDK is built for .NET 8.0, .NET 9.0, and .NET 10.0.
-
-Note that .NET SDK for Oracle NoSQL Database requires C# version 8.0 or
-higher.
-
-2.  Clone the repository:
+Check the installed SDK and runtimes:
 
 ```bash
-git clone git@github.com:/oracle/nosql-dotnet-sdk
+dotnet --version
+dotnet --list-runtimes
 ```
 
-3.  Build the solution using *dotnet build* command:
-
-```bash
-cd nosql-dotnet-sdk
-[dotnet clean]
-dotnet build
-```
-
-(Note: the above command requires a .NET 10.0 SDK or later supported version).
-
-You may also build for a particular build configuration (*Debug* or
-*Release*):
-
-```bash
-cd nosql-dotnet-sdk
-dotnet build [-c <build-configuration>]
-```
-
-where *build-configuration* is *Debug* or *Release*, default is *Debug*.
-
-The above will build the solution *Oracle.NoSQL.SDK.sln*.  You may also
-build particular projects individually by building in the following
-directories:
-
-* Driver project in *Oracle.NoSQL.SDK/src*
-* Unit test project in *Oracle.NoSQL.SDK/tests/Oracle.NoSQL.SDK.Tests*
-* Smoke test in *Oracle.NoSQL.SDK/tests/Oracle.NoSQL.SDK.SmokeTest*
-
-You may also open and build the solution *Oracle.NoSQL.SDK.sln* in
-[Visual Studio](https://visualstudio.microsoft.com/).  Visual Studio 2019 or
-later is required.
-
-4. The driver may be used to access
-[Oracle NoSQL Database Cloud Service](https://docs.oracle.com/en/cloud/paas/nosql-cloud/index.html)
-and [On-Premise Oracle NoSQL Database](https://docs.oracle.com/en/database/other-databases/nosql-database/index.html).
-
-If developing for the Cloud Service, during development you may use the
-driver locally by running tests and examples against
-[Oracle NoSQL Database Cloud Simulator](https://docs.oracle.com/en/cloud/paas/nosql-cloud/donsq/index.html).
-
-### Note on Http Proxy Settings
-
-The SDK will use default HTTP Proxy settings on your system, if present. E.g.
-on Linux these are determined by environment variable such as *HTTP_PROXY*,
-*HTTPS_PROXY* and *NO_PROXY*. If you are testing against the Cloud Simulator
-or On-Premise Oracle NoSQL Database running on *localhost*, you may need to
-bypass HTTP proxy for local addresses. E.g. on Linux make sure that *NO_PROXY*
-environment variable is set. E.g.:
+If a system HTTP proxy is configured, local services may require a proxy
+bypass. For example, on Linux or macOS:
 
 ```bash
 export NO_PROXY=localhost,127.0.0.1
 ```
 
-Otherwise, follow OS-specific instructions for HTTP proxy settings.
+## Get the source and build
 
-## Running Examples
-
-See *Examples* section of [README](./README.md) for information on how to
-configure and run examples.
-
-## Running Tests
-
-Tests require configuration information to create
-[NoSQLClient](https://oracle.github.io/nosql-dotnet-sdk/api/Oracle.NoSQL.SDK.NoSQLClient.html)
-instance.  This configuration is provided as a parameter to tests and is
-passed as a path to a JSON configuration file containing the configuration.
-
-For more information on JSON configuration files used to create
-[NoSQLClient](https://oracle.github.io/nosql-dotnet-sdk/api/Oracle.NoSQL.SDK.NoSQLClient.html),
-see
-[Configuring the SDK](https://oracle.github.io/nosql-dotnet-sdk/tutorials/connect-cloud.html#configure_cloud)
-for the cloud service,
-[Using the Cloud Simulator](https://oracle.github.io/nosql-dotnet-sdk/tutorials/connect-cloud.html#cloudsim)
-for cloud simulator and
-[Configuring the SDK](https://oracle.github.io/nosql-dotnet-sdk/tutorials/connect-on-prem.html#config)
-for on-premise Oracle NoSQL Database.
-
-The configuration defines the service to which the driver will connect to as
-well as other optional parameters.  See
-[NoSQLConfig](https://oracle.github.io/nosql-dotnet-sdk/api/Oracle.NoSQL.SDK.NoSQLConfig.html)
-for more information.
-
-### <a name="unit_tests"></a>Running Unit Tests
-
-**Note:**
-
-**It is recommended to run the unit tests only against the Cloud Simulator or
-On-Premise Oracle NoSQL Database and not against the Cloud Service as the
-latter will consume cloud resources and may incur significant cost.**
-
-Unit tests are located in
-*Oracle.NoSQL.SDK/tests/Oracle.NoSQL.SDK.Tests* directory.
-
-The unit tests use
-[MSTest](https://docs.microsoft.com/en-us/dotnet/core/testing/unit-testing-with-mstest)
-framework (MSTest V2).
-
-If JSON configuration file is not provided when running unit tests, it is
-assumed that the they are running against Cloud Simulator using default
-endpoint *localhost:8080*.
-
-Use *dotnet test* command to (build and) run unit tests against Cloud
-Simulator running on *localhost* port *8080*:
+Clone the repository and build the solution:
 
 ```bash
+git clone https://github.com/oracle/nosql-dotnet-sdk.git
 cd nosql-dotnet-sdk
-dotnet test [-c <build-configuration>]
+dotnet build Oracle.NoSQL.SDK.sln -c Release
 ```
 
-where *build-configuration* is *Debug* or *Release*, default is *Debug*.
+The following commands assume the current directory is the repository root.
+Use `dotnet clean Oracle.NoSQL.SDK.sln -c Release` before building when a clean
+build is needed. `Debug` is also available as a build configuration. The
+solution can be opened in Visual Studio.
 
-In all other cases, JSON configuration file is required.  It is passed to the
-tests as property named *noSQLConfigFile*, as part of
-[TestContext.Properties](https://docs.microsoft.com/en-us/dotnet/api/microsoft.visualstudio.testtools.unittesting.testcontext.properties?view=visualstudiosdk-2019).
+## Run tests
 
-You may provide this property in one of two ways:
+The test project is `Oracle.NoSQL.SDK/tests/Oracle.NoSQL.SDK.Tests` and uses
+MSTest. Tests create and modify tables; use an isolated Cloud Simulator or
+on-premises test store. Running against Cloud Service can consume resources and
+incur charges.
 
-1.  On the command line when running *dotnet test*:
+### <a name="unit_tests"></a>Cloud Simulator
+
+Download and extract [Oracle NoSQL Cloud Simulator](https://www.oracle.com/downloads/cloud/nosql-cloud-sdk-downloads.html).
+In a separate terminal, enter the extracted distribution directory when
+prompted and start the simulator on `localhost:8080`:
 
 ```bash
-dotnet test [-c <build-configuration>] -- TestRunParameters.Parameter(name=\"noSQLConfigFile\", value=\"/path/to/config.json\")
+read -r -p 'Cloud Simulator installation directory: ' CLOUDSIM_HOME
+(cd "$CLOUDSIM_HOME" && sh ./runCloudSim -root "${TMPDIR:-/tmp}/nosql-cloudsim-root" -httpPort 8080 -storePort 5010)
 ```
 
-2. In a *.runsettings* file:
-
-Create file *test.runsettings* (name can be differrent but the extension must
-be *.runsettings*) with the following contents:
-
-```xml
-<?xml version="1.0" encoding="utf-8"?>
-<RunSettings>
-  <!-- Parameters used by tests at run time -->
-  <TestRunParameters>
-    <Parameter name="noSQLConfigFile" value="/path/to/config.json" />
-  </TestRunParameters>
-</RunSettings>
-```
-
-Pass this file to *dotnet test* command:
+The simulator runs in the foreground; stop it with Ctrl-C when finished. The
+default unit test configuration uses that endpoint and does not require OCI
+credentials. From the SDK repository root in another terminal, run all target
+frameworks sequentially:
 
 ```bash
-dotnet test [-c <build-configuration>] -s test.runsettings
+dotnet test Oracle.NoSQL.SDK.sln -c Release \
+  -p:TestTfmsInParallel=false --logger 'trx;LogFilePrefix=cloudsim' \
+  --results-directory ./artifacts/test-results
 ```
 
-In addition to *dotnet test* command, using *.runsettings* file will allow you
-to pass these settings to unit tests when using
-[Test Explorer](https://docs.microsoft.com/en-us/visualstudio/test/run-unit-tests-with-test-explorer?view=vs-2022)
-in Visual Studio.
+For a simulator on another endpoint, provide a NoSQL SDK configuration JSON
+file through the `noSQLConfigFile` test parameter. See
+[Using the Cloud Simulator](https://oracle.github.io/nosql-dotnet-sdk/tutorials/connect-cloud.html#cloudsim).
 
-For more information, see
-[Configure unit tests by using a .runsettings file](https://docs.microsoft.com/en-us/visualstudio/test/configure-unit-tests-by-using-a-dot-runsettings-file?view=vs-2022).
+### Local on-premises store
 
-To run individual unit tests or test cases, use *dotnet test* command with
-*--filter* option.  For example:
+Start KVLite and its HTTP proxy as shown in the [README](./README.md). The
+sample `Oracle.NoSQL.SDK.Samples/kvlite.json` connects to an on-premises proxy
+on `localhost:8080`. The following commands prompt for the extracted KV
+installation directory and report the running server's version. They assume
+KVLite is listening on `localhost:5100`:
 
 ```bash
-dotnet test --filter ClassName~PutTests
+read -r -p 'KV installation directory: ' KVHOME
+java -jar "$KVHOME/lib/kvstore.jar" runadmin -host localhost -port 5100 show version
+read -r -p 'Server version (for example 26.4.2): ' TEST_KV_VERSION
 ```
 
-For more details, see
-[Run selective unit tests](https://docs.microsoft.com/en-us/dotnet/core/testing/selective-unit-tests?pivots=mstest).
+Use the reported server version for the test parameter. From the repository
+root, run the suite sequentially and save the results:
 
-#### Running against past server versions
+```bash
+dotnet test Oracle.NoSQL.SDK.sln -c Release \
+  -p:TestTfmsInParallel=false --logger 'trx;LogFilePrefix=onprem' \
+  --results-directory ./artifacts/test-results -- \
+  "TestRunParameters.Parameter(name=\"noSQLConfigFile\",value=\"$PWD/Oracle.NoSQL.SDK.Samples/kvlite.json\")" \
+  "TestRunParameters.Parameter(name=\"kvVersion\",value=\"$TEST_KV_VERSION\")"
+```
 
-By default, the unit tests assume running against the latest server version.
-If you need to run against older server versions for compatibility testing,
-you need to set parameter *kvVersion* to the KV version you are running
-against. This will allow you to skip testing features not supported in
-previous KV versions. Without this option, all features will be tested and
-thus some tests will fail when running against past KV version. To run against
-past CloudSim version, find the corresponding KV version for given CloudSim
-installation (look at the manifest inside *kvstore.jar*).
+For a different endpoint or secure store, use an appropriate
+[SDK configuration](https://oracle.github.io/nosql-dotnet-sdk/tutorials/connect-on-prem.html#config)
+instead of `kvlite.json`.
+
+### Server versions and V6 queries
+
+Set `kvVersion` to the actual KV version when testing an older server. Tests
+that check this parameter can skip features unavailable in that version; other
+features may use separate capability checks. If omitted, tests assume the
+current version. For Cloud Simulator, the KV version is in the manifest inside
+its `kvstore.jar`.
 
 UNION integration tests cover branches within the same store, including
-different namespaces. They require on-premises KV 26.1 or later and an HTTP
-proxy supporting query protocol V6. The shared test guard checks *kvVersion*,
+different namespaces. They require on-premises KV 26.1 or later and an
+HTTP proxy supporting query protocol V6. The shared test guard checks kvVersion,
 then prepares an ordinary query to negotiate the proxy's query protocol before
 preparing UNION. An older KV version or a proxy negotiating V3–V5 causes these
 tests to be skipped. Supported environments must also have the required store
 compatibility version (SCV) enabled; preparation errors are not converted into
-skips. If *kvVersion* is omitted, the KV version is assumed to be current.
+skips. If kvVersion is omitted, the KV version is assumed to be current.
 
-You can specify *kvVersion* parameter in either *.runsettings* file or on the
-command line as described above. E.g. in *.runsettings* file:
+### Test options
 
-```xml
-<?xml version="1.0" encoding="utf-8"?>
-<RunSettings>
-  <!-- Parameters used by tests at run time -->
-  <TestRunParameters>
-	<Parameter name="kvVersion" value="22.3.27" />
-    <Parameter name="noSQLConfigFile" value="/path/to/config.json" />
-  </TestRunParameters>
-</RunSettings>
-```
-
-#### Optionally skipping rate limiter tests
-
-Rate limiter tests, which are part of unit tests, may take quite a long time
-to run. You can optinally skip them by specifying the parameter
-*skipRateLimiterTests*. E.g. in *.runsettings* file:
-
-```xml
-<?xml version="1.0" encoding="utf-8"?>
-<RunSettings>
-  <!-- Parameters used by tests at run time -->
-  <TestRunParameters>
-	<Parameter name="skipRateLimiterTests" value="true" />
-    <Parameter name="noSQLConfigFile" value="/path/to/config.json" />
-  </TestRunParameters>
-</RunSettings>
-```
-
-### <a name="smoke_test"></a>Running Smoke Test
-
-Smoke test does basic sanity testing of the SDK.  It creates a table, inserts,
-gets and then deletes several rows and then drops the table.
-
-Smoke test is localed under
-*Oracle.NoSQL.SDK/tests/Oracle.NoSQL.SDK.SmokeTest* directory.  It can
-be run against the cloud service, cloud simulator or on-premise NoSQL
-database. It requires JSON configuration file as described above.  To
-(build and) run smoke test, use *dotnet run* command:
+To run a subset, use a filter. For example:
 
 ```bash
-cd nosql-dotnet-sdk/Oracle.NoSQL.SDK/tests/Oracle.NoSQL.SDK.SmokeTest
-dotnet run -f <target-framework> [-c <build-configuration>] -- /path/to/config.json
+dotnet test Oracle.NoSQL.SDK.sln -c Release --filter 'ClassName~PutTests'
 ```
 
-where *target-framework* is target framework moniker (TFM), values are
-*net8.0*, *net9.0*, and *net10.0*, and *build-configuration* is *Debug* or
-*Release*, default is *Debug*.
+Rate limiter tests can take a long time. To skip them for a Cloud Simulator
+run, set `skipRateLimiterTests`:
 
-Note: you may omit JSON configuration file if running against the cloud
-service using default OCI configuration file (see
-[Using an OCI Configuration File](https://oracle.github.io/nosql-dotnet-sdk/tutorials/connect-cloud.html#config_file)).
-This is equivalent to creating
-[NoSQLClient](https://oracle.github.io/nosql-dotnet-sdk/api/Oracle.NoSQL.SDK.NoSQLClient.html)
-instance using default constructor.
+```bash
+dotnet test Oracle.NoSQL.SDK.sln -c Release -p:TestTfmsInParallel=false -- \
+  'TestRunParameters.Parameter(name="skipRateLimiterTests",value="true")'
+```
+
+Parameters can also be supplied using a `.runsettings` file, including from
+Visual Studio Test Explorer. See
+[Configure unit tests with a runsettings file](https://learn.microsoft.com/en-us/visualstudio/test/configure-unit-tests-by-using-a-dot-runsettings-file?view=vs-2022)
+and [run selective tests](https://learn.microsoft.com/en-us/dotnet/core/testing/selective-unit-tests?pivots=mstest).
+
+### <a name="smoke_test"></a>Smoke test
+
+The smoke test creates a table, writes, reads, and deletes rows, then drops the
+table. Start the corresponding service first. For Cloud Simulator:
+
+```bash
+dotnet run --project Oracle.NoSQL.SDK/tests/Oracle.NoSQL.SDK.SmokeTest/Oracle.NoSQL.SDK.SmokeTest.csproj \
+  --framework net10.0 -c Release -- Oracle.NoSQL.SDK.Samples/cloudsim.json
+```
+
+For the local on-premises proxy:
+
+```bash
+dotnet run --project Oracle.NoSQL.SDK/tests/Oracle.NoSQL.SDK.SmokeTest/Oracle.NoSQL.SDK.SmokeTest.csproj \
+  --framework net10.0 -c Release -- Oracle.NoSQL.SDK.Samples/kvlite.json
+```
+
+The smoke test can also use a different SDK configuration JSON file. If the
+argument is omitted, it uses the default OCI configuration for Cloud Service.
+
+## Run examples
+
+See the [README](./README.md) for service setup and example configuration.
+The sample projects reference the released NuGet package. Before the package
+version referenced by a sample is published, create a local package and restore
+the sample from it and NuGet:
+
+```bash
+dotnet pack Oracle.NoSQL.SDK/src/Oracle.NoSQL.SDK.csproj -c Release -o ./artifacts/packages
+dotnet restore Oracle.NoSQL.SDK.Samples/BasicExample/BasicExample.csproj \
+  --source "$PWD/artifacts/packages" --source https://api.nuget.org/v3/index.json
+```
+
+For example, with a local on-premises proxy running on `localhost:8080`, run
+the restored sample:
+
+```bash
+dotnet run --project Oracle.NoSQL.SDK.Samples/BasicExample/BasicExample.csproj \
+  --framework net10.0 -c Release --no-restore -- Oracle.NoSQL.SDK.Samples/kvlite.json
+```
+
+If the referenced package is already published, run the sample without
+`--no-restore` to restore it from the configured NuGet sources.
+BasicExample uses last-write metadata and requires a service that supports it.
+Cloud Simulator 5.11.6, which bundles KV 22.3.27, does not support that feature;
+the sample reports `NotSupportedException` on that simulator.
