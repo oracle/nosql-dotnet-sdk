@@ -111,7 +111,14 @@ features may use separate capability checks. If omitted, tests assume the
 current version. For Cloud Simulator, the KV version is in the manifest inside
 its `kvstore.jar`.
 
-UNION integration tests cover branches within the same store, including different namespaces. They require on-premises KV 26.1 or later and an HTTP proxy supporting query protocol V6. The shared test guard checks kvVersion, then prepares an ordinary query to negotiate the proxy's query protocol before preparing UNION. An older KV version or a proxy negotiating V3–V5 causes these tests to be skipped. Supported environments must also have the required store compatibility version (SCV) enabled; preparation errors are not converted into skips. If kvVersion is omitted, the KV version is assumed to be current.
+UNION integration tests cover branches within the same store, including
+different namespaces. They require on-premises KV 26.1 or later and an
+HTTP proxy supporting query protocol V6. The shared test guard checks kvVersion,
+then prepares an ordinary query to negotiate the proxy's query protocol before
+preparing UNION. An older KV version or a proxy negotiating V3–V5 causes these
+tests to be skipped. Supported environments must also have the required store
+compatibility version (SCV) enabled; preparation errors are not converted into
+skips. If kvVersion is omitted, the KV version is assumed to be current.
 
 ### Test options
 
