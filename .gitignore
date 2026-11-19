@@ -1,5 +1,6 @@
 Documentation/_site
 Documentation/obj
+/artifacts/
 **/bin/*
 **/obj/*
 *.diff
