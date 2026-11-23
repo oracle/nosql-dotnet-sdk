@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 ## Unreleased
 
-## [5.2.4]
+## [6.0.0]
 
 **Added**
 
@@ -29,7 +29,9 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 **Changed**
 
-* Target .NET 8.0, 9.0 and 10.0 in place of .NET Core 3.1 and .NET 5.0.
+* The SDK now requires .NET 8.0 or later and targets .NET 8.0, 9.0, and
+  10.0. Applications targeting an earlier .NET version must retarget before
+  upgrading the SDK.
 * Hardened retries for state-changing requests when a network failure leaves
   the operation's outcome uncertain.
 * Require IMDSv2 for instance metadata and validate security token key binding.
