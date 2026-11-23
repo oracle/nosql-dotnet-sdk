@@ -11,8 +11,10 @@ and the [On-Premise Oracle NoSQL Database](https://docs.oracle.com/en/database/o
 
 ## Prerequisites
 
-* [.NET](https://dotnet.microsoft.com/download) 10.0 or later supported
-version running on Windows, Linux, or Mac.
+* The SDK package requires [.NET](https://dotnet.microsoft.com/download) 8.0
+  or later on Windows, Linux, or macOS and targets .NET 8.0, 9.0, and 10.0.
+  Building the SDK from source requires the .NET 10 SDK or later. See
+  [Developer Guide](https://github.com/oracle/nosql-dotnet-sdk/blob/main/README-DEV.md).
 * Optionally,
 [Nuget Package Manager](https://docs.microsoft.com/en-us/nuget/consume-packages/install-use-packages-nuget-cli)
 if you wish to install the SDK independently of your project.
@@ -174,6 +176,8 @@ accordingly.
 
 A more complex setup is required to use the proxy in secure mode.  See
 [Configuring the SDK for a Secure Store](https://oracle.github.io/nosql-dotnet-sdk/tutorials/connect-on-prem.html#secure).
+
+ML-KEM support has been validated against Oracle NoSQL Database 26.3 using OpenSSL 3.5 or later.
 
 ### Using Oracle NoSQL Database
 

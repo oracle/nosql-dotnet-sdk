@@ -6,17 +6,50 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 ## Unreleased
 
+## [6.0.0]
+
 **Added**
+
 * Latest OCI region codes
-* Added on-premises query protocol V6 support, including same-store UNION ALL query
-  plans and V6 iterators.
+* Added on-premises query protocol V6 support, including same-store UNION ALL
+  query plans and V6 iterators.
 * Added server-generated creation-time metadata to Get, Put, Delete, and
   WriteMany results when returned by the service.
+* Added last-write metadata support for Put, Delete, DeleteRange,
+  WriteMany/PutMany/DeleteMany and write queries, including validation and
+  response fields for returned existing-row metadata. Write requests expose
+  their last-write metadata.
+* Added StatsControl for configuring, collecting, logging and handling client
+  statistics, including request and query statistics.
 * Added per-store topology caching for queries through proxies serving
   multiple stores, while preserving legacy topology support. Advanced queries
   retain their store's topology across batches. PrepareQueryException instructs
   the caller to prepare again if the required topology is unavailable or a
   protocol downgrade cannot preserve the prepared statement's store identity.
+
+**Changed**
+
+* The SDK now requires .NET 8.0 or later and targets .NET 8.0, 9.0, and
+  10.0. Applications targeting an earlier .NET version must retarget before
+  upgrading the SDK.
+* Hardened retries for state-changing requests when a network failure leaves
+  the operation's outcome uncertain.
+* Require IMDSv2 for instance metadata and validate security token key binding.
+  OKE workload authentication now verifies hostnames, and cached signatures
+  are checked against the current delegated-user token.
+* Deprecated RowVersion.Bytes. Row versions are opaque; use RowVersion with
+  conditional operations rather than comparing serialized representations.
+* ServiceResponseException exposes the response body through ResponseMessage
+  rather than including it in the exception message.
+
+**Fixed**
+
+* Corrected query field navigation through arrays and null values, and
+  aggregation behavior for COUNT and ARRAY_COLLECT. Corrected iterator
+  lifecycle and continuation handling for V6 and UNION query plans.
+* Corrected IAM signing for requests using methods and paths other than the
+  standard data request, and updated PEM certificate parsing for newer .NET
+  runtimes.
 
 ## [5.2.3]
 
@@ -38,9 +71,6 @@ to true.
 **Added**
 
 * New cloud OCI region codes
-* Added last-write metadata support for Put, Delete, DeleteRange,
-  WriteMany/PutMany/DeleteMany and write queries, including validation and
-  response fields for returned existing-row metadata.
 
 ## [5.2.2]
 
