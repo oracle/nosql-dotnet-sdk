@@ -177,6 +177,8 @@ accordingly.
 A more complex setup is required to use the proxy in secure mode.  See
 [Configuring the SDK for a Secure Store](https://oracle.github.io/nosql-dotnet-sdk/tutorials/connect-on-prem.html#secure).
 
+ML-KEM support has been validated against Oracle NoSQL Database 26.3 using OpenSSL 3.5 or later.
+
 ### Using Oracle NoSQL Database
 
 The following example creates a table, inserts a row, reads a row, deletes
